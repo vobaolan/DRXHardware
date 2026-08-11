@@ -1,55 +1,80 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --background: #FFFFFF;
-  --foreground: #000000;
+  --background: #090d16;
+  --foreground: #f8fafc;
+  --font-heading: 'Outfit', 'Space Grotesk', sans-serif;
+  --font-body: 'Plus Jakarta Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
+  font-family: var(--font-body);
   overflow-x: hidden;
+  letter-spacing: -0.01em;
 }
 
-/* Custom Scrollbar for ODS NZXT Light theme */
+.font-heading {
+  font-family: var(--font-heading);
+}
+
+.font-mono-tech {
+  font-family: var(--font-mono);
+}
+
+/* Custom Cyber-Tech Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #FFFFFF;
+  background: #090d16;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #E5E7EB;
+  background: #1e293b;
   border-radius: 6px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #0099FF;
+  background: #38bdf8;
 }
 
-.font-heading {
-  font-family: var(--font-plus-jakarta-sans), sans-serif;
+/* Premium High-Tech Card Glows */
+.cyber-card {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(10, 15, 29, 0.95) 100%);
+  border: 1px solid rgba(51, 65, 85, 0.6);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.ods-glow-hover {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+.cyber-card:hover {
+  border-color: rgba(56, 189, 248, 0.4);
+  box-shadow: 0 0 25px rgba(56, 189, 248, 0.12);
+  transform: translateY(-2px);
 }
 
-.ods-glow-hover:hover {
-  box-shadow: 0 8px 30px rgba(0, 153, 255, 0.15);
-  border-color: #0099FF;
+.cyber-glow-blue {
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.2);
 }
 
-.ods-volt-glow-hover {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+.cyber-glow-amber {
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.2);
 }
 
-.ods-volt-glow-hover:hover {
-  box-shadow: 0 8px 30px rgba(219, 232, 0, 0.2);
-  border-color: rgba(219, 232, 0, 0.6);
+.cyber-glow-emerald {
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.2);
 }
+
+/* Tech Grid Watermark Background */
+.tech-grid-pattern {
+  background-image: radial-gradient(rgba(56, 189, 248, 0.08) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+

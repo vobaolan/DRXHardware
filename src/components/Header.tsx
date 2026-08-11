@@ -149,71 +149,72 @@ export const Header: React.FC = () => {
   const isUnauthProfilePage = pathname === '/profile' && !currentUser;
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-ods-border bg-white/80 backdrop-blur-md">
+    <header className="sticky top-0 z-40 w-full border-b border-slate-800/80 bg-slate-950/85 backdrop-blur-xl shadow-2xl">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* LOGO ODS */}
-        <div className="flex items-center gap-10">
-          <Link href="/" className="group flex items-center">
-            <img
-              src="/images/logo.png"
-              alt="ODS Logo"
-              className="h-6 w-auto object-contain transition-all duration-300 group-hover:opacity-80 group-hover:scale-[0.98]"
-            />
+        <div className="flex items-center gap-8">
+          <Link href="/" className="group flex items-center gap-2">
+            <div className="h-8 w-8 rounded-lg bg-gradient-to-tr from-cyan-600 to-blue-600 flex items-center justify-center text-white font-black text-xs font-heading shadow-md shadow-cyan-500/20 group-hover:scale-105 transition-transform">
+              ODS
+            </div>
+            <span className="font-heading font-black text-base tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-cyan-300">
+              HARDWARE
+            </span>
           </Link>
 
           {/* DIRECT NAVIGATION LINKS */}
           {!isUnauthProfilePage && (
-            <nav className="hidden md:flex items-center space-x-7">
+            <nav className="hidden md:flex items-center space-x-6">
               {/* 1. SẢN PHẨM VỪA XEM - SHOWN STRICTLY WHEN LOGGED IN */}
               {currentUser && (
                 <Link
                   href="/products/recently-viewed"
-                  className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-ods-textMuted hover:text-black transition-colors relative py-2 group"
+                  className="flex items-center gap-1.5 font-heading text-xs font-bold uppercase tracking-wider text-slate-300 hover:text-cyan-400 transition-colors relative py-2 group"
                 >
-                  <Clock className="h-3.5 w-3.5 text-ods-primary" />
-                  <span>SẢN PHẨM VỪA XEM</span>
-                  <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-ods-primary transition-all duration-300 group-hover:w-full"></span>
+                  <Clock className="h-3.5 w-3.5 text-cyan-400" />
+                  <span>VỪA XEM</span>
+                  <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-cyan-400 transition-all duration-300 group-hover:w-full"></span>
                 </Link>
               )}
 
               {/* 2. PC BUILDER - ALWAYS SHOWN */}
               <Link
                 href="/pc-builder"
-                className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-ods-primary hover:text-black transition-colors relative py-2 group"
+                className="flex items-center gap-1.5 font-heading text-xs font-bold uppercase tracking-wider text-cyan-400 hover:text-cyan-300 transition-colors relative py-2 group"
               >
-                <Cpu className="h-3.5 w-3.5 text-blue-600" />
+                <Cpu className="h-3.5 w-3.5 text-cyan-400" />
                 <span>BUILD PC</span>
-                <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-blue-600 transition-all duration-300 group-hover:w-full"></span>
+                <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-cyan-400 transition-all duration-300 group-hover:w-full"></span>
               </Link>
 
               {/* 3. TRA CỨU BẢO HÀNH - ALWAYS SHOWN */}
               <Link
                 href="/warranty"
-                className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-ods-textMuted hover:text-black transition-colors relative py-2 group"
+                className="flex items-center gap-1.5 font-heading text-xs font-bold uppercase tracking-wider text-slate-300 hover:text-emerald-400 transition-colors relative py-2 group"
               >
-                <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
                 <span>BẢO HÀNH</span>
-                <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-emerald-600 transition-all duration-300 group-hover:w-full"></span>
+                <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-emerald-400 transition-all duration-300 group-hover:w-full"></span>
               </Link>
 
               {/* 4. SẢN PHẨM MUA NHIỀU - ALWAYS SHOWN */}
               <Link
                 href="/products/best-sellers"
-                className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-ods-textMuted hover:text-black transition-colors relative py-2 group"
+                className="flex items-center gap-1.5 font-heading text-xs font-bold uppercase tracking-wider text-slate-300 hover:text-amber-400 transition-colors relative py-2 group"
               >
-                <Flame className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
+                <Flame className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
                 <span>MUA NHIỀU</span>
-                <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-amber-500 transition-all duration-300 group-hover:w-full"></span>
+                <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-amber-400 transition-all duration-300 group-hover:w-full"></span>
               </Link>
 
               {/* 5. SẢN PHẨM KHUYẾN MÃI - ALWAYS SHOWN */}
               <Link
                 href="/products/discounts"
-                className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-ods-textMuted hover:text-black transition-colors relative py-2 group"
+                className="flex items-center gap-1.5 font-heading text-xs font-bold uppercase tracking-wider text-slate-300 hover:text-rose-400 transition-colors relative py-2 group"
               >
-                <Tag className="h-3.5 w-3.5 text-red-500" />
+                <Tag className="h-3.5 w-3.5 text-rose-400" />
                 <span>KHUYẾN MÃI</span>
-                <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-red-500 transition-all duration-300 group-hover:w-full"></span>
+                <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-rose-400 transition-all duration-300 group-hover:w-full"></span>
               </Link>
 
               {/* ADMIN MANAGEMENT HOVER DROPDOWN MENU - SHOWN STRICTLY TO ADMIN ACCOUNTS */}

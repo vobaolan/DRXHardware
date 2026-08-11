@@ -257,14 +257,14 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-white text-black flex flex-col antialiased">
+    <div className="min-h-screen bg-[#090d16] text-slate-100 flex flex-col antialiased tech-grid-pattern">
         {/* HEADER */}
         <Header />
 
-        {/* MODULAR HERO SECTION (CINEMATIC PREMIUM REDESIGNED HERO) */}
+        {/* MODULAR HERO SECTION */}
         <section className="mx-auto max-w-7xl w-full px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-            {/* Left 60% Block - Primary Highlight (SENIOR DESIGNED FEATURED DEAL CARD) */}
+            {/* Left 60% Block - Primary Highlight */}
             <div className="lg:col-span-3 flex">
               {activeFeatured ? (
                 <FeaturedDealCard
@@ -273,32 +273,32 @@ export default function Home() {
                   onSelectIndex={(idx) => setCurrentFeaturedIndex(idx)}
                 />
               ) : (
-                <div className="py-20 text-center text-gray-400 text-xs">Đang tải deal nổi bật...</div>
+                <div className="py-20 text-center text-slate-400 text-xs">Đang tải deal nổi bật...</div>
               )}
             </div>
 
-            {/* Right 40% Block - TOP BEST SELLERS RANKING (TOP GAME BÁN CHẠY TUẦN NÀY) */}
-            <div className="lg:col-span-2 flex flex-col justify-between rounded-2xl border border-ods-border bg-white p-6 min-h-[480px] shadow-sm">
+            {/* Right 40% Block - TOP BEST SELLERS RANKING */}
+            <div className="lg:col-span-2 flex flex-col justify-between rounded-2xl border border-slate-800/80 bg-slate-900/90 p-6 min-h-[480px] shadow-2xl backdrop-blur-md">
               <div className="space-y-4">
-                <div className="flex justify-between items-center border-b border-ods-border pb-3">
-                  <span className="font-heading text-xs font-black uppercase tracking-wider text-black flex items-center gap-1.5">
-                    <Award className="h-4 w-4 text-amber-500 fill-amber-400" /> TOP SẢN PHẨM BÁN CHẠY
+                <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+                  <span className="font-heading text-xs font-black uppercase tracking-wider text-slate-100 flex items-center gap-1.5">
+                    <Award className="h-4 w-4 text-amber-400 fill-amber-400" /> TOP LINH KIỆN MUA NHIỀU
                   </span>
                   
                   {/* Top Ranking Tag */}
-                  <div className="flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider">
-                    <span>🔥 BẢNG XẾP HẠNG TUẦN</span>
+                  <div className="flex items-center gap-1 bg-amber-500/10 text-amber-300 border border-amber-500/30 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider">
+                    <span>🔥 BẢNG XẾP HẠNG</span>
                   </div>
                 </div>
 
-                {/* Dynamic Best Sellers List with Rank Badges (#1, #2, #3, #4) */}
+                {/* Dynamic Best Sellers List with Rank Badges */}
                 <div className="space-y-3">
                   {bestSellersProducts.length > 0 ? (
                     bestSellersProducts.map((deal, idx) => {
                       const activePrice = deal.discountPrice ?? deal.price;
                       const rank = idx + 1;
                       return (
-                        <Link key={deal.id} href={`/products/${deal.slug}`} className="flex items-center gap-3 bg-ods-surface border border-ods-border p-2.5 rounded-xl relative group hover:border-black hover:shadow-md transition-all">
+                        <Link key={deal.id} href={`/products/${deal.slug}`} className="flex items-center gap-3 bg-slate-950/80 border border-slate-800 p-2.5 rounded-xl relative group hover:border-cyan-500/50 hover:shadow-lg transition-all">
                           {/* Rank Badge Indicator */}
                           <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-black text-xs shrink-0 shadow-xs border ${
                             rank === 1
@@ -307,33 +307,32 @@ export default function Home() {
                               ? 'bg-gradient-to-br from-slate-200 to-slate-400 text-black border-slate-300'
                               : rank === 3
                               ? 'bg-gradient-to-br from-amber-700 to-amber-900 text-amber-100 border-amber-600'
-                              : 'bg-zinc-100 text-zinc-600 border-zinc-200'
+                              : 'bg-slate-800 text-slate-400 border-slate-700'
                           }`}>
                             #{rank}
                           </div>
 
-                          {/* Sleek Widescreen 16:9 Game Banner Box (No Black Letterboxing) */}
-                          <div className="relative w-20 sm:w-24 aspect-[16/9] rounded-lg overflow-hidden bg-zinc-900 border border-ods-border shadow-xs shrink-0 group-hover:border-ods-primary transition-all">
+                          <div className="relative w-20 sm:w-24 aspect-[16/9] rounded-lg overflow-hidden bg-slate-950 border border-slate-800 shrink-0 group-hover:border-cyan-500 transition-all">
                             <img 
                               src={deal.coverImage} 
                               alt={deal.name} 
                               className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent pointer-events-none" />
                           </div>
 
                           <div className="flex-1 min-w-0 pr-2">
                             <div className="flex items-center gap-1.5">
-                              <span className="text-[8.5px] text-ods-primary font-bold uppercase tracking-wider">{deal.platform}</span>
+                              <span className="text-[8.5px] text-cyan-400 font-bold uppercase tracking-wider">{deal.platform}</span>
                               {deal.discountPrice && (
-                                <span className="text-[8.5px] text-red-600 font-extrabold bg-red-50 px-1 rounded border border-red-200">HOT SALE</span>
+                                <span className="text-[8.5px] text-rose-300 font-extrabold bg-rose-950/80 px-1 rounded border border-rose-800">GIẢM SÂU</span>
                               )}
                             </div>
-                            <h4 className="font-heading text-xs font-bold text-black group-hover:underline truncate">{deal.name}</h4>
+                            <h4 className="font-heading text-xs font-bold text-slate-100 group-hover:text-cyan-300 truncate">{deal.name}</h4>
                             <div className="flex items-center gap-2 mt-0.5">
-                              <span className="text-xs font-extrabold text-black">{formatCurrency(activePrice)}</span>
+                              <span className="text-xs font-extrabold text-emerald-400 font-heading">{formatCurrency(activePrice)}</span>
                               {deal.discountPrice && (
-                                <span className="text-[9px] text-ods-textMuted line-through">{formatCurrency(deal.price)}</span>
+                                <span className="text-[9px] text-slate-500 line-through font-mono-tech">{formatCurrency(deal.price)}</span>
                               )}
                             </div>
                           </div>
@@ -344,7 +343,7 @@ export default function Home() {
                       );
                     })
                   ) : (
-                    <div className="py-8 text-center text-xs text-ods-textMuted">Đang cập nhật bảng xếp hạng top game...</div>
+                    <div className="py-8 text-center text-xs text-slate-400">Đang cập nhật bảng xếp hạng...</div>
                   )}
                 </div>
               </div>
@@ -353,36 +352,36 @@ export default function Home() {
         </section>
 
         {/* CORE FEATURES STRIP */}
-        <section className="border-y border-ods-border bg-ods-surface py-6">
+        <section className="border-y border-slate-800/80 bg-slate-900/60 backdrop-blur-xl py-6">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center md:text-left">
               <div className="flex items-center justify-center md:justify-start gap-4">
-                <div className="rounded-ods border border-ods-border bg-white p-3 text-black">
+                <div className="rounded-xl border border-slate-800 bg-slate-950 p-3 text-cyan-400">
                   <Award className="h-5 w-5" />
                 </div>
                 <div>
-                  <h4 className="font-heading text-xs font-bold uppercase tracking-wider text-black">BẢO HÀNH 1 ĐỔI 1 CHÍNH HÃNG</h4>
-                  <p className="text-[11px] text-ods-textMuted font-light">Bảo hành 12 - 36 tháng cho mọi linh kiện vật lý</p>
+                  <h4 className="font-heading text-xs font-bold uppercase tracking-wider text-slate-100">BẢO HÀNH 1 ĐỔI 1 CHÍNH HÃNG</h4>
+                  <p className="text-[11px] text-slate-400 font-light">Bảo hành 12 - 36 tháng cho mọi linh kiện vật lý</p>
                 </div>
               </div>
 
               <div className="flex items-center justify-center md:justify-start gap-4">
-                <div className="rounded-ods border border-ods-border bg-white p-3 text-black">
-                  <Clock className="h-5 w-5 text-ods-primary" />
+                <div className="rounded-xl border border-slate-800 bg-slate-950 p-3 text-cyan-400">
+                  <Clock className="h-5 w-5" />
                 </div>
                 <div>
-                  <h4 className="font-heading text-xs font-bold uppercase tracking-wider text-black">HỖ TRỢ LẮP RÁP & GIAO HÀNG TỐC ĐỘ</h4>
-                  <p className="text-[11px] text-ods-textMuted font-light">Giao hàng toàn quốc & lắp ráp PC theo yêu cầu</p>
+                  <h4 className="font-heading text-xs font-bold uppercase tracking-wider text-slate-100">HỖ TRỢ LẮP RÁP & GIAO HÀNG TỐC ĐỘ</h4>
+                  <p className="text-[11px] text-slate-400 font-light">Giao hàng toàn quốc & lắp ráp PC theo yêu cầu</p>
                 </div>
               </div>
 
               <div className="flex items-center justify-center md:justify-start gap-4">
-                <div className="rounded-ods border border-ods-border bg-white p-3 text-black">
-                  <Flame className="h-5 w-5 text-red-500" />
+                <div className="rounded-xl border border-slate-800 bg-slate-950 p-3 text-rose-400">
+                  <Flame className="h-5 w-5" />
                 </div>
                 <div>
-                  <h4 className="font-heading text-xs font-bold uppercase tracking-wider text-black">TƯ VẤN BUILD PC CHUYÊN NGHIỆP</h4>
-                  <p className="text-[11px] text-ods-textMuted font-light">Tư vấn socket & RAM tối ưu hiệu năng / ngân sách</p>
+                  <h4 className="font-heading text-xs font-bold uppercase tracking-wider text-slate-100">TƯ VẤN BUILD PC CHUYÊN NGHIỆP</h4>
+                  <p className="text-[11px] text-slate-400 font-light">Tư vấn socket & RAM tối ưu hiệu năng / ngân sách</p>
                 </div>
               </div>
             </div>
@@ -395,10 +394,10 @@ export default function Home() {
           <div className="flex flex-col gap-6 mb-8">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
-                <span className="text-[10px] text-ods-primary font-bold uppercase tracking-widest block mb-1">
+                <span className="text-[10px] text-cyan-400 font-bold uppercase tracking-widest block mb-1">
                   ODS HARDWARE STORE
                 </span>
-                <h2 className="font-heading text-2xl font-extrabold uppercase tracking-wider text-black">
+                <h2 className="font-heading text-2xl font-extrabold uppercase tracking-wider text-slate-100">
                   DANH SÁCH LINH KIỆN MÁY TÍNH & PC GAMING
                 </h2>
               </div>
@@ -406,7 +405,7 @@ export default function Home() {
               {/* SEARCH INPUT */}
               <div className="relative w-full md:w-96">
                 <div className="relative">
-                  <Search className="absolute left-3.5 top-3 h-4 w-4 text-ods-textMuted" />
+                  <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
                   <input
                     type="text"
                     placeholder="Tìm CPU, RTX 4060, Mainboard, RAM..."
@@ -414,23 +413,23 @@ export default function Home() {
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onFocus={() => setIsSearchFocused(true)}
                     onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
-                    className="w-full rounded-ods border border-ods-border bg-white py-2.5 pl-10 pr-4 text-xs font-semibold text-black placeholder-zinc-400 focus:border-ods-primary focus:outline-none focus:ring-1 focus:ring-ods-primary transition-all shadow-sm"
+                    className="w-full rounded-xl border border-slate-800 bg-slate-900 py-2.5 pl-10 pr-4 text-xs font-semibold text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 transition-all shadow-lg"
                   />
                 </div>
 
                 {/* Autocomplete Dropdown */}
                 {isSearchFocused && autocompleteList.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-1.5 rounded-ods border border-ods-border bg-white p-2 shadow-2xl z-40 space-y-1">
+                  <div className="absolute top-full left-0 right-0 mt-1.5 rounded-xl border border-slate-800 bg-slate-900 p-2 shadow-2xl z-40 space-y-1">
                     {autocompleteList.map((item) => (
                       <Link
                         key={item.id}
                         href={`/products/${item.slug}`}
-                        className="flex items-center gap-3 p-2 rounded hover:bg-ods-surface transition-colors"
+                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-800 transition-colors"
                       >
-                        <img src={item.coverImage} alt={item.name} className="h-8 w-12 object-cover rounded bg-black" />
+                        <img src={item.coverImage} alt={item.name} className="h-8 w-12 object-cover rounded bg-slate-950" />
                         <div className="flex-1 truncate">
-                          <span className="font-bold text-xs text-black block truncate">{item.name}</span>
-                          <span className="text-[10px] font-bold text-ods-primary">{formatCurrency(item.discountPrice ?? item.price)}</span>
+                          <span className="font-heading font-bold text-xs text-slate-100 block truncate">{item.name}</span>
+                          <span className="text-[10px] font-bold text-emerald-400">{formatCurrency(item.discountPrice ?? item.price)}</span>
                         </div>
                       </Link>
                     ))}
@@ -440,67 +439,36 @@ export default function Home() {
             </div>
 
             {/* FILTER CATEGORY BUTTONS */}
-            <div className="flex flex-wrap items-center justify-between gap-4 border-t border-ods-border pt-6">
+            <div className="flex flex-wrap items-center justify-between gap-4 border-t border-slate-800/80 pt-6">
               <div className="flex flex-wrap items-center gap-2">
-                <button
-                  onClick={() => setSelectedPlatform('ALL')}
-                  className={`rounded-ods px-4 py-2 text-xs font-bold uppercase transition-all ${
-                    selectedPlatform === 'ALL'
-                      ? 'bg-black text-white shadow-sm'
-                      : 'bg-ods-surface text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  TẤT CẢ LINH KIỆN
-                </button>
-                <button
-                  onClick={() => setSelectedPlatform('CPU')}
-                  className={`rounded-ods px-4 py-2 text-xs font-bold uppercase transition-all ${
-                    selectedPlatform === 'CPU'
-                      ? 'bg-black text-white shadow-sm'
-                      : 'bg-ods-surface text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  CPU (VI XỬ LÝ)
-                </button>
-                <button
-                  onClick={() => setSelectedPlatform('VGA')}
-                  className={`rounded-ods px-4 py-2 text-xs font-bold uppercase transition-all ${
-                    selectedPlatform === 'VGA'
-                      ? 'bg-black text-white shadow-sm'
-                      : 'bg-ods-surface text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  VGA (CARD MÀN HÌNH)
-                </button>
-                <button
-                  onClick={() => setSelectedPlatform('MAINBOARD')}
-                  className={`rounded-ods px-4 py-2 text-xs font-bold uppercase transition-all ${
-                    selectedPlatform === 'MAINBOARD'
-                      ? 'bg-black text-white shadow-sm'
-                      : 'bg-ods-surface text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  BO MẠCH CHỦ
-                </button>
-                <button
-                  onClick={() => setSelectedPlatform('RAM')}
-                  className={`rounded-ods px-4 py-2 text-xs font-bold uppercase transition-all ${
-                    selectedPlatform === 'RAM'
-                      ? 'bg-black text-white shadow-sm'
-                      : 'bg-ods-surface text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  RAM
-                </button>
+                {[
+                  { id: 'ALL', label: 'TẤT CẢ LINH KIỆN' },
+                  { id: 'CPU', label: 'CPU (VI XỬ LÝ)' },
+                  { id: 'VGA', label: 'VGA (CARD MÀN HÌNH)' },
+                  { id: 'MAINBOARD', label: 'BO MẠCH CHỦ' },
+                  { id: 'RAM', label: 'RAM' },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setSelectedPlatform(tab.id)}
+                    className={`font-heading rounded-xl px-4 py-2 text-xs font-bold uppercase transition-all ${
+                      selectedPlatform === tab.id
+                        ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg shadow-cyan-500/20 border border-cyan-400/30'
+                        : 'bg-slate-900 border border-slate-800 text-slate-300 hover:border-slate-700 hover:text-cyan-400'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
               </div>
 
               {/* SORT DROPDOWN */}
               <div className="flex items-center gap-2">
-                <SlidersHorizontal className="h-4 w-4 text-ods-textMuted" />
+                <SlidersHorizontal className="h-4 w-4 text-slate-400" />
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="rounded-ods border border-ods-border bg-white py-1.5 px-3 text-xs font-semibold text-black focus:border-ods-primary focus:outline-none"
+                  className="rounded-xl border border-slate-800 bg-slate-900 py-1.5 px-3 text-xs font-semibold text-slate-200 focus:border-cyan-500 focus:outline-none"
                 >
                   <option value="FEATURED">Nổi Bật Nhất</option>
                   <option value="PRICE_ASC">Giá: Thấp Đến Cao</option>
@@ -512,11 +480,11 @@ export default function Home() {
 
           {/* PRODUCTS GRID */}
           {isLoading ? (
-            <div className="py-20 text-center text-xs text-ods-textMuted">Đang tải kho sản phẩm...</div>
+            <div className="py-20 text-center text-xs text-slate-400">Đang tải kho sản phẩm...</div>
           ) : filteredProducts.length === 0 ? (
             <div className="py-20 text-center space-y-2">
-              <p className="text-sm font-bold text-black">Không tìm thấy sản phẩm nào phù hợp.</p>
-              <p className="text-xs text-ods-textMuted">Hãy thử tìm kiếm từ khóa khác hoặc xóa bộ lọc.</p>
+              <p className="text-sm font-bold text-slate-200">Không tìm thấy sản phẩm nào phù hợp.</p>
+              <p className="text-xs text-slate-400">Hãy thử tìm kiếm từ khóa khác hoặc xóa bộ lọc.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
