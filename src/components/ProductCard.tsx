@@ -75,7 +75,7 @@ export const ProductCard: React.FC<{ product: ProductProps }> = ({ product }) =>
       whileHover={{ y: -4 }}
       viewport={{ once: true }}
       transition={{ duration: 0.2 }}
-      className="cyber-card rounded-2xl overflow-hidden shadow-xl flex flex-col group transition-all duration-300 border border-slate-800/80 relative h-full"
+      className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm dark:shadow-xl flex flex-col group hover:shadow-xl hover:border-cyan-500 dark:hover:border-cyan-500 transition-all duration-300 relative h-full"
     >
       <Link href={`/products/${product.slug}`} className="flex flex-col h-full">
         {/* Product Media Box */}
@@ -107,38 +107,38 @@ export const ProductCard: React.FC<{ product: ProductProps }> = ({ product }) =>
         </div>
 
         {/* Product Information Body */}
-        <div className="flex flex-col flex-1 p-4 pb-3.5 space-y-2.5 bg-slate-900/90">
-          <h3 className="font-heading text-sm font-extrabold leading-snug text-slate-100 group-hover:text-cyan-300 line-clamp-2 min-h-[40px] transition-colors">
+        <div className="flex flex-col flex-1 p-4 pb-3.5 space-y-2.5 bg-white dark:bg-slate-900/90">
+          <h3 className="font-heading text-sm font-extrabold leading-snug text-slate-900 dark:text-slate-100 group-hover:text-cyan-600 dark:group-hover:text-cyan-300 line-clamp-2 min-h-[40px] transition-colors">
             {product.name}
           </h3>
 
           {/* Specs Pills List */}
           <div className="flex flex-wrap gap-1.5 pt-1 font-mono-tech text-[10px]">
             {product.socket && (
-              <span className="bg-slate-950/90 border border-slate-800 text-cyan-300 px-2 py-0.5 rounded font-bold">
+              <span className="bg-slate-100 dark:bg-slate-950/90 border border-slate-200 dark:border-slate-800 text-cyan-700 dark:text-cyan-300 px-2 py-0.5 rounded font-bold">
                 Socket {product.socket}
               </span>
             )}
             {product.ramType && (
-              <span className="bg-slate-950/90 border border-slate-800 text-emerald-300 px-2 py-0.5 rounded font-bold">
+              <span className="bg-slate-100 dark:bg-slate-950/90 border border-slate-200 dark:border-slate-800 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded font-bold">
                 {product.ramType}
               </span>
             )}
             {product.wattage && (
-              <span className="bg-slate-950/90 border border-slate-800 text-amber-300 px-2 py-0.5 rounded font-bold">
+              <span className="bg-slate-100 dark:bg-slate-950/90 border border-slate-200 dark:border-slate-800 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded font-bold">
                 {product.wattage}W
               </span>
             )}
           </div>
 
-          <div className="flex items-center justify-between pt-3 border-t border-slate-800/80 mt-auto">
+          <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800/80 mt-auto">
             <div className="flex flex-col">
               {hasDiscount && (
                 <span className="text-[10px] text-slate-400 line-through font-mono-tech">
                   {formatCurrency(product.price)}
                 </span>
               )}
-              <span className="font-heading text-base font-black text-emerald-400">
+              <span className="font-heading text-base font-black text-emerald-600 dark:text-emerald-400">
                 {formatCurrency(activePrice)}
               </span>
             </div>
@@ -146,7 +146,7 @@ export const ProductCard: React.FC<{ product: ProductProps }> = ({ product }) =>
             {product.status !== false ? (
               <button
                 onClick={handleBuyNow}
-                className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white px-3.5 py-2 text-xs font-heading font-extrabold transition-all active:scale-95 shadow-lg shadow-cyan-500/20 z-30 relative"
+                className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white px-3.5 py-2 text-xs font-heading font-extrabold transition-all active:scale-95 shadow-md shadow-cyan-500/20 z-30 relative"
               >
                 <ShoppingCart className="h-3.5 w-3.5" />
                 <span>MUA</span>
@@ -154,7 +154,7 @@ export const ProductCard: React.FC<{ product: ProductProps }> = ({ product }) =>
             ) : (
               <button
                 disabled
-                className="flex items-center gap-1.5 rounded-xl bg-slate-800 text-slate-500 px-3.5 py-2 text-xs font-bold cursor-not-allowed z-30 relative"
+                className="flex items-center gap-1.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 px-3.5 py-2 text-xs font-bold cursor-not-allowed z-30 relative"
               >
                 <span>HẾT HÀNG</span>
               </button>

@@ -1,13 +1,13 @@
-'use client';
-
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
   ShoppingBag, User, Wallet, ShieldAlert, Package, Users, ChevronDown,
-  Clock, Flame, Tag, Key, Bell, ClipboardList, MessageCircle, Cpu, ShieldCheck
+  Clock, Flame, Tag, Key, Bell, ClipboardList, MessageCircle, Cpu, ShieldCheck,
+  Sun, Moon
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { useTheme } from '../context/ThemeContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CustomerChatModal } from './CustomerChatModal';
 import { AdminChatModal } from './AdminChatModal';
@@ -15,6 +15,7 @@ import { AdminChatModal } from './AdminChatModal';
 export const Header: React.FC = () => {
   const pathname = usePathname();
   const { cartCount, setCartOpen } = useCart();
+  const { theme, toggleTheme } = useTheme();
   const [isAdminOpen, setIsAdminOpen] = useState(false);
 
   // Dynamic user state loaded from localStorage
@@ -44,10 +45,8 @@ export const Header: React.FC = () => {
         try {
           const parsed = JSON.parse(stored);
           
-          // Set user safely to avoid loops
           setCurrentUser(prev => prev?.id === parsed.id && prev?.balance === parsed.balance ? prev : parsed);
 
-          // Synchronize latest live balance from API if available
           if (parsed && parsed.email) {
             try {
               const res = await fetch('/api/admin/users');
@@ -89,7 +88,6 @@ export const Header: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    // Notification Polling
     const checkNotifications = async () => {
       try {
         if (isAdmin) {
@@ -145,11 +143,10 @@ export const Header: React.FC = () => {
     return value.toLocaleString('vi-VN') + ' đ';
   };
 
-  // Do not show central nav links on unauthenticated /profile login page
   const isUnauthProfilePage = pathname === '/profile' && !currentUser;
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-slate-800/80 bg-slate-950/85 backdrop-blur-xl shadow-2xl">
+    <header className="sticky top-0 z-40 w-full border-b border-slate-200 dark:border-slate-800/80 bg-white/90 dark:bg-slate-950/85 backdrop-blur-xl shadow-sm transition-colors">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* LOGO ODS */}
         <div className="flex items-center gap-8">
@@ -157,7 +154,7 @@ export const Header: React.FC = () => {
             <div className="h-8 w-8 rounded-lg bg-gradient-to-tr from-cyan-600 to-blue-600 flex items-center justify-center text-white font-black text-xs font-heading shadow-md shadow-cyan-500/20 group-hover:scale-105 transition-transform">
               ODS
             </div>
-            <span className="font-heading font-black text-base tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-cyan-300">
+            <span className="font-heading font-black text-base tracking-wider text-slate-900 dark:text-slate-100">
               HARDWARE
             </span>
           </Link>
@@ -169,52 +166,52 @@ export const Header: React.FC = () => {
               {currentUser && (
                 <Link
                   href="/products/recently-viewed"
-                  className="flex items-center gap-1.5 font-heading text-xs font-bold uppercase tracking-wider text-slate-300 hover:text-cyan-400 transition-colors relative py-2 group"
+                  className="flex items-center gap-1.5 font-heading text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors relative py-2 group"
                 >
-                  <Clock className="h-3.5 w-3.5 text-cyan-400" />
+                  <Clock className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400" />
                   <span>VỪA XEM</span>
-                  <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-cyan-400 transition-all duration-300 group-hover:w-full"></span>
+                  <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-cyan-500 transition-all duration-300 group-hover:w-full"></span>
                 </Link>
               )}
 
               {/* 2. PC BUILDER - ALWAYS SHOWN */}
               <Link
                 href="/pc-builder"
-                className="flex items-center gap-1.5 font-heading text-xs font-bold uppercase tracking-wider text-cyan-400 hover:text-cyan-300 transition-colors relative py-2 group"
+                className="flex items-center gap-1.5 font-heading text-xs font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400 hover:text-cyan-500 transition-colors relative py-2 group"
               >
-                <Cpu className="h-3.5 w-3.5 text-cyan-400" />
+                <Cpu className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400" />
                 <span>BUILD PC</span>
-                <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-cyan-400 transition-all duration-300 group-hover:w-full"></span>
+                <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-cyan-500 transition-all duration-300 group-hover:w-full"></span>
               </Link>
 
               {/* 3. TRA CỨU BẢO HÀNH - ALWAYS SHOWN */}
               <Link
                 href="/warranty"
-                className="flex items-center gap-1.5 font-heading text-xs font-bold uppercase tracking-wider text-slate-300 hover:text-emerald-400 transition-colors relative py-2 group"
+                className="flex items-center gap-1.5 font-heading text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors relative py-2 group"
               >
-                <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+                <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                 <span>BẢO HÀNH</span>
-                <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-emerald-400 transition-all duration-300 group-hover:w-full"></span>
+                <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-emerald-500 transition-all duration-300 group-hover:w-full"></span>
               </Link>
 
               {/* 4. SẢN PHẨM MUA NHIỀU - ALWAYS SHOWN */}
               <Link
                 href="/products/best-sellers"
-                className="flex items-center gap-1.5 font-heading text-xs font-bold uppercase tracking-wider text-slate-300 hover:text-amber-400 transition-colors relative py-2 group"
+                className="flex items-center gap-1.5 font-heading text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 transition-colors relative py-2 group"
               >
-                <Flame className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
+                <Flame className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
                 <span>MUA NHIỀU</span>
-                <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-amber-400 transition-all duration-300 group-hover:w-full"></span>
+                <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-amber-500 transition-all duration-300 group-hover:w-full"></span>
               </Link>
 
               {/* 5. SẢN PHẨM KHUYẾN MÃI - ALWAYS SHOWN */}
               <Link
                 href="/products/discounts"
-                className="flex items-center gap-1.5 font-heading text-xs font-bold uppercase tracking-wider text-slate-300 hover:text-rose-400 transition-colors relative py-2 group"
+                className="flex items-center gap-1.5 font-heading text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 transition-colors relative py-2 group"
               >
-                <Tag className="h-3.5 w-3.5 text-rose-400" />
+                <Tag className="h-3.5 w-3.5 text-rose-500" />
                 <span>KHUYẾN MÃI</span>
-                <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-rose-400 transition-all duration-300 group-hover:w-full"></span>
+                <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-rose-500 transition-all duration-300 group-hover:w-full"></span>
               </Link>
 
               {/* ADMIN MANAGEMENT HOVER DROPDOWN MENU - SHOWN STRICTLY TO ADMIN ACCOUNTS */}
@@ -534,10 +531,23 @@ export const Header: React.FC = () => {
             </button>
           )}
 
+          {/* THEME TOGGLE (LIGHT/DARK MODE SWITCHER) */}
+          <button
+            onClick={toggleTheme}
+            className="flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 p-2 text-slate-700 dark:text-slate-200 hover:text-cyan-600 dark:hover:text-cyan-400 transition-all cursor-pointer shadow-sm hover:scale-105"
+            title={theme === 'dark' ? 'Chuyển sang Giao diện Sáng (Light Mode)' : 'Chuyển sang Giao diện Tối (Dark Mode)'}
+          >
+            {theme === 'dark' ? (
+              <Sun className="h-4.5 w-4.5 text-amber-400 fill-amber-400" />
+            ) : (
+              <Moon className="h-4.5 w-4.5 text-slate-700" />
+            )}
+          </button>
+
           {/* USER ACC */}
           <Link
             href="/profile"
-            className="flex items-center justify-center rounded-ods border border-ods-border bg-white p-2 text-ods-textMuted hover:text-black hover:border-black transition-all"
+            className="flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 p-2 text-slate-700 dark:text-slate-200 hover:text-cyan-600 dark:hover:text-cyan-400 transition-all shadow-sm"
             title="Tài khoản của bạn"
           >
             <User className="h-4.5 w-4.5" />
