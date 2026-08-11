@@ -706,8 +706,8 @@ export default function AdminProductsPage() {
                     : 'border-transparent text-ods-textMuted hover:text-black'
                 }`}
               >
-                <Gamepad2 className="h-4 w-4" />
-                <span>1. Sản Phẩm Game (Key / Steam Gift)</span>
+                <Package className="h-4 w-4" />
+                <span>1. Linh Kiện Máy Tính (CPU, VGA, Mainboard, RAM...)</span>
               </button>
 
               <button
@@ -718,8 +718,8 @@ export default function AdminProductsPage() {
                     : 'border-transparent text-ods-textMuted hover:text-black'
                 }`}
               >
-                <UserCheck className="h-4 w-4" />
-                <span>2. Tài Khoản & Dịch Vụ</span>
+                <Monitor className="h-4 w-4" />
+                <span>2. PC Gắn Sẵn & Cấu Hình Quán Game</span>
               </button>
 
               <button

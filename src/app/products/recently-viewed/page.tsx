@@ -64,9 +64,14 @@ export default function RecentlyViewedPage() {
 
     // Filter by Search Query
     if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
       list = list.filter((p) => 
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (p.category && p.category.some((c) => c.toLowerCase().includes(searchQuery.toLowerCase())))
+        p.name.toLowerCase().includes(q) ||
+        (Array.isArray(p.category)
+          ? p.category.some((c) => String(c).toLowerCase().includes(q))
+          : typeof p.category === 'string'
+          ? p.category.toLowerCase().includes(q)
+          : false)
       );
     }
 

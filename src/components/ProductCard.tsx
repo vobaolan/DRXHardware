@@ -209,29 +209,39 @@ export const ProductCard: React.FC<{ product: ProductProps }> = ({ product }) =>
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 mt-1 text-[11px]">
-            <span className="font-bold text-gray-400 uppercase tracking-widest text-[10px]">THỂ LOẠI:</span>
-            <div className="flex flex-wrap items-center gap-1">
-              {product.category && product.category.length > 0 ? (
-                <>
-                  {product.category.slice(0, 2).map((cat, idx) => (
-                    <span key={idx} className="bg-zinc-100 px-2 py-0.5 rounded-md border border-zinc-200 text-zinc-600 font-bold text-[10px]">
-                      {cat}
-                    </span>
-                  ))}
-                  {product.category.length > 2 && (
-                    <span className="text-zinc-400 font-extrabold text-[10px] ml-0.5">
-                      +{product.category.length - 2}
+          {(() => {
+            const categoriesList = Array.isArray(product.category)
+              ? product.category
+              : typeof product.category === 'string' && product.category.length > 0
+              ? [product.category]
+              : [];
+
+            return (
+              <div className="flex items-center gap-1.5 mt-1 text-[11px]">
+                <span className="font-bold text-gray-400 uppercase tracking-widest text-[10px]">DANH MỤC:</span>
+                <div className="flex flex-wrap items-center gap-1">
+                  {categoriesList.length > 0 ? (
+                    <>
+                      {categoriesList.slice(0, 2).map((cat, idx) => (
+                        <span key={idx} className="bg-zinc-100 px-2 py-0.5 rounded-md border border-zinc-200 text-zinc-600 font-bold text-[10px]">
+                          {cat}
+                        </span>
+                      ))}
+                      {categoriesList.length > 2 && (
+                        <span className="text-zinc-400 font-extrabold text-[10px] ml-0.5">
+                          +{categoriesList.length - 2}
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    <span className="bg-zinc-100 px-2 py-0.5 rounded-md border border-zinc-200 text-zinc-600 font-bold text-[10px]">
+                      Linh Kiện
                     </span>
                   )}
-                </>
-              ) : (
-                <span className="bg-zinc-100 px-2 py-0.5 rounded-md border border-zinc-200 text-zinc-600 font-bold text-[10px]">
-                  Action
-                </span>
-              )}
-            </div>
-          </div>
+                </div>
+              </div>
+            );
+          })()}
 
           <div className="flex items-center justify-between pt-3 border-t border-gray-100 mt-auto">
             <div className="flex flex-col">

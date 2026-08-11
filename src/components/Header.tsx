@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
   ShoppingBag, User, Wallet, ShieldAlert, Package, Users, ChevronDown,
-  Clock, Flame, Tag, Key, Bell, ClipboardList, MessageCircle
+  Clock, Flame, Tag, Key, Bell, ClipboardList, MessageCircle, Cpu, ShieldCheck
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -176,23 +176,43 @@ export const Header: React.FC = () => {
                 </Link>
               )}
 
-              {/* 2. SẢN PHẨM MUA NHIỀU - ALWAYS SHOWN */}
+              {/* 2. PC BUILDER - ALWAYS SHOWN */}
+              <Link
+                href="/pc-builder"
+                className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-ods-primary hover:text-black transition-colors relative py-2 group"
+              >
+                <Cpu className="h-3.5 w-3.5 text-blue-600" />
+                <span>BUILD PC</span>
+                <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-blue-600 transition-all duration-300 group-hover:w-full"></span>
+              </Link>
+
+              {/* 3. TRA CỨU BẢO HÀNH - ALWAYS SHOWN */}
+              <Link
+                href="/warranty"
+                className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-ods-textMuted hover:text-black transition-colors relative py-2 group"
+              >
+                <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                <span>BẢO HÀNH</span>
+                <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-emerald-600 transition-all duration-300 group-hover:w-full"></span>
+              </Link>
+
+              {/* 4. SẢN PHẨM MUA NHIỀU - ALWAYS SHOWN */}
               <Link
                 href="/products/best-sellers"
                 className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-ods-textMuted hover:text-black transition-colors relative py-2 group"
               >
                 <Flame className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
-                <span>SẢN PHẨM MUA NHIỀU</span>
+                <span>MUA NHIỀU</span>
                 <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-amber-500 transition-all duration-300 group-hover:w-full"></span>
               </Link>
 
-              {/* 3. SẢN PHẨM KHUYẾN MÃI - ALWAYS SHOWN */}
+              {/* 5. SẢN PHẨM KHUYẾN MÃI - ALWAYS SHOWN */}
               <Link
                 href="/products/discounts"
                 className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-ods-textMuted hover:text-black transition-colors relative py-2 group"
               >
                 <Tag className="h-3.5 w-3.5 text-red-500" />
-                <span>SẢN PHẨM KHUYẾN MÃI</span>
+                <span>KHUYẾN MÃI</span>
                 <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-red-500 transition-all duration-300 group-hover:w-full"></span>
               </Link>
 
@@ -552,3 +572,6 @@ export const Header: React.FC = () => {
     </header>
   );
 };
+
+export default Header;
+

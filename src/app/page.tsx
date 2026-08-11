@@ -222,10 +222,15 @@ export default function Home() {
   // Filter products based on controls
   const filteredProducts = useMemo(() => {
     return allProducts.filter((product) => {
-      const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (product.category && product.category.some((c) => c.toLowerCase().includes(searchQuery.toLowerCase())));
+      const q = searchQuery.toLowerCase();
+      const matchesSearch = product.name.toLowerCase().includes(q) ||
+        (Array.isArray(product.category)
+          ? product.category.some((c) => String(c).toLowerCase().includes(q))
+          : typeof product.category === 'string'
+          ? product.category.toLowerCase().includes(q)
+          : false);
       
-      const matchesPlatform = selectedPlatform === 'ALL' || product.platform === selectedPlatform;
+      const matchesPlatform = selectedPlatform === 'ALL' || product.platform === selectedPlatform || product.category === selectedPlatform;
       const matchesType = selectedType === 'ALL' || product.type === selectedType;
 
       return matchesSearch && matchesPlatform && matchesType;
@@ -356,8 +361,8 @@ export default function Home() {
                   <Award className="h-5 w-5" />
                 </div>
                 <div>
-                  <h4 className="font-heading text-xs font-bold uppercase tracking-wider text-black">BẢO HÀNH CHÍNH HÃNG 100%</h4>
-                  <p className="text-[11px] text-ods-textMuted font-light">Hoàn tiền 100% nếu sản phẩm lỗi kích hoạt</p>
+                  <h4 className="font-heading text-xs font-bold uppercase tracking-wider text-black">BẢO HÀNH 1 ĐỔI 1 CHÍNH HÃNG</h4>
+                  <p className="text-[11px] text-ods-textMuted font-light">Bảo hành 12 - 36 tháng cho mọi linh kiện vật lý</p>
                 </div>
               </div>
 
@@ -366,8 +371,8 @@ export default function Home() {
                   <Clock className="h-5 w-5 text-ods-primary" />
                 </div>
                 <div>
-                  <h4 className="font-heading text-xs font-bold uppercase tracking-wider text-black">GIAO KEY TỰ ĐỘNG 24/7</h4>
-                  <p className="text-[11px] text-ods-textMuted font-light">Nhận mã kích hoạt tức thì sau khi chuyển khoản</p>
+                  <h4 className="font-heading text-xs font-bold uppercase tracking-wider text-black">HỖ TRỢ LẮP RÁP & GIAO HÀNG TỐC ĐỘ</h4>
+                  <p className="text-[11px] text-ods-textMuted font-light">Giao hàng toàn quốc & lắp ráp PC theo yêu cầu</p>
                 </div>
               </div>
 
@@ -376,8 +381,8 @@ export default function Home() {
                   <Flame className="h-5 w-5 text-red-500" />
                 </div>
                 <div>
-                  <h4 className="font-heading text-xs font-bold uppercase tracking-wider text-black">HỖ TRỢ KỸ THUẬT SIÊU TỐC</h4>
-                  <p className="text-[11px] text-ods-textMuted font-light">Đội ngũ CSKH sẵn sàng phục vụ từ 8h - 24h</p>
+                  <h4 className="font-heading text-xs font-bold uppercase tracking-wider text-black">TƯ VẤN BUILD PC CHUYÊN NGHIỆP</h4>
+                  <p className="text-[11px] text-ods-textMuted font-light">Tư vấn socket & RAM tối ưu hiệu năng / ngân sách</p>
                 </div>
               </div>
             </div>
@@ -391,10 +396,10 @@ export default function Home() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <span className="text-[10px] text-ods-primary font-bold uppercase tracking-widest block mb-1">
-                  DISCOVER STORE
+                  ODS HARDWARE STORE
                 </span>
                 <h2 className="font-heading text-2xl font-extrabold uppercase tracking-wider text-black">
-                  DANH SÁCH SẢN PHẨM KHUYÊN DÙNG
+                  DANH SÁCH LINH KIỆN MÁY TÍNH & PC GAMING
                 </h2>
               </div>
 
@@ -404,7 +409,7 @@ export default function Home() {
                   <Search className="absolute left-3.5 top-3 h-4 w-4 text-ods-textMuted" />
                   <input
                     type="text"
-                    placeholder="Tìm kiếm tên game, dịch vụ..."
+                    placeholder="Tìm CPU, RTX 4060, Mainboard, RAM..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onFocus={() => setIsSearchFocused(true)}
@@ -445,37 +450,47 @@ export default function Home() {
                       : 'bg-ods-surface text-gray-600 hover:bg-gray-200'
                   }`}
                 >
-                  TẤT CẢ NỀN TẢNG
+                  TẤT CẢ LINH KIỆN
                 </button>
                 <button
-                  onClick={() => setSelectedPlatform('STEAM')}
+                  onClick={() => setSelectedPlatform('CPU')}
                   className={`rounded-ods px-4 py-2 text-xs font-bold uppercase transition-all ${
-                    selectedPlatform === 'STEAM'
+                    selectedPlatform === 'CPU'
                       ? 'bg-black text-white shadow-sm'
                       : 'bg-ods-surface text-gray-600 hover:bg-gray-200'
                   }`}
                 >
-                  STEAM
+                  CPU (VI XỬ LÝ)
                 </button>
                 <button
-                  onClick={() => setSelectedPlatform('EPIC')}
+                  onClick={() => setSelectedPlatform('VGA')}
                   className={`rounded-ods px-4 py-2 text-xs font-bold uppercase transition-all ${
-                    selectedPlatform === 'EPIC'
+                    selectedPlatform === 'VGA'
                       ? 'bg-black text-white shadow-sm'
                       : 'bg-ods-surface text-gray-600 hover:bg-gray-200'
                   }`}
                 >
-                  EPIC GAMES
+                  VGA (CARD MÀN HÌNH)
                 </button>
                 <button
-                  onClick={() => setSelectedPlatform('SERVICE')}
+                  onClick={() => setSelectedPlatform('MAINBOARD')}
                   className={`rounded-ods px-4 py-2 text-xs font-bold uppercase transition-all ${
-                    selectedPlatform === 'SERVICE'
+                    selectedPlatform === 'MAINBOARD'
                       ? 'bg-black text-white shadow-sm'
                       : 'bg-ods-surface text-gray-600 hover:bg-gray-200'
                   }`}
                 >
-                  DỊCH VỤ & TÀI KHOẢN
+                  BO MẠCH CHỦ
+                </button>
+                <button
+                  onClick={() => setSelectedPlatform('RAM')}
+                  className={`rounded-ods px-4 py-2 text-xs font-bold uppercase transition-all ${
+                    selectedPlatform === 'RAM'
+                      ? 'bg-black text-white shadow-sm'
+                      : 'bg-ods-surface text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  RAM
                 </button>
               </div>
 
