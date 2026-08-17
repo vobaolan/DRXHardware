@@ -91,13 +91,17 @@ export const Footer: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
           {/* COLUMN 1: BRAND SHOWROOM INFO */}
           <div className="space-y-4 lg:col-span-2">
-            <Link href="/" className="group inline-flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-gradient-to-tr from-cyan-600 to-blue-600 flex items-center justify-center text-white font-black text-xs font-heading shadow-md shadow-cyan-500/20">
-                ODS
-              </div>
-              <span className="font-heading font-black text-lg tracking-wider text-slate-900 dark:text-slate-100">
-                HARDWARE STORE
-              </span>
+            <Link href="/" className="group inline-flex items-center gap-2" title="Trang chủ ODS STORE">
+              <img 
+                src="/logo/ods_black.png" 
+                alt="ODS STORE Logo" 
+                className="h-9 w-auto object-contain dark:hidden group-hover:scale-105 transition-transform" 
+              />
+              <img 
+                src="/logo/ods_white.png" 
+                alt="ODS STORE Logo" 
+                className="h-9 w-auto object-contain hidden dark:block group-hover:scale-105 transition-transform" 
+              />
             </Link>
             <p className="text-slate-500 dark:text-slate-400 leading-relaxed font-light">
               Hệ thống showroom phân phối linh kiện máy tính, vi xử lý CPU, Card màn hình VGA và dàn PC Gaming lắp ráp chính hãng hàng đầu Việt Nam. Bảo hành 1-đổi-1 36 tháng.

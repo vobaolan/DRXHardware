@@ -225,18 +225,17 @@ export const Header: React.FC = () => {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         
         {/* STEP 1: LOGO */}
-        <Link href="/" className="group flex items-center gap-2.5 shrink-0">
-          <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-[#6EC2F7] to-[#0284c7] flex items-center justify-center text-white font-black text-xs font-heading shadow-md shadow-sky-400/30 group-hover:scale-105 transition-transform">
-            ODS
-          </div>
-          <div className="flex flex-col">
-            <span className="font-heading font-black text-base tracking-wider text-slate-900 dark:text-slate-100 leading-none">
-              HARDWARE
-            </span>
-            <span className="text-[9px] font-extrabold tracking-widest text-[#0284c7] dark:text-[#6EC2F7] uppercase">
-              STORE PC & PARTS
-            </span>
-          </div>
+        <Link href="/" className="group flex items-center gap-2.5 shrink-0" title="Trang chủ ODS STORE">
+          <img 
+            src="/logo/ods_black.png" 
+            alt="ODS STORE Logo" 
+            className="h-10 w-auto object-contain dark:hidden group-hover:scale-105 transition-transform" 
+          />
+          <img 
+            src="/logo/ods_white.png" 
+            alt="ODS STORE Logo" 
+            className="h-10 w-auto object-contain hidden dark:block group-hover:scale-105 transition-transform" 
+          />
         </Link>
 
         {/* STEP 2: DANH MỤC (CATEGORY DROPDOWN BUTTON) */}

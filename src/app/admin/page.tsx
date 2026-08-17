@@ -208,9 +208,9 @@ export default function AdminDashboardPage() {
       {/* CEO COMMAND CENTER TOP HEADER */}
       <header className="bg-white border-b border-slate-200/80 px-6 py-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xs sticky top-0 z-40">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#6EC2F7] to-[#0284c7] flex items-center justify-center text-white font-black shadow-md shadow-sky-500/20">
-            <LayoutDashboard className="w-5 h-5" />
-          </div>
+          <Link href="/" title="Trang chủ ODS STORE">
+            <img src="/logo/ods_black.png" alt="ODS STORE Logo" className="h-9 w-auto object-contain hover:scale-105 transition-transform" />
+          </Link>
           <div>
             <div className="flex items-center gap-2">
               <h1 className="font-heading text-base font-black uppercase text-slate-900 tracking-wider">
