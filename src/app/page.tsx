@@ -12,6 +12,7 @@ import { Footer } from '@/components/Footer';
 import { CartProvider, useCart } from '@/context/CartContext';
 import { Search, SlidersHorizontal, Flame, Award, Clock, ShoppingCart, Percent, Sparkles, Laptop, Gamepad2, Cpu, Box, Headphones, Monitor, Keyboard, HardDrive, ArrowRight, Layers, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { INITIAL_PRODUCTS } from '@/lib/hardware-data';
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -23,7 +24,30 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [currentFeaturedIndex, setCurrentFeaturedIndex] = useState(0);
 
-  const DEFAULT_HOME_PRODUCTS: ProductProps[] = useMemo(() => [], []);
+  const DEFAULT_HOME_PRODUCTS: ProductProps[] = useMemo(() => {
+    return INITIAL_PRODUCTS.map(p => ({
+      id: p.id,
+      name: p.name,
+      slug: p.slug,
+      description: p.description,
+      price: p.price,
+      discountPrice: p.discountPrice || null,
+      coverImage: p.coverImage,
+      category: [p.category],
+      platform: p.brand,
+      type: p.category,
+      brand: p.brand,
+      socket: p.socket,
+      ramType: p.ramType,
+      wattage: p.wattage,
+      warrantyMonths: p.warrantyMonths,
+      deliveryMethod: 'GIFT',
+      status: p.inStock,
+      isFlashDeal: p.isFlashDeal || false,
+      isFeaturedDeal: p.isFeatured || false,
+      screenshots: p.screenshots || [p.coverImage]
+    }));
+  }, []);
 
   // Fetch live products from database API & local admin cache
   useEffect(() => {
