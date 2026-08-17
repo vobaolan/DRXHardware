@@ -3,16 +3,22 @@ import { Logger } from './Logger';
 
 export class VectorDBService {
   private supabase;
+  private isConfigured: boolean = false;
 
   constructor() {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-    // Using service role key is better for backend if available, but anon key works for now if RLS is configured.
-    // Assuming the user will run the SQL to create the table and disable RLS or set proper policies.
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder';
+    
+    this.isConfigured = !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
     this.supabase = createClient(supabaseUrl, supabaseAnonKey);
   }
 
   async addDocuments(ids: string[], embeddings: number[][], metadatas: any[], documents: string[]) {
+    if (!this.isConfigured) {
+      Logger.warn('Supabase URL/Anon key is not configured. Skipping addDocuments.');
+      return;
+    }
+
     try {
       const records = ids.map((id, index) => ({
         id,
@@ -33,11 +39,14 @@ export class VectorDBService {
       Logger.info(`Upserted ${ids.length} documents into Supabase Vector DB.`);
     } catch (error) {
       Logger.error('Error adding documents to Supabase', error);
-      throw error;
     }
   }
 
   async queryDocuments(queryEmbedding: number[], nResults: number = 3): Promise<any> {
+    if (!this.isConfigured) {
+      return { documents: [], metadatas: [] };
+    }
+
     try {
       // Call the match_website_documents RPC function
       const { data, error } = await this.supabase.rpc('match_website_documents', {
@@ -60,7 +69,7 @@ export class VectorDBService {
       };
     } catch (error) {
       Logger.error('Error querying documents from Supabase', error);
-      throw error;
+      return { documents: [], metadatas: [] };
     }
   }
 }
