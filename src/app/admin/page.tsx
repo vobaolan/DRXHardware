@@ -566,50 +566,56 @@ export default function AdminDashboardPage() {
 
               {/* READ-ONLY PRODUCT CATALOG TABLE */}
               <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
-                <table className="w-full text-left text-xs">
-                  <thead>
-                    <tr className="border-b border-slate-200 bg-slate-50 text-slate-500 font-extrabold uppercase tracking-wider text-[10px]">
-                      <th className="py-3.5 px-4">Sản Phẩm Linh Kiện</th>
-                      <th className="py-3.5 px-4">Danh Mục</th>
-                      <th className="py-3.5 px-4">Thương Hiệu</th>
-                      <th className="py-3.5 px-4">Giá Niêm Yết</th>
-                      <th className="py-3.5 px-4">Tồn Kho</th>
-                      <th className="py-3.5 px-4">Bảo Hành</th>
-                      <th className="py-3.5 px-4 text-right">Chi Tiết Thông Số</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 font-medium">
-                    {filteredProducts.map((p) => (
-                      <tr key={p.id} className="hover:bg-sky-50/50 transition-colors">
-                        <td className="py-3 px-4 flex items-center gap-3">
-                          <img src={p.coverImage} alt={p.name} className="w-10 h-10 rounded-lg object-cover bg-slate-100 border border-slate-200 shrink-0" />
-                          <div>
-                            <span className="font-bold text-slate-900 line-clamp-1 block">{p.name}</span>
-                            <span className="text-[10px] text-slate-400 font-mono">ID: {p.id}</span>
-                          </div>
-                        </td>
-                        <td className="py-3 px-4 text-[#0284c7] font-extrabold uppercase text-[10px]">{p.category}</td>
-                        <td className="py-3 px-4 text-slate-700 font-semibold">{p.brand}</td>
-                        <td className="py-3 px-4 font-black text-slate-900">{formatVND(p.price)}</td>
-                        <td className="py-3 px-4">
-                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            {p.stockCount ?? 15} Món
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-slate-500 font-bold">{p.warrantyMonths || 36} Tháng</td>
-                        <td className="py-3 px-4 text-right">
-                          <button
-                            onClick={() => setViewingProduct(p)}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-sky-50 hover:bg-[#0284c7] text-[#0284c7] hover:text-white border border-sky-200 font-extrabold text-[11px] transition-all cursor-pointer shadow-2xs"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                            <span>Xem Chi Tiết</span>
-                          </button>
-                        </td>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-slate-200 bg-slate-50 text-slate-500 font-extrabold uppercase tracking-wider text-[10px]">
+                        <th className="py-3.5 px-4 min-w-[260px]">Sản Phẩm Linh Kiện</th>
+                        <th className="py-3.5 px-4 whitespace-nowrap">Danh Mục</th>
+                        <th className="py-3.5 px-4 whitespace-nowrap">Thương Hiệu</th>
+                        <th className="py-3.5 px-4 whitespace-nowrap">Giá Niêm Yết</th>
+                        <th className="py-3.5 px-4 text-center whitespace-nowrap">Tồn Kho</th>
+                        <th className="py-3.5 px-4 text-center whitespace-nowrap">Bảo Hành</th>
+                        <th className="py-3.5 px-4 text-right whitespace-nowrap">Chi Tiết Thông Số</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 font-medium">
+                      {filteredProducts.map((p) => (
+                        <tr key={p.id} className="hover:bg-sky-50/50 transition-colors">
+                          <td className="py-3.5 px-4 flex items-center gap-3 min-w-[260px]">
+                            <img src={p.coverImage} alt={p.name} className="w-10 h-10 rounded-xl object-cover bg-slate-100 border border-slate-200 shrink-0 shadow-2xs" />
+                            <div className="min-w-0 flex-1">
+                              <span className="font-bold text-slate-900 line-clamp-1 block text-xs" title={p.name}>{p.name}</span>
+                              <span className="text-[10px] text-slate-400 font-mono block mt-0.5">ID: {p.id}</span>
+                            </div>
+                          </td>
+                          <td className="py-3.5 px-4 text-[#0284c7] font-extrabold uppercase text-[10px] whitespace-nowrap">{p.category}</td>
+                          <td className="py-3.5 px-4 text-slate-700 font-bold text-xs whitespace-nowrap">{p.brand}</td>
+                          <td className="py-3.5 px-4 font-black text-slate-900 text-xs whitespace-nowrap">{formatVND(p.price)}</td>
+                          <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                            <span className="inline-flex items-center justify-center px-3 py-1 rounded-full text-[11px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs">
+                              {p.stockCount ?? 15} Món
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                            <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-lg text-[11px] font-bold text-slate-700 bg-slate-100 border border-slate-200">
+                              {p.warrantyMonths || 36} Tháng
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                            <button
+                              onClick={() => setViewingProduct(p)}
+                              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-sky-50 hover:bg-[#0284c7] text-[#0284c7] hover:text-white border border-sky-200/80 font-extrabold text-[11px] transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95 whitespace-nowrap"
+                            >
+                              <Eye className="w-3.5 h-3.5 shrink-0" />
+                              <span>Xem Chi Tiết</span>
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
