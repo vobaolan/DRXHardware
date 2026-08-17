@@ -5,10 +5,12 @@ import Link from 'next/link';
 import { Header } from '@/components/Header';
 import { ProductCard, ProductProps } from '@/components/ProductCard';
 import { FeaturedDealCard } from '@/components/FeaturedDealCard';
+import { SummerHeroCarousel } from '@/components/SummerHeroCarousel';
+import CategoryShowcaseBlock from '@/components/CategoryShowcaseBlock';
 import { CartDrawer } from '@/components/CartDrawer';
 import { Footer } from '@/components/Footer';
 import { CartProvider, useCart } from '@/context/CartContext';
-import { Search, SlidersHorizontal, Flame, Award, Clock, ShoppingCart, Percent, Sparkles } from 'lucide-react';
+import { Search, SlidersHorizontal, Flame, Award, Clock, ShoppingCart, Percent, Sparkles, Laptop, Gamepad2, Cpu, Box, Headphones, Monitor, Keyboard, HardDrive, ArrowRight, Layers, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Home() {
@@ -230,7 +232,32 @@ export default function Home() {
           ? product.category.toLowerCase().includes(q)
           : false);
       
-      const matchesPlatform = selectedPlatform === 'ALL' || product.platform === selectedPlatform || product.category === selectedPlatform;
+      let matchesPlatform = selectedPlatform === 'ALL';
+      if (!matchesPlatform) {
+        const plat = String(product.platform || '').toUpperCase();
+        const cat = String(product.category || '').toUpperCase();
+        const name = String(product.name || '').toUpperCase();
+
+        if (selectedPlatform === 'LAPTOP') {
+          matchesPlatform = (plat.includes('LAPTOP') || cat.includes('LAPTOP') || name.includes('LAPTOP')) && !name.includes('GAMING');
+        } else if (selectedPlatform === 'LAPTOP_GAMING') {
+          matchesPlatform = plat.includes('GAMING') || cat.includes('GAMING') || name.includes('GAMING') || name.includes('ROG') || name.includes('LEGION');
+        } else if (selectedPlatform === 'CORE_PARTS') {
+          matchesPlatform = ['CPU', 'VGA', 'MAINBOARD', 'RAM'].some(k => plat.includes(k) || cat.includes(k)) || ['CPU', 'VGA', 'RTX', 'RYZEN', 'MAINBOARD', 'DDR'].some(k => name.includes(k));
+        } else if (selectedPlatform === 'CASE_COOLING') {
+          matchesPlatform = ['CASE', 'PSU', 'COOLING', 'NGUỒN', 'TẢN'].some(k => plat.includes(k) || cat.includes(k) || name.includes(k));
+        } else if (selectedPlatform === 'HEADSET') {
+          matchesPlatform = ['HEADSET', 'AUDIO', 'HEADPHONE', 'TAI NGHE'].some(k => plat.includes(k) || cat.includes(k) || name.includes(k));
+        } else if (selectedPlatform === 'MONITOR') {
+          matchesPlatform = ['MONITOR', 'SCREEN', 'MÀN HÌNH'].some(k => plat.includes(k) || cat.includes(k) || name.includes(k));
+        } else if (selectedPlatform === 'KEYBOARD') {
+          matchesPlatform = ['KEYBOARD', 'BÀN PHÍM', 'KEYCAP'].some(k => plat.includes(k) || cat.includes(k) || name.includes(k));
+        } else if (selectedPlatform === 'STORAGE') {
+          matchesPlatform = ['STORAGE', 'SSD', 'HDD', 'CỨNG'].some(k => plat.includes(k) || cat.includes(k) || name.includes(k));
+        } else {
+          matchesPlatform = product.platform === selectedPlatform || product.category === selectedPlatform;
+        }
+      }
       const matchesType = selectedType === 'ALL' || product.type === selectedType;
 
       return matchesSearch && matchesPlatform && matchesType;
@@ -264,17 +291,9 @@ export default function Home() {
         {/* MODULAR HERO SECTION */}
         <section className="mx-auto max-w-7xl w-full px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-            {/* Left 60% Block - Primary Highlight */}
+            {/* Left 60% Block - Primary Summer Promotion Carousel Banner */}
             <div className="lg:col-span-3 flex">
-              {activeFeatured ? (
-                <FeaturedDealCard
-                  products={featuredDeals}
-                  currentIndex={currentFeaturedIndex}
-                  onSelectIndex={(idx) => setCurrentFeaturedIndex(idx)}
-                />
-              ) : (
-                <div className="py-20 text-center text-slate-400 text-xs">Đang tải deal nổi bật...</div>
-              )}
+              <SummerHeroCarousel />
             </div>
 
             {/* Right 40% Block - TOP BEST SELLERS RANKING */}
@@ -388,111 +407,162 @@ export default function Home() {
           </div>
         </section>
 
-        {/* MAIN PRODUCT CATALOG SECTION */}
-        <section className="mx-auto max-w-7xl w-full px-4 sm:px-6 lg:px-8 py-12 flex-1">
-          {/* SEARCH & FILTERS BAR */}
-          <div className="flex flex-col gap-6 mb-8">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div>
-                <span className="text-[10px] text-cyan-600 dark:text-cyan-400 font-bold uppercase tracking-widest block mb-1">
-                  ODS HARDWARE STORE
-                </span>
-                <h2 className="font-heading text-2xl font-extrabold uppercase tracking-wider text-slate-900 dark:text-slate-100">
-                  DANH SÁCH LINH KIỆN MÁY TÍNH & PC GAMING
-                </h2>
-              </div>
-
-              {/* SEARCH INPUT */}
-              <div className="relative w-full md:w-96">
-                <div className="relative">
-                  <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
-                  <input
-                    type="text"
-                    placeholder="Tìm CPU, RTX 4060, Mainboard, RAM..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onFocus={() => setIsSearchFocused(true)}
-                    onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
-                    className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-2.5 pl-10 pr-4 text-xs font-semibold text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 transition-all shadow-sm dark:shadow-lg"
-                  />
-                </div>
-
-                {/* Autocomplete Dropdown */}
-                {isSearchFocused && autocompleteList.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-2 shadow-2xl z-40 space-y-1">
-                    {autocompleteList.map((item) => (
-                      <Link
-                        key={item.id}
-                        href={`/products/${item.slug}`}
-                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                      >
-                        <img src={item.coverImage} alt={item.name} className="h-8 w-12 object-cover rounded bg-slate-950" />
-                        <div className="flex-1 truncate">
-                          <span className="font-heading font-bold text-xs text-slate-900 dark:text-slate-100 block truncate">{item.name}</span>
-                          <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(item.discountPrice ?? item.price)}</span>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
+        {/* 8-CATEGORY SHOWCASE GRID SECTION */}
+        <section className="mx-auto max-w-7xl w-full px-4 sm:px-6 lg:px-8 pt-12 pb-4">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <span className="text-[10px] text-cyan-600 dark:text-cyan-400 font-bold uppercase tracking-widest block mb-1">
+                ODS HARDWARE CATEGORIES
+              </span>
+              <h3 className="font-heading text-xl font-extrabold uppercase tracking-wider text-slate-900 dark:text-slate-100">
+                DANH MỤC THIẾT BỊ & LINH KIỆN NỔI BẬT
+              </h3>
             </div>
-
-            {/* FILTER CATEGORY BUTTONS */}
-            <div className="flex flex-wrap items-center justify-between gap-4 border-t border-slate-200 dark:border-slate-800/80 pt-6">
-              <div className="flex flex-wrap items-center gap-2">
-                {[
-                  { id: 'ALL', label: 'TẤT CẢ LINH KIỆN' },
-                  { id: 'CPU', label: 'CPU (VI XỬ LÝ)' },
-                  { id: 'VGA', label: 'VGA (CARD MÀN HÌNH)' },
-                  { id: 'MAINBOARD', label: 'BO MẠCH CHỦ' },
-                  { id: 'RAM', label: 'RAM' },
-                ].map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setSelectedPlatform(tab.id)}
-                    className={`font-heading rounded-xl px-4 py-2 text-xs font-bold uppercase transition-all ${
-                      selectedPlatform === tab.id
-                        ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg shadow-cyan-500/20 border border-cyan-400/30'
-                        : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-cyan-500 hover:text-cyan-600 dark:hover:text-cyan-400'
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* SORT DROPDOWN */}
-              <div className="flex items-center gap-2">
-                <SlidersHorizontal className="h-4 w-4 text-slate-400" />
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-1.5 px-3 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:border-cyan-500 focus:outline-none"
-                >
-                  <option value="FEATURED">Nổi Bật Nhất</option>
-                  <option value="PRICE_ASC">Giá: Thấp Đến Cao</option>
-                  <option value="PRICE_DESC">Giá: Cao Đến Thấp</option>
-                </select>
-              </div>
-            </div>
+            <Link 
+              href="/products"
+              className="hidden sm:flex items-center gap-1.5 text-xs font-bold text-cyan-600 dark:text-cyan-400 hover:text-cyan-500 transition-colors group"
+            >
+              <span>Xem Tất Cả</span>
+              <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+            </Link>
           </div>
 
-          {/* PRODUCTS GRID */}
-          {isLoading ? (
-            <div className="py-20 text-center text-xs text-slate-400">Đang tải kho sản phẩm...</div>
-          ) : filteredProducts.length === 0 ? (
-            <div className="py-20 text-center space-y-2">
-              <p className="text-sm font-bold text-slate-800 dark:text-slate-200">Không tìm thấy sản phẩm nào phù hợp.</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Hãy thử tìm kiếm từ khóa khác hoặc xóa bộ lọc.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {filteredProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
-          )}
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { id: 'LAPTOP', title: 'Laptop', desc: 'Mỏng nhẹ, Doanh nhân, Sinh viên', icon: Laptop, badge: 'MỚI VỀ', color: 'from-cyan-500/20 to-blue-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/30' },
+              { id: 'LAPTOP_GAMING', title: 'Laptop Gaming', desc: 'ROG, Legion, RTX 40 Series', icon: Gamepad2, badge: 'GIẢM SÂU', color: 'from-rose-500/20 to-amber-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30' },
+              { id: 'CORE_PARTS', title: 'Main, CPU, VGA, RAM', desc: 'Vi xử lý, Card đồ họa, Bo mạch', icon: Cpu, badge: 'HOT', color: 'from-amber-500/20 to-yellow-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30' },
+              { id: 'CASE_COOLING', title: 'Case, Nguồn, Tản Nhiệt', desc: 'Vỏ PC, PSU 80 Plus, Tản AIO', icon: Box, badge: 'PC BUILD', color: 'from-emerald-500/20 to-teal-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30' },
+              { id: 'HEADSET', title: 'Tai Nghe', desc: 'Tai nghe Gaming 7.1, Mic lọc ồn', icon: Headphones, badge: 'GEAR', color: 'from-purple-500/20 to-pink-500/10 text-purple-600 dark:text-purple-400 border-purple-500/30' },
+              { id: 'MONITOR', title: 'Màn Hình', desc: '144Hz - 360Hz, 2K/4K OLED, IPS', icon: Monitor, badge: 'BÁN CHẠY', color: 'from-blue-500/20 to-indigo-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30' },
+              { id: 'KEYBOARD', title: 'Bàn Phím', desc: 'Phím cơ Custom, Wireless, Hot-swap', icon: Keyboard, badge: 'CUSTOM', color: 'from-teal-500/20 to-emerald-500/10 text-teal-600 dark:text-teal-400 border-teal-500/30' },
+              { id: 'STORAGE', title: 'Ổ Cứng', desc: 'SSD NVMe PCIe 4.0/5.0, HDD 4TB', icon: HardDrive, badge: 'TỐC ĐỘ', color: 'from-indigo-500/20 to-cyan-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30' },
+            ].map((cat) => {
+              const Icon = cat.icon;
+              return (
+                <Link
+                  key={cat.id}
+                  href={`/products?category=${cat.id}`}
+                  onClick={() => setSelectedPlatform(cat.id)}
+                  className="group relative rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-5 shadow-sm dark:shadow-xl hover:shadow-xl hover:border-cyan-500 transition-all duration-300 flex flex-col justify-between overflow-hidden"
+                >
+                  <div className={`absolute top-0 right-0 w-28 h-28 bg-gradient-to-bl ${cat.color} rounded-bl-full opacity-40 group-hover:opacity-80 transition-opacity pointer-events-none`} />
+
+                  <div className="flex justify-between items-start mb-4 relative z-10">
+                    <div className={`p-3 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 ${cat.color.split(' ')[2]} group-hover:scale-110 transition-transform shadow-xs`}>
+                      <Icon className="h-6 w-6" />
+                    </div>
+                    <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border bg-white/80 dark:bg-slate-900/80 backdrop-blur-xs ${cat.color.split(' ')[2]} ${cat.color.split(' ')[3]}`}>
+                      {cat.badge}
+                    </span>
+                  </div>
+
+                  <div className="relative z-10">
+                    <h4 className="font-heading font-extrabold text-sm text-slate-900 dark:text-slate-100 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">
+                      {cat.title}
+                    </h4>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 font-light mt-1 line-clamp-1">
+                      {cat.desc}
+                    </p>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* FEATURED CATEGORY SHOWCASE LIST BLOCKS (HÌNH 3) */}
+        <section className="mx-auto max-w-7xl w-full px-4 sm:px-6 lg:px-8 py-4 flex-1">
+          <div className="space-y-10">
+            
+            {/* SHOWCASE 1: CASE - TẢN - NGUỒN (HÌNH 2) */}
+            <CategoryShowcaseBlock
+              title="CASE - TẢN - NGUỒN"
+              subtitle="GIÁ RẺ HÀNG TỐT"
+              badgeText="HÀNG BÁN CHẠY"
+              bannerImage="https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=600&q=80"
+              theme="cyan"
+              viewAllLink="/products?category=CASE_COOLING"
+              products={liveProducts.filter(p => p.category === 'CASE' || p.category === 'COOLING' || p.category === 'PSU')}
+              subTabs={[
+                { id: 'ALL', label: 'Tất cả Case Tản' },
+                { id: 'CASE', label: 'Case PC', filterFn: p => p.category === 'CASE' },
+                { id: 'COOLING', label: 'Tản nhiệt', filterFn: p => p.category === 'COOLING' },
+                { id: 'PSU', label: 'Bộ Nguồn PSU', filterFn: p => p.category === 'PSU' },
+              ]}
+            />
+
+            {/* SHOWCASE 2: GAMING GEAR (HÌNH 3) */}
+            <CategoryShowcaseBlock
+              title="GAMING GEAR"
+              subtitle="HÀNG CHẤT GIÁ MỀM"
+              badgeText="HÀNG BÁN CHẠY"
+              bannerImage="https://images.unsplash.com/photo-1618384887929-16ec33fab9ef?w=600&q=80"
+              theme="amber"
+              viewAllLink="/products?category=HEADSET"
+              products={liveProducts.filter(p => p.category === 'GEAR' || p.category === 'KEYBOARD' || p.category === 'HEADSET')}
+              subTabs={[
+                { id: 'ALL', label: 'Bàn phím & Gear' },
+                { id: 'KEYBOARD', label: 'Bàn phím cơ', filterFn: p => p.name.toLowerCase().includes('bàn phím') || p.category === 'KEYBOARD' || p.category === 'GEAR' },
+                { id: 'MOUSE', label: 'Chuột Gaming', filterFn: p => p.name.toLowerCase().includes('chuột') || p.category === 'GEAR' },
+                { id: 'HEADSET', label: 'Tai nghe', filterFn: p => p.name.toLowerCase().includes('tai nghe') || p.category === 'HEADSET' },
+                { id: 'CHAIR', label: 'Bàn & Ghế', filterFn: p => p.category === 'GEAR' },
+              ]}
+            />
+
+            {/* SHOWCASE 3: MÀN HÌNH GAMING & ĐỒ HỌA (HÌNH 4) */}
+            <CategoryShowcaseBlock
+              title="MÀN HÌNH GAMING"
+              subtitle="ĐẸP HÌNH MƯỢT MẮT"
+              badgeText="HÀNG BÁN CHẠY"
+              bannerImage="https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=600&q=80"
+              theme="emerald"
+              viewAllLink="/products?category=MONITOR"
+              products={liveProducts.filter(p => p.category === 'MONITOR')}
+              subTabs={[
+                { id: 'ALL', label: 'Màn hình khuyến mãi' },
+                { id: 'GAMING', label: 'Màn hình gaming', filterFn: p => p.name.includes('144Hz') || p.name.includes('240Hz') || p.name.includes('360Hz') || p.category === 'MONITOR' },
+                { id: 'OFFICE', label: 'Màn hình văn phòng', filterFn: p => p.name.toLowerCase().includes('văn phòng') || (p.price && p.price < 6000000) },
+                { id: 'DESIGN', label: 'Màn hình đồ họa', filterFn: p => p.name.toLowerCase().includes('4k') || p.name.toLowerCase().includes('ips') },
+              ]}
+            />
+
+            {/* SHOWCASE 4: LAPTOP & LAPTOP GAMING (HÌNH 5) */}
+            <CategoryShowcaseBlock
+              title="LAPTOP & MOBILE"
+              subtitle="MỎNG NHẸ MƯỢT MÀ"
+              badgeText="HÀNG BÁN CHẠY"
+              bannerImage="https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=600&q=80"
+              theme="purple"
+              viewAllLink="/products?category=LAPTOP"
+              products={liveProducts.filter(p => p.category === 'LAPTOP' || p.category === 'LAPTOP_GAMING' || p.name.toLowerCase().includes('laptop'))}
+              subTabs={[
+                { id: 'ALL', label: 'Laptop khuyến mãi' },
+                { id: 'GAMING', label: 'Laptop gaming', filterFn: p => p.category === 'LAPTOP_GAMING' || p.name.toLowerCase().includes('gaming') || p.name.toLowerCase().includes('rog') },
+                { id: 'OFFICE', label: 'Laptop văn phòng', filterFn: p => p.category === 'LAPTOP' || p.name.toLowerCase().includes('vivobook') || p.name.toLowerCase().includes('aspire') },
+                { id: 'STAND', label: 'Phụ kiện Laptop', filterFn: p => p.ramType !== undefined },
+              ]}
+            />
+
+            {/* SHOWCASE 5: MAIN, CPU, VGA, RAM (CORE PARTS) */}
+            <CategoryShowcaseBlock
+              title="MAIN, CPU, VGA, RAM"
+              subtitle="HIỆU NĂNG BỨT PHÁ"
+              badgeText="HÀNG BÁN CHẠY"
+              bannerImage="https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?w=600&q=80"
+              theme="rose"
+              viewAllLink="/products?category=CORE_PARTS"
+              products={liveProducts.filter(p => p.category === 'CPU' || p.category === 'VGA' || p.category === 'MAINBOARD' || p.category === 'RAM' || p.category === 'STORAGE')}
+              subTabs={[
+                { id: 'ALL', label: 'Tất cả Linh Kiện' },
+                { id: 'CPU', label: 'Vi xử lý CPU', filterFn: p => p.category === 'CPU' },
+                { id: 'VGA', label: 'Card đồ họa VGA', filterFn: p => p.category === 'VGA' },
+                { id: 'MAINBOARD', label: 'Bo mạch Main', filterFn: p => p.category === 'MAINBOARD' },
+                { id: 'RAM', label: 'Bộ nhớ RAM', filterFn: p => p.category === 'RAM' },
+                { id: 'STORAGE', label: 'Ổ cứng SSD', filterFn: p => p.category === 'STORAGE' },
+              ]}
+            />
+          </div>
         </section>
 
         {/* FOOTER */}

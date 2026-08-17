@@ -1,9 +1,21 @@
 import type { Metadata } from "next";
+import { Be_Vietnam_Pro, Outfit } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
 
-const plusJakartaSans = { variable: "--font-plus-jakarta-sans" };
-const inter = { variable: "--font-inter" };
+const beVietnamPro = Be_Vietnam_Pro({
+  subsets: ["vietnamese", "latin"],
+  weight: ["300", "400", "500", "600", "700", "800", "900"],
+  variable: "--font-be-vietnam",
+  display: "swap",
+});
+
+const outfit = Outfit({
+  subsets: ["latin"],
+  weight: ["500", "600", "700", "800", "900"],
+  variable: "--font-outfit",
+  display: "swap",
+});
 
 
 export const metadata: Metadata = {
@@ -11,7 +23,7 @@ export const metadata: Metadata = {
     default: "ODS | Odyssey Store",
     template: "%s | ODS | Odyssey Store",
   },
-  description: "Cửa hàng bán Key và Tài khoản game Steam, Epic, EA tự động, uy tín hàng đầu ODS | Odyssey Store. Giao key tức thì và thanh toán tự động 24/7.",
+  description: "Cửa hàng linh kiện máy tính, PC Building và thiết bị công nghệ chính hãng ODSStore. Bảo hành 36T 1 đổi 1.",
   icons: {
     icon: [
       { url: "/icon.svg", type: "image/svg+xml" },
@@ -35,7 +47,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icon.svg" />
       </head>
       <body
-        className={`${plusJakartaSans.variable} ${inter.variable} font-sans bg-ods-bg text-ods-textMain antialiased selection:bg-ods-primary selection:text-white`}
+        className={`${beVietnamPro.variable} ${outfit.variable} font-sans bg-ods-bg text-ods-textMain antialiased`}
       >
         <Providers>
           {children}

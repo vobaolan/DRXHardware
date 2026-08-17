@@ -11,32 +11,32 @@ const config: Config = {
     extend: {
       colors: {
         ods: {
-          bg: "#FFFFFF",          // Nền chính (White Canvas)
-          card: "#FFFFFF",        // Nền thẻ trắng tinh
-          cardHover: "#F9FAFB",   // Nền thẻ hover xám rất nhẹ
-          border: "#E5E7EB",      // Viền xám mảnh (NZXT Iron)
-          borderActive: "#0099FF",// Viền active/hover xanh dương Sky Blue
-          primary: "#0099FF",     // Xanh dương Sky Blue chính làm điểm nhấn thương hiệu
-          primaryHover: "#0077D6",
-          accent: "#DBE800",      // Vàng Neon Volt (lấy cảm hứng từ NZXT Light)
-          accentHover: "#C4D000",
-          textMain: "#000000",    // Chữ chính đen tuyền
-          textMuted: "#4B5563",   // Chữ phụ xám đậm
-          surface: "#F3F4F6",     // Nền phụ xám nhạt (chứa ảnh game)
+          bg: "#FFFFFF",
+          card: "#FFFFFF",
+          cardHover: "#F8FAFC",
+          border: "rgba(110, 194, 247, 0.3)",
+          borderActive: "#6EC2F7",
+          primary: "#6EC2F7",     // Sky Blue chính
+          primaryHover: "#38BDF8",
+          accent: "#0284C7",
+          textMain: "#0F172A",
+          textMuted: "#64748B",
+          surface: "#F8FAFC",
         },
       },
       fontFamily: {
-        sans: ["var(--font-inter)", "sans-serif"],
-        heading: ["var(--font-plus-jakarta-sans)", "sans-serif"],
+        sans: ["var(--font-be-vietnam)", "'Be Vietnam Pro'", "sans-serif"],
+        heading: ["var(--font-outfit)", "'Outfit'", "'Be Vietnam Pro'", "sans-serif"],
+        mono: ["'JetBrains Mono'", "monospace"],
       },
       borderRadius: {
-        ods: "12px", // Bo góc mềm mại giống các thiết bị mới của NZXT
+        ods: "16px",
       },
       boxShadow: {
-        skyGlow: "0 8px 30px rgba(0, 153, 255, 0.12)",
-        voltGlow: "0 8px 30px rgba(219, 232, 0, 0.12)",
-        buttonGlow: "0 4px 15px rgba(0, 153, 255, 0.2)",
-        lightShadow: "0 4px 20px rgba(0, 0, 0, 0.05)",
+        skyGlow: "0 8px 30px rgba(110, 194, 247, 0.25)",
+        uiverseGlow: "0 10px 30px -5px rgba(110, 194, 247, 0.4)",
+        buttonGlow: "0 4px 15px rgba(110, 194, 247, 0.35)",
+        lightShadow: "0 4px 20px rgba(15, 23, 42, 0.05)",
       },
     },
   },

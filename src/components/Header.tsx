@@ -1,22 +1,37 @@
-import React, { useState, useEffect } from 'react';
+'use client';
+
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { 
   ShoppingBag, User, Wallet, ShieldAlert, Package, Users, ChevronDown,
   Clock, Flame, Tag, Key, Bell, ClipboardList, MessageCircle, Cpu, ShieldCheck,
-  Sun, Moon
+  Sun, Moon, Search, Grid, Receipt, Sparkles, Layers, HardDrive, Zap, Award, HelpCircle,
+  Laptop, Gamepad2, Box, Headphones, Monitor, Keyboard
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useTheme } from '../context/ThemeContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CustomerChatModal } from './CustomerChatModal';
 import { AdminChatModal } from './AdminChatModal';
+import { UiverseToggle } from './uiverse/UiverseToggle';
 
 export const Header: React.FC = () => {
   const pathname = usePathname();
+  const router = useRouter();
   const { cartCount, setCartOpen } = useCart();
   const { theme, toggleTheme } = useTheme();
+
+  // Navigation & Dropdown states
+  const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
+  const [isBrandsOpen, setIsBrandsOpen] = useState(false);
+
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [autocompleteList, setAutocompleteList] = useState<any[]>([]);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [allProducts, setAllProducts] = useState<any[]>([]);
 
   // Dynamic user state loaded from localStorage
   const [currentUser, setCurrentUser] = useState<{
@@ -36,7 +51,49 @@ export const Header: React.FC = () => {
   const [hasUserNewMessage, setHasUserNewMessage] = useState(false);
   const [isUserNotifOpen, setIsUserNotifOpen] = useState(false);
   const [customerChatOpen, setCustomerChatOpen] = useState(false);
+
   const isAdmin = currentUser?.email === 'admin@odsstore.vn' || currentUser?.role === 'ADMIN';
+
+  // Load products for Header live search
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const res = await fetch('/api/products');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            setAllProducts(data);
+          } else if (data && Array.isArray(data.products)) {
+            setAllProducts(data.products);
+          }
+        }
+      } catch (e) {
+        console.error('Failed to load products for search:', e);
+      }
+    };
+    fetchProducts();
+  }, []);
+
+  // Update autocomplete list
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setAutocompleteList([]);
+      return;
+    }
+    const filtered = allProducts.filter((p) =>
+      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (p.brand && p.brand.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (p.platform && p.platform.toLowerCase().includes(searchQuery.toLowerCase()))
+    ).slice(0, 5);
+    setAutocompleteList(filtered);
+  }, [searchQuery, allProducts]);
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+    router.push(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
+    setIsSearchFocused(false);
+  };
 
   useEffect(() => {
     const loadUser = async () => {
@@ -44,7 +101,6 @@ export const Header: React.FC = () => {
       if (stored) {
         try {
           const parsed = JSON.parse(stored);
-          
           setCurrentUser(prev => prev?.id === parsed.id && prev?.balance === parsed.balance ? prev : parsed);
 
           if (parsed && parsed.email) {
@@ -72,10 +128,7 @@ export const Header: React.FC = () => {
       }
     };
 
-    const handleStorage = () => {
-      loadUser();
-    };
-
+    const handleStorage = () => loadUser();
     loadUser();
 
     window.addEventListener('storage', handleStorage);
@@ -143,415 +196,338 @@ export const Header: React.FC = () => {
     return value.toLocaleString('vi-VN') + ' đ';
   };
 
-  const isUnauthProfilePage = pathname === '/profile' && !currentUser;
+  const hardwareCategories = [
+    { id: 'LAPTOP', name: 'Laptop', desc: 'Laptop văn phòng, mỏng nhẹ, pin trâu', icon: Laptop, color: 'text-cyan-500' },
+    { id: 'LAPTOP_GAMING', name: 'Laptop Gaming', desc: 'ASUS ROG, MSI, Legion RTX 40 Series', icon: Gamepad2, color: 'text-rose-500' },
+    { id: 'CORE_PARTS', name: 'Main, CPU, VGA, RAM', desc: 'Vi xử lý, Card đồ họa, Bo mạch chủ, RAM', icon: Cpu, color: 'text-amber-500' },
+    { id: 'CASE_COOLING', name: 'Case, Nguồn, Tản Nhiệt', desc: 'Vỏ PC gaming, PSU 80 Plus, Tản AIO', icon: Box, color: 'text-emerald-500' },
+    { id: 'HEADSET', name: 'Tai Nghe', desc: 'Tai nghe gaming 7.1, không dây, mic lọc ồn', icon: Headphones, color: 'text-purple-500' },
+    { id: 'MONITOR', name: 'Màn Hình', desc: 'Màn hình 144Hz - 360Hz, 2K/4K OLED, IPS', icon: Monitor, color: 'text-blue-500' },
+    { id: 'KEYBOARD', name: 'Bàn Phím', desc: 'Bàn phím cơ Custom, Wireless, Hot-swap', icon: Keyboard, color: 'text-teal-500' },
+    { id: 'STORAGE', name: 'Ổ Cứng', desc: 'SSD NVMe PCIe 4.0/5.0, HDD lưu trữ', icon: HardDrive, color: 'text-indigo-500' },
+  ];
+
+  const sponsorBrands = [
+    { name: 'NVIDIA', logo: 'NVIDIA RTX', color: 'border-emerald-500/30 text-emerald-600 dark:text-emerald-400' },
+    { name: 'INTEL', logo: 'INTEL CORE', color: 'border-blue-500/30 text-blue-600 dark:text-blue-400' },
+    { name: 'AMD', logo: 'AMD RYZEN', color: 'border-red-500/30 text-red-600 dark:text-red-400' },
+    { name: 'ASUS', logo: 'ASUS ROG', color: 'border-rose-500/30 text-rose-600 dark:text-rose-400' },
+    { name: 'MSI', logo: 'MSI GAMING', color: 'border-amber-500/30 text-amber-600 dark:text-amber-400' },
+    { name: 'GIGABYTE', logo: 'AORUS', color: 'border-purple-500/30 text-purple-600 dark:text-purple-400' },
+  ];
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-slate-200 dark:border-slate-800/80 bg-white/90 dark:bg-slate-950/85 backdrop-blur-xl shadow-sm transition-colors">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        {/* LOGO ODS */}
-        <div className="flex items-center gap-8">
-          <Link href="/" className="group flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-tr from-cyan-600 to-blue-600 flex items-center justify-center text-white font-black text-xs font-heading shadow-md shadow-cyan-500/20 group-hover:scale-105 transition-transform">
-              ODS
-            </div>
-            <span className="font-heading font-black text-base tracking-wider text-slate-900 dark:text-slate-100">
+    <header className="sticky top-0 z-40 w-full border-b border-slate-200 dark:border-slate-800/80 bg-white/95 dark:bg-slate-950/90 backdrop-blur-xl shadow-xs transition-colors duration-300">
+      
+      {/* ─────────────────────────────────────────────────────────────
+          1. MAIN HEADER ROW (LOGIC SEQUENCE: LOGO -> DANH MỤC -> TÌM KIẾM -> GIỎ HÀNG -> ĐĂNG NHẬP)
+         ───────────────────────────────────────────────────────────── */}
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+        
+        {/* STEP 1: LOGO */}
+        <Link href="/" className="group flex items-center gap-2.5 shrink-0">
+          <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-[#6EC2F7] to-[#0284c7] flex items-center justify-center text-white font-black text-xs font-heading shadow-md shadow-sky-400/30 group-hover:scale-105 transition-transform">
+            ODS
+          </div>
+          <div className="flex flex-col">
+            <span className="font-heading font-black text-base tracking-wider text-slate-900 dark:text-slate-100 leading-none">
               HARDWARE
             </span>
-          </Link>
+            <span className="text-[9px] font-extrabold tracking-widest text-[#0284c7] dark:text-[#6EC2F7] uppercase">
+              STORE PC & PARTS
+            </span>
+          </div>
+        </Link>
 
-          {/* DIRECT NAVIGATION LINKS */}
-          {!isUnauthProfilePage && (
-            <nav className="hidden md:flex items-center space-x-6">
-              {/* 1. SẢN PHẨM VỪA XEM - SHOWN STRICTLY WHEN LOGGED IN */}
-              {currentUser && (
-                <Link
-                  href="/products/recently-viewed"
-                  className="flex items-center gap-1.5 font-heading text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors relative py-2 group"
-                >
-                  <Clock className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400" />
-                  <span>VỪA XEM</span>
-                  <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-cyan-500 transition-all duration-300 group-hover:w-full"></span>
-                </Link>
-              )}
+        {/* STEP 2: DANH MỤC (CATEGORY DROPDOWN BUTTON) */}
+        <div 
+          className="relative py-2 hidden md:block shrink-0"
+          onMouseEnter={() => setIsCategoryOpen(true)}
+          onMouseLeave={() => setIsCategoryOpen(false)}
+        >
+          <button 
+            onClick={() => setIsCategoryOpen(!isCategoryOpen)}
+            className="flex items-center gap-2 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3.5 py-2 text-xs font-heading font-extrabold uppercase tracking-wider text-slate-900 dark:text-slate-100 hover:border-cyan-500 hover:text-cyan-600 dark:hover:text-cyan-400 transition-all shadow-xs cursor-pointer"
+          >
+            <Grid className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+            <span>DANH MỤC</span>
+            <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${isCategoryOpen ? 'rotate-180 text-cyan-500' : ''}`} />
+          </button>
 
-              {/* 2. PC BUILDER - ALWAYS SHOWN */}
-              <Link
-                href="/pc-builder"
-                className="flex items-center gap-1.5 font-heading text-xs font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400 hover:text-cyan-500 transition-colors relative py-2 group"
+          {/* DANH MỤC DROPDOWN MENU */}
+          <AnimatePresence>
+            {isCategoryOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 6, scale: 0.98 }}
+                transition={{ duration: 0.15 }}
+                className="absolute top-full left-0 w-[560px] rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 shadow-2xl z-50 mt-1"
               >
-                <Cpu className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400" />
-                <span>BUILD PC</span>
-                <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-cyan-500 transition-all duration-300 group-hover:w-full"></span>
-              </Link>
-
-              {/* 3. TRA CỨU BẢO HÀNH - ALWAYS SHOWN */}
-              <Link
-                href="/warranty"
-                className="flex items-center gap-1.5 font-heading text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors relative py-2 group"
-              >
-                <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                <span>BẢO HÀNH</span>
-                <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-emerald-500 transition-all duration-300 group-hover:w-full"></span>
-              </Link>
-
-              {/* 4. SẢN PHẨM MUA NHIỀU - ALWAYS SHOWN */}
-              <Link
-                href="/products/best-sellers"
-                className="flex items-center gap-1.5 font-heading text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 transition-colors relative py-2 group"
-              >
-                <Flame className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
-                <span>MUA NHIỀU</span>
-                <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-amber-500 transition-all duration-300 group-hover:w-full"></span>
-              </Link>
-
-              {/* 5. SẢN PHẨM KHUYẾN MÃI - ALWAYS SHOWN */}
-              <Link
-                href="/products/discounts"
-                className="flex items-center gap-1.5 font-heading text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 transition-colors relative py-2 group"
-              >
-                <Tag className="h-3.5 w-3.5 text-rose-500" />
-                <span>KHUYẾN MÃI</span>
-                <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-rose-500 transition-all duration-300 group-hover:w-full"></span>
-              </Link>
-
-              {/* ADMIN MANAGEMENT HOVER DROPDOWN MENU - SHOWN STRICTLY TO ADMIN ACCOUNTS */}
-              {isAdmin && (
-                <div
-                  className="relative py-2"
-                  onMouseEnter={() => setIsAdminOpen(true)}
-                  onMouseLeave={() => setIsAdminOpen(false)}
-                >
-                  <button className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-ods-primary hover:text-black transition-colors group cursor-pointer">
-                    <ShieldAlert className="h-3.5 w-3.5 text-ods-primary" />
-                    <span>QUẢN LÝ</span>
-                    <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${isAdminOpen ? 'rotate-180' : ''}`} />
-                  </button>
-
-                  <AnimatePresence>
-                    {isAdminOpen && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 8, scale: 0.98 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 6, scale: 0.98 }}
-                        transition={{ duration: 0.18, ease: 'easeOut' }}
-                        className="absolute top-full left-0 w-52 rounded-ods border border-ods-border bg-white p-1.5 shadow-2xl z-50 mt-1"
-                      >
-                        <Link
-                          href="/admin/products"
-                          className="flex items-center gap-2.5 rounded-sm px-3 py-2.5 text-xs font-bold text-black hover:bg-ods-surface hover:text-ods-primary transition-colors"
-                        >
-                          <Package className="h-4 w-4 text-ods-primary" />
-                          <span>1. Quản lý sản phẩm</span>
-                        </Link>
-
-                        <Link
-                          href="/admin/inventory"
-                          className="flex items-center gap-2.5 rounded-sm px-3 py-2.5 text-xs font-bold text-black hover:bg-ods-surface hover:text-ods-primary transition-colors"
-                        >
-                          <Key className="h-4 w-4 text-ods-primary" />
-                          <span>2. Quản lý kho Key & Tài khoản</span>
-                        </Link>
-                        
-                        <Link
-                          href="/admin/orders"
-                          className="flex items-center gap-2.5 rounded-sm px-3 py-2.5 text-xs font-bold text-black hover:bg-ods-surface hover:text-ods-primary transition-colors"
-                        >
-                          <ClipboardList className="h-4 w-4 text-ods-primary" />
-                          <span>3. Lịch sử khách mua hàng</span>
-                        </Link>
-
-                        <Link
-                          href="/admin/crm"
-                          className="flex items-center gap-2.5 rounded-sm px-3 py-2.5 text-xs font-bold text-black hover:bg-ods-surface hover:text-ods-primary transition-colors"
-                        >
-                          <Users className="h-4 w-4 text-ods-primary" />
-                          <span>4. Hệ thống CRM</span>
-                        </Link>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                <div className="text-[10px] font-extrabold text-cyan-600 dark:text-cyan-400 px-3 py-1.5 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800/80 mb-2">
+                  DANH MỤC THIẾT BỊ & LINH KIỆN PC
                 </div>
-              )}
-            </nav>
+
+                <div className="grid grid-cols-2 gap-1.5">
+                  {hardwareCategories.map((cat) => {
+                    const Icon = cat.icon;
+                    return (
+                      <Link
+                        key={cat.id}
+                        href={`/products?category=${cat.id}`}
+                        onClick={() => setIsCategoryOpen(false)}
+                        className="flex items-center gap-3 rounded-xl p-2.5 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all border border-transparent hover:border-slate-200 dark:hover:border-slate-800 group"
+                      >
+                        <div className="h-9 w-9 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-xs">
+                          <Icon className={`h-4 w-4 ${cat.color}`} />
+                        </div>
+                        <div className="flex flex-col truncate">
+                          <span className="font-heading font-bold text-xs text-slate-900 dark:text-slate-100 group-hover:text-cyan-600 dark:group-hover:text-cyan-300 truncate">
+                            {cat.name}
+                          </span>
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-light truncate">
+                            {cat.desc}
+                          </span>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+
+                <div className="border-t border-slate-100 dark:border-slate-800/80 mt-2 pt-2 flex justify-between items-center px-1">
+                  <span className="text-[10px] text-slate-400">Tất cả sản phẩm chính hãng bảo hành 36T</span>
+                  <Link
+                    href="/products"
+                    onClick={() => setIsCategoryOpen(false)}
+                    className="flex items-center gap-1 text-xs font-bold text-cyan-600 dark:text-cyan-400 hover:underline"
+                  >
+                    <span>Xem tất cả kho hàng →</span>
+                  </Link>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* STEP 3: THANH TÌM KIẾM SẢN PHẨM (MAIN SEARCH BAR - UI VERSE INPUT) */}
+        <div className="relative flex-1 max-w-xl mx-2">
+          <form onSubmit={handleSearchSubmit} className="relative">
+            <Search className="absolute left-3.5 top-2.5 h-4 w-4 text-[#0284c7] dark:text-[#6EC2F7]" />
+            <input
+              type="text"
+              placeholder="Tìm CPU, RTX 4060, Mainboard, RAM DDR5..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setIsSearchFocused(true)}
+              onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
+              className="w-full uiverse-input py-2 pl-10 pr-10 text-xs font-bold text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 transition-all shadow-xs"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs font-bold"
+              >
+                ✕
+              </button>
+            )}
+          </form>
+
+          {/* Autocomplete Suggestions Overlay */}
+          {isSearchFocused && autocompleteList.length > 0 && (
+            <div className="absolute top-full left-0 right-0 mt-1 rounded-2xl border border-sky-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-2 shadow-2xl z-50 space-y-1">
+              <div className="text-[10px] font-bold text-[#0284c7] dark:text-[#6EC2F7] px-2 py-1 uppercase tracking-widest">
+                Gợi ý tìm kiếm linh kiện
+              </div>
+              {autocompleteList.map((item) => (
+                <Link
+                  key={item.id}
+                  href={`/products/${item.slug}`}
+                  className="flex items-center gap-3 p-2 rounded-xl hover:bg-sky-50 dark:hover:bg-slate-800 transition-colors"
+                >
+                  <img src={item.coverImage} alt={item.name} className="h-8 w-12 object-cover rounded-lg bg-slate-950" />
+                  <div className="flex-1 truncate">
+                    <span className="font-heading font-bold text-xs text-slate-900 dark:text-slate-100 block truncate">{item.name}</span>
+                    <span className="text-[10px] font-extrabold text-[#0284c7] dark:text-[#6EC2F7]">{formatCurrency(item.discountPrice ?? item.price)}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
           )}
         </div>
 
-        {/* RIGHT CONTROLS */}
-        <div className="flex items-center space-x-4">
-          {/* DEPOSIT BUTTON (Separate - Moved to Left) */}
+        {/* STEP 4: GIỎ HÀNG & STEP 5: ĐĂNG NHẬP / TÀI KHOẢN CONTROLS */}
+        <div className="flex items-center gap-3 shrink-0">
+          
+          {/* STEP 4: GIỎ HÀNG (CART TOGGLE) */}
+          <button
+            onClick={() => setCartOpen(true)}
+            className="relative flex items-center justify-center rounded-xl border border-sky-200 dark:border-slate-800 bg-sky-50/50 dark:bg-slate-900 p-2 text-slate-700 dark:text-slate-200 hover:text-[#0284c7] hover:border-[#6EC2F7] transition-all cursor-pointer shadow-xs"
+            title="Giỏ hàng của bạn"
+          >
+            <ShoppingBag className="h-4.5 w-4.5 text-[#0284c7] dark:text-[#6EC2F7]" />
+            {cartCount > 0 && (
+              <motion.span
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-r from-[#6EC2F7] to-[#0284c7] text-[10px] font-black text-white shadow-md shadow-sky-400/40"
+              >
+                {cartCount}
+              </motion.span>
+            )}
+          </button>
+
+          {/* SỐ DƯ & NẠP TIỀN (When logged in) */}
           {currentUser && (
-            <Link
-              href="/deposit"
-              className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-sky-400 to-blue-500 hover:from-sky-500 hover:to-blue-600 px-4 py-2 transition-all shadow-md group"
-              title="Nạp tiền"
-            >
-              <span className="text-xs font-black text-white tracking-wide">NẠP TIỀN</span>
-            </Link>
+            <div className="hidden lg:flex items-center gap-2">
+              <Link
+                href="/deposit"
+                className="uiverse-btn-primary px-3.5 py-1.5 text-xs font-heading font-black tracking-wide"
+                title="Nạp tiền tài khoản"
+              >
+                <Wallet className="h-3.5 w-3.5" />
+                <span>NẠP TIỀN</span>
+              </Link>
+
+              <Link
+                href="/profile"
+                className="flex items-center gap-1.5 rounded-xl border border-sky-200 dark:border-slate-800 bg-sky-50/40 dark:bg-slate-900 px-3 py-1.5 text-xs font-bold text-slate-900 dark:text-slate-100 hover:border-[#6EC2F7] transition-all shadow-xs"
+                title="Xem số dư"
+              >
+                <span className="text-[#0284c7] dark:text-[#6EC2F7] font-mono-tech">{formatCurrency(currentUser.balance)}</span>
+              </Link>
+            </div>
           )}
 
-          {/* WALLET BUTTON (Separate - Moved to Right) */}
-          {currentUser && (
-            <Link
-              href="/profile"
-              className="hidden sm:flex items-center gap-2 rounded-full border border-gray-200 bg-white hover:bg-gray-50 px-3.5 py-2 transition-all shadow-sm"
-              title="Xem số dư"
-            >
-              <Wallet className="h-4 w-4 text-sky-500" />
-              <span className="text-sm font-bold text-black">{formatCurrency(currentUser.balance)}</span>
-            </Link>
-          )}
-
-          {/* NOTIFICATION BELL */}
+          {/* BELL THÔNG BÁO (When logged in) */}
           {currentUser && (
             isAdmin ? (
               <div className="relative">
                 <button
                   onClick={() => setIsAdminNotifOpen(!isAdminNotifOpen)}
-                  className="relative flex items-center justify-center rounded-ods border border-ods-border bg-white p-2 text-ods-textMuted hover:text-black hover:border-black hover:shadow-lightShadow transition-all cursor-pointer"
+                  className="relative flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 p-2 text-slate-700 dark:text-slate-200 hover:text-cyan-600 dark:hover:text-cyan-400 transition-all cursor-pointer shadow-xs"
                   title="Thông báo quản trị"
                 >
-                  <Bell className={`h-4.5 w-4.5 ${hasNewNotification ? 'animate-swing text-ods-primary' : ''}`} />
+                  <Bell className={`h-4.5 w-4.5 ${hasNewNotification ? 'animate-bounce text-amber-500' : ''}`} />
                   {hasNewNotification && (
-                    <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
+                    <span className="absolute top-1 right-1 flex h-2.5 w-2.5">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
                     </span>
                   )}
                 </button>
-
-                {/* ADMIN NOTIFICATIONS DROPDOWN */}
-                <AnimatePresence>
-                  {isAdminNotifOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute right-0 mt-3 w-80 rounded-xl bg-white shadow-2xl border border-zinc-100 overflow-hidden z-50"
-                    >
-                      <div className="bg-zinc-50 border-b border-zinc-100 px-4 py-3 flex justify-between items-center">
-                        <h4 className="text-xs font-black uppercase tracking-wider text-zinc-800">Thông Báo Quản Trị</h4>
-                        <div className="flex gap-2 items-center">
-                          {hasNewNotification && (
-                            <span className="bg-red-100 text-red-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                              Mới
-                            </span>
-                          )}
-                          {adminNotifications.length > 0 && (
-                            <button
-                              onClick={async () => {
-                                await fetch('/api/notifications', { method: 'DELETE' });
-                                setAdminNotifications([]);
-                                setHasNewNotification(false);
-                              }}
-                              className="text-[10px] text-red-500 hover:text-red-700 font-bold px-1"
-                              title="Xóa tất cả thông báo"
-                            >
-                              Dọn dẹp
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                      <div className="max-h-[350px] overflow-y-auto">
-                        {adminNotifications.length === 0 ? (
-                          <div className="px-4 py-8 text-center flex flex-col items-center justify-center">
-                            <Bell className="h-8 w-8 text-zinc-200 mb-2" />
-                            <p className="text-xs text-zinc-400 font-medium">Chưa có thông báo nào.</p>
-                          </div>
-                        ) : (
-                          adminNotifications.slice(0, 20).map((notif: any) => (
-                            <button
-                              key={notif.id}
-                              onClick={async () => {
-                                // Đánh dấu đã đọc trên server
-                                await fetch('/api/notifications', {
-                                  method: 'PATCH',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({ id: notif.id })
-                                });
-                                
-                                const updatedNotifs = adminNotifications.map((n: any) => 
-                                  n.id === notif.id ? { ...n, read: true } : n
-                                );
-                                setAdminNotifications(updatedNotifs);
-                                setIsAdminNotifOpen(false);
-
-                                if (notif.isGift) {
-                                  setActiveAdminChat({
-                                    customerId: notif.customerId,
-                                    customerName: notif.customerName,
-                                    orderId: notif.orderId
-                                  });
-                                  setAdminChatOpen(true);
-                                } else {
-                                  // Chuyển tới trang quản lý đơn hàng
-                                  window.location.href = '/admin/orders';
-                                }
-                              }}
-                              className={`w-full text-left px-4 py-3 hover:bg-zinc-50 border-b border-zinc-100 flex items-start gap-3 transition-colors ${!notif.read ? 'bg-sky-50/30' : ''}`}
-                            >
-                              <div className={`h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${notif.isGift ? 'bg-amber-100' : 'bg-emerald-100'}`}>
-                                {notif.isGift ? <MessageCircle className="h-4 w-4 text-amber-600" /> : <Package className="h-4 w-4 text-emerald-600" />}
-                              </div>
-                              <div className="flex-1">
-                                <p className="text-xs font-bold text-zinc-900 mb-0.5">
-                                  {notif.customerName} <span className="font-normal text-zinc-500">vừa mua</span>
-                                </p>
-                                <p className="text-[11px] text-zinc-700 line-clamp-1">{notif.productNames}</p>
-                                <p className="text-[10px] text-zinc-400 mt-1">{new Date(notif.timestamp).toLocaleString('vi-VN')}</p>
-                              </div>
-                              <div className="flex flex-col items-end gap-2">
-                                {!notif.read && <div className="h-2 w-2 bg-red-500 rounded-full flex-shrink-0"></div>}
-                                <button
-                                  onClick={async (e) => {
-                                    e.stopPropagation();
-                                    await fetch(`/api/notifications?id=${notif.id}`, { method: 'DELETE' });
-                                    setAdminNotifications(adminNotifications.filter((n: any) => n.id !== notif.id));
-                                  }}
-                                  className="text-zinc-400 hover:text-red-500 p-1 rounded-full hover:bg-red-50 transition-colors"
-                                  title="Xóa thông báo này"
-                                >
-                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                  </svg>
-                                </button>
-                              </div>
-                            </button>
-                          ))
-                        )}
-                      </div>
-                      <Link href="/admin/orders" className="block w-full text-center py-2.5 text-[11px] font-bold text-sky-600 bg-zinc-50 hover:bg-zinc-100 transition-colors border-t border-zinc-100">
-                        Xem tất cả đơn hàng
-                      </Link>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
               </div>
             ) : (
               <div className="relative">
                 <button
                   onClick={() => setIsUserNotifOpen(!isUserNotifOpen)}
-                  className="relative flex items-center justify-center rounded-ods border border-ods-border bg-white p-2 text-ods-textMuted hover:text-black hover:border-black hover:shadow-lightShadow transition-all cursor-pointer"
-                  title="Thông báo"
+                  className="relative flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 p-2 text-slate-700 dark:text-slate-200 hover:text-cyan-600 dark:hover:text-cyan-400 transition-all cursor-pointer shadow-xs"
+                  title="Thông báo cá nhân"
                 >
-                  <Bell className={`h-4.5 w-4.5 ${hasUserNewMessage ? 'animate-swing text-ods-primary' : ''}`} />
+                  <Bell className={`h-4.5 w-4.5 ${hasUserNewMessage ? 'animate-bounce text-cyan-500' : ''}`} />
                   {hasUserNewMessage && (
-                    <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+                    <span className="absolute top-1 right-1 flex h-2.5 w-2.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-500"></span>
                     </span>
                   )}
                 </button>
-
-                {/* USER NOTIFICATIONS DROPDOWN */}
-                <AnimatePresence>
-                  {isUserNotifOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute right-0 mt-3 w-80 rounded-xl bg-white shadow-2xl border border-zinc-100 overflow-hidden z-50"
-                    >
-                      <div className="bg-zinc-50 border-b border-zinc-100 px-4 py-3 flex justify-between items-center">
-                        <h4 className="text-xs font-black uppercase tracking-wider text-zinc-800">Thông báo của bạn</h4>
-                        <div className="flex gap-2 items-center">
-                          {hasUserNewMessage && (
-                            <span className="bg-sky-100 text-sky-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                              1 Mới
-                            </span>
-                          )}
-                          {hasUserNewMessage && (
-                            <button
-                              onClick={async () => {
-                                await fetch('/api/support?orderId=all', {
-                                  method: 'PATCH',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({ receiverId: currentUser.id })
-                                });
-                                setHasUserNewMessage(false);
-                              }}
-                              className="text-[10px] text-red-500 hover:text-red-700 font-bold px-1"
-                              title="Dọn thông báo"
-                            >
-                              Dọn dẹp
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                      <div className="max-h-[300px] overflow-y-auto">
-                        {hasUserNewMessage ? (
-                          <button
-                            onClick={() => {
-                              setHasUserNewMessage(false);
-                              setIsUserNotifOpen(false);
-                              setCustomerChatOpen(true);
-                            }}
-                            className="w-full text-left px-4 py-4 hover:bg-zinc-50 border-b border-zinc-100 flex items-start gap-3 transition-colors"
-                          >
-                            <div className="h-8 w-8 rounded-full bg-sky-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                              <MessageCircle className="h-4 w-4 text-sky-600" />
-                            </div>
-                            <div>
-                              <p className="text-xs font-bold text-zinc-900 mb-0.5">Tin nhắn mới từ Admin</p>
-                              <p className="text-[11px] text-zinc-500">Admin đã phản hồi hoặc hỗ trợ đơn hàng của bạn. Bấm để xem.</p>
-                            </div>
-                            <div className="h-2 w-2 bg-sky-500 rounded-full mt-1.5 flex-shrink-0"></div>
-                          </button>
-                        ) : (
-                          <div className="px-4 py-8 text-center flex flex-col items-center justify-center">
-                            <Bell className="h-8 w-8 text-zinc-200 mb-2" />
-                            <p className="text-xs text-zinc-400 font-medium">Bạn chưa có thông báo nào mới.</p>
-                          </div>
-                        )}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
               </div>
             )
           )}
 
-          {/* CART TOGGLE (Only shown when logged in) */}
-          {currentUser && (
-            <button
-              onClick={() => setCartOpen(true)}
-              className="relative flex items-center justify-center rounded-ods border border-ods-border bg-white p-2 text-ods-textMuted hover:text-black hover:border-black hover:shadow-lightShadow transition-all cursor-pointer"
-            >
-              <ShoppingBag className="h-4.5 w-4.5" />
-              {cartCount > 0 && (
-                <motion.span
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-black text-[10px] font-extrabold text-white shadow-md shadow-black/10"
-                >
-                  {cartCount}
-                </motion.span>
-              )}
-            </button>
-          )}
+          {/* THEME TOGGLE (UI VERSE TOGGLE SWITCHER) */}
+          <div title={theme === 'dark' ? 'Chuyển sang Giao diện Sáng' : 'Chuyển sang Giao diện Tối'}>
+            <UiverseToggle
+              active={theme === 'dark'}
+              onToggle={toggleTheme}
+              label={
+                <span className="text-[10px] font-extrabold uppercase text-slate-600 dark:text-slate-300 flex items-center gap-1">
+                  {theme === 'dark' ? <Moon className="h-3.5 w-3.5 text-sky-400" /> : <Sun className="h-3.5 w-3.5 text-amber-500" />}
+                </span>
+              }
+            />
+          </div>
 
-          {/* THEME TOGGLE (LIGHT/DARK MODE SWITCHER) */}
-          <button
-            onClick={toggleTheme}
-            className="flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 p-2 text-slate-700 dark:text-slate-200 hover:text-cyan-600 dark:hover:text-cyan-400 transition-all cursor-pointer shadow-sm hover:scale-105"
-            title={theme === 'dark' ? 'Chuyển sang Giao diện Sáng (Light Mode)' : 'Chuyển sang Giao diện Tối (Dark Mode)'}
-          >
-            {theme === 'dark' ? (
-              <Sun className="h-4.5 w-4.5 text-amber-400 fill-amber-400" />
-            ) : (
-              <Moon className="h-4.5 w-4.5 text-slate-700" />
-            )}
-          </button>
-
-          {/* USER ACC */}
+          {/* STEP 5: ĐĂNG NHẬP / TÀI KHOẢN */}
           <Link
             href="/profile"
-            className="flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 p-2 text-slate-700 dark:text-slate-200 hover:text-cyan-600 dark:hover:text-cyan-400 transition-all shadow-sm"
-            title="Tài khoản của bạn"
+            className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 p-2 text-slate-700 dark:text-slate-200 hover:text-cyan-600 dark:hover:text-cyan-400 transition-all shadow-xs"
+            title={currentUser ? `Tài khoản: ${currentUser.name}` : 'Đăng Nhập / Đăng Ký'}
           >
             <User className="h-4.5 w-4.5" />
+            <span className="hidden sm:inline font-heading text-xs font-bold">
+              {currentUser ? currentUser.name : 'ĐĂNG NHẬP'}
+            </span>
           </Link>
+        </div>
+      </div>
+
+      {/* ─────────────────────────────────────────────────────────────
+          2. SUB HEADER ROW (THANH HEADER PHỤ Ở DƯỚI)
+          Items: Danh Mục Khuyến Mãi | Tra Cứu Bảo Hành | Tra Cứu Hóa Đơn | Các Hãng Tài Trợ
+         ───────────────────────────────────────────────────────────── */}
+      <div className="border-t border-slate-200 dark:border-slate-800/80 bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-md py-2">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8 overflow-x-auto text-xs no-scrollbar">
+          
+          {/* LEFT SUB-HEADER LINKS */}
+          <div className="flex items-center space-x-6 shrink-0">
+            
+            {/* 1. DANH MỤC KHUYẾN MÃI */}
+            <Link
+              href="/products/discounts"
+              className="flex items-center gap-1.5 font-heading text-xs font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400 hover:text-rose-500 transition-colors py-1 group"
+            >
+              <Tag className="h-3.5 w-3.5 text-rose-500" />
+              <span>KHUYẾN MÃI GIẢM SÂU</span>
+              <span className="bg-rose-500/10 text-rose-600 dark:text-rose-300 text-[9px] px-1.5 py-0.2 rounded-full font-black border border-rose-500/20">HOT</span>
+            </Link>
+
+            {/* 2. TRA CỨU BẢO HÀNH */}
+            <Link
+              href="/warranty"
+              className="flex items-center gap-1.5 font-heading text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors py-1 group"
+            >
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>TRA CỨU BẢO HÀNH</span>
+            </Link>
+
+            {/* 3. TRA CỨU HÓA ĐƠN & ĐƠN HÀNG */}
+            <Link
+              href={currentUser ? "/profile?tab=orders" : "/profile"}
+              className="flex items-center gap-1.5 font-heading text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors py-1 group"
+            >
+              <Receipt className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400" />
+              <span>TRA CỨU HÓA ĐƠN</span>
+            </Link>
+
+            {/* 4. BUILD PC TỰ ĐỘNG */}
+            <Link
+              href="/pc-builder"
+              className="flex items-center gap-1.5 font-heading text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-1 group"
+            >
+              <Cpu className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+              <span>BUILD PC TỰ ĐỘNG</span>
+            </Link>
+
+            {/* 5. TOP LINH KIỆN MUA NHIỀU */}
+            <Link
+              href="/products/best-sellers"
+              className="flex items-center gap-1.5 font-heading text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 transition-colors py-1 group"
+            >
+              <Flame className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
+              <span>LINH KIỆN MUA NHIỀU</span>
+            </Link>
+
+            {/* 6. HÃNG TÀI TRỢ (LINK TRỰC TIẾP TỚI TRANG /sponsors) */}
+            <Link
+              href="/sponsors"
+              className="flex items-center gap-1.5 font-heading text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 transition-colors py-1 border-l border-slate-200 dark:border-slate-800 pl-6 group"
+            >
+              <Sparkles className="h-3.5 w-3.5 text-amber-500 group-hover:scale-110 transition-transform" />
+              <span>HÃNG TÀI TRỢ</span>
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -564,7 +540,7 @@ export const Header: React.FC = () => {
         />
       )}
 
-      {/* ADMIN CHAT MODAL (DIRECT FROM HEADER) */}
+      {/* ADMIN CHAT MODAL */}
       {isAdmin && activeAdminChat && (
         <AdminChatModal
           isOpen={adminChatOpen}
@@ -575,9 +551,7 @@ export const Header: React.FC = () => {
           customerId={activeAdminChat.customerId}
           customerName={activeAdminChat.customerName}
           orderId={activeAdminChat.orderId}
-          onSupportSuccess={() => {
-            // Có thể thêm logic call api duyệt đơn tại đây, nhưng hiện tại chỉ cần hiện Toast (AdminChatModal đã gọi showToast)
-          }}
+          onSupportSuccess={() => {}}
         />
       )}
     </header>
@@ -585,4 +559,3 @@ export const Header: React.FC = () => {
 };
 
 export default Header;
-

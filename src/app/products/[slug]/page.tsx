@@ -9,10 +9,12 @@ import { CartProvider, useCart } from '@/context/CartContext';
 import { useToast } from '@/components/Toast';
 import { 
   ShoppingCart, Heart, ShieldCheck, ChevronLeft, ChevronRight, 
-  Star, Maximize2, X, ArrowLeft, CheckCircle2, Play,
+  Star, Maximize2, X, ArrowLeft, CheckCircle2, Play, Truck,
   MessageSquare, User, Send, Cpu, HardDrive, Laptop, Award, Gamepad2, Monitor, Tag, Clock, Check
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { UiverseTooltip } from '@/components/uiverse/UiverseTooltip';
+import { UiverseRadio } from '@/components/uiverse/UiverseRadio';
 
 const DETAILS_MOCK_PRODUCTS: any[] = [];
 
@@ -487,26 +489,14 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
                   </div>
 
                   {/* Delivery info */}
-                  <div className="flex items-center gap-2 rounded-ods border border-ods-border bg-ods-surface px-4 py-3 text-xs text-black">
-                    <ShieldCheck className="h-5 w-5 text-ods-primary shrink-0" />
+                  <div className="p-3 bg-zinc-50 border border-zinc-200 rounded-ods flex items-start gap-3">
+                    <Truck className="h-5 w-5 text-[#0284c7] shrink-0 mt-0.5" />
                     <div>
-                      <span className="font-bold">
-                        {product.deliveryMethod === 'GIFT_ACC'
-                          ? 'GIFT TÀI KHOẢN TRỰC TIẾP 🎁'
-                          : product.deliveryMethod === 'NEW_ACC'
-                          ? 'GỬI THÔNG TIN TÀI KHOẢN MỚI 🔑'
-                          : product.deliveryMethod === 'UPGRADE_ACC'
-                          ? 'NÂNG CẤP TÀI KHOẢN CHÍNH CHỦ 🚀'
-                          : 'GIAO KEY TỰ ĐỘNG 24/7 ⚡'}
+                      <span className="font-heading text-xs font-bold text-black uppercase">
+                        ĐÓNG GÓI & GIAO HÀNG TẬN NƠI (100% NGUYÊN SEAL)
                       </span>
                       <p className="text-[10px] text-ods-textMuted font-light mt-0.5">
-                        {product.deliveryMethod === 'UPGRADE_ACC'
-                          ? 'Nâng cấp trực tiếp trên tài khoản cá nhân của bạn bảo hành full thời gian.'
-                          : product.deliveryMethod === 'GIFT_ACC'
-                          ? 'Nhận quà tặng hoặc kích hoạt trực tiếp nhanh chóng sau thanh toán.'
-                          : product.deliveryMethod === 'NEW_ACC'
-                          ? 'Nhận thông tin tài khoản mới cấp sẵn bảo hành đầy đủ.'
-                          : 'Nhận Key bản quyền kích hoạt tức thì sau khi thanh toán thành công.'}
+                        Bảo hành chính hãng 36 Tháng (1 Đổi 1). Hỗ trợ tư vấn lắp ráp & cân chỉnh PC miễn phí tại Store.
                       </p>
                     </div>
                   </div>
@@ -953,10 +943,10 @@ function AddToCartButton({ product, selectedVariant }: { product: any; selectedV
           platform: product.platform,
         });
       }}
-      className="col-span-3 flex items-center justify-center gap-2 rounded-ods bg-ods-primary hover:bg-ods-primaryHover text-white py-3.5 text-xs font-bold uppercase tracking-wider transition-all active:scale-95 hover:shadow-buttonGlow cursor-pointer"
+      className="col-span-3 uiverse-btn-primary py-3.5 text-xs font-black uppercase tracking-wider cursor-pointer"
     >
       <ShoppingCart className="h-4 w-4" />
-      <span>Thêm Vào Giỏ</span>
+      <span>THÊM VÀO GIỎ HÀNG</span>
     </button>
   );
 }

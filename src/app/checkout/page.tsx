@@ -5,25 +5,51 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
   ShoppingBag, QrCode, Wallet, ArrowLeft, ShieldCheck, CheckCircle2, 
-  Zap, Copy, Building2, CreditCard, User, Tag, Lock, Sparkles
+  Zap, Copy, Building2, CreditCard, User, Tag, Lock, Sparkles,
+  Calculator, Percent, BadgePercent, Clock
 } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { showToast } from '@/components/Toast';
 import { motion, AnimatePresence } from 'framer-motion';
+import { UiverseRadio } from '@/components/uiverse/UiverseRadio';
+import { UiverseCheckbox } from '@/components/uiverse/UiverseCheckbox';
 
 export default function CheckoutPage() {
   const router = useRouter();
   const { cartItems, cartTotal, coupon, getDiscountAmount, getNetAmount, clearCart } = useCart();
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [paymentMethod, setPaymentMethod] = useState<'VIETQR' | 'WALLET'>('VIETQR');
+
+  const netAmount = getNetAmount();
+  const userBalance = currentUser?.balance ? Number(currentUser.balance) : 0;
+  const isBalanceEnough = userBalance >= netAmount;
+
+  // Payment method state
+  const [paymentMethod, setPaymentMethod] = useState<'VIETQR' | 'WALLET' | 'HD_SAISON' | 'DEPOSIT_WALLET'>('VIETQR');
+
+  // HD SAISON Installment States
+  const [downPaymentPercent, setDownPaymentPercent] = useState<number>(20); // 10, 20, 30, 50
+  const [installmentTerm, setInstallmentTerm] = useState<number>(12); // 6, 9, 12, 18
+  const [interestRateType, setInterestRateType] = useState<'ZERO' | 'STANDARD'>('ZERO'); // 0% vs 1.49%/month
+
+  // Deposit Wallet State
+  const [depositPercent, setDepositPercent] = useState<number>(10); // 10% or 20%
+
+  // Real-time HD SAISON calculations
+  const downPaymentAmount = useMemo(() => Math.round(netAmount * (downPaymentPercent / 100)), [netAmount, downPaymentPercent]);
+  const remainingLoanAmount = useMemo(() => netAmount - downPaymentAmount, [netAmount, downPaymentAmount]);
+  const monthlyInterestFee = useMemo(() => interestRateType === 'ZERO' ? 0 : Math.round(remainingLoanAmount * 0.0149), [remainingLoanAmount, interestRateType]);
+  const monthlyPaymentAmount = useMemo(() => Math.round(remainingLoanAmount / installmentTerm) + monthlyInterestFee, [remainingLoanAmount, installmentTerm, monthlyInterestFee]);
+
+  // Real-time Wallet Deposit calculations
+  const depositRequiredAmount = useMemo(() => Math.round(netAmount * (depositPercent / 100)), [netAmount, depositPercent]);
+  const depositRemainingOnDelivery = useMemo(() => netAmount - depositRequiredAmount, [netAmount, depositRequiredAmount]);
+  const isDepositBalanceEnough = userBalance >= depositRequiredAmount;
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [isSuccess, setIsSuccess] = useState<boolean>(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [orderCode, setOrderCode] = useState<string>('');
-
-  const netAmount = getNetAmount();
 
   useEffect(() => {
     try {
@@ -47,76 +73,15 @@ export default function CheckoutPage() {
 
   const formatCurrency = (val: number) => val.toLocaleString('vi-VN') + ' đ';
 
-  const userBalance = currentUser?.balance ? Number(currentUser.balance) : 0;
-  const isBalanceEnough = userBalance >= netAmount;
-
-  // Dynamic delivery badge & instruction text based on items in cart
+  // Dynamic delivery badge & instruction text for Hardware Store
   const deliveryBadgeInfo = useMemo(() => {
-    if (cartItems.length === 0) {
-      return { 
-        text: '⚡ Giao Key', 
-        style: 'bg-sky-100 text-sky-800 border-sky-200',
-        subtext: 'Mở App Ngân Hàng quét mã QR để kích hoạt giao key tự động 24/7',
-        buttonLabel: 'Xác Nhận Quét Mã QR (Kích Hoạt Key Ngay)'
-      };
-    }
-
-    const hasSharedAcc = cartItems.some(
-      (item: any) =>
-        item.deliveryMethod === 'SHARED' ||
-        item.deliveryMethod === 'Tài Khoản Dùng Chung' ||
-        item.deliveryMethod === 'Cung Cấp Tài Khoản' ||
-        (item.name && /dying light|wukong|black myth|elden ring|cyberpunk|hogwarts/i.test(item.name))
-    );
-
-    const hasGift = cartItems.some(
-      (item: any) =>
-        item.deliveryMethod === 'GIFT' ||
-        item.deliveryMethod === 'Gift Tài Khoản' ||
-        (item.name && /resident evil|palworld|stardew|rust/i.test(item.name))
-    );
-
-    const hasUpgrade = cartItems.some(
-      (item: any) =>
-        item.deliveryMethod === 'UPGRADE' ||
-        item.deliveryMethod === 'Nâng Cấp' ||
-        (item.name && /netflix|spotify|nitro|canva|youtube/i.test(item.name))
-    );
-
-    if (hasSharedAcc) {
-      return { 
-        text: '🔑 Giao Tài Khoản', 
-        style: 'bg-teal-100 text-teal-800 border-teal-200',
-        subtext: 'Mở App Ngân Hàng quét mã QR để nhận thông tin Tài Khoản Dùng Chung tự động 24/7',
-        buttonLabel: 'Xác Nhận Quét Mã QR (Nhận Tài Khoản Ngay)'
-      };
-    }
-
-    if (hasGift) {
-      return { 
-        text: '🎁 Giao Gift', 
-        style: 'bg-purple-100 text-purple-800 border-purple-200',
-        subtext: 'Mở App Ngân Hàng quét mã QR để nhận Gift Game Steam tự động 24/7',
-        buttonLabel: 'Xác Nhận Quét Mã QR (Nhận Gift Game Ngay)'
-      };
-    }
-
-    if (hasUpgrade) {
-      return { 
-        text: '🚀 Nâng Cấp Tự Động', 
-        style: 'bg-amber-100 text-amber-800 border-amber-200',
-        subtext: 'Mở App Ngân Hàng quét mã QR để nâng cấp tài khoản chính chủ tự động 24/7',
-        buttonLabel: 'Xác Nhận Quét Mã QR (Nâng Cấp Tự Động)'
-      };
-    }
-
     return { 
-      text: '⚡ Giao Key', 
-      style: 'bg-sky-100 text-sky-800 border-sky-200',
-      subtext: 'Mở App Ngân Hàng quét mã QR để kích hoạt giao key tự động 24/7',
-      buttonLabel: 'Xác Nhận Quét Mã QR (Kích Hoạt Key Ngay)'
+      text: '🚚 Giao Hàng & Lắp Ráp Tận Nơi', 
+      style: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+      subtext: 'Mở App Ngân Hàng quét mã VietQR để thanh toán đơn hàng linh kiện chính hãng. Nhân viên ODS sẽ đóng gói nguyên seal & giao tận nơi!',
+      buttonLabel: 'Xác Nhận Đặt Hàng & Giao Tận Nơi'
     };
-  }, [cartItems]);
+  }, []);
 
   const copyToClipboard = (text: string, fieldName: string) => {
     navigator.clipboard.writeText(text);
@@ -236,17 +201,17 @@ export default function CheckoutPage() {
 
               <div className="space-y-3">
                 {/* Method 1: VietQR Auto Pay */}
-                <button
-                  type="button"
+                <div
                   onClick={() => setPaymentMethod('VIETQR')}
                   className={`w-full p-4 rounded-xl border text-left transition-all flex items-center justify-between cursor-pointer ${
                     paymentMethod === 'VIETQR'
-                      ? 'border-2 border-sky-500 bg-sky-50/80 ring-1 ring-sky-300 shadow-sm'
+                      ? 'border-2 border-[#6EC2F7] bg-sky-50/80 ring-2 ring-sky-300/40 shadow-sm'
                       : 'border-zinc-200 bg-zinc-50 hover:bg-white hover:border-zinc-300'
                   }`}
                 >
                   <div className="flex items-center gap-3.5">
-                    <div className="p-2.5 rounded-lg bg-sky-600 text-white shadow-sm">
+                    <UiverseRadio checked={paymentMethod === 'VIETQR'} onChange={() => setPaymentMethod('VIETQR')} />
+                    <div className="p-2.5 rounded-lg bg-[#0284c7] text-white shadow-sm">
                       <QrCode className="h-6 w-6" />
                     </div>
                     <div>
@@ -259,19 +224,19 @@ export default function CheckoutPage() {
                   <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full border shadow-2xs ${deliveryBadgeInfo.style}`}>
                     {deliveryBadgeInfo.text}
                   </span>
-                </button>
+                </div>
 
                 {/* Method 2: Wallet Balance */}
-                <button
-                  type="button"
+                <div
                   onClick={() => setPaymentMethod('WALLET')}
                   className={`w-full p-4 rounded-xl border text-left transition-all flex items-center justify-between cursor-pointer ${
                     paymentMethod === 'WALLET'
-                      ? 'border-2 border-sky-500 bg-sky-50/80 ring-1 ring-sky-300 shadow-sm'
+                      ? 'border-2 border-[#6EC2F7] bg-sky-50/80 ring-2 ring-sky-300/40 shadow-sm'
                       : 'border-zinc-200 bg-zinc-50 hover:bg-white hover:border-zinc-300'
                   }`}
                 >
                   <div className="flex items-center gap-3.5">
+                    <UiverseRadio checked={paymentMethod === 'WALLET'} onChange={() => setPaymentMethod('WALLET')} />
                     <div className="p-2.5 rounded-lg bg-amber-500 text-white shadow-sm">
                       <Wallet className="h-6 w-6" />
                     </div>
@@ -298,7 +263,253 @@ export default function CheckoutPage() {
                       Nạp Thêm
                     </Link>
                   )}
-                </button>
+                </div>
+
+                {/* Method 3: HD SAISON Installment Plan Calculator */}
+                <div className="space-y-3">
+                  <div
+                    onClick={() => setPaymentMethod('HD_SAISON')}
+                    className={`w-full p-4 rounded-xl border text-left transition-all flex items-center justify-between cursor-pointer ${
+                      paymentMethod === 'HD_SAISON'
+                        ? 'border-2 border-[#6EC2F7] bg-sky-50/90 ring-2 ring-sky-300/40 shadow-sm'
+                        : 'border-zinc-200 bg-zinc-50 hover:bg-white hover:border-zinc-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3.5">
+                      <UiverseRadio checked={paymentMethod === 'HD_SAISON'} onChange={() => setPaymentMethod('HD_SAISON')} />
+                      <div className="p-2.5 rounded-lg bg-gradient-to-br from-blue-600 to-[#0284c7] text-white shadow-sm">
+                        <Calculator className="h-6 w-6" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-extrabold text-zinc-900 flex items-center gap-2">
+                          <span>Mua Trả Góp Qua HD SAISON / Tài Chính</span>
+                          <span className="text-xs font-black text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full uppercase">Lãi 0% - 1.49%</span>
+                        </h4>
+                        <p className="text-[11px] text-zinc-500 mt-0.5">
+                          Tự chọn % trả trước & số tháng trả góp linh hoạt. Duyệt hồ sơ siêu tốc 15 phút!
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-extrabold text-[#0284c7] bg-sky-100 px-2.5 py-1 rounded-full border border-sky-200">
+                      Tự Tính Lãi Suất
+                    </span>
+                  </div>
+
+                  {/* INTERACTIVE HD SAISON CALCULATOR WIDGET */}
+                  {paymentMethod === 'HD_SAISON' && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      className="p-5 rounded-2xl bg-white border border-sky-200 space-y-4 shadow-sm"
+                    >
+                      <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
+                        <span className="text-xs font-black uppercase text-zinc-900 flex items-center gap-1.5">
+                          <BadgePercent className="h-4 w-4 text-[#0284c7]" />
+                          <span>BẢNG TÍNH TRẢ GÓP HD SAISON REALTIME</span>
+                        </span>
+                        <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                          Duyệt 100% Căn Cước / CMND
+                        </span>
+                      </div>
+
+                      {/* 1. Down Payment Selector */}
+                      <div className="space-y-2">
+                        <label className="text-[11px] font-bold text-zinc-700 flex items-center justify-between">
+                          <span>1. CHỌN MỨC TRẢ TRƯỚC (%):</span>
+                          <strong className="text-[#0284c7] font-black">{downPaymentPercent}% ({formatCurrency(downPaymentAmount)})</strong>
+                        </label>
+                        <div className="grid grid-cols-4 gap-2">
+                          {[10, 20, 30, 50].map((pct) => (
+                            <button
+                              key={pct}
+                              type="button"
+                              onClick={() => setDownPaymentPercent(pct)}
+                              className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                                downPaymentPercent === pct
+                                  ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-sm font-extrabold'
+                                  : 'bg-zinc-50 text-zinc-700 border-zinc-200 hover:bg-zinc-100'
+                              }`}
+                            >
+                              {pct}%
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* 2. Installment Term Selector */}
+                      <div className="space-y-2">
+                        <label className="text-[11px] font-bold text-zinc-700 flex items-center justify-between">
+                          <span>2. CHỌN KỲ HẠN VAY (THÁNG):</span>
+                          <strong className="text-purple-600 font-black">{installmentTerm} Tháng</strong>
+                        </label>
+                        <div className="grid grid-cols-4 gap-2">
+                          {[6, 9, 12, 18].map((term) => (
+                            <button
+                              key={term}
+                              type="button"
+                              onClick={() => setInstallmentTerm(term)}
+                              className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                                installmentTerm === term
+                                  ? 'bg-purple-600 text-white border-purple-600 shadow-sm font-extrabold'
+                                  : 'bg-zinc-50 text-zinc-700 border-zinc-200 hover:bg-zinc-100'
+                              }`}
+                            >
+                              {term}T
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* 3. Interest Rate Package Selector */}
+                      <div className="space-y-2">
+                        <label className="text-[11px] font-bold text-zinc-700 block">3. GÓI LÃI SUẤT HÃNG:</label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setInterestRateType('ZERO')}
+                            className={`p-2.5 rounded-xl text-left border transition-all cursor-pointer ${
+                              interestRateType === 'ZERO'
+                                ? 'bg-emerald-50 border-emerald-500 text-emerald-900 ring-1 ring-emerald-300'
+                                : 'bg-zinc-50 border-zinc-200 text-zinc-700'
+                            }`}
+                          >
+                            <span className="text-xs font-black block">HD SAISON 0% Lãi Suất</span>
+                            <span className="text-[10px] text-zinc-500 block">Dành cho sản phẩm ưu đãi hè</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setInterestRateType('STANDARD')}
+                            className={`p-2.5 rounded-xl text-left border transition-all cursor-pointer ${
+                              interestRateType === 'STANDARD'
+                                ? 'bg-sky-50 border-[#0284c7] text-sky-950 ring-1 ring-sky-300'
+                                : 'bg-zinc-50 border-zinc-200 text-zinc-700'
+                            }`}
+                          >
+                            <span className="text-xs font-black block">Gói Lãi Suất 1.49%/tháng</span>
+                            <span className="text-[10px] text-zinc-500 block">Duyệt hồ sơ nhanh 15 phút</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* REALTIME CALCULATION SUMMARY CARD */}
+                      <div className="p-4 rounded-xl bg-slate-900 text-white space-y-2 font-sans shadow-inner">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-400">1. Số tiền trả trước ({downPaymentPercent}%):</span>
+                          <span className="font-bold text-amber-400">{formatCurrency(downPaymentAmount)}</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-400">2. Số tiền nợ còn lại:</span>
+                          <span className="font-bold text-slate-200">{formatCurrency(remainingLoanAmount)}</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-400">3. Phí lãi hàng tháng ({interestRateType === 'ZERO' ? '0%' : '1.49%'}):</span>
+                          <span className="font-bold text-slate-200">{formatCurrency(monthlyInterestFee)}</span>
+                        </div>
+                        <div className="border-t border-slate-700 pt-2.5 flex items-center justify-between">
+                          <span className="text-xs font-extrabold uppercase text-sky-400">TIỀN GÓP MỖI THÁNG ({installmentTerm}T):</span>
+                          <span className="text-base font-black text-emerald-400 font-heading">
+                            {formatCurrency(monthlyPaymentAmount)} / tháng
+                          </span>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </div>
+
+                {/* Method 4: Wallet Deposit & Stock Hold */}
+                <div className="space-y-3">
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod('DEPOSIT_WALLET')}
+                    className={`w-full p-4 rounded-xl border text-left transition-all flex items-center justify-between cursor-pointer ${
+                      paymentMethod === 'DEPOSIT_WALLET'
+                        ? 'border-2 border-emerald-500 bg-emerald-50/90 ring-1 ring-emerald-300 shadow-sm'
+                        : 'border-zinc-200 bg-zinc-50 hover:bg-white hover:border-zinc-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3.5">
+                      <div className="p-2.5 rounded-lg bg-emerald-600 text-white shadow-sm">
+                        <ShieldCheck className="h-6 w-6" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-extrabold text-zinc-900 flex items-center gap-2">
+                          <span>Đặt Cọc Giữ Hàng Bằng Số Dư Ví ODS</span>
+                          <span className="text-amber-600 font-black">({formatCurrency(userBalance)})</span>
+                        </h4>
+                        <p className="text-[11px] text-zinc-500 mt-0.5">
+                          Trích cọc trước 10% - 20% từ số dư ví để khóa linh kiện nguyên seal tại Store.
+                        </p>
+                      </div>
+                    </div>
+                    {isDepositBalanceEnough ? (
+                      <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-full border border-emerald-200">
+                        Đủ Tiền Cọc
+                      </span>
+                    ) : (
+                      <Link
+                        href="/deposit"
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-[10px] font-extrabold text-rose-700 bg-rose-100 px-2.5 py-1 rounded-full hover:bg-rose-200 transition-colors"
+                      >
+                        Nạp Ví Thêm
+                      </Link>
+                    )}
+                  </button>
+
+                  {/* INTERACTIVE DEPOSIT WIDGET */}
+                  {paymentMethod === 'DEPOSIT_WALLET' && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      className="p-5 rounded-2xl bg-white border border-emerald-200 space-y-4 shadow-sm"
+                    >
+                      <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
+                        <span className="text-xs font-black uppercase text-zinc-900 flex items-center gap-1.5">
+                          <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                          <span>MỨC ĐẶT CỌC GIỮ HÀNG NGUYÊN SEAL</span>
+                        </span>
+                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
+                          Khóa Tồn Kho Ngay
+                        </span>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-[11px] font-bold text-zinc-700 flex items-center justify-between">
+                          <span>CHỌN TỶ LỆ ĐẶT CỌC GIỮ HÀNG:</span>
+                          <strong className="text-emerald-700 font-black">{depositPercent}% ({formatCurrency(depositRequiredAmount)})</strong>
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {[10, 20].map((pct) => (
+                            <button
+                              key={pct}
+                              type="button"
+                              onClick={() => setDepositPercent(pct)}
+                              className={`py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                                depositPercent === pct
+                                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm font-extrabold'
+                                  : 'bg-zinc-50 text-zinc-700 border-zinc-200 hover:bg-zinc-100'
+                              }`}
+                            >
+                              Đặt Cọc {pct}% Đơn Hàng
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs space-y-1">
+                        <div className="flex justify-between text-emerald-900 font-bold">
+                          <span>Trích từ Ví ODS ngay:</span>
+                          <span>{formatCurrency(depositRequiredAmount)}</span>
+                        </div>
+                        <div className="flex justify-between text-zinc-600">
+                          <span>Số tiền còn lại thanh toán khi nhận PC/Hàng:</span>
+                          <span className="font-bold">{formatCurrency(depositRemainingOnDelivery)}</span>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -424,7 +635,7 @@ export default function CheckoutPage() {
                     <span>{deliveryBadgeInfo.buttonLabel}</span>
                   </button>
                 </div>
-              ) : (
+              ) : paymentMethod === 'WALLET' ? (
                 /* Wallet Pay View Mode */
                 <div className="space-y-4 py-4 text-center">
                   <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs space-y-1">
@@ -456,6 +667,64 @@ export default function CheckoutPage() {
                     </div>
                   )}
                 </div>
+              ) : paymentMethod === 'HD_SAISON' ? (
+                /* HD SAISON View Mode */
+                <div className="space-y-4 py-4 text-center">
+                  <div className="p-4 rounded-xl bg-sky-50 border border-sky-200 text-sky-950 text-xs space-y-1 text-left">
+                    <p className="font-bold uppercase text-[#0284c7]">Xác Nhận Mua Trả Góp HD SAISON</p>
+                    <p className="text-[11px] text-slate-600">
+                      Tiền trả trước: <strong className="text-amber-600">{formatCurrency(downPaymentAmount)}</strong> ({downPaymentPercent}%)
+                    </p>
+                    <p className="text-[11px] text-slate-600">
+                      Mỗi tháng góp: <strong className="text-emerald-600">{formatCurrency(monthlyPaymentAmount)}/tháng</strong> (Kỳ hạn {installmentTerm}T)
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleProcessPayment}
+                    disabled={isProcessing}
+                    className="w-full py-4 rounded-xl bg-gradient-to-r from-[#0284c7] to-[#0369a1] text-white font-extrabold text-xs uppercase tracking-wider hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
+                  >
+                    <Calculator className="h-4 w-4 text-amber-300" />
+                    <span>Xác Nhận Đăng Ký Trả Góp HD SAISON</span>
+                  </button>
+                </div>
+              ) : (
+                /* DEPOSIT_WALLET View Mode */
+                <div className="space-y-4 py-4 text-center">
+                  <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-950 text-xs space-y-1 text-left">
+                    <p className="font-bold uppercase text-emerald-700">Trích Cọc Ví Giữ Hàng Nguyên Seal</p>
+                    <p className="text-[11px] text-slate-600">
+                      Số tiền cọc trích từ ví: <strong className="text-emerald-600">{formatCurrency(depositRequiredAmount)}</strong> ({depositPercent}%)
+                    </p>
+                    <p className="text-[11px] text-slate-600">
+                      Số tiền thanh toán khi nhận hàng/PC: <strong className="text-slate-900">{formatCurrency(depositRemainingOnDelivery)}</strong>
+                    </p>
+                  </div>
+
+                  {isDepositBalanceEnough ? (
+                    <button
+                      type="button"
+                      onClick={handleProcessPayment}
+                      disabled={isProcessing}
+                      className="w-full py-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 text-white font-extrabold text-xs uppercase tracking-wider hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
+                    >
+                      <ShieldCheck className="h-4 w-4 text-amber-300" />
+                      <span>Trích Cọc Ví ({formatCurrency(depositRequiredAmount)}) & Khóa Tồn Kho</span>
+                    </button>
+                  ) : (
+                    <div className="space-y-3">
+                      <p className="text-xs text-rose-600 font-bold">Số dư ví của bạn không đủ tiền cọc ({formatCurrency(depositRequiredAmount)}).</p>
+                      <Link
+                        href="/deposit"
+                        className="block w-full py-3 rounded-xl bg-emerald-600 text-white font-extrabold text-xs uppercase text-center hover:bg-emerald-700 transition-colors"
+                      >
+                        Nạp Thêm Ví Ngay
+                      </Link>
+                    </div>
+                  )}
+                </div>
               )}
 
               {/* Order Success Overlay */}
@@ -470,17 +739,17 @@ export default function CheckoutPage() {
                     <div className="h-16 w-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-4 shadow-lg">
                       <CheckCircle2 className="h-10 w-10" />
                     </div>
-                    <h3 className="text-lg font-extrabold text-zinc-900">THANH TOÁN THÀNH CÔNG!</h3>
+                    <h3 className="text-lg font-extrabold text-zinc-900">ĐẶT HÀNG THÀNH CÔNG!</h3>
                     <p className="text-xs text-zinc-500 mt-1 max-w-xs">
-                      Đơn hàng <strong className="text-sky-600">{orderCode}</strong> đã được thanh toán hoàn tất. Key game đã được chuyển vào Kho Game của bạn!
+                      Đơn hàng <strong className="text-sky-600">{orderCode}</strong> đã được ghi nhận hoàn tất. Linh kiện chính hãng kèm bảo hành 36 tháng đã sẵn sàng giao hàng / lắp ráp!
                     </p>
 
                     <div className="mt-6 flex items-center gap-3 w-full max-w-xs">
                       <Link
-                        href="/vault"
+                        href="/profile?tab=vault"
                         className="flex-1 py-3 rounded-xl bg-sky-600 text-white text-xs font-bold hover:bg-sky-700 transition-colors text-center shadow-sm"
                       >
-                        Xem Kho Game (Vault)
+                        Đơn Hàng & Bảo Hành
                       </Link>
                       <Link
                         href="/"

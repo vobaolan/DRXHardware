@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { aiRouter } from '@/lib/chatbot/AIRouter';
+
+export const dynamic = 'force-dynamic';
 import { toolRegistry } from '@/lib/chatbot/ToolRegistry';
 import { WebsiteRAGTool } from '@/lib/chatbot/tools/WebsiteRAGTool';
 import { WeatherTool } from '@/lib/chatbot/tools/WeatherTool';

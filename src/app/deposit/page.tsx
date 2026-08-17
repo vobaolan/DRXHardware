@@ -288,8 +288,8 @@ export default function DepositPage() {
               </h3>
               <ul className="text-xs text-zinc-600 space-y-2 list-disc pl-4 font-normal">
                 <li>Vui lòng giữ nguyên <strong>Nội dung chuyển khoản</strong> để hệ thống tự động cộng ví tức thì.</li>
-                <li>Ví ODS Store hỗ trợ thanh toán 1-Click mua key game bản quyền 24/7 không tính thêm phí.</li>
-                <li>Nếu chuyển nhầm hoặc quá 5 phút chưa cộng ví, vui lòng liên hệ Chatbot CyberBot AI hoặc Fanpage hỗ trợ 100%.</li>
+                <li>Ví ODSStore hỗ trợ thanh toán 1-Click, đặt cọc giữ hàng & mua linh kiện PC chính hãng 24/7 không tính thêm phí.</li>
+                <li>Nếu chuyển nhầm hoặc quá 5 phút chưa cộng ví, vui lòng liên hệ Chatbot ODS AI hoặc Fanpage/Hotline hỗ trợ 100%.</li>
               </ul>
             </div>
           </div>

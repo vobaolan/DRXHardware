@@ -643,7 +643,7 @@ function ProfileContent() {
                         <div className="space-y-1">
                           <h4 className="text-xs font-bold text-black uppercase tracking-wider">Lịch sử giao dịch trống</h4>
                           <p className="text-xs text-ods-textMuted font-light max-w-xs leading-relaxed mx-auto">
-                            Bạn chưa thực hiện bất kỳ giao dịch mua hàng nào. Hãy khám phá và mua key game chất lượng tại ODS!
+                            Bạn chưa thực hiện bất kỳ giao dịch mua hàng nào. Hãy khám phá và mua sắm linh kiện PC chính hãng tại ODSStore!
                           </p>
                         </div>
                         <Link
@@ -697,7 +697,7 @@ function ProfileContent() {
                                     {copiedKeyId === key.id ? (
                                       <>
                                         <Check className="h-3 w-3 text-emerald-600" />
-                                        <span className="text-emerald-600">COPIED</span>
+                                        <span className="text-emerald-600">ĐÃ SAO CHÉP</span>
                                       </>
                                     ) : (
                                       <>
@@ -716,70 +716,68 @@ function ProfileContent() {
                   </div>
                 )}
 
-                {/* 2. KHO GAME ĐÃ MUA TAB */}
+                {/* 2. LINH KIỆN ĐÃ MUA & BẢO HÀNH TAB */}
                 {dashboardTab === 'vault' && (
                   <div className="rounded-ods border border-ods-border bg-white p-6 space-y-4">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-ods-border pb-3 gap-2">
                       <div>
                         <h3 className="font-heading text-sm font-bold uppercase tracking-wider text-black flex items-center gap-2">
-                          <Key className="h-4 w-4 text-ods-primary" />
-                          <span>KHO GAME ĐÃ MUA (ODS VAULT)</span>
+                          <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                          <span>LINH KIỆN ĐÃ MUA & BẢO HÀNH CHÍNH HÃNG</span>
                         </h3>
-                        <p className="text-[11px] text-ods-textMuted mt-0.5">Tất cả bản quyền key game & tài khoản dịch vụ bạn đã sở hữu.</p>
+                        <p className="text-[11px] text-ods-textMuted mt-0.5">Quản lý mã Serial Number (SN) và phiếu bảo hành điện tử chính hãng.</p>
                       </div>
                       <Link
-                        href="/policies/guide"
-                        className="inline-flex items-center gap-1 text-[10px] font-bold text-ods-primary uppercase hover:underline"
+                        href="/warranty"
+                        className="inline-flex items-center gap-1 text-[10px] font-bold text-[#0284c7] uppercase hover:underline"
                       >
-                        <span>Hướng dẫn kích hoạt key</span>
+                        <span>Tra cứu bảo hành trực tuyến</span>
                         <ArrowRight className="h-3 w-3" />
                       </Link>
                     </div>
 
                     {isLoadingOrders ? (
                       <div className="text-center py-12 text-xs text-ods-textMuted">
-                        Đang tải kho game bản quyền...
+                        Đang tải kho linh kiện mua hàng...
                       </div>
                     ) : (() => {
-                      const allVaultKeys: any[] = [];
+                      const allHardwareItems: any[] = [];
                       orders.forEach((order) => {
                         if (order.gameKeys && order.gameKeys.length > 0) {
                           order.gameKeys.forEach((k: any) => {
-                            allVaultKeys.push({
+                            allHardwareItems.push({
                               id: k.id,
                               orderId: order.id,
-                              keyCode: k.keyCode,
-                              gameName: k.product?.name || 'Sản Phẩm Bản Quyền ODS',
-                              platform: k.product?.platform || 'STEAM',
-                              coverImage: k.product?.coverImage || 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=800',
-                              type: k.product?.type || 'KEY_CODE',
+                              serialNumber: k.keyCode.includes('SN-') ? k.keyCode : `SN-${k.keyCode.toUpperCase()}`,
+                              productName: k.product?.name || 'Linh Kiện Máy Tính Chính Hãng',
+                              platform: k.product?.platform || 'HARDWARE',
+                              coverImage: k.product?.coverImage || 'https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?q=80&w=800',
+                              warrantyMonths: 36,
                               purchaseDate: new Date(k.createdAt || order.createdAt).toLocaleDateString('vi-VN', {
                                 year: 'numeric',
                                 month: '2-digit',
                                 day: '2-digit',
-                                hour: '2-digit',
-                                minute: '2-digit',
                               }),
                             });
                           });
                         }
                       });
 
-                      if (allVaultKeys.length === 0) {
+                      if (allHardwareItems.length === 0) {
                         return (
                           <div className="text-center py-12 px-4 flex flex-col items-center justify-center space-y-4">
-                            <div className="h-14 w-14 rounded-full bg-sky-50 flex items-center justify-center text-ods-primary">
-                              <Key className="h-6 w-6" />
+                            <div className="h-14 w-14 rounded-full bg-sky-50 flex items-center justify-center text-[#0284c7]">
+                              <ShieldCheck className="h-6 w-6" />
                             </div>
                             <div className="space-y-1">
-                              <h4 className="text-xs font-bold text-black uppercase tracking-wider">Kho game đã mua trống</h4>
+                              <h4 className="text-xs font-bold text-black uppercase tracking-wider">Chưa có linh kiện nào trong kho bảo hành</h4>
                               <p className="text-xs text-ods-textMuted font-light max-w-xs leading-relaxed mx-auto">
-                                Bạn chưa sở hữu sản phẩm bản quyền nào trong Kho Key ODS. Hãy khám phá và mua key game chất lượng ngay!
+                                Bạn chưa sở hữu linh kiện máy tính nào. Hãy mua sắm các linh kiện chính hãng để nhận bảo hành 36T 1 đổi 1!
                               </p>
                             </div>
                             <Link
                               href="/"
-                              className="inline-flex items-center gap-1.5 rounded-ods bg-black hover:bg-ods-primary text-white px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all duration-300 hover:shadow-buttonGlow"
+                              className="inline-flex items-center gap-1.5 rounded-ods bg-black hover:bg-[#0284c7] text-white px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all duration-300 hover:shadow-buttonGlow"
                             >
                               <span>Khám Phá Cửa Hàng Ngay</span>
                               <ArrowRight className="h-3 w-3" />
@@ -790,109 +788,55 @@ function ProfileContent() {
 
                       return (
                         <div className="space-y-4">
-                          {allVaultKeys.map((item) => (
-                            <div key={item.id} className="rounded-ods border border-ods-border bg-ods-surface p-4 space-y-3 hover:border-black transition-all">
+                          {allHardwareItems.map((item) => (
+                            <div key={item.id} className="rounded-ods border border-ods-border bg-ods-surface p-4 space-y-3 hover:border-[#0284c7] transition-all">
                               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                 <div className="flex items-center gap-3">
                                   <img
                                     src={item.coverImage}
-                                    alt={item.gameName}
+                                    alt={item.productName}
                                     className="h-12 w-16 rounded-ods object-cover bg-black border border-ods-border shrink-0"
                                   />
                                   <div>
-                                    <h4 className="font-heading text-xs font-bold text-black uppercase">{item.gameName}</h4>
-                                    <div className="flex items-center gap-2 mt-1">
-                                      <span className="text-[9px] font-extrabold text-black bg-zinc-200 px-2 py-0.5 rounded uppercase">
-                                        {item.platform}
-                                      </span>
-                                      <span className="text-[10px] text-ods-textMuted">
-                                        Ngày mua: {item.purchaseDate}
-                                      </span>
-                                    </div>
+                                    <h4 className="font-heading text-xs font-bold text-black line-clamp-1">{item.productName}</h4>
+                                    <span className="text-[10px] text-emerald-600 font-bold uppercase block mt-0.5">
+                                      ✓ Bảo hành 36 Tháng (1 Đổi 1)
+                                    </span>
                                   </div>
                                 </div>
-
-                                <span className="inline-flex items-center gap-1 text-[9.5px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded border border-emerald-200 w-max">
-                                  <CheckCircle2 className="h-3 w-3" /> SẴN SÀNG KÍCH HOẠT
-                                </span>
+                                <div className="text-left sm:text-right shrink-0">
+                                  <span className="text-[10px] text-ods-textMuted font-mono block">Ngày mua: {item.purchaseDate}</span>
+                                  <span className="text-[9.5px] font-black text-emerald-600 uppercase bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full inline-block mt-1">
+                                    Đã kích hoạt bảo hành
+                                  </span>
+                                </div>
                               </div>
 
-                              {/* DYNAMIC CONTENT BLOCK */}
-                              {(() => {
-                                const isAccount = item.keyCode.includes('|');
-                                const isGiftPending = item.keyCode.includes('Chờ ODS') || item.keyCode.includes('Chờ Admin') || item.type === 'GIFT';
-                                
-                                if (isAccount) {
-                                  const [username, password] = item.keyCode.split('|').map((s: string) => s.trim());
-                                  return (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
-                                      <div className="flex items-center justify-between gap-3 bg-white border border-ods-border p-2.5 rounded-ods">
-                                        <div className="flex flex-col">
-                                          <span className="text-[9px] font-bold text-gray-400 uppercase">Tài Khoản</span>
-                                          <span className="font-mono font-black text-xs sm:text-sm text-ods-primary select-all truncate">{username}</span>
-                                        </div>
-                                        <button
-                                          onClick={() => handleCopy(`${item.id}-user`, username)}
-                                          className="p-1.5 rounded bg-gray-100 hover:bg-black hover:text-white transition-colors"
-                                          title="Copy Tài Khoản"
-                                        >
-                                          {copiedKeyId === `${item.id}-user` ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
-                                        </button>
-                                      </div>
-                                      <div className="flex items-center justify-between gap-3 bg-white border border-ods-border p-2.5 rounded-ods">
-                                        <div className="flex flex-col">
-                                          <span className="text-[9px] font-bold text-gray-400 uppercase">Mật Khẩu</span>
-                                          <span className="font-mono font-black text-xs sm:text-sm text-ods-primary select-all truncate">{password || 'N/A'}</span>
-                                        </div>
-                                        <button
-                                          onClick={() => handleCopy(`${item.id}-pass`, password)}
-                                          className="p-1.5 rounded bg-gray-100 hover:bg-black hover:text-white transition-colors"
-                                          title="Copy Mật Khẩu"
-                                        >
-                                          {copiedKeyId === `${item.id}-pass` ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
-                                        </button>
-                                      </div>
-                                    </div>
-                                  );
-                                }
-
-                                if (isGiftPending) {
-                                  return (
-                                    <div className="flex items-center justify-between gap-3 bg-amber-50 border border-amber-200 p-3 rounded-ods mt-3">
-                                      <div className="min-w-0 font-sans font-bold text-xs sm:text-sm text-amber-700 tracking-wide truncate">
-                                        {item.keyCode}
-                                      </div>
-                                    </div>
-                                  );
-                                }
-
-                                return (
-                                  <div className="flex items-center justify-between gap-3 bg-white border border-ods-border p-3 rounded-ods mt-3">
-                                    <div className="flex flex-col">
-                                      <span className="text-[9px] font-bold text-gray-400 uppercase">Mã Kích Hoạt (Key Code)</span>
-                                      <div className="min-w-0 font-mono font-black text-xs sm:text-sm text-ods-primary tracking-wider select-all truncate mt-0.5">
-                                        {item.keyCode}
-                                      </div>
-                                    </div>
-                                    <button
-                                      onClick={() => handleCopy(item.id, item.keyCode)}
-                                      className="flex items-center gap-1 rounded border border-ods-border bg-white px-3 py-1.5 text-[9.5px] font-bold text-black hover:bg-black hover:text-white transition-all shrink-0 cursor-pointer"
-                                    >
-                                      {copiedKeyId === item.id ? (
-                                        <>
-                                          <Check className="h-3 w-3 text-emerald-600" />
-                                          <span className="text-emerald-600">ĐÃ SAO CHÉP</span>
-                                        </>
-                                      ) : (
-                                        <>
-                                          <Copy className="h-3 w-3" />
-                                          <span>SAO CHÉP</span>
-                                        </>
-                                      )}
-                                    </button>
-                                  </div>
-                                );
-                              })()}
+                              {/* SERIAL NUMBER BOX */}
+                              <div className="flex items-center justify-between gap-3 bg-white border border-dashed border-ods-border p-3 rounded-ods">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Mã Serial (SN):</span>
+                                  <code className="text-xs font-mono text-[#0284c7] font-bold select-all break-all">
+                                    {item.serialNumber}
+                                  </code>
+                                </div>
+                                <button
+                                  onClick={() => handleCopy(item.id, item.serialNumber)}
+                                  className="flex items-center gap-1 rounded border border-ods-border bg-white px-3 py-1.5 text-[9.5px] font-bold text-black hover:bg-black hover:text-white transition-all shrink-0 cursor-pointer"
+                                >
+                                  {copiedKeyId === item.id ? (
+                                    <>
+                                      <Check className="h-3 w-3 text-emerald-600" />
+                                      <span className="text-emerald-600">ĐÃ SAO CHÉP</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Copy className="h-3 w-3" />
+                                      <span>SAO CHÉP MÃ SN</span>
+                                    </>
+                                  )}
+                                </button>
+                              </div>
                             </div>
                           ))}
                         </div>
