@@ -340,11 +340,11 @@ export default function StaffWarehousePortalPage() {
       {/* TOP BAR HEADER */}
       <header className="bg-white border-b border-slate-200/80 px-6 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sticky top-0 z-40 shadow-xs backdrop-blur-md">
         <div className="flex items-center gap-3">
-          <Link href="/" className="flex items-center gap-3 group" title="Trang chủ ODS STORE">
-            <img src="/logo/ods_black.png" alt="ODS STORE Logo" className="h-9 w-auto object-contain group-hover:scale-105 transition-transform" />
+          <Link href="/" className="flex items-center gap-3 group" title="Trang chủ DRX HARDWARE">
+            <img src="/logo/logo-blue.png" alt="DRX HARDWARE Logo" className="h-9 w-auto object-contain group-hover:scale-105 transition-transform" />
             <div>
               <span className="text-base font-black tracking-wider text-slate-900 block font-heading">
-                ODSSTORE STAFF PORTAL
+                DRX HARDWARE STAFF PORTAL
               </span>
               <span className="text-[10px] text-slate-500 font-mono block">Cổng Nghiệp Vụ Kho Hàng & Kỹ Thuật Lắp Ráp</span>
             </div>

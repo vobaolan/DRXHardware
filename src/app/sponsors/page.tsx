@@ -151,11 +151,11 @@ export default function SponsorsPage() {
             </div>
 
             <h2 className="font-heading text-xl sm:text-2xl lg:text-3xl font-black uppercase tracking-wider text-white">
-              CÁC THƯƠNG HIỆU CÔNG NGHỆ HÀNG ĐẦU TẠI <span className="bg-gradient-to-r from-amber-400 via-yellow-200 to-orange-400 bg-clip-text text-transparent">ODSSTORE.COM</span>
+              CÁC THƯƠNG HIỆU CÔNG NGHỆ HÀNG ĐẦU TẠI <span className="bg-gradient-to-r from-amber-400 via-yellow-200 to-orange-400 bg-clip-text text-transparent">DRXHARDWARE.COM</span>
             </h2>
 
-            <p className="text-xs sm:text-sm text-zinc-400 max-w-3xl mx-auto leading-relaxed">
-              ODSSTORE.COM tự hào là đại lý phân phối ủy quyền chính thức từ các tập đoàn công nghệ hàng đầu thế giới: ASUS ROG, MSI, GIGABYTE, CORSAIR, NZXT, SAMSUNG, INTEL, AMD... Tất cả sản phẩm linh kiện cam kết 100% chính hãng, bảo hành 1 đổi 1 tận nơi.
+            <p className="text-slate-300 text-xs sm:text-sm max-w-3xl leading-relaxed">
+              DRXHARDWARE.COM tự hào là đại lý phân phối ủy quyền chính thức từ các tập đoàn công nghệ hàng đầu thế giới: ASUS ROG, MSI, GIGABYTE, CORSAIR, NZXT, SAMSUNG, INTEL, AMD... Tất cả sản phẩm linh kiện cam kết 100% chính hãng, bảo hành 1 đổi 1 tận nơi.
             </p>
 
             {/* TRUST BADGES */}

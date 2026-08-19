@@ -208,13 +208,13 @@ export default function AdminDashboardPage() {
       {/* CEO COMMAND CENTER TOP HEADER */}
       <header className="bg-white border-b border-slate-200/80 px-6 py-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xs sticky top-0 z-40">
         <div className="flex items-center gap-3">
-          <Link href="/" title="Trang chủ ODS STORE">
-            <img src="/logo/ods_black.png" alt="ODS STORE Logo" className="h-9 w-auto object-contain hover:scale-105 transition-transform" />
+          <Link href="/" title="Trang chủ DRX HARDWARE">
+            <img src="/logo/logo-blue.png" alt="DRX HARDWARE Logo" className="h-9 w-auto object-contain hover:scale-105 transition-transform" />
           </Link>
           <div>
             <div className="flex items-center gap-2">
               <h1 className="font-heading text-base font-black uppercase text-slate-900 tracking-wider">
-                ODSSTORE CEO COMMAND CENTER
+                DRX HARDWARE CEO COMMAND CENTER
               </h1>
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-700 border border-emerald-200">
                 Live Analytics

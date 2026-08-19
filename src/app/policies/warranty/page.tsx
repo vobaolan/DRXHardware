@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React from 'react';
 import Link from 'next/link';
@@ -26,16 +26,16 @@ export default function WarrantyPolicyPage() {
               <div className="space-y-4 max-w-2xl">
                 <div className="inline-flex items-center gap-2 rounded-full bg-sky-500/10 border border-sky-500/20 px-3.5 py-1 text-xs font-bold text-sky-400 uppercase tracking-widest">
                   <ShieldCheck className="h-4 w-4" />
-                  <span>CAM KẾT AN TÂM 100%</span>
+                  <span>CAM Káº¾T AN TÃ‚M 100%</span>
                 </div>
                 <h1
                   className="font-heading text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-wider uppercase text-white"
                   style={{ lineHeight: '1.55' }}
                 >
-                  CHÍNH SÁCH BẢO HÀNH & HOÀN TIỀN
+                  CHÃNH SÃCH Báº¢O HÃ€NH & HOÃ€N TIá»€N
                 </h1>
                 <p className="text-sm sm:text-base text-zinc-400 font-light leading-relaxed">
-                  Tại ODS Store, tất cả bản quyền Key Game và Tài Khoản Dịch Vụ đều được đảm bảo chính hãng 100%. Chúng tôi cam kết bảo vệ quyền lợi tối đa cho game thủ với chính sách đổi trả nhanh chóng trong 15 phút.
+                  Táº¡i DRX Hardware, táº¥t cáº£ báº£n quyá»n Key Game vÃ  TÃ i Khoáº£n Dá»‹ch Vá»¥ Ä‘á»u Ä‘Æ°á»£c Ä‘áº£m báº£o chÃ­nh hÃ£ng 100%. ChÃºng tÃ´i cam káº¿t báº£o vá»‡ quyá»n lá»£i tá»‘i Ä‘a cho game thá»§ vá»›i chÃ­nh sÃ¡ch Ä‘á»•i tráº£ nhanh chÃ³ng trong 15 phÃºt.
                 </p>
               </div>
 
@@ -46,13 +46,13 @@ export default function WarrantyPolicyPage() {
                     <Clock className="h-6 w-6" />
                   </div>
                   <div>
-                    <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider block">Thời Gian Xử Lý Bảo Hành</span>
-                    <span className="text-xl font-extrabold text-white">Dưới 15 Phút</span>
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider block">Thá»i Gian Xá»­ LÃ½ Báº£o HÃ nh</span>
+                    <span className="text-xl font-extrabold text-white">DÆ°á»›i 15 PhÃºt</span>
                   </div>
                 </div>
                 <div className="border-t border-zinc-800 pt-3 flex justify-between items-center text-xs text-zinc-400">
-                  <span>Hỗ trợ kỹ thuật:</span>
-                  <span className="font-extrabold text-emerald-400">24/7 Tất cả các ngày</span>
+                  <span>Há»— trá»£ ká»¹ thuáº­t:</span>
+                  <span className="font-extrabold text-emerald-400">24/7 Táº¥t cáº£ cÃ¡c ngÃ y</span>
                 </div>
               </div>
             </div>
@@ -60,11 +60,11 @@ export default function WarrantyPolicyPage() {
         </section>
 
         {/* BREADCRUMB */}
-        <div className="bg-ods-surface border-b border-ods-border py-3">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex items-center gap-2 text-xs text-ods-textMuted">
-            <Link href="/" className="hover:text-black transition-colors">Trang chủ</Link>
+        <div className="bg-DRX-surface border-b border-DRX-border py-3">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex items-center gap-2 text-xs text-DRX-textMuted">
+            <Link href="/" className="hover:text-black transition-colors">Trang chá»§</Link>
             <span>/</span>
-            <span className="text-black font-bold">Chính sách bảo hành</span>
+            <span className="text-black font-bold">ChÃ­nh sÃ¡ch báº£o hÃ nh</span>
           </div>
         </div>
 
@@ -72,43 +72,43 @@ export default function WarrantyPolicyPage() {
         <main className="flex-1 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-12 space-y-16">
           {/* 4 CORE COMMITMENT CARDS */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="rounded-ods border border-ods-border bg-white p-6 space-y-3 hover:border-black hover:shadow-lightShadow transition-all">
-              <div className="w-12 h-12 rounded-ods bg-sky-50 border border-sky-200 flex items-center justify-center text-ods-primary">
+            <div className="rounded-DRX border border-DRX-border bg-white p-6 space-y-3 hover:border-black hover:shadow-lightShadow transition-all">
+              <div className="w-12 h-12 rounded-DRX bg-sky-50 border border-sky-200 flex items-center justify-center text-DRX-primary">
                 <ShieldCheck className="h-6 w-6" />
               </div>
-              <h3 className="font-heading text-sm font-extrabold uppercase text-black">KEY BẢN QUYỀN 100%</h3>
-              <p className="text-xs text-ods-textMuted leading-relaxed">
-                Nhập trực tiếp từ các nhà phát hành Steam, Epic Games, EA, Ubisoft. Không bán Key giả hay rác code.
+              <h3 className="font-heading text-sm font-extrabold uppercase text-black">KEY Báº¢N QUYá»€N 100%</h3>
+              <p className="text-xs text-DRX-textMuted leading-relaxed">
+                Nháº­p trá»±c tiáº¿p tá»« cÃ¡c nhÃ  phÃ¡t hÃ nh Steam, Epic Games, EA, Ubisoft. KhÃ´ng bÃ¡n Key giáº£ hay rÃ¡c code.
               </p>
             </div>
 
-            <div className="rounded-ods border border-ods-border bg-white p-6 space-y-3 hover:border-black hover:shadow-lightShadow transition-all">
-              <div className="w-12 h-12 rounded-ods bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
+            <div className="rounded-DRX border border-DRX-border bg-white p-6 space-y-3 hover:border-black hover:shadow-lightShadow transition-all">
+              <div className="w-12 h-12 rounded-DRX bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
                 <RefreshCw className="h-6 w-6" />
               </div>
-              <h3 className="font-heading text-sm font-extrabold uppercase text-black">1 ĐỔI 1 TỨC THÌ</h3>
-              <p className="text-xs text-ods-textMuted leading-relaxed">
-                Đổi ngay Key mới hoặc tài khoản tương đương nếu sản phẩm bị lỗi do hệ thống kích hoạt.
+              <h3 className="font-heading text-sm font-extrabold uppercase text-black">1 Äá»”I 1 Tá»¨C THÃŒ</h3>
+              <p className="text-xs text-DRX-textMuted leading-relaxed">
+                Äá»•i ngay Key má»›i hoáº·c tÃ i khoáº£n tÆ°Æ¡ng Ä‘Æ°Æ¡ng náº¿u sáº£n pháº©m bá»‹ lá»—i do há»‡ thá»‘ng kÃ­ch hoáº¡t.
               </p>
             </div>
 
-            <div className="rounded-ods border border-ods-border bg-white p-6 space-y-3 hover:border-black hover:shadow-lightShadow transition-all">
-              <div className="w-12 h-12 rounded-ods bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600">
+            <div className="rounded-DRX border border-DRX-border bg-white p-6 space-y-3 hover:border-black hover:shadow-lightShadow transition-all">
+              <div className="w-12 h-12 rounded-DRX bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600">
                 <Zap className="h-6 w-6" />
               </div>
-              <h3 className="font-heading text-sm font-extrabold uppercase text-black">HOÀN TIỀN 100%</h3>
-              <p className="text-xs text-ods-textMuted leading-relaxed">
-                Hoàn tiền 100% vào Ví ODS hoặc Ngân hàng nếu hết hàng thay thế hoặc sản phẩm không đúng mô tả.
+              <h3 className="font-heading text-sm font-extrabold uppercase text-black">HOÃ€N TIá»€N 100%</h3>
+              <p className="text-xs text-DRX-textMuted leading-relaxed">
+                HoÃ n tiá»n 100% vÃ o VÃ­ DRX hoáº·c NgÃ¢n hÃ ng náº¿u háº¿t hÃ ng thay tháº¿ hoáº·c sáº£n pháº©m khÃ´ng Ä‘Ãºng mÃ´ táº£.
               </p>
             </div>
 
-            <div className="rounded-ods border border-ods-border bg-white p-6 space-y-3 hover:border-black hover:shadow-lightShadow transition-all">
-              <div className="w-12 h-12 rounded-ods bg-purple-50 border border-purple-200 flex items-center justify-center text-purple-600">
+            <div className="rounded-DRX border border-DRX-border bg-white p-6 space-y-3 hover:border-black hover:shadow-lightShadow transition-all">
+              <div className="w-12 h-12 rounded-DRX bg-purple-50 border border-purple-200 flex items-center justify-center text-purple-600">
                 <Clock className="h-6 w-6" />
               </div>
-              <h3 className="font-heading text-sm font-extrabold uppercase text-black">BẢO HÀNH TOÀN THỜI GIAN</h3>
-              <p className="text-xs text-ods-textMuted leading-relaxed">
-                Bảo hành trọn đời sản phẩm đối với Key Game vĩnh viễn và bảo hành thời hạn đối với Tài khoản gói dịch vụ.
+              <h3 className="font-heading text-sm font-extrabold uppercase text-black">Báº¢O HÃ€NH TOÃ€N THá»œI GIAN</h3>
+              <p className="text-xs text-DRX-textMuted leading-relaxed">
+                Báº£o hÃ nh trá»n Ä‘á»i sáº£n pháº©m Ä‘á»‘i vá»›i Key Game vÄ©nh viá»…n vÃ  báº£o hÃ nh thá»i háº¡n Ä‘á»‘i vá»›i TÃ i khoáº£n gÃ³i dá»‹ch vá»¥.
               </p>
             </div>
           </div>
@@ -118,71 +118,71 @@ export default function WarrantyPolicyPage() {
             <div className="lg:col-span-2 space-y-10">
               {/* SECTION 1 */}
               <section className="space-y-4">
-                <div className="flex items-center gap-3 border-b border-ods-border pb-3">
-                  <span className="font-heading text-xl font-extrabold text-ods-primary">01.</span>
+                <div className="flex items-center gap-3 border-b border-DRX-border pb-3">
+                  <span className="font-heading text-xl font-extrabold text-DRX-primary">01.</span>
                   <h2 className="font-heading text-lg font-extrabold uppercase tracking-wider text-black">
-                    NỘI DUNG VÀ ĐIỀU KIỆN BẢO HÀNH
+                    Ná»˜I DUNG VÃ€ ÄIá»€U KIá»†N Báº¢O HÃ€NH
                   </h2>
                 </div>
-                <div className="space-y-3 text-xs text-ods-textMuted leading-relaxed">
-                  <p>ODS Store thực hiện bảo hành tất cả sản phẩm kỹ thuật số được mua trực tiếp tại website <strong>http://localhost:3000</strong>. Các trường hợp được bảo hành bao gồm:</p>
+                <div className="space-y-3 text-xs text-DRX-textMuted leading-relaxed">
+                  <p>DRX Hardware thá»±c hiá»‡n báº£o hÃ nh táº¥t cáº£ sáº£n pháº©m ká»¹ thuáº­t sá»‘ Ä‘Æ°á»£c mua trá»±c tiáº¿p táº¡i website <strong>http://localhost:3000</strong>. CÃ¡c trÆ°á»ng há»£p Ä‘Æ°á»£c báº£o hÃ nh bao gá»“m:</p>
                   <ul className="space-y-2 pl-4 list-disc text-black font-medium">
-                    <li>Key game nhận được bị báo lỗi <strong>Duplicate / Already Used</strong> (Đã được kích hoạt trước đó).</li>
-                    <li>Key game bị sai vùng quốc gia (Invalid Region) so với vùng ghi trên thông tin sản phẩm.</li>
-                    <li>Mã kích hoạt bị mờ hoặc thiếu ký tự do lỗi phát sinh từ nhà cung cấp.</li>
-                    <li>Tài khoản game/dịch vụ mua tại ODS bị mất quyền truy cập trong thời hạn bảo hành.</li>
+                    <li>Key game nháº­n Ä‘Æ°á»£c bá»‹ bÃ¡o lá»—i <strong>Duplicate / Already Used</strong> (ÄÃ£ Ä‘Æ°á»£c kÃ­ch hoáº¡t trÆ°á»›c Ä‘Ã³).</li>
+                    <li>Key game bá»‹ sai vÃ¹ng quá»‘c gia (Invalid Region) so vá»›i vÃ¹ng ghi trÃªn thÃ´ng tin sáº£n pháº©m.</li>
+                    <li>MÃ£ kÃ­ch hoáº¡t bá»‹ má» hoáº·c thiáº¿u kÃ½ tá»± do lá»—i phÃ¡t sinh tá»« nhÃ  cung cáº¥p.</li>
+                    <li>TÃ i khoáº£n game/dá»‹ch vá»¥ mua táº¡i DRX bá»‹ máº¥t quyá»n truy cáº­p trong thá»i háº¡n báº£o hÃ nh.</li>
                   </ul>
                 </div>
               </section>
 
               {/* SECTION 2 */}
               <section className="space-y-4">
-                <div className="flex items-center gap-3 border-b border-ods-border pb-3">
-                  <span className="font-heading text-xl font-extrabold text-ods-primary">02.</span>
+                <div className="flex items-center gap-3 border-b border-DRX-border pb-3">
+                  <span className="font-heading text-xl font-extrabold text-DRX-primary">02.</span>
                   <h2 className="font-heading text-lg font-extrabold uppercase tracking-wider text-black">
-                    CÁC TRƯỜNG HỢP KHÔNG ĐƯỢC BẢO HÀNH
+                    CÃC TRÆ¯á»œNG Há»¢P KHÃ”NG ÄÆ¯á»¢C Báº¢O HÃ€NH
                   </h2>
                 </div>
-                <div className="bg-red-50/50 border border-red-200 rounded-ods p-4 space-y-3 text-xs text-red-950">
+                <div className="bg-red-50/50 border border-red-200 rounded-DRX p-4 space-y-3 text-xs text-red-950">
                   <div className="flex items-center gap-2 font-bold text-red-700 uppercase">
                     <AlertTriangle className="h-4 w-4 shrink-0 text-red-600" />
-                    <span>Lưu Ý Quan Trọng Nâng Cao Bảo Mật</span>
+                    <span>LÆ°u Ã Quan Trá»ng NÃ¢ng Cao Báº£o Máº­t</span>
                   </div>
                   <ul className="space-y-2 pl-4 list-disc leading-relaxed text-red-900">
-                    <li>Tài khoản cá nhân của khách hàng bị cấm (VAC Ban, Account Ban) do sử dụng phần mềm thứ ba / Hack / Cheat.</li>
-                    <li>Khách hàng tự ý tiết lộ Key game hoặc thông tin tài khoản cho người khác dẫn đến mất mát.</li>
-                    <li>Khách hàng yêu cầu trả hàng với lý do "không thích game" hoặc "máy tính không đủ cấu hình chơi game".</li>
-                    <li>Vượt quá thời hạn bảo hành quy định đối với từng loại tài khoản dịch vụ.</li>
+                    <li>TÃ i khoáº£n cÃ¡ nhÃ¢n cá»§a khÃ¡ch hÃ ng bá»‹ cáº¥m (VAC Ban, Account Ban) do sá»­ dá»¥ng pháº§n má»m thá»© ba / Hack / Cheat.</li>
+                    <li>KhÃ¡ch hÃ ng tá»± Ã½ tiáº¿t lá»™ Key game hoáº·c thÃ´ng tin tÃ i khoáº£n cho ngÆ°á»i khÃ¡c dáº«n Ä‘áº¿n máº¥t mÃ¡t.</li>
+                    <li>KhÃ¡ch hÃ ng yÃªu cáº§u tráº£ hÃ ng vá»›i lÃ½ do "khÃ´ng thÃ­ch game" hoáº·c "mÃ¡y tÃ­nh khÃ´ng Ä‘á»§ cáº¥u hÃ¬nh chÆ¡i game".</li>
+                    <li>VÆ°á»£t quÃ¡ thá»i háº¡n báº£o hÃ nh quy Ä‘á»‹nh Ä‘á»‘i vá»›i tá»«ng loáº¡i tÃ i khoáº£n dá»‹ch vá»¥.</li>
                   </ul>
                 </div>
               </section>
 
               {/* SECTION 3: WORKFLOW STEPS */}
               <section className="space-y-4">
-                <div className="flex items-center gap-3 border-b border-ods-border pb-3">
-                  <span className="font-heading text-xl font-extrabold text-ods-primary">03.</span>
+                <div className="flex items-center gap-3 border-b border-DRX-border pb-3">
+                  <span className="font-heading text-xl font-extrabold text-DRX-primary">03.</span>
                   <h2 className="font-heading text-lg font-extrabold uppercase tracking-wider text-black">
-                    QUY TRÌNH YÊU CẦU BẢO HÀNH (3 BƯỚC NHAH NÓNG)
+                    QUY TRÃŒNH YÃŠU Cáº¦U Báº¢O HÃ€NH (3 BÆ¯á»šC NHAH NÃ“NG)
                   </h2>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-                  <div className="bg-ods-surface p-4 rounded-ods border border-ods-border space-y-2">
+                  <div className="bg-DRX-surface p-4 rounded-DRX border border-DRX-border space-y-2">
                     <span className="w-7 h-7 rounded-full bg-black text-white font-extrabold text-xs flex items-center justify-center">1</span>
-                    <h4 className="font-heading text-xs font-bold text-black uppercase">Chụp Ảnh Lỗi</h4>
-                    <p className="text-[11px] text-ods-textMuted">Chụp lại ảnh màn hình báo lỗi khi kích hoạt Key trên Steam / Epic Games.</p>
+                    <h4 className="font-heading text-xs font-bold text-black uppercase">Chá»¥p áº¢nh Lá»—i</h4>
+                    <p className="text-[11px] text-DRX-textMuted">Chá»¥p láº¡i áº£nh mÃ n hÃ¬nh bÃ¡o lá»—i khi kÃ­ch hoáº¡t Key trÃªn Steam / Epic Games.</p>
                   </div>
 
-                  <div className="bg-ods-surface p-4 rounded-ods border border-ods-border space-y-2">
+                  <div className="bg-DRX-surface p-4 rounded-DRX border border-DRX-border space-y-2">
                     <span className="w-7 h-7 rounded-full bg-black text-white font-extrabold text-xs flex items-center justify-center">2</span>
-                    <h4 className="font-heading text-xs font-bold text-black uppercase">Gửi Mã Đơn Hàng</h4>
-                    <p className="text-[11px] text-ods-textMuted">Gửi Mã đơn hàng (VD: ODS-8X912) và ảnh lỗi cho bộ phận CSKH ODS.</p>
+                    <h4 className="font-heading text-xs font-bold text-black uppercase">Gá»­i MÃ£ ÄÆ¡n HÃ ng</h4>
+                    <p className="text-[11px] text-DRX-textMuted">Gá»­i MÃ£ Ä‘Æ¡n hÃ ng (VD: DRX-8X912) vÃ  áº£nh lá»—i cho bá»™ pháº­n CSKH DRX.</p>
                   </div>
 
-                  <div className="bg-ods-surface p-4 rounded-ods border border-ods-border space-y-2">
+                  <div className="bg-DRX-surface p-4 rounded-DRX border border-DRX-border space-y-2">
                     <span className="w-7 h-7 rounded-full bg-black text-white font-extrabold text-xs flex items-center justify-center">3</span>
-                    <h4 className="font-heading text-xs font-bold text-black uppercase">Nhận Key Mới</h4>
-                    <p className="text-[11px] text-ods-textMuted">Kỹ thuật viên xác minh và cấp Key mới hoặc hoàn tiền ngay trong 15 phút.</p>
+                    <h4 className="font-heading text-xs font-bold text-black uppercase">Nháº­n Key Má»›i</h4>
+                    <p className="text-[11px] text-DRX-textMuted">Ká»¹ thuáº­t viÃªn xÃ¡c minh vÃ  cáº¥p Key má»›i hoáº·c hoÃ n tiá»n ngay trong 15 phÃºt.</p>
                   </div>
                 </div>
               </section>
@@ -190,13 +190,13 @@ export default function WarrantyPolicyPage() {
 
             {/* SIDEBAR SUPPORT BOX */}
             <div className="space-y-6">
-              <div className="rounded-ods border border-ods-border bg-ods-surface p-6 space-y-4">
+              <div className="rounded-DRX border border-DRX-border bg-DRX-surface p-6 space-y-4">
                 <div className="flex items-center gap-3 text-black">
-                  <MessageSquare className="h-6 w-6 text-ods-primary" />
-                  <h3 className="font-heading text-sm font-extrabold uppercase">CẦN HỖ TRỢ BẢO HÀNH GẤP?</h3>
+                  <MessageSquare className="h-6 w-6 text-DRX-primary" />
+                  <h3 className="font-heading text-sm font-extrabold uppercase">Cáº¦N Há»– TRá»¢ Báº¢O HÃ€NH Gáº¤P?</h3>
                 </div>
-                <p className="text-xs text-ods-textMuted leading-relaxed">
-                  Đội ngũ kỹ thuật ODS Store luôn túc trực 24/7 để giải quyết mọi sự cố kích hoạt cho bạn.
+                <p className="text-xs text-DRX-textMuted leading-relaxed">
+                  Äá»™i ngÅ© ká»¹ thuáº­t DRX Hardware luÃ´n tÃºc trá»±c 24/7 Ä‘á»ƒ giáº£i quyáº¿t má»i sá»± cá»‘ kÃ­ch hoáº¡t cho báº¡n.
                 </p>
 
                 <div className="space-y-2.5 pt-2">
@@ -204,7 +204,7 @@ export default function WarrantyPolicyPage() {
                     href="https://facebook.com"
                     target="_blank"
                     rel="noreferrer"
-                    className="w-full flex items-center justify-center gap-2 rounded-ods bg-ods-primary hover:bg-ods-primaryHover text-white py-3 text-xs font-bold uppercase tracking-wider transition-all shadow-buttonGlow"
+                    className="w-full flex items-center justify-center gap-2 rounded-DRX bg-DRX-primary hover:bg-DRX-primaryHover text-white py-3 text-xs font-bold uppercase tracking-wider transition-all shadow-buttonGlow"
                   >
                     <MessageSquare className="h-4 w-4" />
                     <span>Chat Fanpage CSKH 24/7</span>
@@ -212,21 +212,21 @@ export default function WarrantyPolicyPage() {
 
                   <Link
                     href="/policies/faq"
-                    className="w-full flex items-center justify-center gap-2 rounded-ods border border-ods-border bg-white text-black py-3 text-xs font-bold uppercase tracking-wider hover:border-black transition-all"
+                    className="w-full flex items-center justify-center gap-2 rounded-DRX border border-DRX-border bg-white text-black py-3 text-xs font-bold uppercase tracking-wider hover:border-black transition-all"
                   >
                     <HelpCircle className="h-4 w-4" />
-                    <span>Xem Câu Hỏi Thường Gặp</span>
+                    <span>Xem CÃ¢u Há»i ThÆ°á»ng Gáº·p</span>
                   </Link>
                 </div>
               </div>
 
-              <div className="rounded-ods border border-emerald-200 bg-emerald-50/60 p-5 space-y-2">
+              <div className="rounded-DRX border border-emerald-200 bg-emerald-50/60 p-5 space-y-2">
                 <div className="flex items-center gap-2 text-emerald-800 font-bold text-xs uppercase">
                   <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                  <span>Xác Minh Đơn Hàng Tự Động</span>
+                  <span>XÃ¡c Minh ÄÆ¡n HÃ ng Tá»± Äá»™ng</span>
                 </div>
                 <p className="text-[11px] text-emerald-900 leading-relaxed">
-                  Mọi Key Game mua tại ODS đều lưu trữ mã checksum an toàn trong lịch sử đơn hàng tài khoản của bạn.
+                  Má»i Key Game mua táº¡i DRX Ä‘á»u lÆ°u trá»¯ mÃ£ checksum an toÃ n trong lá»‹ch sá»­ Ä‘Æ¡n hÃ ng tÃ i khoáº£n cá»§a báº¡n.
                 </p>
               </div>
             </div>
@@ -239,3 +239,4 @@ export default function WarrantyPolicyPage() {
     </CartProvider>
   );
 }
+

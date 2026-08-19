@@ -16,7 +16,7 @@ import {
 const CATEGORY_CONFIG: Record<string, { title: string; subtitle: string; iconName: string; bgGradient: string }> = {
   ALL: {
     title: 'Toàn Bộ Kho Linh Kiện & PC',
-    subtitle: 'Danh mục linh kiện máy tính, Laptop, màn hình & phụ kiện gaming chính hãng ODSStore',
+    subtitle: 'Danh mục linh kiện máy tính, Laptop, màn hình & phụ kiện gaming chính hãng DRX Hardware',
     iconName: 'Grid',
     bgGradient: 'from-slate-900 via-sky-950 to-slate-950',
   },
@@ -229,7 +229,7 @@ function ProductsCatalogContent() {
     const key = selectedCategory.toUpperCase();
     return CATEGORY_CONFIG[key] || {
       title: selectedCategory.replace(/_/g, ' '),
-      subtitle: `Danh mục sản phẩm ${selectedCategory} chính hãng tại ODSStore`,
+      subtitle: `Danh mục sản phẩm ${selectedCategory} chính hãng tại DRX Hardware`,
       iconName: 'Grid',
       bgGradient: 'from-slate-900 via-sky-950 to-slate-950',
     };
@@ -252,7 +252,7 @@ function ProductsCatalogContent() {
         {/* BREADCRUMB */}
         <div className="mb-6 flex items-center justify-between">
           <Link href="/" className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-[#0284c7] transition-colors">
-            <ArrowLeft className="h-4 w-4 text-[#0284c7]" /> Trang Chủ ODSStore
+            <ArrowLeft className="h-4 w-4 text-[#0284c7]" /> Trang Chủ DRX Hardware
           </Link>
           <span className="text-xs font-extrabold text-[#0284c7] bg-sky-50 border border-sky-200 px-3.5 py-1.5 rounded-full shadow-2xs">
             {filteredProducts.length} Linh Kiện Chính Hãng
@@ -265,7 +265,7 @@ function ProductsCatalogContent() {
             <div className="space-y-2 max-w-2xl">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-xs font-extrabold text-sky-300">
                 <CategoryIcon name={currentCategoryInfo.iconName} className="h-4 w-4 text-sky-400" />
-                <span>DANH MỤC SẢN PHẨM ODSSTORE</span>
+                <span>DANH MỤC SẢN PHẨM DRX HARDWARE</span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-black font-heading tracking-tight text-white">
                 {currentCategoryInfo.title}
@@ -395,7 +395,7 @@ function ProductsCatalogContent() {
         {/* PRODUCTS GRID */}
         {isLoading ? (
           <div className="py-24 text-center text-xs font-bold text-slate-400">
-            Đang tải kho sản phẩm ODSStore...
+            Đang tải kho sản phẩm DRX Hardware...
           </div>
         ) : filteredProducts.length === 0 ? (
           <div className="py-20 text-center space-y-4 rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
@@ -405,7 +405,7 @@ function ProductsCatalogContent() {
             <div className="space-y-1">
               <h4 className="text-base font-extrabold text-slate-900">Chưa có sản phẩm nào trong danh mục này</h4>
               <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                Hãy thử chọn danh mục khác hoặc xóa bộ lọc tìm kiếm để khám phá kho hàng ODSStore.
+                Hãy thử chọn danh mục khác hoặc xóa bộ lọc tìm kiếm để khám phá kho hàng DRX Hardware.
               </p>
             </div>
             <button
@@ -433,7 +433,7 @@ function ProductsCatalogContent() {
 export default function ProductsPage() {
   return (
     <CartProvider>
-      <Suspense fallback={<div className="py-20 text-center text-xs font-bold text-slate-400">Loading ODSStore catalog...</div>}>
+      <Suspense fallback={<div className="py-20 text-center text-xs font-bold text-slate-400">Loading DRX Hardware catalog...</div>}>
         <ProductsCatalogContent />
       </Suspense>
     </CartProvider>

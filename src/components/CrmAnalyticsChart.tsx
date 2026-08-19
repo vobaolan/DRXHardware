@@ -118,7 +118,7 @@ export function CrmAnalyticsChart({
               <BarChart3 className="h-5 w-5" />
             </div>
             <h2 className="text-sm font-black text-zinc-900 uppercase tracking-wider">
-              BIỂU ĐỒ PHÂN TÍCH TÀI CHÍNH ODS STORE
+              BIỂU ĐỒ PHÂN TÍCH TÀI CHÍNH DRX HARDWARE
             </h2>
           </div>
           <p className="text-xs text-zinc-500 font-medium">

@@ -16,7 +16,7 @@ export default function ChatbotWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', content: 'Xin chào! Mình là ODS CyberBot AI 🤖⚡ — Trợ lý AI thế hệ mới được thiết kế riêng cho ODS Store. Bạn có thể hỏi mình bất kỳ điều gì nhé!' }
+    { role: 'assistant', content: 'Xin chào! Mình là DRX AI Assistant 🤖 — Trợ lý AI chuyên tư vấn linh kiện PC, Laptop Gaming & Build PC chính hãng tại DRX Hardware. Bạn cần hỗ trợ gì hôm nay?' }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);

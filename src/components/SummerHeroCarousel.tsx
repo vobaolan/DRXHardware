@@ -55,7 +55,7 @@ const TIN_HOC_NGOI_SAO_BANNERS: TabBanner[] = [
       { title: 'LÃI SUẤT ƯU ĐÃI', value: 'CHỈ TỪ 0% - 1.49%' },
       { title: 'THỜI HẠN LINH HOẠT', value: '6 - 24 THÁNG' },
     ],
-    dateRange: 'Áp dụng toàn bộ hệ thống ODS Store',
+    dateRange: 'Áp dụng toàn bộ hệ thống DRX Hardware',
     ctaText: 'TÍNH LÃI TRẢ GÓP',
     ctaLink: '/checkout',
     rightVisualImage: 'https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?w=900&auto=format&fit=crop&q=80',
@@ -155,9 +155,9 @@ export const SummerHeroCarousel: React.FC = () => {
         {/* TOP BRAND HEADER ROW & ARROWS */}
         <div className="relative z-20 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            {/* ODS STORE LOGO BADGE */}
-            <Link href="/" className="inline-flex items-center gap-2 bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-full shadow-md hover:scale-105 transition-transform">
-              <img src="/logo/ods_black.png" alt="ODS Store Logo" className="h-6 w-auto object-contain" />
+            {/* DRX HARDWARE LOGO BADGE */}
+            <Link href="/" className="inline-flex items-center gap-2 bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-full shadow-md hover:scale-105 transition-transform" title="Trang chủ DRX HARDWARE">
+              <img src="/logo/logo-blue.png" alt="DRX Hardware Logo" className="h-6 w-auto object-contain" />
             </Link>
 
             <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-[11px] font-black uppercase text-white tracking-wider border border-white/30">

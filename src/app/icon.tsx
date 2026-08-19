@@ -9,7 +9,7 @@ export default function Icon() {
     (
       <div
         style={{
-          fontSize: 15,
+          fontSize: 13,
           background: '#09090b',
           width: '100%',
           height: '100%',
@@ -25,7 +25,7 @@ export default function Icon() {
           boxShadow: '0 0 8px rgba(2, 132, 199, 0.4)',
         }}
       >
-        ODS
+        DRX
       </div>
     ),
     { ...size }

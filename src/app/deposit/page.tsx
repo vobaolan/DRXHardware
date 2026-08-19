@@ -141,7 +141,7 @@ export default function DepositPage() {
       window.dispatchEvent(new Event('storage'));
 
       setIsSuccess(true);
-      showToast(`⚡ Nạp thành công ${formatCurrency(effectiveAmount)} vào ví ODS Store!`, 'success');
+      showToast(`⚡ Nạp thành công ${formatCurrency(effectiveAmount)} vào ví DRX Hardware!`, 'success');
     } catch (err) {
       console.error('Lỗi xác nhận nạp tiền:', err);
       showToast('Có lỗi xảy ra khi xác nhận nạp tiền. Vui lòng thử lại!', 'error');
@@ -179,7 +179,7 @@ export default function DepositPage() {
                 <div>
                   <h1 className="text-xl font-extrabold text-zinc-900 tracking-tight flex items-center gap-2">
                     <Wallet className="h-6 w-6 text-sky-600" />
-                    <span>Nạp Tiền Vào Ví ODS Store</span>
+                    <span>Nạp Tiền Vào Ví DRX Hardware</span>
                   </h1>
                   <p className="text-xs text-zinc-500 mt-1">
                     Nạp tiền tự động qua QR Ngân Hàng — Số dư cập nhật ngay sau 2 giây!
@@ -288,8 +288,8 @@ export default function DepositPage() {
               </h3>
               <ul className="text-xs text-zinc-600 space-y-2 list-disc pl-4 font-normal">
                 <li>Vui lòng giữ nguyên <strong>Nội dung chuyển khoản</strong> để hệ thống tự động cộng ví tức thì.</li>
-                <li>Ví ODSStore hỗ trợ thanh toán 1-Click, đặt cọc giữ hàng & mua linh kiện PC chính hãng 24/7 không tính thêm phí.</li>
-                <li>Nếu chuyển nhầm hoặc quá 5 phút chưa cộng ví, vui lòng liên hệ Chatbot ODS AI hoặc Fanpage/Hotline hỗ trợ 100%.</li>
+                <li>Ví DRX Hardware hỗ trợ thanh toán 1-Click, đặt cọc giỏ hàng & mua linh kiện PC chính hãng 24/7 không tính thêm phí.</li>
+                <li>Nếu chuyển nhầm hoặc quá 5 phút chưa cộng ví, vui lòng liên hệ Chatbot DRX AI hoặc Fanpage/Hotline hỗ trợ 100%.</li>
               </ul>
             </div>
           </div>
@@ -436,7 +436,7 @@ export default function DepositPage() {
                     </div>
                     <h3 className="text-lg font-extrabold text-zinc-900">NẠP TIỀN THÀNH CÔNG!</h3>
                     <p className="text-xs text-zinc-500 mt-1 max-w-xs">
-                      Đã cộng <strong className="text-emerald-600 font-bold">{formatCurrency(effectiveAmount)}</strong> vào ví ODS Store của bạn.
+                      Đã cộng <strong className="text-emerald-600 font-bold">{formatCurrency(effectiveAmount)}</strong> vào ví DRX Hardware của bạn.
                     </p>
                     <div className="mt-4 p-3 bg-zinc-50 rounded-xl border border-zinc-200 text-xs font-bold text-zinc-800 w-full max-w-xs">
                       Số dư hiện tại: <span className="text-sky-600 font-extrabold">{currentUser ? formatCurrency(currentUser.balance) : '0 đ'}</span>

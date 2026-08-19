@@ -181,7 +181,7 @@ export default function CheckoutPage() {
             className="inline-flex items-center gap-2 text-xs font-bold text-zinc-500 hover:text-sky-600 transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
-            <span>Quay lại Trang Chủ ODS Store</span>
+            <span>Quay lại Trang Chủ DRX Hardware</span>
           </Link>
           <div className="flex items-center gap-2 bg-emerald-50 text-emerald-700 px-3.5 py-1.5 rounded-full border border-emerald-200 text-xs font-bold shadow-2xs">
             <Lock className="h-3.5 w-3.5 text-emerald-600" />
@@ -639,7 +639,7 @@ export default function CheckoutPage() {
                 /* Wallet Pay View Mode */
                 <div className="space-y-4 py-4 text-center">
                   <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs space-y-1">
-                    <p className="font-bold">Thanh toán 1-Click bằng số dư ví ODS Store</p>
+                    <p className="font-bold">Thanh toán 1-Click bằng số dư ví DRX Hardware</p>
                     <p className="text-[11px] text-amber-700">
                       Số dư sau khi thanh toán: <strong>{formatCurrency(Math.max(0, userBalance - netAmount))}</strong>
                     </p>

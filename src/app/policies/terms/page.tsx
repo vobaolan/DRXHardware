@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React from 'react';
 import Link from 'next/link';
@@ -23,28 +23,28 @@ export default function TermsPolicyPage() {
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10 text-center space-y-4">
             <div className="inline-flex items-center gap-2 rounded-full bg-blue-500/10 border border-blue-500/20 px-3.5 py-1 text-xs font-bold text-blue-400 uppercase tracking-widest mx-auto">
               <Scale className="h-4 w-4" />
-              <span>QUY ĐỊNH & THỎA THUẬN NGƯỜI DÙNG</span>
+              <span>QUY Äá»ŠNH & THá»ŽA THUáº¬N NGÆ¯á»œI DÃ™NG</span>
             </div>
 
             <h1
               className="font-heading text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-wider uppercase text-white"
               style={{ lineHeight: '1.55' }}
             >
-              ĐIỀU KHOẢN DỊCH VỤ ODS STORE
+              ÄIá»€U KHOáº¢N Dá»ŠCH Vá»¤ DRX Hardware
             </h1>
 
             <p className="text-xs sm:text-sm text-zinc-400 font-light max-w-2xl mx-auto leading-relaxed">
-              Vui lòng đọc kỹ các quy định và điều khoản sử dụng dưới đây trước khi thực hiện giao dịch mua bán bản quyền game và tài khoản dịch vụ tại ODS Store.
+              Vui lÃ²ng Ä‘á»c ká»¹ cÃ¡c quy Ä‘á»‹nh vÃ  Ä‘iá»u khoáº£n sá»­ dá»¥ng dÆ°á»›i Ä‘Ã¢y trÆ°á»›c khi thá»±c hiá»‡n giao dá»‹ch mua bÃ¡n báº£n quyá»n game vÃ  tÃ i khoáº£n dá»‹ch vá»¥ táº¡i DRX Hardware.
             </p>
           </div>
         </section>
 
         {/* BREADCRUMB */}
-        <div className="bg-ods-surface border-b border-ods-border py-3">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex items-center gap-2 text-xs text-ods-textMuted">
-            <Link href="/" className="hover:text-black transition-colors">Trang chủ</Link>
+        <div className="bg-DRX-surface border-b border-DRX-border py-3">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex items-center gap-2 text-xs text-DRX-textMuted">
+            <Link href="/" className="hover:text-black transition-colors">Trang chá»§</Link>
             <span>/</span>
-            <span className="text-black font-bold">Điều khoản dịch vụ</span>
+            <span className="text-black font-bold">Äiá»u khoáº£n dá»‹ch vá»¥</span>
           </div>
         </div>
 
@@ -54,57 +54,57 @@ export default function TermsPolicyPage() {
             <div className="lg:col-span-2 space-y-10">
               {/* SECTION 1 */}
               <section className="space-y-3">
-                <div className="flex items-center gap-3 border-b border-ods-border pb-3">
-                  <span className="font-heading text-xl font-extrabold text-ods-primary">01.</span>
+                <div className="flex items-center gap-3 border-b border-DRX-border pb-3">
+                  <span className="font-heading text-xl font-extrabold text-DRX-primary">01.</span>
                   <h2 className="font-heading text-lg font-extrabold uppercase text-black">
-                    QUY ĐỊNH VỀ TÀI KHOẢN NGƯỜI DÙNG
+                    QUY Äá»ŠNH Vá»€ TÃ€I KHOáº¢N NGÆ¯á»œI DÃ™NG
                   </h2>
                 </div>
-                <div className="space-y-3 text-xs text-ods-textMuted leading-relaxed">
-                  <p>Khi đăng ký tài khoản tại ODS Store, người dùng cần tuân thủ các nghĩa vụ sau:</p>
+                <div className="space-y-3 text-xs text-DRX-textMuted leading-relaxed">
+                  <p>Khi Ä‘Äƒng kÃ½ tÃ i khoáº£n táº¡i DRX Hardware, ngÆ°á»i dÃ¹ng cáº§n tuÃ¢n thá»§ cÃ¡c nghÄ©a vá»¥ sau:</p>
                   <ul className="space-y-2 pl-4 list-disc text-black font-medium">
-                    <li>Cung cấp thông tin địa chỉ Email chính xác để nhận mã Key Game và thông báo giao dịch.</li>
-                    <li>Có trách nhiệm tự bảo mật mật khẩu tài khoản cá nhân. ODS không chịu trách nhiệm với các trường hợp lộ mật khẩu từ phía người dùng.</li>
-                    <li>Mỗi cá nhân chỉ nên đăng ký và sử dụng một tài khoản chính chủ trên hệ thống.</li>
+                    <li>Cung cáº¥p thÃ´ng tin Ä‘á»‹a chá»‰ Email chÃ­nh xÃ¡c Ä‘á»ƒ nháº­n mÃ£ Key Game vÃ  thÃ´ng bÃ¡o giao dá»‹ch.</li>
+                    <li>CÃ³ trÃ¡ch nhiá»‡m tá»± báº£o máº­t máº­t kháº©u tÃ i khoáº£n cÃ¡ nhÃ¢n. DRX khÃ´ng chá»‹u trÃ¡ch nhiá»‡m vá»›i cÃ¡c trÆ°á»ng há»£p lá»™ máº­t kháº©u tá»« phÃ­a ngÆ°á»i dÃ¹ng.</li>
+                    <li>Má»—i cÃ¡ nhÃ¢n chá»‰ nÃªn Ä‘Äƒng kÃ½ vÃ  sá»­ dá»¥ng má»™t tÃ i khoáº£n chÃ­nh chá»§ trÃªn há»‡ thá»‘ng.</li>
                   </ul>
                 </div>
               </section>
 
               {/* SECTION 2 */}
               <section className="space-y-3">
-                <div className="flex items-center gap-3 border-b border-ods-border pb-3">
-                  <span className="font-heading text-xl font-extrabold text-ods-primary">02.</span>
+                <div className="flex items-center gap-3 border-b border-DRX-border pb-3">
+                  <span className="font-heading text-xl font-extrabold text-DRX-primary">02.</span>
                   <h2 className="font-heading text-lg font-extrabold uppercase text-black">
-                    GIAO DỊCH VÀ GIAO NHẬN SẢN PHẨM TỰ ĐỘNG
+                    GIAO Dá»ŠCH VÃ€ GIAO NHáº¬N Sáº¢N PHáº¨M Tá»° Äá»˜NG
                   </h2>
                 </div>
-                <div className="space-y-3 text-xs text-ods-textMuted leading-relaxed">
-                  <p>Hệ thống ODS Store vận hành quy trình xuất Key hoàn toàn tự động 24/7:</p>
+                <div className="space-y-3 text-xs text-DRX-textMuted leading-relaxed">
+                  <p>Há»‡ thá»‘ng DRX Hardware váº­n hÃ nh quy trÃ¬nh xuáº¥t Key hoÃ n toÃ n tá»± Ä‘á»™ng 24/7:</p>
                   <ul className="space-y-2 pl-4 list-disc text-black font-medium">
-                    <li>Sau khi hệ thống ngân hàng xác nhận giao dịch thành công, Key Game sẽ hiển thị tức thì tại giao diện và lưu trữ trong mục <strong>Lịch Sử Đơn Hàng</strong>.</li>
-                    <li>Mức giá hiển thị trên website là giá thanh toán cuối cùng đã bao gồm các chương trình khuyến mãi.</li>
-                    <li>Trường hợp chuyển khoản sai cú pháp hoặc sai số tiền, hệ thống sẽ treo đơn chờ bộ phận kỹ thuật viên xác minh hỗ trợ cộng số dư thủ công trong tối đa 15 phút.</li>
+                    <li>Sau khi há»‡ thá»‘ng ngÃ¢n hÃ ng xÃ¡c nháº­n giao dá»‹ch thÃ nh cÃ´ng, Key Game sáº½ hiá»ƒn thá»‹ tá»©c thÃ¬ táº¡i giao diá»‡n vÃ  lÆ°u trá»¯ trong má»¥c <strong>Lá»‹ch Sá»­ ÄÆ¡n HÃ ng</strong>.</li>
+                    <li>Má»©c giÃ¡ hiá»ƒn thá»‹ trÃªn website lÃ  giÃ¡ thanh toÃ¡n cuá»‘i cÃ¹ng Ä‘Ã£ bao gá»“m cÃ¡c chÆ°Æ¡ng trÃ¬nh khuyáº¿n mÃ£i.</li>
+                    <li>TrÆ°á»ng há»£p chuyá»ƒn khoáº£n sai cÃº phÃ¡p hoáº·c sai sá»‘ tiá»n, há»‡ thá»‘ng sáº½ treo Ä‘Æ¡n chá» bá»™ pháº­n ká»¹ thuáº­t viÃªn xÃ¡c minh há»— trá»£ cá»™ng sá»‘ dÆ° thá»§ cÃ´ng trong tá»‘i Ä‘a 15 phÃºt.</li>
                   </ul>
                 </div>
               </section>
 
               {/* SECTION 3 */}
               <section className="space-y-3">
-                <div className="flex items-center gap-3 border-b border-ods-border pb-3">
-                  <span className="font-heading text-xl font-extrabold text-ods-primary">03.</span>
+                <div className="flex items-center gap-3 border-b border-DRX-border pb-3">
+                  <span className="font-heading text-xl font-extrabold text-DRX-primary">03.</span>
                   <h2 className="font-heading text-lg font-extrabold uppercase text-black">
-                    CÁC HÀNH VI BỊ CẤM TRÊN HỆ THỐNG
+                    CÃC HÃ€NH VI Bá»Š Cáº¤M TRÃŠN Há»† THá»NG
                   </h2>
                 </div>
-                <div className="bg-red-50 border border-red-200 rounded-ods p-4 space-y-2 text-xs text-red-950">
+                <div className="bg-red-50 border border-red-200 rounded-DRX p-4 space-y-2 text-xs text-red-950">
                   <div className="flex items-center gap-2 font-bold text-red-700 uppercase">
                     <AlertCircle className="h-4 w-4 text-red-600" />
-                    <span>Nghiêm Cấm Tuyệt Đối</span>
+                    <span>NghiÃªm Cáº¥m Tuyá»‡t Äá»‘i</span>
                   </div>
                   <ul className="space-y-1.5 pl-4 list-disc leading-relaxed text-red-900">
-                    <li>Sử dụng các thẻ ngân hàng giả mạo, thẻ chui (CC chùa) hoặc can thiệp bất hợp pháp vào cổng thanh toán.</li>
-                    <li>Lợi dụng lỗi hệ thống (Exploit Bug) để trục lợi mã giảm giá hoặc rút tiền không hợp lệ.</li>
-                    <li>Spam giao dịch rác hoặc có hành vi gian lận làm gián đoạn hạ tầng máy chủ ODS Store.</li>
+                    <li>Sá»­ dá»¥ng cÃ¡c tháº» ngÃ¢n hÃ ng giáº£ máº¡o, tháº» chui (CC chÃ¹a) hoáº·c can thiá»‡p báº¥t há»£p phÃ¡p vÃ o cá»•ng thanh toÃ¡n.</li>
+                    <li>Lá»£i dá»¥ng lá»—i há»‡ thá»‘ng (Exploit Bug) Ä‘á»ƒ trá»¥c lá»£i mÃ£ giáº£m giÃ¡ hoáº·c rÃºt tiá»n khÃ´ng há»£p lá»‡.</li>
+                    <li>Spam giao dá»‹ch rÃ¡c hoáº·c cÃ³ hÃ nh vi gian láº­n lÃ m giÃ¡n Ä‘oáº¡n háº¡ táº§ng mÃ¡y chá»§ DRX Hardware.</li>
                   </ul>
                 </div>
               </section>
@@ -112,22 +112,22 @@ export default function TermsPolicyPage() {
 
             {/* SIDEBAR */}
             <div className="space-y-6">
-              <div className="rounded-ods border border-ods-border bg-ods-surface p-6 space-y-4">
+              <div className="rounded-DRX border border-DRX-border bg-DRX-surface p-6 space-y-4">
                 <div className="flex items-center gap-3 text-black">
-                  <FileText className="h-6 w-6 text-ods-primary" />
-                  <h3 className="font-heading text-sm font-extrabold uppercase">TỔNG QUAN CAM KẾT</h3>
+                  <FileText className="h-6 w-6 text-DRX-primary" />
+                  <h3 className="font-heading text-sm font-extrabold uppercase">Tá»”NG QUAN CAM Káº¾T</h3>
                 </div>
-                <p className="text-xs text-ods-textMuted leading-relaxed">
-                  ODS Store cam kết mang lại môi trường mua sắm game bản quyền minh bạch, an toàn và bảo vệ tối đa quyền lợi cho game thủ Việt Nam.
+                <p className="text-xs text-DRX-textMuted leading-relaxed">
+                  DRX Hardware cam káº¿t mang láº¡i mÃ´i trÆ°á»ng mua sáº¯m game báº£n quyá»n minh báº¡ch, an toÃ n vÃ  báº£o vá»‡ tá»‘i Ä‘a quyá»n lá»£i cho game thá»§ Viá»‡t Nam.
                 </p>
 
                 <div className="pt-2">
                   <Link
                     href="/policies/privacy"
-                    className="w-full flex items-center justify-center gap-2 rounded-ods bg-black text-white py-3 text-xs font-bold uppercase tracking-wider hover:bg-zinc-800 transition-all"
+                    className="w-full flex items-center justify-center gap-2 rounded-DRX bg-black text-white py-3 text-xs font-bold uppercase tracking-wider hover:bg-zinc-800 transition-all"
                   >
                     <Lock className="h-4 w-4" />
-                    <span>Xem Chính Sách Bảo Mật</span>
+                    <span>Xem ChÃ­nh SÃ¡ch Báº£o Máº­t</span>
                   </Link>
                 </div>
               </div>
@@ -141,3 +141,4 @@ export default function TermsPolicyPage() {
     </CartProvider>
   );
 }
+

@@ -23,13 +23,13 @@ export const InitialLoader: React.FC = () => {
         const current = next > 100 ? 100 : next;
 
         if (current < 30) {
-          setStatusText('⚡ ĐANG KHỞI ĐỘNG HỆ THỐNG ODS STORE...');
+          setStatusText('⚡ ĐANG KHỞI ĐỘNG HỆ THỐNG DRX HARDWARE...');
         } else if (current < 65) {
-          setStatusText('🎮 KẾT NỐI MÁY CHỦ BẢO MẬT SUPABASE...');
+          setStatusText('🔒 KẾT NỐI MÁY CHỦ BẢO MẬT SUPABASE...');
         } else if (current < 95) {
-          setStatusText('🔑 ĐỒNG BỘ KHO KEY & TÀI KHOẢN GAME...');
+          setStatusText('📦 ĐỒNG BỘ KHO LINH KIỆN & PC GAMING...');
         } else {
-          setStatusText('✨ SẴN SÀNG TRẢI NGHIỆM!');
+          setStatusText('✅ SẴN SÀNG TRẢI NGHIỆM!');
         }
 
         return current;
@@ -115,7 +115,7 @@ export const InitialLoader: React.FC = () => {
           {/* 4. Bottom Powered Badge */}
           <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2 text-[10px] text-zinc-500 uppercase tracking-widest font-semibold">
             <ShieldCheck className="h-3.5 w-3.5 text-sky-500" />
-            <span>ODS STORE XBOX POWERED STARTUP ENGINE</span>
+            <span>DRX HARDWARE POWERED ENGINE</span>
           </div>
         </motion.div>
       )}

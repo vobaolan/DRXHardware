@@ -17,13 +17,12 @@ const outfit = Outfit({
   display: "swap",
 });
 
-
 export const metadata: Metadata = {
   title: {
-    default: "ODS | Odyssey Store",
-    template: "%s | ODS | Odyssey Store",
+    default: "DRX Hardware | Showroom Linh Kiện Máy Tính & PC Gaming",
+    template: "%s | DRX Hardware",
   },
-  description: "Cửa hàng linh kiện máy tính, PC Building và thiết bị công nghệ chính hãng ODSStore. Bảo hành 36T 1 đổi 1.",
+  description: "Cửa hàng linh kiện máy tính, PC Building và thiết bị công nghệ chính hãng DRX Hardware. Bảo hành 36T 1 đổi 1.",
   icons: {
     icon: [
       { url: "/icon.svg", type: "image/svg+xml" },

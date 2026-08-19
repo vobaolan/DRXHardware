@@ -91,15 +91,15 @@ export const Footer: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
           {/* COLUMN 1: BRAND SHOWROOM INFO */}
           <div className="space-y-4 lg:col-span-2">
-            <Link href="/" className="group inline-flex items-center gap-2" title="Trang chủ ODS STORE">
+            <Link href="/" className="group inline-flex items-center gap-2" title="Trang chủ DRX HARDWARE">
               <img 
-                src="/logo/ods_black.png" 
-                alt="ODS STORE Logo" 
+                src="/logo/logo-footer.png" 
+                alt="DRX HARDWARE Logo" 
                 className="h-9 w-auto object-contain dark:hidden group-hover:scale-105 transition-transform" 
               />
               <img 
-                src="/logo/ods_white.png" 
-                alt="ODS STORE Logo" 
+                src="/logo/logo-white.png" 
+                alt="DRX HARDWARE Logo" 
                 className="h-9 w-auto object-contain hidden dark:block group-hover:scale-105 transition-transform" 
               />
             </Link>
@@ -122,7 +122,7 @@ export const Footer: React.FC = () => {
               </div>
               <div className="flex items-center gap-2.5">
                 <Mail className="h-4 w-4 text-amber-500 shrink-0" />
-                <span>Email: cskh@odsstore.vn</span>
+                <span>Email: cskh@drxhardware.vn</span>
               </div>
               <div className="flex items-center gap-2.5">
                 <Clock className="h-4 w-4 text-slate-400 shrink-0" />
@@ -224,7 +224,7 @@ export const Footer: React.FC = () => {
         {/* BOTTOM COPYRIGHT STRIP */}
         <div className="border-t border-slate-200 dark:border-slate-800/80 mt-12 pt-6 flex flex-col md:flex-row justify-between items-center gap-4 text-slate-500 dark:text-slate-400 text-[11px]">
           <div>
-            © {new Date().getFullYear()} <strong className="text-slate-900 dark:text-slate-100 font-heading">ODS HARDWARE STORE</strong>. Tất cả quyền được bảo lưu.
+            © {new Date().getFullYear()} <strong className="text-slate-900 dark:text-slate-100 font-heading">DRX HARDWARE STORE</strong>. Tất cả quyền được bảo lưu.
           </div>
 
           <div className="flex items-center gap-4">

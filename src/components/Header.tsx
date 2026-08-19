@@ -52,7 +52,7 @@ export const Header: React.FC = () => {
   const [isUserNotifOpen, setIsUserNotifOpen] = useState(false);
   const [customerChatOpen, setCustomerChatOpen] = useState(false);
 
-  const isAdmin = currentUser?.email === 'admin@odsstore.vn' || currentUser?.role === 'ADMIN';
+  const isAdmin = currentUser?.email === 'admin@drxhardware.vn' || currentUser?.email === 'admin@odsstore.vn' || currentUser?.role === 'ADMIN';
 
   // Load products for Header live search
   useEffect(() => {
@@ -225,15 +225,15 @@ export const Header: React.FC = () => {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         
         {/* STEP 1: LOGO */}
-        <Link href="/" className="group flex items-center gap-2.5 shrink-0" title="Trang chủ ODS STORE">
+        <Link href="/" className="group flex items-center gap-2.5 shrink-0" title="Trang chủ DRX HARDWARE">
           <img 
-            src="/logo/ods_black.png" 
-            alt="ODS STORE Logo" 
+            src="/logo/logo-footer.png" 
+            alt="DRX HARDWARE Logo" 
             className="h-10 w-auto object-contain dark:hidden group-hover:scale-105 transition-transform" 
           />
           <img 
-            src="/logo/ods_white.png" 
-            alt="ODS STORE Logo" 
+            src="/logo/logo-white.png" 
+            alt="DRX HARDWARE Logo" 
             className="h-10 w-auto object-contain hidden dark:block group-hover:scale-105 transition-transform" 
           />
         </Link>

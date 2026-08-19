@@ -116,8 +116,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         couponsList = JSON.parse(stored);
       } else {
         couponsList = [
-          { id: 'cp-1', code: 'ODSSTORE', discountType: 'PERCENT', discountValue: 20, usageLimit: 999, usedCount: 12, status: 'ACTIVE' },
-          { id: 'cp-2', code: 'ODS100K', discountType: 'FIXED', discountValue: 100000, usageLimit: 500, usedCount: 8, status: 'ACTIVE' },
+          { id: 'cp-1', code: 'DRXHARDWARE', discountType: 'PERCENT', discountValue: 20, usageLimit: 999, usedCount: 12, status: 'ACTIVE' },
+          { id: 'cp-2', code: 'DRX100K', discountType: 'FIXED', discountValue: 100000, usageLimit: 500, usedCount: 8, status: 'ACTIVE' },
+          { id: 'cp-3', code: 'ODSSTORE', discountType: 'PERCENT', discountValue: 20, usageLimit: 999, usedCount: 12, status: 'ACTIVE' },
         ];
         localStorage.setItem('ods_admin_coupons', JSON.stringify(couponsList));
       }
