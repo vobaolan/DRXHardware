@@ -312,86 +312,9 @@ export default function Home() {
         {/* HEADER */}
         <Header />
 
-        {/* MODULAR HERO SECTION */}
-        <section className="mx-auto max-w-7xl w-full px-4 sm:px-6 lg:px-8 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-            {/* Left 60% Block - Primary Summer Promotion Carousel Banner */}
-            <div className="lg:col-span-3 flex">
-              <SummerHeroCarousel />
-            </div>
-
-            {/* Right 40% Block - TOP BEST SELLERS RANKING */}
-            <div className="lg:col-span-2 flex flex-col justify-between rounded-2xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-slate-900/90 p-6 min-h-[480px] shadow-md dark:shadow-2xl backdrop-blur-md">
-              <div className="space-y-4">
-                <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
-                  <span className="font-heading text-xs font-black uppercase tracking-wider text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-                    <Award className="h-4 w-4 text-amber-500 fill-amber-400" /> TOP LINH KIỆN MUA NHIỀU
-                  </span>
-                  
-                  {/* Top Ranking Tag */}
-                  <div className="flex items-center gap-1 bg-amber-500/10 text-amber-600 dark:text-amber-300 border border-amber-500/30 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider">
-                    <span>🔥 BẢNG XẾP HẠNG</span>
-                  </div>
-                </div>
-
-                {/* Dynamic Best Sellers List with Rank Badges */}
-                <div className="space-y-3">
-                  {bestSellersProducts.length > 0 ? (
-                    bestSellersProducts.map((deal, idx) => {
-                      const activePrice = deal.discountPrice ?? deal.price;
-                      const rank = idx + 1;
-                      return (
-                        <Link key={deal.id} href={`/products/${deal.slug}`} className="flex items-center gap-3 bg-slate-100/80 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl relative group hover:border-cyan-500 hover:shadow-md transition-all">
-                          {/* Rank Badge Indicator */}
-                          <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-black text-xs shrink-0 shadow-xs border ${
-                            rank === 1
-                              ? 'bg-gradient-to-br from-amber-400 to-amber-600 text-black border-amber-300'
-                              : rank === 2
-                              ? 'bg-gradient-to-br from-slate-200 to-slate-400 text-black border-slate-300'
-                              : rank === 3
-                              ? 'bg-gradient-to-br from-amber-700 to-amber-900 text-amber-100 border-amber-600'
-                              : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-700'
-                          }`}>
-                            #{rank}
-                          </div>
-
-                          <div className="relative w-20 sm:w-24 aspect-[16/9] rounded-lg overflow-hidden bg-slate-950 border border-slate-200 dark:border-slate-800 shrink-0 group-hover:border-cyan-500 transition-all">
-                            <img 
-                              src={deal.coverImage} 
-                              alt={deal.name} 
-                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent pointer-events-none" />
-                          </div>
-
-                          <div className="flex-1 min-w-0 pr-2">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-[8.5px] text-cyan-600 dark:text-cyan-400 font-bold uppercase tracking-wider">{deal.platform}</span>
-                              {deal.discountPrice && (
-                                <span className="text-[8.5px] text-rose-600 dark:text-rose-300 font-extrabold bg-rose-100 dark:bg-rose-950/80 px-1 rounded border border-rose-300 dark:border-rose-800">GIẢM SÂU</span>
-                              )}
-                            </div>
-                            <h4 className="font-heading text-xs font-bold text-slate-900 dark:text-slate-100 group-hover:text-cyan-600 dark:group-hover:text-cyan-300 truncate">{deal.name}</h4>
-                            <div className="flex items-center gap-2 mt-0.5">
-                              <span className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400 font-heading">{formatCurrency(activePrice)}</span>
-                              {deal.discountPrice && (
-                                <span className="text-[9px] text-slate-400 dark:text-slate-500 line-through font-mono-tech">{formatCurrency(deal.price)}</span>
-                              )}
-                            </div>
-                          </div>
-                          <div className="relative z-10 shrink-0">
-                            <QuickBuyButton product={deal} />
-                          </div>
-                        </Link>
-                      );
-                    })
-                  ) : (
-                    <div className="py-8 text-center text-xs text-slate-400">Đang cập nhật bảng xếp hạng...</div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
+        {/* FULL-WIDTH FLAGSHIP HERO SECTION */}
+        <section className="mx-auto max-w-7xl w-full px-4 sm:px-6 lg:px-8 py-6">
+          <SummerHeroCarousel />
         </section>
 
         {/* CORE FEATURES STRIP */}

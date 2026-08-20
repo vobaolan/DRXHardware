@@ -51,7 +51,7 @@ const TIN_HOC_NGOI_SAO_BANNERS: TabBanner[] = [
     dateRange: 'Từ ngày 01/08 – 30/09/2026',
     ctaText: 'NHẬN VOUCHER NGAY',
     ctaLink: '/products?category=LAPTOP',
-    rightVisualImage: 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=900&auto=format&fit=crop&q=80',
+    rightVisualImage: '/images/hero/laptop.jpg',
   },
   {
     id: 'banner-tra-gop',
@@ -74,7 +74,7 @@ const TIN_HOC_NGOI_SAO_BANNERS: TabBanner[] = [
     dateRange: 'Áp dụng toàn bộ hệ thống DRX Hardware',
     ctaText: 'TÍNH LÃI TRẢ GÓP',
     ctaLink: '/checkout',
-    rightVisualImage: 'https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?w=900&auto=format&fit=crop&q=80',
+    rightVisualImage: '/images/hero/tra_gop.jpg',
   },
   {
     id: 'banner-build-pc',
@@ -91,13 +91,13 @@ const TIN_HOC_NGOI_SAO_BANNERS: TabBanner[] = [
       { title: 'NÂNG CẤP DDR5', value: 'GIẢM ĐẾN 57%++', icon: Percent, iconColor: 'text-rose-400' },
     ],
     specs: [
-      { label: 'VGA', value: 'RTX 4060 8GB' },
-      { label: 'CPU', value: 'Core i5 13400F' }
+      { label: 'VGA', value: 'RTX 4090 24GB' },
+      { label: 'TẢN NHIỆT', value: 'Custom Waterloop' }
     ],
     dateRange: 'Bảo hành 1-đổi-1 36 tháng tận nơi',
     ctaText: 'BUILD PC TỰ ĐỘNG',
     ctaLink: '/pc-builder',
-    rightVisualImage: 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=900&auto=format&fit=crop&q=80',
+    rightVisualImage: '/images/hero/build_pc.jpg',
   },
   {
     id: 'banner-man-hinh',
@@ -114,13 +114,13 @@ const TIN_HOC_NGOI_SAO_BANNERS: TabBanner[] = [
       { title: 'TRỢ GIÁ TRỰC TIẾP', value: 'ĐẾN 1.0 TRIỆU', icon: Tag, iconColor: 'text-purple-400' },
     ],
     specs: [
-      { label: 'TẦN SỐ QUÉT', value: '180Hz - 240Hz' },
-      { label: 'ĐỘ PHÂN GIẢI', value: '2K QHD Fast-IPS' }
+      { label: 'TẦN SỐ QUÉT', value: '240Hz Gaming' },
+      { label: 'ĐỘ PHÂN GIẢI', value: '2K QHD Curved' }
     ],
     dateRange: 'Chính hãng ASUS / MSI / GIGABYTE',
     ctaText: 'SẮM MÀN HÌNH NGAY',
     ctaLink: '/products?category=MONITOR',
-    rightVisualImage: 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=900&auto=format&fit=crop&q=80',
+    rightVisualImage: '/images/hero/monitor.jpg',
   },
   {
     id: 'banner-laptop',
@@ -137,13 +137,13 @@ const TIN_HOC_NGOI_SAO_BANNERS: TabBanner[] = [
       { title: 'VOUCHER TRỢ GIÁ', value: 'ĐẾN 2.5 TRIỆU', icon: Tag, iconColor: 'text-rose-400' },
     ],
     specs: [
-      { label: 'VGA', value: 'RTX 4050 / 4060' },
-      { label: 'QUÀ TẶNG', value: 'Combo 1.2 Triệu' }
+      { label: 'VGA', value: 'RTX 4060 / 4070' },
+      { label: 'QUÀ TẶNG', value: 'Balo ROG 890K' }
     ],
     dateRange: 'Áp dụng cho HSSV & Tân Sinh Viên 2026',
     ctaText: 'CHỌN LAPTOP GAMING',
     ctaLink: '/products?category=LAPTOP',
-    rightVisualImage: 'https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=900&auto=format&fit=crop&q=80',
+    rightVisualImage: '/images/hero/laptop.jpg',
   },
 ];
 
@@ -176,8 +176,8 @@ export const SummerHeroCarousel: React.FC = () => {
       onMouseLeave={() => setIsPaused(false)}
       className="w-full flex flex-col rounded-3xl overflow-hidden border border-sky-400/30 dark:border-slate-800 shadow-2xl bg-white dark:bg-slate-950 transition-all duration-300"
     >
-      {/* ─── 1. TOP ULTRA-WIDE HERO BANNER CANVAS (CYBER SKYBLUE SHOWROOM THEME) ─── */}
-      <div className="relative min-h-[420px] sm:min-h-[460px] lg:min-h-[500px] w-full overflow-hidden bg-gradient-to-br from-[#0369a1] via-[#0284c7] to-[#0ea5e9] text-white p-6 sm:p-8 lg:p-10 flex flex-col justify-between">
+      {/* ─── 1. TOP ULTRA-WIDE HERO BANNER CANVAS (EXPANSIVE 12-COL FLAGSHIP LAYOUT) ─── */}
+      <div className="relative min-h-[440px] sm:min-h-[480px] lg:min-h-[520px] w-full overflow-hidden bg-gradient-to-br from-[#0369a1] via-[#0284c7] to-[#0ea5e9] text-white p-6 sm:p-8 lg:p-10 flex flex-col justify-between">
         
         {/* Dynamic Background Matrix Grid & Cyber Ambient Glow */}
         <div className="absolute inset-0 tech-grid-pattern opacity-30 pointer-events-none" />
@@ -227,7 +227,7 @@ export const SummerHeroCarousel: React.FC = () => {
           </div>
         </div>
 
-        {/* SLIDE CONTENT AREA (ANIMATED SLIDE DISPLAY) */}
+        {/* SLIDE CONTENT AREA (EXPANSIVE 12-COL GRID) */}
         <AnimatePresence mode="wait">
           <motion.div
             key={activeSlide.id + '-slide'}
@@ -235,9 +235,9 @@ export const SummerHeroCarousel: React.FC = () => {
             animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
             exit={{ opacity: 0, x: -25, filter: 'blur(4px)' }}
             transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-            className="relative z-20 my-auto grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center py-4"
+            className="relative z-20 my-auto grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-center py-6"
           >
-            {/* LEFT COLUMN: 3D HEADLINE, WARRANTY & 4 CYBER GLASS CARDS */}
+            {/* LEFT COLUMN: HEADLINE, WARRANTY & EXPANSIVE 4 CYBER GLASS CARDS (Col 12 -> Col 7) */}
             <div className="lg:col-span-7 space-y-4 sm:space-y-5">
               
               {/* SLOGAN HEADLINE */}
@@ -261,30 +261,30 @@ export const SummerHeroCarousel: React.FC = () => {
                 </div>
               </div>
 
-              {/* 4 HIGH-TECH CYBER GLASS CARDS (ROG/RAZER STYLE) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 max-w-xl">
+              {/* 4 HIGH-TECH CYBER GLASS CARDS (EXPANSIVE GRID, ZERO TRUNCATION) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5">
                 {activeSlide.vouchers.map((v, idx) => {
                   const IconComp = v.icon || Sparkles;
                   return (
                     <motion.div
                       key={idx}
                       whileHover={{ scale: 1.03, y: -2 }}
-                      className="relative bg-slate-950/80 hover:bg-slate-950/95 backdrop-blur-xl p-3 sm:p-3.5 rounded-2xl border border-sky-400/30 hover:border-sky-400 shadow-[0_8px_20px_rgba(0,0,0,0.45)] hover:shadow-[0_0_25px_rgba(110,194,247,0.35)] transition-all flex items-center gap-3.5 group cursor-pointer overflow-hidden"
+                      className="relative bg-slate-950/80 hover:bg-slate-950/95 backdrop-blur-xl p-3.5 rounded-2xl border border-sky-400/30 hover:border-sky-400 shadow-[0_8px_20px_rgba(0,0,0,0.45)] hover:shadow-[0_0_25px_rgba(110,194,247,0.35)] transition-all flex items-center gap-3.5 group cursor-pointer overflow-hidden"
                     >
-                      {/* Subtle Top Inner Highlight */}
+                      {/* Top Inner Highlight */}
                       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sky-400/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
                       {/* Left Glowing Icon Box */}
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-400/20 via-blue-600/10 to-transparent border border-sky-400/30 flex items-center justify-center shrink-0 shadow-inner group-hover:border-sky-300 group-hover:scale-105 transition-all">
+                      <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-sky-400/20 via-blue-600/10 to-transparent border border-sky-400/30 flex items-center justify-center shrink-0 shadow-inner group-hover:border-sky-300 group-hover:scale-105 transition-all">
                         <IconComp className={`w-5 h-5 ${v.iconColor || 'text-sky-300'}`} />
                       </div>
 
                       {/* Right Info Details */}
                       <div className="flex flex-col min-w-0 flex-1">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-sky-200/80 font-mono-tech truncate">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-sky-200/90 font-mono-tech">
                           {v.title}
                         </span>
-                        <span className="text-sm sm:text-base font-black text-white font-heading tracking-wide uppercase group-hover:text-[#6EC2F7] transition-colors truncate drop-shadow-sm">
+                        <span className="text-base sm:text-lg font-black text-white font-heading tracking-wide uppercase group-hover:text-[#6EC2F7] transition-colors drop-shadow-sm">
                           {v.value}
                         </span>
                       </div>
@@ -293,11 +293,11 @@ export const SummerHeroCarousel: React.FC = () => {
                 })}
               </div>
 
-              {/* ACTION CTA BUTTON (UIVERSE SHIMMER PILL) */}
+              {/* ACTION CTA BUTTON */}
               <div className="pt-2">
                 <Link
                   href={activeSlide.ctaLink}
-                  className="uiverse-btn-shimmer inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-2xl text-white font-heading font-black text-xs uppercase tracking-wider shadow-xl shadow-sky-950/40 hover:shadow-2xl transition-all active:scale-95 cursor-pointer border border-white/40"
+                  className="uiverse-btn-shimmer inline-flex items-center justify-center gap-2.5 px-8 py-3.5 rounded-2xl text-white font-heading font-black text-xs uppercase tracking-wider shadow-xl shadow-sky-950/40 hover:shadow-2xl transition-all active:scale-95 cursor-pointer border border-white/40"
                 >
                   <Zap className="w-4 h-4 text-amber-300 fill-amber-300 animate-bounce" />
                   <span>{activeSlide.ctaText}</span>
@@ -306,13 +306,13 @@ export const SummerHeroCarousel: React.FC = () => {
               </div>
             </div>
 
-            {/* RIGHT COLUMN: 3D HARDWARE VISUAL SHOWCASE WITH FLOATING BADGES */}
+            {/* RIGHT COLUMN: HIGH RESOLUTION 3D AI BANANA POSTER SHOWCASE (Col 12 -> Col 5) */}
             <div className="lg:col-span-5 flex items-center justify-center">
               <motion.div
                 whileHover={{ scale: 1.02 }}
-                className="relative w-full max-w-md aspect-4/3 rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.6),0_0_35px_rgba(110,194,247,0.3)] border-2 border-sky-300/40 bg-slate-950/80 backdrop-blur-xl p-2.5 group/img"
+                className="relative w-full max-w-lg aspect-4/3 rounded-3xl overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.7),0_0_40px_rgba(110,194,247,0.35)] border-2 border-sky-300/40 bg-slate-950/90 backdrop-blur-xl p-2.5 group/img"
               >
-                {/* Visual Image */}
+                {/* Visual AI Poster Image */}
                 <div className="w-full h-full rounded-2xl overflow-hidden relative">
                   <img
                     src={activeSlide.rightVisualImage}
@@ -347,9 +347,9 @@ export const SummerHeroCarousel: React.FC = () => {
         </AnimatePresence>
       </div>
 
-      {/* ─── 2. BOTTOM 5-TAB NAVIGATION BAR (CYBER LIGHT/DARK SYNC) ─── */}
-      <div className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 px-4 py-3">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 max-w-7xl mx-auto">
+      {/* ─── 2. BOTTOM 5-TAB NAVIGATION BAR (EXPANSIVE FULL-WIDTH TABS) ─── */}
+      <div className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 px-4 py-3.5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 max-w-7xl mx-auto">
           {TIN_HOC_NGOI_SAO_BANNERS.map((banner, idx) => {
             const isActive = currentIndex === idx;
             const TabIcon = banner.tabIcon;
@@ -357,22 +357,22 @@ export const SummerHeroCarousel: React.FC = () => {
               <button
                 key={banner.id}
                 onClick={() => setCurrentIndex(idx)}
-                className={`relative text-left p-3 rounded-2xl transition-all cursor-pointer flex flex-col justify-between ${
+                className={`relative text-left p-3.5 rounded-2xl transition-all cursor-pointer flex flex-col justify-between ${
                   isActive
                     ? 'bg-sky-50/90 dark:bg-slate-800 border border-sky-300/60 dark:border-sky-500/40 shadow-sm'
                     : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 border border-transparent'
                 }`}
               >
                 <div className="flex items-center gap-2">
-                  <div className={`p-1.5 rounded-lg ${isActive ? 'bg-rose-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>
-                    <TabIcon className="w-3.5 h-3.5" />
+                  <div className={`p-2 rounded-xl ${isActive ? 'bg-rose-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>
+                    <TabIcon className="w-4 h-4" />
                   </div>
                   <span className={`text-xs font-black uppercase tracking-tight font-heading truncate ${isActive ? 'text-rose-600 dark:text-rose-400' : 'text-slate-800 dark:text-slate-200'}`}>
                     {banner.tabTitle}
                   </span>
                 </div>
                 
-                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 line-clamp-1 mt-1">
+                <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 line-clamp-1 mt-1.5">
                   {banner.tabSubtitle}
                 </span>
 
@@ -380,7 +380,7 @@ export const SummerHeroCarousel: React.FC = () => {
                 {isActive && (
                   <motion.div
                     layoutId="activeTabUnderline"
-                    className="absolute bottom-0 left-3 right-3 h-1 bg-rose-600 dark:bg-[#6EC2F7] rounded-full shadow-sm"
+                    className="absolute bottom-0 left-3 right-3 h-1.5 bg-rose-600 dark:bg-[#6EC2F7] rounded-full shadow-sm"
                     transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                   />
                 )}
