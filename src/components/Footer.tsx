@@ -95,12 +95,7 @@ export const Footer: React.FC = () => {
               <img 
                 src="/logo/logo-footer.png" 
                 alt="DRX HARDWARE Logo" 
-                className="h-9 w-auto object-contain dark:hidden group-hover:scale-105 transition-transform" 
-              />
-              <img 
-                src="/logo/logo-white.png" 
-                alt="DRX HARDWARE Logo" 
-                className="h-9 w-auto object-contain hidden dark:block group-hover:scale-105 transition-transform" 
+                className="h-9 w-auto object-contain dark:brightness-0 dark:invert group-hover:scale-105 transition-transform" 
               />
             </Link>
             <p className="text-slate-500 dark:text-slate-400 leading-relaxed font-light">
