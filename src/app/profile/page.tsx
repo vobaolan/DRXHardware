@@ -565,14 +565,20 @@ function ProfileContent() {
                       className={`flex items-center justify-between w-full text-left px-4 py-3 rounded-2xl text-xs font-heading font-black uppercase tracking-wider transition-all cursor-pointer ${
                         dashboardTab === 'orders'
                           ? 'bg-[#0284c7] text-white shadow-md shadow-sky-500/20'
-                          : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                          : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                       }`}
                     >
                       <div className="flex items-center gap-3">
                         <ShoppingBag className="h-4 w-4" />
                         <span>Đơn Hàng Linh Kiện & PC</span>
                       </div>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/20">{orders.length}</span>
+                      <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold ${
+                        dashboardTab === 'orders'
+                          ? 'bg-white/20 text-white'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                      }`}>
+                        {orders.length}
+                      </span>
                     </button>
 
                     {/* TAB 2: QUẢN LÝ BẢO HÀNH & SERIAL */}
@@ -581,14 +587,20 @@ function ProfileContent() {
                       className={`flex items-center justify-between w-full text-left px-4 py-3 rounded-2xl text-xs font-heading font-black uppercase tracking-wider transition-all cursor-pointer ${
                         dashboardTab === 'vault'
                           ? 'bg-[#0284c7] text-white shadow-md shadow-sky-500/20'
-                          : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                          : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        <ShieldCheck className="h-4 w-4 text-emerald-400" />
+                        <ShieldCheck className={`h-4 w-4 ${dashboardTab === 'vault' ? 'text-white' : 'text-emerald-600 dark:text-emerald-400'}`} />
                         <span>Kho Linh Kiện & Bảo Hành</span>
                       </div>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300">{totalHardwareItems}</span>
+                      <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold ${
+                        dashboardTab === 'vault'
+                          ? 'bg-white/20 text-white'
+                          : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                      }`}>
+                        {totalHardwareItems}
+                      </span>
                     </button>
 
                     {/* TAB 3: LỊCH SỬ NẠP VÍ */}
@@ -597,14 +609,20 @@ function ProfileContent() {
                       className={`flex items-center justify-between w-full text-left px-4 py-3 rounded-2xl text-xs font-heading font-black uppercase tracking-wider transition-all cursor-pointer ${
                         dashboardTab === 'transactions'
                           ? 'bg-[#0284c7] text-white shadow-md shadow-sky-500/20'
-                          : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                          : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                       }`}
                     >
                       <div className="flex items-center gap-3">
                         <CreditCard className="h-4 w-4" />
                         <span>Lịch Sử Giao Dịch & Ví</span>
                       </div>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/20">{transactions.length}</span>
+                      <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold ${
+                        dashboardTab === 'transactions'
+                          ? 'bg-white/20 text-white'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                      }`}>
+                        {transactions.length}
+                      </span>
                     </button>
 
                     {/* TAB 4: CẤU HÌNH PC ĐÃ LƯU */}
@@ -613,14 +631,20 @@ function ProfileContent() {
                       className={`flex items-center justify-between w-full text-left px-4 py-3 rounded-2xl text-xs font-heading font-black uppercase tracking-wider transition-all cursor-pointer ${
                         dashboardTab === 'builds'
                           ? 'bg-[#0284c7] text-white shadow-md shadow-sky-500/20'
-                          : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                          : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        <Wrench className="h-4 w-4 text-amber-400" />
+                        <Wrench className={`h-4 w-4 ${dashboardTab === 'builds' ? 'text-white' : 'text-amber-500'}`} />
                         <span>Cấu Hình PC Tự Ráp</span>
                       </div>
-                      <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 font-mono">BUILDER</span>
+                      <span className={`text-[9.5px] px-2.5 py-0.5 rounded-full font-black tracking-wider ${
+                        dashboardTab === 'builds'
+                          ? 'bg-white/20 text-white'
+                          : 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-700'
+                      }`}>
+                        BUILDER
+                      </span>
                     </button>
 
                     {/* TAB 5: DANH SÁCH YÊU THÍCH */}
@@ -629,7 +653,7 @@ function ProfileContent() {
                       className={`flex items-center justify-between w-full text-left px-4 py-3 rounded-2xl text-xs font-heading font-black uppercase tracking-wider transition-all cursor-pointer ${
                         dashboardTab === 'wishlist'
                           ? 'bg-[#0284c7] text-white shadow-md shadow-sky-500/20'
-                          : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                          : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                       }`}
                     >
                       <div className="flex items-center gap-3">
@@ -644,7 +668,7 @@ function ProfileContent() {
                       className={`flex items-center justify-between w-full text-left px-4 py-3 rounded-2xl text-xs font-heading font-black uppercase tracking-wider transition-all cursor-pointer ${
                         dashboardTab === 'settings'
                           ? 'bg-[#0284c7] text-white shadow-md shadow-sky-500/20'
-                          : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                          : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                       }`}
                     >
                       <div className="flex items-center gap-3">
@@ -656,7 +680,7 @@ function ProfileContent() {
                     {/* LOGOUT */}
                     <button
                       onClick={handleLogout}
-                      className="flex items-center gap-3 w-full text-left px-4 py-3 rounded-2xl text-xs font-heading font-black uppercase tracking-wider text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-all mt-4 cursor-pointer"
+                      className="flex items-center gap-3 w-full text-left px-4 py-3 rounded-2xl text-xs font-heading font-black uppercase tracking-wider text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-all mt-4 cursor-pointer"
                     >
                       <LogOut className="h-4 w-4" />
                       <span>Đăng Xuất Tài Khoản</span>
