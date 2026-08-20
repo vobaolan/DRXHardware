@@ -1,72 +1,62 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useMemo, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Header } from '@/components/Header';
 import { ProductCard, ProductProps } from '@/components/ProductCard';
-import { CartDrawer } from '@/components/CartDrawer';
 import { Footer } from '@/components/Footer';
 import { CartProvider } from '@/context/CartContext';
 import { 
-  Search, SlidersHorizontal, Flame, Clock, Tag, ArrowLeft, Grid, Filter,
-  Laptop, Gamepad2, Cpu, Box, Headphones, Monitor, Keyboard, HardDrive, Sparkles, Layers
+  Search, SlidersHorizontal, Flame, Clock, Tag, ArrowLeft, Grid,
+  Laptop, Gamepad2, Cpu, Box, Headphones, Monitor, Keyboard, HardDrive, Layers
 } from 'lucide-react';
 
-const CATEGORY_CONFIG: Record<string, { title: string; subtitle: string; iconName: string; bgGradient: string }> = {
+const CATEGORY_CONFIG: Record<string, { title: string; subtitle: string; iconName: string }> = {
   ALL: {
-    title: 'Toàn Bộ Kho Linh Kiện & PC',
-    subtitle: 'Danh mục linh kiện máy tính, Laptop, màn hình & phụ kiện gaming chính hãng DRX Hardware',
+    title: 'Toàn Bộ Kho Linh Kiện & Laptop DRX',
+    subtitle: 'Khám phá hàng ngàn linh kiện máy tính, Laptop, màn hình & phụ kiện gaming chính hãng bảo hành 36T',
     iconName: 'Grid',
-    bgGradient: 'from-slate-900 via-sky-950 to-slate-950',
   },
   LAPTOP: {
-    title: 'Laptop Văn Phòng & Đồ Họa',
+    title: 'Laptop Văn Phòng & Đồ Họa Cao Cấp',
     subtitle: 'Laptop mỏng nhẹ, hiệu năng cao, pin lâu dành cho doanh nhân, kỹ sư & sáng tạo nội dung',
     iconName: 'Laptop',
-    bgGradient: 'from-blue-900 via-sky-900 to-slate-900',
   },
   LAPTOP_GAMING: {
-    title: 'Laptop Gaming Cao Cấp',
-    subtitle: 'Laptop chơi game cấu hình mạnh mẽ, card đồ họa Nvidia RTX 40-series, màn hình 144Hz - 240Hz',
+    title: 'Laptop Gaming Cấu Hình Khủng',
+    subtitle: 'Laptop chơi game mạnh mẽ, card đồ họa Nvidia RTX 40-Series, màn hình 144Hz - 240Hz sắc nét',
     iconName: 'Gamepad2',
-    bgGradient: 'from-indigo-950 via-purple-950 to-slate-900',
   },
   CORE_PARTS: {
     title: 'Linh Kiện Core (CPU, VGA, Mainboard & RAM)',
-    subtitle: 'Bo mạch chủ, Vi xử lý Intel Core / AMD Ryzen, Card màn hình RTX, RAM DDR5 chính hãng bảo hành 36T',
+    subtitle: 'Bo mạch chủ, Vi xử lý Intel Core / AMD Ryzen, Card màn hình RTX, RAM DDR5 chính hãng 1 đổi 1',
     iconName: 'Cpu',
-    bgGradient: 'from-sky-950 via-[#0284c7]/40 to-slate-900',
   },
   CASE_COOLING: {
-    title: 'Vỏ Case & Tản Nhiệt Nước RGB',
-    subtitle: 'Vỏ máy tính kính cường lực NZXT, Lian Li & Tản nhiệt nước AIO 240mm/360mm giải nhiệt cực tốt',
+    title: 'Vỏ Case & Tản Nhiệt Nước AIO RGB',
+    subtitle: 'Vỏ máy tính kính cường lực Panoramic & Tản nhiệt nước AIO 240mm/360mm giải nhiệt cực tốt',
     iconName: 'Box',
-    bgGradient: 'from-slate-900 via-cyan-950 to-slate-900',
   },
   HEADSET: {
-    title: 'Tai Nghe Gaming & Âm Thanh Pro',
-    subtitle: 'Tai nghe gaming 7.1 vòm, tai nghe không dây Wireless độ trễ thấp từ HyperX, Logitech, SteelSeries',
+    title: 'Tai Nghe Gaming & Âm Thanh Chuyên Nghiệp',
+    subtitle: 'Tai nghe gaming 7.1 vòm, tai nghe không dây Wireless độ trễ siêu thấp từ HyperX, Logitech, Corsair',
     iconName: 'Headphones',
-    bgGradient: 'from-violet-950 via-slate-900 to-purple-950',
   },
   MONITOR: {
-    title: 'Màn Hình Chơi Game & Đồ Họa 4K',
-    subtitle: 'Màn hình tần số quét cao 144Hz, 240Hz, tấm nền IPS/OLED màu chuẩn đồ họa từ ASUS ROG, LG, Samsung',
+    title: 'Màn Hình Chơi Game & Đồ Họa 4K Chuẩn Màu',
+    subtitle: 'Màn hình tần số quét cao 144Hz - 360Hz, tấm nền Fast-IPS/OLED màu chuẩn đồ họa từ ASUS ROG, LG, Samsung',
     iconName: 'Monitor',
-    bgGradient: 'from-[#0284c7]/50 via-sky-950 to-slate-900',
   },
   KEYBOARD: {
-    title: 'Bàn Phím Cơ & Chuột Gaming',
-    subtitle: 'Bàn phím cơ Custom Hotswap, Switch mượt mà, Chuột chơi game siêu nhẹ 8KHz Polling Rate',
+    title: 'Bàn Phím Cơ Custom & Chuột Gaming',
+    subtitle: 'Bàn phím cơ Hotswap gõ êm mượt, Chuột chơi game siêu nhẹ 8KHz Polling Rate chuẩn eSports',
     iconName: 'Keyboard',
-    bgGradient: 'from-[#5B3DF5]/30 via-slate-900 to-slate-900',
   },
   STORAGE: {
-    title: 'Ổ Cứng SSD NVMe & HDD Dung Lượng Lớn',
-    subtitle: 'Ổ cứng SSD NVMe M.2 PCIe Gen4/Gen5 tốc độ siêu nhanh 7400MB/s từ Samsung, Kingston, WD Black',
+    title: 'Ổ Cứng SSD NVMe Siêu Tốc & HDD Dung Lượng Cao',
+    subtitle: 'Ổ cứng SSD NVMe M.2 PCIe Gen4/Gen5 tốc độ đọc siêu tốc 7400MB/s từ Samsung, Kingston, WD Black',
     iconName: 'HardDrive',
-    bgGradient: 'from-emerald-950 via-teal-950 to-slate-900',
   },
 };
 
@@ -231,7 +221,6 @@ function ProductsCatalogContent() {
       title: selectedCategory.replace(/_/g, ' '),
       subtitle: `Danh mục sản phẩm ${selectedCategory} chính hãng tại DRX Hardware`,
       iconName: 'Grid',
-      bgGradient: 'from-slate-900 via-sky-950 to-slate-950',
     };
   }, [selectedCategory]);
 
@@ -245,7 +234,7 @@ function ProductsCatalogContent() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col antialiased">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#090d16] text-slate-900 dark:text-slate-100 flex flex-col antialiased tech-grid-pattern transition-colors duration-300">
       <Header />
 
       <main className="flex-1 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
@@ -254,23 +243,26 @@ function ProductsCatalogContent() {
           <Link href="/" className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-[#0284c7] transition-colors">
             <ArrowLeft className="h-4 w-4 text-[#0284c7]" /> Trang Chủ DRX Hardware
           </Link>
-          <span className="text-xs font-extrabold text-[#0284c7] bg-sky-50 border border-sky-200 px-3.5 py-1.5 rounded-full shadow-2xs">
+          <span className="text-xs font-extrabold text-[#0284c7] bg-sky-50 dark:bg-slate-800 border border-sky-200 dark:border-slate-700 px-3.5 py-1.5 rounded-full shadow-2xs">
             {filteredProducts.length} Linh Kiện Chính Hãng
           </span>
         </div>
 
         {/* CATEGORY HERO BANNER CARD */}
-        <div className={`relative overflow-hidden rounded-3xl bg-gradient-to-r ${currentCategoryInfo.bgGradient} text-white p-6 sm:p-8 mb-8 shadow-xl border border-white/10`}>
+        <div className="relative overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white p-6 sm:p-8 mb-6 shadow-sm">
+          <div className="absolute inset-0 bg-gradient-to-r from-sky-50 via-white to-blue-50/50 dark:from-slate-900 dark:via-[#071930] dark:to-slate-950 pointer-events-none" />
+          <div className="absolute top-0 right-0 w-96 h-96 bg-[#0284c7]/5 dark:bg-[#0284c7]/20 rounded-full blur-3xl pointer-events-none" />
+
           <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
             <div className="space-y-2 max-w-2xl">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-xs font-extrabold text-sky-300">
-                <CategoryIcon name={currentCategoryInfo.iconName} className="h-4 w-4 text-sky-400" />
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-sky-100 dark:bg-sky-500/20 border border-sky-200 dark:border-sky-500/30 text-xs font-black text-[#0284c7] dark:text-sky-300 uppercase tracking-wider shadow-2xs">
+                <CategoryIcon name={currentCategoryInfo.iconName} className="h-3.5 w-3.5 text-[#0284c7] dark:text-sky-400" />
                 <span>DANH MỤC SẢN PHẨM DRX HARDWARE</span>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-black font-heading tracking-tight text-white">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black font-heading tracking-tight text-slate-900 dark:text-white uppercase">
                 {currentCategoryInfo.title}
               </h1>
-              <p className="text-xs sm:text-sm text-slate-300 font-normal leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 font-normal leading-relaxed">
                 {currentCategoryInfo.subtitle}
               </p>
             </div>
@@ -279,17 +271,17 @@ function ProductsCatalogContent() {
               <button
                 type="button"
                 onClick={() => handleCategorySelect('ALL')}
-                className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all border border-white/20 backdrop-blur-md shrink-0 cursor-pointer"
+                className="px-4 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-400 text-slate-700 dark:text-slate-200 text-xs font-heading font-black uppercase tracking-wider transition-all border border-slate-200 dark:border-slate-700 shrink-0 cursor-pointer shadow-2xs"
               >
-                + Xóa Bộ Lọc Danh Mục
+                ✕ Xóa Bộ Lọc Danh Mục
               </button>
             )}
           </div>
         </div>
 
-        {/* CATEGORY NAV PILLS STRIP - UI VERSE STYLE */}
-        <div className="mb-8 overflow-x-auto no-scrollbar pb-2">
-          <div className="flex items-center gap-2.5 min-w-max">
+        {/* CATEGORY NAV PILLS STRIP - MODERN SEGMENTED CAPSULE BAR */}
+        <div className="mb-6 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 p-2 sm:p-2.5 shadow-sm backdrop-blur-xl">
+          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-0.5">
             {CATEGORY_PILLS.map((pill) => {
               const IconComp = pill.icon;
               const isActive = selectedCategory.toUpperCase() === pill.id.toUpperCase();
@@ -298,13 +290,19 @@ function ProductsCatalogContent() {
                   key={pill.id}
                   type="button"
                   onClick={() => handleCategorySelect(pill.id)}
-                  className={`flex items-center gap-2 px-4.5 py-2.5 rounded-2xl text-xs font-extrabold transition-all cursor-pointer border ${
+                  className={`group flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-heading font-black uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                     isActive
-                      ? 'uiverse-btn-primary shadow-lg ring-2 ring-sky-300/60 scale-105'
-                      : 'bg-white text-slate-700 border-slate-200 hover:border-[#6EC2F7] hover:text-[#0284c7] shadow-2xs hover:-translate-y-0.5'
+                      ? 'bg-[#0284c7] text-white shadow-md shadow-sky-500/25 scale-[1.02]'
+                      : 'bg-transparent text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
-                  <IconComp className={`h-4 w-4 ${isActive ? 'text-white' : 'text-[#0284c7]'}`} />
+                  <div className={`p-1.5 rounded-xl transition-all ${
+                    isActive 
+                      ? 'bg-white/20 text-white' 
+                      : 'bg-slate-100 dark:bg-slate-800 text-[#0284c7] dark:text-sky-400 group-hover:scale-110'
+                  }`}>
+                    <IconComp className="h-3.5 w-3.5" />
+                  </div>
                   <span>{pill.label}</span>
                 </button>
               );
@@ -313,15 +311,15 @@ function ProductsCatalogContent() {
         </div>
 
         {/* SEARCH & CONTROLS STRIP */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-8 bg-white border border-slate-200 p-4 rounded-2xl shadow-sm">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-3xl shadow-sm">
           {/* QUICK FILTER BUTTONS */}
           <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
             <button
               onClick={() => setActiveFilter('ALL')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`px-4 py-2.5 rounded-2xl text-xs font-heading font-black uppercase tracking-wider transition-all cursor-pointer ${
                 activeFilter === 'ALL'
-                  ? 'bg-slate-900 text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-xs'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
               }`}
             >
               Tất Cả Hàng
@@ -329,10 +327,10 @@ function ProductsCatalogContent() {
 
             <button
               onClick={() => setActiveFilter('recently_viewed')}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-xs font-heading font-black uppercase tracking-wider transition-all cursor-pointer ${
                 activeFilter === 'recently_viewed'
                   ? 'bg-[#0284c7] text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
               }`}
             >
               <Clock className="h-3.5 w-3.5" />
@@ -341,10 +339,10 @@ function ProductsCatalogContent() {
 
             <button
               onClick={() => setActiveFilter('best_sellers')}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-xs font-heading font-black uppercase tracking-wider transition-all cursor-pointer ${
                 activeFilter === 'best_sellers'
                   ? 'bg-amber-500 text-slate-950 shadow-xs font-black'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
               }`}
             >
               <Flame className="h-3.5 w-3.5 fill-current" />
@@ -353,10 +351,10 @@ function ProductsCatalogContent() {
 
             <button
               onClick={() => setActiveFilter('discounts')}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-xs font-heading font-black uppercase tracking-wider transition-all cursor-pointer ${
                 activeFilter === 'discounts'
                   ? 'bg-rose-600 text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
               }`}
             >
               <Tag className="h-3.5 w-3.5" />
@@ -367,13 +365,13 @@ function ProductsCatalogContent() {
           {/* SEARCH INPUT & SORT DROPDOWN */}
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
             <div className="relative w-full sm:w-64">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
               <input
                 type="text"
                 placeholder="Tìm kiếm linh kiện, CPU, Laptop..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-xs font-semibold text-slate-900 placeholder-slate-400 focus:border-[#0284c7] focus:bg-white focus:outline-none"
+                className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-2.5 pl-10 pr-4 text-xs font-semibold text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-[#0284c7] focus:bg-white dark:focus:bg-slate-900 focus:outline-none transition-all"
               />
             </div>
 
@@ -382,7 +380,7 @@ function ProductsCatalogContent() {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="w-full sm:w-auto rounded-xl border border-slate-200 bg-slate-50 py-2 px-3 text-xs font-bold text-slate-900 focus:border-[#0284c7] focus:bg-white focus:outline-none cursor-pointer"
+                className="w-full sm:w-auto rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-2.5 px-3.5 text-xs font-bold text-slate-900 dark:text-slate-100 focus:border-[#0284c7] focus:bg-white dark:focus:bg-slate-900 focus:outline-none cursor-pointer"
               >
                 <option value="FEATURED">Nổi Bật Nhất</option>
                 <option value="PRICE_ASC">Giá Thấp ➔ Cao</option>
@@ -398,19 +396,19 @@ function ProductsCatalogContent() {
             Đang tải kho sản phẩm DRX Hardware...
           </div>
         ) : filteredProducts.length === 0 ? (
-          <div className="py-20 text-center space-y-4 rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-            <div className="h-16 w-16 rounded-full bg-sky-50 text-[#0284c7] flex items-center justify-center mx-auto">
+          <div className="py-20 text-center space-y-4 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 shadow-sm">
+            <div className="h-16 w-16 rounded-full bg-sky-50 dark:bg-slate-800 text-[#0284c7] flex items-center justify-center mx-auto">
               <Layers className="h-8 w-8" />
             </div>
             <div className="space-y-1">
-              <h4 className="text-base font-extrabold text-slate-900">Chưa có sản phẩm nào trong danh mục này</h4>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+              <h4 className="text-base font-extrabold text-slate-900 dark:text-slate-100">Chưa có sản phẩm nào trong danh mục này</h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
                 Hãy thử chọn danh mục khác hoặc xóa bộ lọc tìm kiếm để khám phá kho hàng DRX Hardware.
               </p>
             </div>
             <button
               onClick={() => { setActiveFilter('ALL'); setSelectedCategory('ALL'); setSelectedPlatform('ALL'); setSearchQuery(''); router.push('/products'); }}
-              className="px-5 py-2.5 rounded-xl bg-[#0284c7] text-white text-xs font-extrabold hover:bg-[#0369a1] transition-all shadow-sm cursor-pointer"
+              className="px-5 py-2.5 rounded-2xl bg-[#0284c7] text-white text-xs font-heading font-black uppercase hover:bg-[#0369a1] transition-all shadow-sm cursor-pointer"
             >
               Xem Tất Cả Sản Phẩm
             </button>
@@ -425,7 +423,6 @@ function ProductsCatalogContent() {
       </main>
 
       <Footer />
-      <CartDrawer />
     </div>
   );
 }
