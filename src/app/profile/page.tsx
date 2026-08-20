@@ -4,17 +4,18 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { CartDrawer } from '@/components/CartDrawer';
-import { CartProvider } from '@/context/CartContext';
 import { 
   User, Mail, Lock, LogIn, UserPlus, CreditCard, Shield, 
-  ShoppingBag, Heart, Settings, LogOut, CheckCircle2, Copy, Check, ArrowRight, Key
+  ShoppingBag, Heart, Settings, LogOut, CheckCircle2, Copy, Check, ArrowRight, 
+  ShieldCheck, Cpu, Box, Sparkles, Zap, Clock, PackageCheck, Wrench, ChevronRight,
+  Monitor, Award, CheckCircle, ExternalLink
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useToast } from '@/components/Toast';
 
-interface GameKey {
+interface HardwareKey {
   id: string;
   keyCode: string;
   product?: {
@@ -31,7 +32,7 @@ interface Order {
   createdAt: string;
   netAmount: number | string;
   status: string;
-  gameKeys: GameKey[];
+  gameKeys: HardwareKey[];
 }
 
 function ProfileContent() {
@@ -40,8 +41,8 @@ function ProfileContent() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [authTab, setAuthTab] = useState<'login' | 'register'>('login');
   
-  // Dashboard states
-  const [dashboardTab, setDashboardTab] = useState<'orders' | 'vault' | 'wishlist' | 'settings' | 'transactions'>('orders');
+  // Dashboard navigation tab states
+  const [dashboardTab, setDashboardTab] = useState<'orders' | 'vault' | 'wishlist' | 'settings' | 'transactions' | 'builds'>('orders');
   const [copiedKeyId, setCopiedKeyId] = useState<string | null>(null);
 
   // Form states
@@ -66,7 +67,6 @@ function ProfileContent() {
   // Live order list
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoadingOrders, setIsLoadingOrders] = useState(false);
-  const [activeChatOrderIds, setActiveChatOrderIds] = useState<Set<string>>(new Set());
 
   // Transaction list
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -75,7 +75,7 @@ function ProfileContent() {
   // Check query params for active tab on mount
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    if (tabParam === 'vault' || tabParam === 'wishlist' || tabParam === 'settings' || tabParam === 'orders' || tabParam === 'transactions') {
+    if (tabParam === 'vault' || tabParam === 'wishlist' || tabParam === 'settings' || tabParam === 'orders' || tabParam === 'transactions' || tabParam === 'builds') {
       setDashboardTab(tabParam as any);
     }
   }, [searchParams]);
@@ -147,28 +147,12 @@ function ProfileContent() {
     fetchTransactions();
   }, [currentUser]);
 
-  useEffect(() => {
-    if (isLoggedIn && currentUser) {
-      // Check for active chats from admin
-      fetch('/api/support')
-        .then(res => res.json())
-        .then(data => {
-          if (Array.isArray(data)) {
-            const adminChats = data.filter((m: any) => m.senderId === 'ADMIN' && m.receiverId === currentUser.id);
-            const orderIds = new Set(adminChats.map((m: any) => m.orderId).filter(Boolean));
-            setActiveChatOrderIds(orderIds as Set<string>);
-          }
-        })
-        .catch(() => {});
-    }
-  }, [isLoggedIn, currentUser]);
-
   const formatCurrency = (value: number | string) => {
     const numericValue = typeof value === 'string' ? parseFloat(value) : value;
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
       currency: 'VND',
-    }).format(numericValue);
+    }).format(numericValue || 0);
   };
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
@@ -184,7 +168,7 @@ function ProfileContent() {
         showToast(data.message || 'Đăng nhập thất bại!', 'error');
         return;
       }
-      showToast('Đăng nhập thành công! Chào mừng bạn quay lại ODS.', 'success');
+      showToast('Đăng nhập thành công! Chào mừng bạn quay lại DRX Hardware.', 'success');
       localStorage.setItem('ods_user', JSON.stringify(data.user));
 
       if (rememberMe) {
@@ -221,7 +205,7 @@ function ProfileContent() {
         showToast(data.message || 'Đăng ký thất bại!', 'error');
         return;
       }
-      showToast('Đăng ký tài khoản thành công!', 'success');
+      showToast('Đăng ký tài khoản DRX Hardware thành công!', 'success');
       localStorage.setItem('ods_user', JSON.stringify(data.user));
       window.dispatchEvent(new Event('ods_user_update'));
       setCurrentUser(data.user);
@@ -241,15 +225,18 @@ function ProfileContent() {
     showToast('Đã đăng xuất khỏi tài khoản.', 'info');
   };
 
-  const handleCopy = (id: string, keyCode: string) => {
-    navigator.clipboard.writeText(keyCode);
+  const handleCopy = (id: string, text: string) => {
+    navigator.clipboard.writeText(text);
     setCopiedKeyId(id);
-    showToast('Đã sao chép mã Key Game thành công!', 'success');
+    showToast('Đã sao chép mã Serial/SN linh kiện!', 'success');
     setTimeout(() => setCopiedKeyId(null), 2000);
   };
 
+  // Calculate total registered hardware items
+  const totalHardwareItems = orders.reduce((acc, curr) => acc + (curr.gameKeys ? curr.gameKeys.length : 0), 0);
+
   return (
-    <div className="min-h-screen bg-white text-black flex flex-col antialiased">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#090d16] text-slate-900 dark:text-slate-100 flex flex-col antialiased tech-grid-pattern transition-colors duration-300">
       {/* HEADER */}
       <Header />
 
@@ -259,30 +246,44 @@ function ProfileContent() {
             /* ================== AUTHENTICATION FORM (LOGIN / REGISTER) ================== */
             <motion.div
               key="auth"
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.98 }}
-              className="mx-auto max-w-md my-12"
+              initial={{ opacity: 0, scale: 0.98, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.98, y: -10 }}
+              className="mx-auto max-w-md my-10"
             >
-              <div className="rounded-ods border border-ods-border bg-white p-8 shadow-sm space-y-6">
+              <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 p-8 shadow-xl backdrop-blur-xl space-y-6">
+                
+                {/* Brand Header */}
+                <div className="text-center space-y-2 pb-2">
+                  <div className="inline-flex p-3 rounded-2xl bg-sky-50 dark:bg-slate-800 text-[#0284c7] border border-sky-200 dark:border-sky-500/30 mb-2">
+                    <Cpu className="h-7 w-7 animate-pulse" />
+                  </div>
+                  <h2 className="font-heading text-xl font-black uppercase tracking-wider text-slate-900 dark:text-slate-100">
+                    DRX HARDWARE ACCOUNT
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-light">
+                    Quản lý đơn hàng linh kiện, bảo hành 36T và cấu hình PC
+                  </p>
+                </div>
+
                 {/* Tabs selection */}
-                <div className="flex border-b border-ods-border space-x-4 mb-6">
+                <div className="flex border-b border-slate-200 dark:border-slate-800 space-x-4 mb-6">
                   <button
                     onClick={() => setAuthTab('login')}
-                    className={`flex-1 text-center font-heading text-sm font-bold uppercase tracking-wider pb-2 border-b-2 transition-all ${
+                    className={`flex-1 text-center font-heading text-xs font-black uppercase tracking-wider pb-3 border-b-2 transition-all cursor-pointer ${
                       authTab === 'login'
-                        ? 'border-ods-primary text-ods-primary'
-                        : 'border-transparent text-ods-textMuted hover:text-black'
+                        ? 'border-[#0284c7] text-[#0284c7]'
+                        : 'border-transparent text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
                     }`}
                   >
                     Đăng Nhập
                   </button>
                   <button
                     onClick={() => setAuthTab('register')}
-                    className={`flex-1 text-center font-heading text-sm font-bold uppercase tracking-wider pb-2 border-b-2 transition-all ${
+                    className={`flex-1 text-center font-heading text-xs font-black uppercase tracking-wider pb-3 border-b-2 transition-all cursor-pointer ${
                       authTab === 'register'
-                        ? 'border-ods-primary text-ods-primary'
-                        : 'border-transparent text-ods-textMuted hover:text-black'
+                        ? 'border-[#0284c7] text-[#0284c7]'
+                        : 'border-transparent text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
                     }`}
                   >
                     Tạo Tài Khoản
@@ -294,620 +295,788 @@ function ProfileContent() {
                   /* LOGIN FORM */
                   <form onSubmit={handleLoginSubmit} className="space-y-4">
                     <div className="space-y-1.5">
-                      <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block">Địa chỉ Email</label>
+                      <label className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider block">Địa chỉ Email</label>
                       <div className="relative">
-                        <Mail className="absolute left-3 top-3 h-4 w-4 text-ods-textMuted" />
+                        <Mail className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
                         <input
                           type="email"
                           required
-                          placeholder="username@gmail.com"
+                          placeholder="khachhang@drxhardware.vn"
                           value={loginEmail}
                           onChange={(e) => setLoginEmail(e.target.value)}
-                          className="w-full rounded-ods border border-ods-border bg-white py-2.5 pl-10 pr-4 text-xs font-semibold text-black placeholder-zinc-400 focus:border-ods-primary focus:outline-none focus:ring-1 focus:ring-ods-primary transition-all"
+                          className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-3 pl-11 pr-4 text-xs font-semibold text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-[#0284c7] focus:outline-none focus:ring-2 focus:ring-sky-400/20 transition-all"
                         />
                       </div>
                     </div>
 
                     <div className="space-y-1.5">
                       <div className="flex justify-between items-center">
-                        <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block">Mật khẩu</label>
-                        <span className="text-[9px] text-ods-primary hover:underline cursor-pointer font-bold">Quên mật khẩu?</span>
+                        <label className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider block">Mật khẩu</label>
+                        <span className="text-[9.5px] text-[#0284c7] hover:underline cursor-pointer font-bold">Quên mật khẩu?</span>
                       </div>
                       <div className="relative">
-                        <Lock className="absolute left-3 top-3 h-4 w-4 text-ods-textMuted" />
+                        <Lock className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
                         <input
                           type="password"
                           required
                           placeholder="••••••••"
                           value={loginPassword}
                           onChange={(e) => setLoginPassword(e.target.value)}
-                          className="w-full rounded-ods border border-ods-border bg-white py-2.5 pl-10 pr-4 text-xs font-semibold text-black placeholder-zinc-400 focus:border-ods-primary focus:outline-none focus:ring-1 focus:ring-ods-primary transition-all"
+                          className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-3 pl-11 pr-4 text-xs font-semibold text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-[#0284c7] focus:outline-none focus:ring-2 focus:ring-sky-400/20 transition-all"
                         />
                       </div>
                     </div>
 
                     {/* REMEMBER ME CHECKBOX */}
                     <div className="flex items-center justify-between pt-1">
-                      <label className="flex items-center gap-2 cursor-pointer select-none text-xs font-semibold text-gray-700">
+                      <label className="flex items-center gap-2 cursor-pointer select-none text-xs font-semibold text-slate-600 dark:text-slate-400">
                         <input
                           type="checkbox"
                           checked={rememberMe}
                           onChange={(e) => setRememberMe(e.target.checked)}
-                          className="h-4 w-4 rounded border-gray-300 text-ods-primary focus:ring-ods-primary accent-ods-primary"
+                          className="h-4 w-4 rounded border-slate-300 text-[#0284c7] focus:ring-[#0284c7] accent-[#0284c7]"
                         />
-                        <span>Ghi nhớ tài khoản</span>
+                        <span>Ghi nhớ tài khoản trên thiết bị này</span>
                       </label>
                     </div>
 
                     <button
                       type="submit"
-                      className="w-full mt-4 flex items-center justify-center gap-2 rounded-ods bg-ods-primary hover:bg-ods-primaryHover text-white py-3.5 text-xs font-bold uppercase tracking-wider transition-all hover:shadow-buttonGlow active:scale-95"
+                      className="uiverse-btn-shimmer w-full mt-4 flex items-center justify-center gap-2 rounded-2xl text-white py-3.5 text-xs font-heading font-black uppercase tracking-wider transition-all shadow-lg active:scale-95 cursor-pointer"
                     >
-                      <LogIn className="h-4.5 w-4.5" />
-                      <span>Đăng Nhập</span>
+                      <LogIn className="h-4 w-4" />
+                      <span>Đăng Nhập Tài Khoản</span>
                     </button>
                   </form>
                 ) : (
                   /* REGISTER FORM */
                   <form onSubmit={handleRegisterSubmit} className="space-y-4">
                     <div className="space-y-1.5">
-                      <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block">Họ và Tên</label>
+                      <label className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider block">Họ và Tên</label>
                       <div className="relative">
-                        <User className="absolute left-3 top-3 h-4 w-4 text-ods-textMuted" />
+                        <User className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
                         <input
                           type="text"
                           required
                           placeholder="Nguyễn Văn A"
                           value={regName}
                           onChange={(e) => setRegName(e.target.value)}
-                          className="w-full rounded-ods border border-ods-border bg-white py-2.5 pl-10 pr-4 text-xs font-semibold text-black placeholder-zinc-400 focus:border-ods-primary focus:outline-none focus:ring-1 focus:ring-ods-primary transition-all"
+                          className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-3 pl-11 pr-4 text-xs font-semibold text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-[#0284c7] focus:outline-none focus:ring-2 focus:ring-sky-400/20 transition-all"
                         />
                       </div>
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block">Địa chỉ Email</label>
+                      <label className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider block">Địa chỉ Email</label>
                       <div className="relative">
-                        <Mail className="absolute left-3 top-3 h-4 w-4 text-ods-textMuted" />
+                        <Mail className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
                         <input
                           type="email"
                           required
-                          placeholder="username@gmail.com"
+                          placeholder="khachhang@drxhardware.vn"
                           value={regEmail}
                           onChange={(e) => setRegEmail(e.target.value)}
-                          className="w-full rounded-ods border border-ods-border bg-white py-2.5 pl-10 pr-4 text-xs font-semibold text-black placeholder-zinc-400 focus:border-ods-primary focus:outline-none focus:ring-1 focus:ring-ods-primary transition-all"
+                          className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-3 pl-11 pr-4 text-xs font-semibold text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-[#0284c7] focus:outline-none focus:ring-2 focus:ring-sky-400/20 transition-all"
                         />
                       </div>
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block">Mật khẩu</label>
+                      <label className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider block">Mật khẩu</label>
                       <div className="relative">
-                        <Lock className="absolute left-3 top-3 h-4 w-4 text-ods-textMuted" />
+                        <Lock className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
                         <input
                           type="password"
                           required
                           placeholder="Tối thiểu 6 ký tự"
                           value={regPassword}
                           onChange={(e) => setRegPassword(e.target.value)}
-                          className="w-full rounded-ods border border-ods-border bg-white py-2.5 pl-10 pr-4 text-xs font-semibold text-black placeholder-zinc-400 focus:border-ods-primary focus:outline-none focus:ring-1 focus:ring-ods-primary transition-all"
+                          className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-3 pl-11 pr-4 text-xs font-semibold text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-[#0284c7] focus:outline-none focus:ring-2 focus:ring-sky-400/20 transition-all"
                         />
                       </div>
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block">Nhập lại mật khẩu</label>
+                      <label className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider block">Nhập lại mật khẩu</label>
                       <div className="relative">
-                        <Lock className="absolute left-3 top-3 h-4 w-4 text-ods-textMuted" />
+                        <Lock className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
                         <input
                           type="password"
                           required
                           placeholder="Trùng khớp mật khẩu trên"
                           value={regConfirmPassword}
                           onChange={(e) => setRegConfirmPassword(e.target.value)}
-                          className="w-full rounded-ods border border-ods-border bg-white py-2.5 pl-10 pr-4 text-xs font-semibold text-black placeholder-zinc-400 focus:border-ods-primary focus:outline-none focus:ring-1 focus:ring-ods-primary transition-all"
+                          className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-3 pl-11 pr-4 text-xs font-semibold text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-[#0284c7] focus:outline-none focus:ring-2 focus:ring-sky-400/20 transition-all"
                         />
                       </div>
                     </div>
 
                     <button
                       type="submit"
-                      className="w-full mt-4 flex items-center justify-center gap-2 rounded-ods bg-ods-primary hover:bg-ods-primaryHover text-white py-3.5 text-xs font-bold uppercase tracking-wider transition-all hover:shadow-buttonGlow active:scale-95"
+                      className="uiverse-btn-shimmer w-full mt-4 flex items-center justify-center gap-2 rounded-2xl text-white py-3.5 text-xs font-heading font-black uppercase tracking-wider transition-all shadow-lg active:scale-95 cursor-pointer"
                     >
-                      <UserPlus className="h-4.5 w-4.5" />
-                      <span>Tạo Tài Khoản</span>
+                      <UserPlus className="h-4 w-4" />
+                      <span>Đăng Ký Thành Viên DRX</span>
                     </button>
                   </form>
                 )}
 
                 {/* Secure Notice */}
-                <div className="mt-6 border-t border-ods-border pt-4 text-center flex items-center justify-center gap-2 text-[9.5px] text-ods-textMuted uppercase font-bold tracking-wider">
-                  <Shield className="h-3.5 w-3.5 text-ods-primary" />
-                  <span>Dữ liệu đăng nhập được mã hóa an toàn</span>
+                <div className="mt-6 border-t border-slate-200 dark:border-slate-800 pt-4 text-center flex items-center justify-center gap-2 text-[9.5px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider">
+                  <Shield className="h-3.5 w-3.5 text-emerald-500" />
+                  <span>Bảo mật dữ liệu 256-bit chuẩn thương mại điện tử DRX</span>
                 </div>
               </div>
             </motion.div>
           ) : (
-            /* ================== GAMER DASHBOARD LAYOUT ================== */
-            <motion.div
-              key="dashboard"
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start my-6"
-            >
-              {/* LEFT COLUMN: GAMER PROFILE CARD (4 cols) */}
-              <div className="lg:col-span-4 rounded-ods border border-ods-border bg-white p-6 space-y-6 shadow-sm">
-                {/* User info header */}
-                <div className="flex items-center gap-4">
-                  {/* Avatar circle */}
-                  <div className="h-16 w-16 rounded-full bg-ods-surface border border-ods-border flex items-center justify-center text-black font-extrabold text-2xl shrink-0">
-                    {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : 'G'}
+            /* ================== HARDWARE SHOWROOM USER DASHBOARD ================== */
+            <div className="space-y-8 my-4">
+              
+              {/* 1. TOP HARDWARE ENTHUSIAST STATS BANNER */}
+              <div className="relative rounded-3xl overflow-hidden border border-sky-400/30 dark:border-slate-800 bg-gradient-to-r from-slate-950 via-[#071930] to-slate-950 text-white p-6 sm:p-8 shadow-2xl">
+                <div className="absolute inset-0 tech-grid-pattern opacity-25 pointer-events-none" />
+                <div className="absolute top-0 right-0 w-96 h-96 bg-[#0284c7]/20 rounded-full blur-3xl pointer-events-none" />
+
+                <div className="relative z-10 grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+                  
+                  {/* Left User Profile Avatar & Tag (5 cols) */}
+                  <div className="md:col-span-5 flex items-center gap-5">
+                    <div className="relative shrink-0">
+                      <div className="h-20 w-20 rounded-3xl bg-gradient-to-br from-sky-400 via-[#0284c7] to-blue-700 p-0.5 shadow-xl shadow-sky-500/20">
+                        <div className="h-full w-full rounded-[22px] bg-slate-950 flex items-center justify-center text-white font-black text-2xl font-heading">
+                          {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : 'D'}
+                        </div>
+                      </div>
+                      <div className="absolute -bottom-1 -right-1 p-1.5 rounded-full bg-emerald-500 border-2 border-slate-950 text-white" title="Trạng thái trực tuyến">
+                        <CheckCircle className="h-3.5 w-3.5" />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h2 className="font-heading text-lg sm:text-xl font-black uppercase text-white tracking-wide truncate">
+                          {currentUser?.name || 'Khách Hàng DRX'}
+                        </h2>
+                      </div>
+                      <p className="text-xs text-sky-200/80 font-mono truncate">{currentUser?.email || ''}</p>
+                      
+                      <div className="flex items-center gap-2 pt-1">
+                        <span className="inline-flex items-center gap-1 bg-amber-400/20 text-amber-300 border border-amber-400/40 text-[9.5px] font-black uppercase px-2.5 py-0.5 rounded-full shadow-xs">
+                          <Award className="h-3 w-3" /> DRX ELITE BUILDER
+                        </span>
+                        <span className="text-[10px] text-emerald-400 font-bold">
+                          ● Chiết khấu 3% PC Prebuilt
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <h2 className="font-heading text-base font-bold text-black uppercase tracking-wide truncate">
-                      {currentUser?.name || 'Game Thủ ODS'}
-                    </h2>
-                    <p className="text-[10px] text-ods-textMuted mt-0.5 truncate">{currentUser?.email || ''}</p>
+
+                  {/* Right Quick Metrics Grid (7 cols) */}
+                  <div className="md:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-3.5">
                     
-                    {/* VIP Tier Badge */}
-                    <span className="inline-block mt-2 bg-ods-accent text-black text-[9px] font-extrabold px-2 py-0.5 rounded-sm">
-                      MEMBER VIP 1
-                    </span>
-                  </div>
-                </div>
-
-                {/* WALLET CARD BOX */}
-                <div className="rounded-ods bg-gradient-to-br from-blue-50/40 via-white to-white border border-blue-100 p-5 space-y-4 shadow-sm hover:shadow-skyGlow transition-shadow duration-300">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[9.5px] text-gray-400 font-bold uppercase tracking-widest">Số dư ví của bạn</span>
-                    <div className="h-6 w-6 rounded-full bg-blue-50 flex items-center justify-center text-ods-primary">
-                      <CreditCard className="h-3.5 w-3.5" />
+                    {/* Metric 1: Wallet Balance */}
+                    <div className="bg-slate-900/80 border border-sky-400/30 p-3.5 rounded-2xl backdrop-blur-md flex flex-col justify-between">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] font-bold text-sky-200/70 uppercase tracking-wider">Số Dư Ví DRX</span>
+                        <CreditCard className="h-4 w-4 text-sky-400" />
+                      </div>
+                      <div className="mt-2">
+                        <span className="font-heading text-base sm:text-lg font-black text-white block truncate">
+                          {formatCurrency(currentUser?.balance || 0)}
+                        </span>
+                        <Link href="/deposit" className="text-[10px] font-bold text-sky-400 hover:text-sky-300 hover:underline inline-flex items-center gap-0.5 mt-0.5">
+                          <span>Nạp tiền VietQR</span>
+                          <ChevronRight className="h-3 w-3" />
+                        </Link>
+                      </div>
                     </div>
-                  </div>
-                  <div>
-                    <span className="text-3xl font-extrabold text-black tracking-tight">
-                      {formatCurrency(currentUser?.balance || 0)}
-                    </span>
-                    <div className="flex items-center gap-1.5 mt-2.5">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                      <p className="text-[9px] text-emerald-600 font-bold uppercase tracking-wider">Nạp tự động VietQR không phí</p>
+
+                    {/* Metric 2: Hardware Warranty Items */}
+                    <div className="bg-slate-900/80 border border-emerald-500/30 p-3.5 rounded-2xl backdrop-blur-md flex flex-col justify-between">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] font-bold text-emerald-300/70 uppercase tracking-wider">Linh Kiện Bảo Hành</span>
+                        <ShieldCheck className="h-4 w-4 text-emerald-400" />
+                      </div>
+                      <div className="mt-2">
+                        <span className="font-heading text-base sm:text-lg font-black text-emerald-400 block">
+                          {totalHardwareItems} <span className="text-xs font-normal text-slate-300">thiết bị</span>
+                        </span>
+                        <button onClick={() => setDashboardTab('vault')} className="text-[10px] font-bold text-emerald-400 hover:text-emerald-300 hover:underline inline-flex items-center gap-0.5 mt-0.5 cursor-pointer">
+                          <span>Xem mã Serial</span>
+                          <ChevronRight className="h-3 w-3" />
+                        </button>
+                      </div>
                     </div>
+
+                    {/* Metric 3: Orders Count */}
+                    <div className="bg-slate-900/80 border border-amber-500/30 p-3.5 rounded-2xl backdrop-blur-md flex flex-col justify-between col-span-2 sm:col-span-1">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] font-bold text-amber-300/70 uppercase tracking-wider">Tổng Đơn Hàng</span>
+                        <PackageCheck className="h-4 w-4 text-amber-400" />
+                      </div>
+                      <div className="mt-2">
+                        <span className="font-heading text-base sm:text-lg font-black text-amber-300 block">
+                          {orders.length} <span className="text-xs font-normal text-slate-300">đơn</span>
+                        </span>
+                        <button onClick={() => setDashboardTab('orders')} className="text-[10px] font-bold text-amber-400 hover:text-amber-300 hover:underline inline-flex items-center gap-0.5 mt-0.5 cursor-pointer">
+                          <span>Xem chi tiết</span>
+                          <ChevronRight className="h-3 w-3" />
+                        </button>
+                      </div>
+                    </div>
+
                   </div>
-
-                  <Link
-                    href="/deposit"
-                    className="w-full flex items-center justify-center gap-1.5 rounded-ods bg-black hover:bg-ods-primary text-white py-3 text-[10px] font-extrabold uppercase tracking-widest transition-all duration-300 hover:shadow-buttonGlow active:scale-95 cursor-pointer text-center"
-                  >
-                    Nạp thêm tiền vào ví
-                  </Link>
-                </div>
-
-                {/* DASHBOARD NAVIGATION */}
-                <div className="border-t border-ods-border pt-4 flex flex-col space-y-1">
-                  {/* TAB 1: LỊCH SỬ ĐƠN HÀNG */}
-                  <button
-                    onClick={() => setDashboardTab('orders')}
-                    className={`flex items-center gap-2.5 w-full text-left px-3 py-2.5 rounded-sm text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                      dashboardTab === 'orders'
-                        ? 'bg-ods-primary text-white'
-                        : 'text-ods-textMuted hover:text-black hover:bg-gray-100'
-                    }`}
-                  >
-                    <ShoppingBag className="h-4 w-4" />
-                    <span>Lịch Sử Đơn Hàng</span>
-                  </button>
-
-                  {/* TAB 1.5: LỊCH SỬ NẠP TIỀN */}
-                  <button
-                    onClick={() => setDashboardTab('transactions')}
-                    className={`flex items-center gap-2.5 w-full text-left px-3 py-2.5 rounded-sm text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                      dashboardTab === 'transactions'
-                        ? 'bg-ods-primary text-white'
-                        : 'text-ods-textMuted hover:text-black hover:bg-gray-100'
-                    }`}
-                  >
-                    <CreditCard className="h-4 w-4" />
-                    <span>Lịch Sử Nạp Tiền</span>
-                  </button>
-
-                  {/* TAB 2: KHO GAME ĐÃ MUA */}
-                  <button
-                    onClick={() => setDashboardTab('vault')}
-                    className={`flex items-center gap-2.5 w-full text-left px-3 py-2.5 rounded-sm text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                      dashboardTab === 'vault'
-                        ? 'bg-ods-primary text-white'
-                        : 'text-ods-textMuted hover:text-black hover:bg-gray-100'
-                    }`}
-                  >
-                    <Key className="h-4 w-4" />
-                    <span>Kho Game Đã Mua</span>
-                  </button>
-
-                  {/* TAB 3: DANH SÁCH YÊU THÍCH */}
-                  <button
-                    onClick={() => setDashboardTab('wishlist')}
-                    className={`flex items-center gap-2.5 w-full text-left px-3 py-2.5 rounded-sm text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                      dashboardTab === 'wishlist'
-                        ? 'bg-ods-primary text-white'
-                        : 'text-ods-textMuted hover:text-black hover:bg-gray-100'
-                    }`}
-                  >
-                    <Heart className="h-4 w-4" />
-                    <span>Danh Sách Yêu Thích</span>
-                  </button>
-
-                  {/* TAB 4: ĐỔI MẬT KHẨU */}
-                  <button
-                    onClick={() => setDashboardTab('settings')}
-                    className={`flex items-center gap-2.5 w-full text-left px-3 py-2.5 rounded-sm text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                      dashboardTab === 'settings'
-                        ? 'bg-ods-primary text-white'
-                        : 'text-ods-textMuted hover:text-black hover:bg-gray-100'
-                    }`}
-                  >
-                    <Settings className="h-4 w-4" />
-                    <span>Đổi Mật Khẩu</span>
-                  </button>
-
-                  {/* LOGOUT */}
-                  <button
-                    onClick={handleLogout}
-                    className="flex items-center gap-2.5 w-full text-left px-3 py-2.5 rounded-sm text-xs font-bold uppercase tracking-wider text-red-500 hover:bg-red-50 transition-all mt-6 cursor-pointer"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    <span>Đăng Xuất</span>
-                  </button>
                 </div>
               </div>
 
-              {/* RIGHT COLUMN: DETAIL WORKSPACE (8 cols) */}
-              <div className="lg:col-span-8 space-y-6">
+              {/* 2. MAIN DASHBOARD WORKSPACE GRID */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                 
-                {/* TRANSACTIONS TAB */}
-                {dashboardTab === 'transactions' && (
-                  <div className="rounded-ods border border-ods-border bg-white p-6 space-y-4">
-                    <h3 className="font-heading text-sm font-bold uppercase tracking-wider text-black border-b border-ods-border pb-3">
-                      Lịch Sử Nạp & Biến Động Số Dư
-                    </h3>
+                {/* LEFT NAVIGATION MENU (4 cols) */}
+                <div className="lg:col-span-4 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-5 shadow-sm space-y-4">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-3 block">
+                    QUẢN LÝ TÀI KHOẢN & LINH KIỆN
+                  </span>
 
-                    {isLoadingTransactions ? (
-                      <div className="text-center py-12 text-xs text-ods-textMuted">
-                        Đang tải lịch sử giao dịch...
+                  <div className="flex flex-col space-y-1.5">
+                    
+                    {/* TAB 1: ĐƠN HÀNG LINH KIỆN */}
+                    <button
+                      onClick={() => setDashboardTab('orders')}
+                      className={`flex items-center justify-between w-full text-left px-4 py-3 rounded-2xl text-xs font-heading font-black uppercase tracking-wider transition-all cursor-pointer ${
+                        dashboardTab === 'orders'
+                          ? 'bg-[#0284c7] text-white shadow-md shadow-sky-500/20'
+                          : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <ShoppingBag className="h-4 w-4" />
+                        <span>Đơn Hàng Linh Kiện & PC</span>
                       </div>
-                    ) : transactions.length === 0 ? (
-                      <div className="text-center py-12 px-4 flex flex-col items-center justify-center space-y-4">
-                        <div className="h-14 w-14 rounded-full bg-blue-50 flex items-center justify-center text-ods-primary">
-                          <CreditCard className="h-6 w-6" />
-                        </div>
-                        <div className="space-y-1">
-                          <h4 className="text-xs font-bold text-black uppercase tracking-wider">Chưa có lịch sử nạp tiền</h4>
-                          <p className="text-xs text-ods-textMuted font-light max-w-xs leading-relaxed mx-auto">
-                            Bạn chưa có bất kỳ giao dịch nạp tiền nào.
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/20">{orders.length}</span>
+                    </button>
+
+                    {/* TAB 2: QUẢN LÝ BẢO HÀNH & SERIAL */}
+                    <button
+                      onClick={() => setDashboardTab('vault')}
+                      className={`flex items-center justify-between w-full text-left px-4 py-3 rounded-2xl text-xs font-heading font-black uppercase tracking-wider transition-all cursor-pointer ${
+                        dashboardTab === 'vault'
+                          ? 'bg-[#0284c7] text-white shadow-md shadow-sky-500/20'
+                          : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <ShieldCheck className="h-4 w-4 text-emerald-400" />
+                        <span>Kho Linh Kiện & Bảo Hành</span>
+                      </div>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300">{totalHardwareItems}</span>
+                    </button>
+
+                    {/* TAB 3: LỊCH SỬ NẠP VÍ */}
+                    <button
+                      onClick={() => setDashboardTab('transactions')}
+                      className={`flex items-center justify-between w-full text-left px-4 py-3 rounded-2xl text-xs font-heading font-black uppercase tracking-wider transition-all cursor-pointer ${
+                        dashboardTab === 'transactions'
+                          ? 'bg-[#0284c7] text-white shadow-md shadow-sky-500/20'
+                          : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <CreditCard className="h-4 w-4" />
+                        <span>Lịch Sử Giao Dịch & Ví</span>
+                      </div>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/20">{transactions.length}</span>
+                    </button>
+
+                    {/* TAB 4: CẤU HÌNH PC ĐÃ LƯU */}
+                    <button
+                      onClick={() => setDashboardTab('builds')}
+                      className={`flex items-center justify-between w-full text-left px-4 py-3 rounded-2xl text-xs font-heading font-black uppercase tracking-wider transition-all cursor-pointer ${
+                        dashboardTab === 'builds'
+                          ? 'bg-[#0284c7] text-white shadow-md shadow-sky-500/20'
+                          : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Wrench className="h-4 w-4 text-amber-400" />
+                        <span>Cấu Hình PC Tự Ráp</span>
+                      </div>
+                      <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 font-mono">BUILDER</span>
+                    </button>
+
+                    {/* TAB 5: DANH SÁCH YÊU THÍCH */}
+                    <button
+                      onClick={() => setDashboardTab('wishlist')}
+                      className={`flex items-center justify-between w-full text-left px-4 py-3 rounded-2xl text-xs font-heading font-black uppercase tracking-wider transition-all cursor-pointer ${
+                        dashboardTab === 'wishlist'
+                          ? 'bg-[#0284c7] text-white shadow-md shadow-sky-500/20'
+                          : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Heart className="h-4 w-4 text-rose-500" />
+                        <span>Linh Kiện Yêu Thích</span>
+                      </div>
+                    </button>
+
+                    {/* TAB 6: THIẾT LẬP BẢO MẬT */}
+                    <button
+                      onClick={() => setDashboardTab('settings')}
+                      className={`flex items-center justify-between w-full text-left px-4 py-3 rounded-2xl text-xs font-heading font-black uppercase tracking-wider transition-all cursor-pointer ${
+                        dashboardTab === 'settings'
+                          ? 'bg-[#0284c7] text-white shadow-md shadow-sky-500/20'
+                          : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Settings className="h-4 w-4" />
+                        <span>Đổi Mật Khẩu & Bảo Mật</span>
+                      </div>
+                    </button>
+
+                    {/* LOGOUT */}
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center gap-3 w-full text-left px-4 py-3 rounded-2xl text-xs font-heading font-black uppercase tracking-wider text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-all mt-4 cursor-pointer"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      <span>Đăng Xuất Tài Khoản</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* RIGHT DETAIL WORKSPACE (8 cols) */}
+                <div className="lg:col-span-8 space-y-6">
+                  
+                  {/* 1. ORDERS TAB */}
+                  {dashboardTab === 'orders' && (
+                    <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-6 space-y-5 shadow-sm">
+                      <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+                        <div>
+                          <h3 className="font-heading text-sm font-black uppercase tracking-wider text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                            <ShoppingBag className="h-4 w-4 text-[#0284c7]" />
+                            <span>LỊCH SỬ ĐƠN HÀNG LINH KIỆN & PC GAMING</span>
+                          </h3>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 font-light mt-0.5">
+                            Theo dõi trạng thái đóng gói, kiểm tra benchmark và bàn giao linh kiện.
                           </p>
                         </div>
                       </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {transactions.map((tx) => (
-                          <div key={tx.id} className="rounded-ods border border-ods-border bg-ods-surface p-4 space-y-3.5">
-                            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-                              <div>
-                                <span className="text-[10px] text-ods-textMuted font-mono block mb-1">
-                                  {new Date(tx.createdAt).toLocaleDateString('vi-VN', {
-                                    year: 'numeric', month: '2-digit', day: '2-digit',
-                                    hour: '2-digit', minute: '2-digit',
-                                  })}
-                                </span>
-                                <h4 className="font-heading text-xs font-bold text-black">
-                                  {tx.description || 'Nạp tiền vào ví'}
-                                </h4>
-                                {tx.referenceId && (
-                                  <span className="text-[10px] text-ods-textMuted font-mono mt-1 block">
-                                    Mã tham chiếu: {tx.referenceId}
-                                  </span>
-                                )}
-                              </div>
-                              <div className="text-left sm:text-right shrink-0">
-                                <span className={`text-xs font-extrabold block ${tx.type === 'DEPOSIT' ? 'text-emerald-600' : 'text-red-500'}`}>
-                                  {tx.type === 'DEPOSIT' ? '+' : '-'}{formatCurrency(tx.amount)}
-                                </span>
-                                <span className="inline-flex items-center gap-1 text-[9.5px] text-emerald-600 font-bold uppercase mt-1">
-                                  <CheckCircle2 className="h-3 w-3" /> Thành công
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
 
-                {/* 1. ORDERS TAB */}
-                {dashboardTab === 'orders' && (
-                  <div className="rounded-ods border border-ods-border bg-white p-6 space-y-4">
-                    <h3 className="font-heading text-sm font-bold uppercase tracking-wider text-black border-b border-ods-border pb-3">
-                      Lịch Sử Giao Dịch Đơn Hàng
-                    </h3>
-
-                    {isLoadingOrders ? (
-                      <div className="text-center py-12 text-xs text-ods-textMuted">
-                        Đang tải lịch sử giao dịch...
-                      </div>
-                    ) : orders.length === 0 ? (
-                      <div className="text-center py-12 px-4 flex flex-col items-center justify-center space-y-4">
-                        <div className="h-14 w-14 rounded-full bg-blue-50 flex items-center justify-center text-ods-primary">
-                          <ShoppingBag className="h-6 w-6" />
+                      {isLoadingOrders ? (
+                        <div className="text-center py-12 text-xs text-slate-400">
+                          Đang tải dữ liệu đơn hàng...
                         </div>
-                        <div className="space-y-1">
-                          <h4 className="text-xs font-bold text-black uppercase tracking-wider">Lịch sử giao dịch trống</h4>
-                          <p className="text-xs text-ods-textMuted font-light max-w-xs leading-relaxed mx-auto">
-                            Bạn chưa thực hiện bất kỳ giao dịch mua hàng nào. Hãy khám phá và mua sắm linh kiện PC chính hãng tại ODSStore!
-                          </p>
+                      ) : orders.length === 0 ? (
+                        <div className="text-center py-12 px-4 flex flex-col items-center justify-center space-y-4">
+                          <div className="h-16 w-16 rounded-3xl bg-sky-50 dark:bg-slate-800 flex items-center justify-center text-[#0284c7]">
+                            <Box className="h-8 w-8" />
+                          </div>
+                          <div className="space-y-1">
+                            <h4 className="text-xs font-black text-slate-900 dark:text-slate-100 uppercase tracking-wider">Chưa có đơn hàng linh kiện nào</h4>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 font-light max-w-sm leading-relaxed mx-auto">
+                              Bạn chưa đặt mua linh kiện hoặc PC nào. Hãy khám phá kho linh kiện chính hãng tại DRX Hardware!
+                            </p>
+                          </div>
+                          <Link
+                            href="/products"
+                            className="uiverse-btn-shimmer inline-flex items-center gap-2 rounded-2xl text-white px-6 py-3 text-xs font-heading font-black uppercase tracking-wider shadow-lg"
+                          >
+                            <span>Khám Phá Linh Kiện Ngay</span>
+                            <ArrowRight className="h-4 w-4" />
+                          </Link>
                         </div>
-                        <Link
-                          href="/"
-                          className="inline-flex items-center gap-1.5 rounded-ods bg-black hover:bg-ods-primary text-white px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all duration-300 hover:shadow-buttonGlow"
-                        >
-                          <span>Mua Sắm Ngay</span>
-                          <ArrowRight className="h-3 w-3" />
-                        </Link>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {orders.map((order) => (
-                          <div key={order.id} className="rounded-ods border border-ods-border bg-ods-surface p-4 space-y-3.5">
-                            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-                              <div>
-                                <span className="text-[10px] text-ods-textMuted font-mono">
-                                  {new Date(order.createdAt).toLocaleDateString('vi-VN', {
-                                    year: 'numeric',
-                                    month: '2-digit',
-                                    day: '2-digit',
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                  })}
-                                </span>
-                                <h4 className="font-heading text-xs font-bold uppercase text-black mt-0.5">
-                                  Đơn hàng #{order.id.slice(0, 8)}
-                                </h4>
-                              </div>
-                              <div className="text-left sm:text-right shrink-0">
-                                <span className="text-xs font-extrabold text-black block">
-                                  {formatCurrency(order.netAmount)}
-                                </span>
-                                <span className="inline-flex items-center gap-1 text-[9.5px] text-emerald-600 font-bold uppercase mt-1">
-                                  <CheckCircle2 className="h-3 w-3" /> Hoàn thành
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* KEY DISPLAY ROW */}
-                            <div className="space-y-2">
-                              {order.gameKeys && order.gameKeys.map((key) => (
-                                <div key={key.id} className="flex items-center justify-between gap-3 bg-white border border-dashed border-ods-border p-3 rounded-ods">
-                                  <code className="text-xs font-mono text-ods-primary font-bold select-all break-all pr-2">
-                                    {key.keyCode}
-                                  </code>
-                                  <button
-                                    onClick={() => handleCopy(key.id, key.keyCode)}
-                                    className="flex items-center gap-1 rounded border border-ods-border bg-white px-3 py-1.5 text-[9.5px] font-bold text-black hover:bg-black hover:text-white transition-all shrink-0 cursor-pointer"
-                                  >
-                                    {copiedKeyId === key.id ? (
-                                      <>
-                                        <Check className="h-3 w-3 text-emerald-600" />
-                                        <span className="text-emerald-600">ĐÃ SAO CHÉP</span>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Copy className="h-3 w-3" />
-                                        <span>SAO CHÉP</span>
-                                      </>
-                                    )}
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* 2. LINH KIỆN ĐÃ MUA & BẢO HÀNH TAB */}
-                {dashboardTab === 'vault' && (
-                  <div className="rounded-ods border border-ods-border bg-white p-6 space-y-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-ods-border pb-3 gap-2">
-                      <div>
-                        <h3 className="font-heading text-sm font-bold uppercase tracking-wider text-black flex items-center gap-2">
-                          <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                          <span>LINH KIỆN ĐÃ MUA & BẢO HÀNH CHÍNH HÃNG</span>
-                        </h3>
-                        <p className="text-[11px] text-ods-textMuted mt-0.5">Quản lý mã Serial Number (SN) và phiếu bảo hành điện tử chính hãng.</p>
-                      </div>
-                      <Link
-                        href="/warranty"
-                        className="inline-flex items-center gap-1 text-[10px] font-bold text-[#0284c7] uppercase hover:underline"
-                      >
-                        <span>Tra cứu bảo hành trực tuyến</span>
-                        <ArrowRight className="h-3 w-3" />
-                      </Link>
-                    </div>
-
-                    {isLoadingOrders ? (
-                      <div className="text-center py-12 text-xs text-ods-textMuted">
-                        Đang tải kho linh kiện mua hàng...
-                      </div>
-                    ) : (() => {
-                      const allHardwareItems: any[] = [];
-                      orders.forEach((order) => {
-                        if (order.gameKeys && order.gameKeys.length > 0) {
-                          order.gameKeys.forEach((k: any) => {
-                            allHardwareItems.push({
-                              id: k.id,
-                              orderId: order.id,
-                              serialNumber: k.keyCode.includes('SN-') ? k.keyCode : `SN-${k.keyCode.toUpperCase()}`,
-                              productName: k.product?.name || 'Linh Kiện Máy Tính Chính Hãng',
-                              platform: k.product?.platform || 'HARDWARE',
-                              coverImage: k.product?.coverImage || 'https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?q=80&w=800',
-                              warrantyMonths: 36,
-                              purchaseDate: new Date(k.createdAt || order.createdAt).toLocaleDateString('vi-VN', {
-                                year: 'numeric',
-                                month: '2-digit',
-                                day: '2-digit',
-                              }),
-                            });
-                          });
-                        }
-                      });
-
-                      if (allHardwareItems.length === 0) {
-                        return (
-                          <div className="text-center py-12 px-4 flex flex-col items-center justify-center space-y-4">
-                            <div className="h-14 w-14 rounded-full bg-sky-50 flex items-center justify-center text-[#0284c7]">
-                              <ShieldCheck className="h-6 w-6" />
-                            </div>
-                            <div className="space-y-1">
-                              <h4 className="text-xs font-bold text-black uppercase tracking-wider">Chưa có linh kiện nào trong kho bảo hành</h4>
-                              <p className="text-xs text-ods-textMuted font-light max-w-xs leading-relaxed mx-auto">
-                                Bạn chưa sở hữu linh kiện máy tính nào. Hãy mua sắm các linh kiện chính hãng để nhận bảo hành 36T 1 đổi 1!
-                              </p>
-                            </div>
-                            <Link
-                              href="/"
-                              className="inline-flex items-center gap-1.5 rounded-ods bg-black hover:bg-[#0284c7] text-white px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all duration-300 hover:shadow-buttonGlow"
-                            >
-                              <span>Khám Phá Cửa Hàng Ngay</span>
-                              <ArrowRight className="h-3 w-3" />
-                            </Link>
-                          </div>
-                        );
-                      }
-
-                      return (
+                      ) : (
                         <div className="space-y-4">
-                          {allHardwareItems.map((item) => (
-                            <div key={item.id} className="rounded-ods border border-ods-border bg-ods-surface p-4 space-y-3 hover:border-[#0284c7] transition-all">
-                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                <div className="flex items-center gap-3">
-                                  <img
-                                    src={item.coverImage}
-                                    alt={item.productName}
-                                    className="h-12 w-16 rounded-ods object-cover bg-black border border-ods-border shrink-0"
-                                  />
-                                  <div>
-                                    <h4 className="font-heading text-xs font-bold text-black line-clamp-1">{item.productName}</h4>
-                                    <span className="text-[10px] text-emerald-600 font-bold uppercase block mt-0.5">
-                                      ✓ Bảo hành 36 Tháng (1 Đổi 1)
-                                    </span>
-                                  </div>
+                          {orders.map((order) => (
+                            <div key={order.id} className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-5 space-y-4">
+                              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
+                                <div>
+                                  <span className="text-[10px] text-slate-400 font-mono">
+                                    {new Date(order.createdAt).toLocaleDateString('vi-VN', {
+                                      year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+                                    })}
+                                  </span>
+                                  <h4 className="font-heading text-xs font-black uppercase text-slate-900 dark:text-slate-100 mt-0.5">
+                                    Mã Đơn: #{order.id.slice(0, 10).toUpperCase()}
+                                  </h4>
                                 </div>
                                 <div className="text-left sm:text-right shrink-0">
-                                  <span className="text-[10px] text-ods-textMuted font-mono block">Ngày mua: {item.purchaseDate}</span>
-                                  <span className="text-[9.5px] font-black text-emerald-600 uppercase bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full inline-block mt-1">
-                                    Đã kích hoạt bảo hành
+                                  <span className="text-sm font-black text-emerald-600 dark:text-emerald-400 block font-heading">
+                                    {formatCurrency(order.netAmount)}
+                                  </span>
+                                  <span className="inline-flex items-center gap-1 text-[9.5px] text-emerald-600 font-bold uppercase mt-0.5 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 px-2 py-0.5 rounded-full">
+                                    <CheckCircle2 className="h-3 w-3" /> Đã thanh toán & Bàn giao
                                   </span>
                                 </div>
                               </div>
 
-                              {/* SERIAL NUMBER BOX */}
-                              <div className="flex items-center justify-between gap-3 bg-white border border-dashed border-ods-border p-3 rounded-ods">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Mã Serial (SN):</span>
-                                  <code className="text-xs font-mono text-[#0284c7] font-bold select-all break-all">
-                                    {item.serialNumber}
-                                  </code>
-                                </div>
-                                <button
-                                  onClick={() => handleCopy(item.id, item.serialNumber)}
-                                  className="flex items-center gap-1 rounded border border-ods-border bg-white px-3 py-1.5 text-[9.5px] font-bold text-black hover:bg-black hover:text-white transition-all shrink-0 cursor-pointer"
-                                >
-                                  {copiedKeyId === item.id ? (
-                                    <>
-                                      <Check className="h-3 w-3 text-emerald-600" />
-                                      <span className="text-emerald-600">ĐÃ SAO CHÉP</span>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Copy className="h-3 w-3" />
-                                      <span>SAO CHÉP MÃ SN</span>
-                                    </>
-                                  )}
-                                </button>
+                              {/* LIST OF HARDWARE ITEMS IN ORDER */}
+                              <div className="space-y-2">
+                                {order.gameKeys && order.gameKeys.map((item) => (
+                                  <div key={item.id} className="flex items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 rounded-xl">
+                                    <div className="flex items-center gap-2.5 min-w-0">
+                                      <Cpu className="h-4 w-4 text-[#0284c7] shrink-0" />
+                                      <div className="min-w-0">
+                                        <span className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate block">
+                                          {item.product?.name || 'Linh Kiện Máy Tính Chính Hãng'}
+                                        </span>
+                                        <div className="flex items-center gap-2 mt-0.5">
+                                          <span className="text-[10px] text-slate-400 font-mono">Mã Serial SN:</span>
+                                          <code className="text-[11px] font-mono text-[#0284c7] font-bold select-all">
+                                            {item.keyCode}
+                                          </code>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <button
+                                      onClick={() => handleCopy(item.id, item.keyCode)}
+                                      className="flex items-center gap-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 text-[10px] font-bold text-slate-800 dark:text-slate-200 hover:bg-[#0284c7] hover:text-white transition-all shrink-0 cursor-pointer"
+                                    >
+                                      {copiedKeyId === item.id ? (
+                                        <>
+                                          <Check className="h-3.5 w-3.5 text-emerald-400" />
+                                          <span className="text-emerald-400">ĐÃ LƯU</span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Copy className="h-3.5 w-3.5" />
+                                          <span>COPY SN</span>
+                                        </>
+                                      )}
+                                    </button>
+                                  </div>
+                                ))}
                               </div>
                             </div>
                           ))}
                         </div>
-                      );
-                    })()}
-                  </div>
-                )}
+                      )}
+                    </div>
+                  )}
 
-                {/* 3. WISHLIST TAB */}
-                {dashboardTab === 'wishlist' && (
-                  <div className="rounded-ods border border-ods-border bg-white p-6 space-y-4">
-                    <h3 className="font-heading text-sm font-bold uppercase tracking-wider text-black border-b border-ods-border pb-3">
-                      Danh Sách Game Yêu Thích
-                    </h3>
-                    <div className="text-center py-12 px-4 flex flex-col items-center justify-center space-y-4">
-                      <div className="h-14 w-14 rounded-full bg-red-50 flex items-center justify-center text-red-500">
-                        <Heart className="h-6 w-6" />
+                  {/* 2. HARDWARE VAULT & WARRANTY TAB */}
+                  {dashboardTab === 'vault' && (
+                    <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-6 space-y-5 shadow-sm">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4 gap-2">
+                        <div>
+                          <h3 className="font-heading text-sm font-black uppercase tracking-wider text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                            <ShieldCheck className="h-5 w-5 text-emerald-500" />
+                            <span>KHO LINH KIỆN & QUẢN LÝ BẢO HÀNH CHÍNH HÃNG</span>
+                          </h3>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 font-light mt-0.5">
+                            Quản lý mã Serial Number (SN) linh kiện CPU, VGA, Mainboard, RAM & phiếu bảo hành 36T 1 đổi 1.
+                          </p>
+                        </div>
+                        <Link
+                          href="/warranty"
+                          className="inline-flex items-center gap-1.5 text-xs font-black text-[#0284c7] uppercase hover:underline bg-sky-50 dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-sky-200 dark:border-sky-500/30"
+                        >
+                          <span>Tra cứu online</span>
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </Link>
                       </div>
-                      <div className="space-y-1">
-                        <h4 className="text-xs font-bold text-black uppercase tracking-wider">Danh sách yêu thích trống</h4>
-                        <p className="text-xs text-ods-textMuted font-light max-w-xs leading-relaxed mx-auto">
-                          Bạn chưa thêm sản phẩm nào vào danh sách yêu thích. Hãy bấm nút ❤️ trên thẻ game để lưu lại!
+
+                      {isLoadingOrders ? (
+                        <div className="text-center py-12 text-xs text-slate-400">
+                          Đang tải kho linh kiện...
+                        </div>
+                      ) : (() => {
+                        const allHardwareItems: any[] = [];
+                        orders.forEach((order) => {
+                          if (order.gameKeys && order.gameKeys.length > 0) {
+                            order.gameKeys.forEach((k: any) => {
+                              allHardwareItems.push({
+                                id: k.id,
+                                orderId: order.id,
+                                serialNumber: k.keyCode.includes('SN-') ? k.keyCode : `SN-${k.keyCode.toUpperCase()}`,
+                                productName: k.product?.name || 'Linh Kiện Máy Tính DRX',
+                                platform: k.product?.platform || 'HARDWARE',
+                                coverImage: k.product?.coverImage || 'https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?q=80&w=800',
+                                warrantyMonths: 36,
+                                purchaseDate: new Date(k.createdAt || order.createdAt).toLocaleDateString('vi-VN', {
+                                  year: 'numeric', month: '2-digit', day: '2-digit',
+                                }),
+                              });
+                            });
+                          }
+                        });
+
+                        if (allHardwareItems.length === 0) {
+                          return (
+                            <div className="text-center py-12 px-4 flex flex-col items-center justify-center space-y-4">
+                              <div className="h-16 w-16 rounded-3xl bg-emerald-50 dark:bg-slate-800 flex items-center justify-center text-emerald-500">
+                                <ShieldCheck className="h-8 w-8" />
+                              </div>
+                              <div className="space-y-1">
+                                <h4 className="text-xs font-black text-slate-900 dark:text-slate-100 uppercase tracking-wider">Chưa có linh kiện nào trong kho bảo hành</h4>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 font-light max-w-sm leading-relaxed mx-auto">
+                                  Bạn chưa sở hữu linh kiện máy tính nào. Hãy mua sắm linh kiện chính hãng tại DRX để nhận bảo hành 1 đổi 1 36 tháng tận nơi!
+                                </p>
+                              </div>
+                              <Link
+                                href="/products"
+                                className="uiverse-btn-shimmer inline-flex items-center gap-2 rounded-2xl text-white px-6 py-3 text-xs font-heading font-black uppercase tracking-wider shadow-lg"
+                              >
+                                <span>Mua Sắm Linh Kiện Ngay</span>
+                                <ArrowRight className="h-4 w-4" />
+                              </Link>
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div className="space-y-4">
+                            {allHardwareItems.map((item) => (
+                              <div key={item.id} className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-5 space-y-3.5 hover:border-[#0284c7] transition-all">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                  <div className="flex items-center gap-3.5">
+                                    <img
+                                      src={item.coverImage}
+                                      alt={item.productName}
+                                      className="h-14 w-20 rounded-xl object-cover bg-slate-900 border border-slate-200 dark:border-slate-800 shrink-0"
+                                    />
+                                    <div>
+                                      <h4 className="font-heading text-xs font-black text-slate-900 dark:text-slate-100 line-clamp-1">{item.productName}</h4>
+                                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold uppercase block mt-0.5">
+                                        ✓ Bảo hành chính hãng 36 Tháng (1 Đổi 1)
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="text-left sm:text-right shrink-0">
+                                    <span className="text-[10px] text-slate-400 font-mono block">Ngày kích hoạt: {item.purchaseDate}</span>
+                                    <span className="text-[9.5px] font-black text-emerald-600 dark:text-emerald-300 uppercase bg-emerald-100 dark:bg-emerald-950/80 border border-emerald-300 dark:border-emerald-800 px-2.5 py-0.5 rounded-full inline-block mt-1">
+                                      Đang trong hạn bảo hành
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* SERIAL NUMBER BAR */}
+                                <div className="flex items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-700 p-3 rounded-xl">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Mã Serial SN:</span>
+                                    <code className="text-xs font-mono text-[#0284c7] font-bold select-all">
+                                      {item.serialNumber}
+                                    </code>
+                                  </div>
+                                  <button
+                                    onClick={() => handleCopy(item.id, item.serialNumber)}
+                                    className="flex items-center gap-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 text-[10px] font-bold text-slate-800 dark:text-slate-200 hover:bg-[#0284c7] hover:text-white transition-all shrink-0 cursor-pointer"
+                                  >
+                                    {copiedKeyId === item.id ? (
+                                      <>
+                                        <Check className="h-3.5 w-3.5 text-emerald-400" />
+                                        <span className="text-emerald-400">ĐÃ COPY</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Copy className="h-3.5 w-3.5" />
+                                        <span>COPY MÃ SN</span>
+                                      </>
+                                    )}
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+
+                  {/* 3. TRANSACTIONS TAB */}
+                  {dashboardTab === 'transactions' && (
+                    <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-6 space-y-5 shadow-sm">
+                      <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+                        <div>
+                          <h3 className="font-heading text-sm font-black uppercase tracking-wider text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                            <CreditCard className="h-4 w-4 text-[#0284c7]" />
+                            <span>LỊCH SỬ BIẾN ĐỘNG SỐ DƯ VÍ DRX</span>
+                          </h3>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 font-light mt-0.5">
+                            Ghi nhận nạp tiền tự động VietQR không phí và thanh toán đơn hàng.
+                          </p>
+                        </div>
+                        <Link
+                          href="/deposit"
+                          className="uiverse-btn-shimmer inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-white text-xs font-heading font-black uppercase"
+                        >
+                          <Zap className="h-3.5 w-3.5 text-amber-300" />
+                          <span>Nạp Tiền Ngay</span>
+                        </Link>
+                      </div>
+
+                      {isLoadingTransactions ? (
+                        <div className="text-center py-12 text-xs text-slate-400">
+                          Đang tải lịch sử nạp tiền...
+                        </div>
+                      ) : transactions.length === 0 ? (
+                        <div className="text-center py-12 px-4 flex flex-col items-center justify-center space-y-4">
+                          <div className="h-16 w-16 rounded-3xl bg-blue-50 dark:bg-slate-800 flex items-center justify-center text-[#0284c7]">
+                            <CreditCard className="h-8 w-8" />
+                          </div>
+                          <div className="space-y-1">
+                            <h4 className="text-xs font-black text-slate-900 dark:text-slate-100 uppercase tracking-wider">Chưa có giao dịch nạp tiền</h4>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 font-light max-w-sm leading-relaxed mx-auto">
+                              Nạp tiền vào ví DRX để thanh toán nhanh chóng đơn hàng linh kiện và nhận chiết khấu VIP!
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {transactions.map((tx) => (
+                            <div key={tx.id} className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-4 space-y-2">
+                              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                                <div>
+                                  <span className="text-[10px] text-slate-400 font-mono block mb-1">
+                                    {new Date(tx.createdAt).toLocaleDateString('vi-VN', {
+                                      year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+                                    })}
+                                  </span>
+                                  <h4 className="font-heading text-xs font-black text-slate-900 dark:text-slate-100">
+                                    {tx.description || 'Nạp tiền vào ví DRX'}
+                                  </h4>
+                                  {tx.referenceId && (
+                                    <span className="text-[10px] text-slate-400 font-mono mt-0.5 block">
+                                      Mã GD: {tx.referenceId}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-left sm:text-right shrink-0">
+                                  <span className={`text-sm font-black font-heading block ${tx.type === 'DEPOSIT' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'}`}>
+                                    {tx.type === 'DEPOSIT' ? '+' : '-'}{formatCurrency(tx.amount)}
+                                  </span>
+                                  <span className="inline-flex items-center gap-1 text-[9.5px] text-emerald-600 dark:text-emerald-400 font-bold uppercase mt-1">
+                                    <CheckCircle2 className="h-3 w-3" /> Thành công
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* 4. SAVED PC BUILDS TAB */}
+                  {dashboardTab === 'builds' && (
+                    <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-6 space-y-5 shadow-sm">
+                      <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+                        <div>
+                          <h3 className="font-heading text-sm font-black uppercase tracking-wider text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                            <Wrench className="h-4 w-4 text-amber-500" />
+                            <span>CẤU HÌNH PC GAMING & ĐỒ HỌA ĐÃ LƯU</span>
+                          </h3>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 font-light mt-0.5">
+                            Quản lý các bộ cấu hình PC bạn đã tự phối linh kiện trên công cụ DRX PC Builder.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="text-center py-12 px-4 flex flex-col items-center justify-center space-y-4">
+                        <div className="h-16 w-16 rounded-3xl bg-amber-50 dark:bg-slate-800 flex items-center justify-center text-amber-500">
+                          <Wrench className="h-8 w-8" />
+                        </div>
+                        <div className="space-y-1">
+                          <h4 className="text-xs font-black text-slate-900 dark:text-slate-100 uppercase tracking-wider">Chưa có cấu hình PC nào được lưu</h4>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 font-light max-w-sm leading-relaxed mx-auto">
+                            Tự tay lựa chọn CPU, VGA, Mainboard, RAM và kiểm tra tương thích tự động với công cụ PC Builder của DRX!
+                          </p>
+                        </div>
+                        <Link
+                          href="/pc-builder"
+                          className="uiverse-btn-shimmer inline-flex items-center gap-2 rounded-2xl text-white px-6 py-3 text-xs font-heading font-black uppercase tracking-wider shadow-lg"
+                        >
+                          <Zap className="h-4 w-4 text-amber-300" />
+                          <span>Tự Xây Dựng Cấu Hình PC Ngay</span>
+                        </Link>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 5. WISHLIST TAB */}
+                  {dashboardTab === 'wishlist' && (
+                    <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-6 space-y-5 shadow-sm">
+                      <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+                        <div>
+                          <h3 className="font-heading text-sm font-black uppercase tracking-wider text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                            <Heart className="h-4 w-4 text-rose-500" />
+                            <span>DANH SÁCH LINH KIỆN & THIẾT BỊ YÊU THÍCH</span>
+                          </h3>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 font-light mt-0.5">
+                            Các linh kiện bạn đã đánh dấu quan tâm để chờ đợt khuyến mãi.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="text-center py-12 px-4 flex flex-col items-center justify-center space-y-4">
+                        <div className="h-16 w-16 rounded-3xl bg-rose-50 dark:bg-slate-800 flex items-center justify-center text-rose-500">
+                          <Heart className="h-8 w-8" />
+                        </div>
+                        <div className="space-y-1">
+                          <h4 className="text-xs font-black text-slate-900 dark:text-slate-100 uppercase tracking-wider">Danh sách yêu thích trống</h4>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 font-light max-w-sm leading-relaxed mx-auto">
+                            Bạn chưa lưu linh kiện nào. Hãy nhấn biểu tượng trái tim trên các sản phẩm CPU, VGA, Màn hình để theo dõi giá!
+                          </p>
+                        </div>
+                        <Link
+                          href="/products"
+                          className="uiverse-btn-shimmer inline-flex items-center gap-2 rounded-2xl text-white px-6 py-3 text-xs font-heading font-black uppercase tracking-wider shadow-lg"
+                        >
+                          <span>Xem Kho Linh Kiện DRX</span>
+                          <ArrowRight className="h-4 w-4" />
+                        </Link>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 6. SETTINGS TAB */}
+                  {dashboardTab === 'settings' && (
+                    <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-6 space-y-5 shadow-sm">
+                      <div className="border-b border-slate-200 dark:border-slate-800 pb-4">
+                        <h3 className="font-heading text-sm font-black uppercase tracking-wider text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                          <Settings className="h-4 w-4 text-[#0284c7]" />
+                          <span>BẢO MẬT & ĐỔI MẬT KHẨU TÀI KHOẢN</span>
+                        </h3>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 font-light mt-0.5">
+                          Cập nhật mật khẩu định kỳ để bảo vệ số dư ví và quyền lợi bảo hành.
                         </p>
                       </div>
-                      <Link
-                        href="/"
-                        className="inline-flex items-center gap-1.5 rounded-ods bg-black hover:bg-ods-primary text-white px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all duration-300 hover:shadow-buttonGlow"
-                      >
-                        <span>Khám Phá Game Ngay</span>
-                        <ArrowRight className="h-3 w-3" />
-                      </Link>
-                    </div>
-                  </div>
-                )}
 
-                {/* 4. SETTINGS TAB */}
-                {dashboardTab === 'settings' && (
-                  <div className="rounded-ods border border-ods-border bg-white p-6 space-y-4">
-                    <h3 className="font-heading text-sm font-bold uppercase tracking-wider text-black border-b border-ods-border pb-3">
-                      Bảo Mật & Đổi Mật Khẩu
-                    </h3>
-                    <form onSubmit={(e) => { e.preventDefault(); showToast('Đổi mật khẩu thành công!', 'success'); }} className="space-y-4 max-w-md">
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] text-gray-500 font-bold uppercase block">Mật khẩu hiện tại</label>
-                        <input
-                          type="password"
-                          required
-                          placeholder="••••••••"
-                          className="w-full rounded-ods border border-ods-border bg-white py-2 px-3 text-xs font-semibold text-black focus:border-ods-primary focus:outline-none"
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] text-gray-500 font-bold uppercase block">Mật khẩu mới</label>
-                        <input
-                          type="password"
-                          required
-                          placeholder="••••••••"
-                          className="w-full rounded-ods border border-ods-border bg-white py-2 px-3 text-xs font-semibold text-black focus:border-ods-primary focus:outline-none"
-                        />
-                      </div>
-                      <button
-                        type="submit"
-                        className="rounded-ods bg-black hover:bg-ods-primary text-white px-6 py-2.5 text-xs font-bold uppercase tracking-wider transition-all shadow-buttonGlow"
-                      >
-                        Cập Nhật Mật Khẩu
-                      </button>
-                    </form>
-                  </div>
-                )}
+                      <form onSubmit={(e) => { e.preventDefault(); showToast('Đổi mật khẩu tài khoản thành công!', 'success'); }} className="space-y-4 max-w-md">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block">Mật khẩu hiện tại</label>
+                          <input
+                            type="password"
+                            required
+                            placeholder="••••••••"
+                            className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-3 px-4 text-xs font-semibold text-slate-900 dark:text-slate-100 focus:border-[#0284c7] focus:outline-none"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block">Mật khẩu mới</label>
+                          <input
+                            type="password"
+                            required
+                            placeholder="••••••••"
+                            className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-3 px-4 text-xs font-semibold text-slate-900 dark:text-slate-100 focus:border-[#0284c7] focus:outline-none"
+                          />
+                        </div>
+                        <button
+                          type="submit"
+                          className="uiverse-btn-shimmer inline-flex items-center gap-2 rounded-2xl text-white px-6 py-3 text-xs font-heading font-black uppercase tracking-wider shadow-lg cursor-pointer"
+                        >
+                          <Lock className="h-4 w-4" />
+                          <span>Cập Nhật Mật Khẩu</span>
+                        </button>
+                      </form>
+                    </div>
+                  )}
+
+                </div>
               </div>
-            </motion.div>
+
+            </div>
           )}
         </AnimatePresence>
       </main>
@@ -920,7 +1089,7 @@ function ProfileContent() {
 
 export default function ProfilePage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center text-xs font-bold text-ods-textMuted">Đang tải trang cá nhân...</div>}>
+    <Suspense fallback={<div className="min-h-screen bg-slate-50 dark:bg-[#090d16] flex items-center justify-center text-xs font-bold text-slate-400">Đang tải trang cá nhân DRX Hardware...</div>}>
       <ProfileContent />
     </Suspense>
   );
