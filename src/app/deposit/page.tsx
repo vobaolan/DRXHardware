@@ -67,7 +67,7 @@ export default function DepositPage() {
   };
 
   const transferMemo = useMemo(() => {
-    return `ODS ${memoCode}`;
+    return `DRX ${memoCode}`;
   }, [memoCode]);
 
   const vietQrUrl = useMemo(() => {
@@ -99,7 +99,7 @@ export default function DepositPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: currentUser?.id,
-          email: currentUser?.email || 'admin@odsstore.vn',
+          email: currentUser?.email || 'admin@drx.vn',
           amount: effectiveAmount,
           memo: transferMemo,
         }),

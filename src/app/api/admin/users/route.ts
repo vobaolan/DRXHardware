@@ -93,7 +93,7 @@ export async function GET() {
     const totalUsers = usersList.length;
 
     // Ensure master admin has initial default balance if not explicitly set
-    let adminInList = usersList.find((u) => u.email === 'admin@odsstore.vn');
+    let adminInList = usersList.find((u) => u.email === 'admin@drx.vn' || u.email === 'admin@odsstore.vn');
     if (adminInList) {
       if (adminInList.balance === undefined || adminInList.balance === null) {
         adminInList.balance = 0;
@@ -101,8 +101,9 @@ export async function GET() {
     } else {
       usersList.unshift({
         id: 'admin-id-master',
-        name: 'ODS ADMIN',
-        email: 'admin@odsstore.vn',
+        name: 'DRX ADMIN',
+        email: 'admin@drx.vn',
+        phone: '01699224729',
         role: 'ADMIN',
         balance: 0,
         createdAt: new Date().toISOString(),

@@ -59,7 +59,7 @@ export default function CheckoutPage() {
       }
     } catch (e) {}
 
-    const randomOrd = 'ODS' + Math.floor(100000 + Math.random() * 900000);
+    const randomOrd = 'DRX' + Math.floor(100000 + Math.random() * 900000);
     setOrderCode(randomOrd);
   }, []);
 
@@ -78,7 +78,7 @@ export default function CheckoutPage() {
     return { 
       text: '🚚 Giao Hàng & Lắp Ráp Tận Nơi', 
       style: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-      subtext: 'Mở App Ngân Hàng quét mã VietQR để thanh toán đơn hàng linh kiện chính hãng. Nhân viên ODS sẽ đóng gói nguyên seal & giao tận nơi!',
+      subtext: 'Mở App Ngân Hàng quét mã VietQR để thanh toán đơn hàng linh kiện chính hãng. Nhân viên DRX sẽ đóng gói nguyên seal & giao tận nơi!',
       buttonLabel: 'Xác Nhận Đặt Hàng & Giao Tận Nơi'
     };
   }, []);
@@ -98,7 +98,7 @@ export default function CheckoutPage() {
     }
 
     if (paymentMethod === 'WALLET' && !isBalanceEnough) {
-      showToast('Số dư ví ODS không đủ để thanh toán đơn hàng này!', 'error');
+      showToast('Số dư ví DRX không đủ để thanh toán đơn hàng này!', 'error');
       return;
     }
 
@@ -242,7 +242,7 @@ export default function CheckoutPage() {
                     </div>
                     <div>
                       <h4 className="text-xs font-extrabold text-zinc-900 flex items-center gap-2">
-                        <span>Số Dư Ví ODS Store</span>
+                        <span>Số Dư Ví DRX Hardware</span>
                         <span className="text-amber-600 font-black">({formatCurrency(userBalance)})</span>
                       </h4>
                       <p className="text-[11px] text-zinc-500 mt-0.5">
@@ -434,7 +434,7 @@ export default function CheckoutPage() {
                       </div>
                       <div>
                         <h4 className="text-xs font-extrabold text-zinc-900 flex items-center gap-2">
-                          <span>Đặt Cọc Giữ Hàng Bằng Số Dư Ví ODS</span>
+                          <span>Đặt Cọc Giữ Hàng Bằng Số Dư Ví DRX</span>
                           <span className="text-amber-600 font-black">({formatCurrency(userBalance)})</span>
                         </h4>
                         <p className="text-[11px] text-zinc-500 mt-0.5">
@@ -499,7 +499,7 @@ export default function CheckoutPage() {
 
                       <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs space-y-1">
                         <div className="flex justify-between text-emerald-900 font-bold">
-                          <span>Trích từ Ví ODS ngay:</span>
+                          <span>Trích từ Ví DRX ngay:</span>
                           <span>{formatCurrency(depositRequiredAmount)}</span>
                         </div>
                         <div className="flex justify-between text-zinc-600">

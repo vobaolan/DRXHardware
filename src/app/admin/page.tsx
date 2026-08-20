@@ -82,10 +82,10 @@ export default function AdminDashboardPage() {
 
   const [orders, setOrders] = useState([
     {
-      id: "ODS-8819",
+      id: "DRX-8819",
       customerName: "Nguyễn Văn Hùng",
       phone: "0908889999",
-      items: "Build PC Gaming ODS Venom (RTX 4060 + Core i5 13400F)",
+      items: "Build PC Gaming DRX Venom (RTX 4060 + Core i5 13400F)",
       total: 16990000,
       paymentMethod: "VIETQR",
       paymentStatus: "PAID",
@@ -94,7 +94,7 @@ export default function AdminDashboardPage() {
       date: "2026-08-11 14:30"
     },
     {
-      id: "ODS-8820",
+      id: "DRX-8820",
       customerName: "Trần Thị Mai",
       phone: "0912345678",
       items: "Màn Hình ASUS TUF Gaming 27 Inch 180Hz IPS",
@@ -106,7 +106,7 @@ export default function AdminDashboardPage() {
       date: "2026-08-11 11:15"
     },
     {
-      id: "ODS-8821",
+      id: "DRX-8821",
       customerName: "Lê Hoàng Nam",
       phone: "0977112233",
       items: "SSD Samsung 990 PRO 1TB PCIe 4.0 NVMe",
@@ -118,7 +118,7 @@ export default function AdminDashboardPage() {
       date: "2026-08-11 09:45"
     },
     {
-      id: "ODS-8822",
+      id: "DRX-8822",
       customerName: "Phạm Quốc Bảo",
       phone: "0988223344",
       items: "Laptop Gaming MSI Katana 15 (RTX 4050 6GB)",
@@ -184,7 +184,7 @@ export default function AdminDashboardPage() {
               Khu Vực Giới Hạn CEO Quản Trị
             </h1>
             <p className="text-xs text-slate-500 leading-relaxed max-w-sm mx-auto">
-              Tài khoản của bạn không có thẩm quyền truy cập ODS CEO Command Center (`/admin`).
+              Tài khoản của bạn không có thẩm quyền truy cập DRX CEO Command Center (`/admin`).
             </p>
           </div>
 

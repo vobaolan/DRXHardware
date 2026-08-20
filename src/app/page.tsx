@@ -359,7 +359,7 @@ export default function Home() {
           <div className="flex items-center justify-between mb-6">
             <div>
               <span className="text-[10px] text-cyan-600 dark:text-cyan-400 font-bold uppercase tracking-widest block mb-1">
-                ODS HARDWARE CATEGORIES
+                DRX HARDWARE CATEGORIES
               </span>
               <h3 className="font-heading text-xl font-extrabold uppercase tracking-wider text-slate-900 dark:text-slate-100">
                 DANH MỤC THIẾT BỊ & LINH KIỆN NỔI BẬT

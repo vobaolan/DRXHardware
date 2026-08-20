@@ -9,20 +9,20 @@ export default function Icon() {
     (
       <div
         style={{
-          fontSize: 13,
-          background: '#09090b',
           width: '100%',
           height: '100%',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          background: '#090d16',
+          borderRadius: '50%',
+          border: '1.5px solid #38bdf8',
           color: '#ffffff',
           fontWeight: 900,
-          borderRadius: 8,
-          border: '1.5px solid #0284c7',
+          fontSize: 11,
           letterSpacing: '-0.5px',
-          fontFamily: 'sans-serif',
-          boxShadow: '0 0 8px rgba(2, 132, 199, 0.4)',
+          fontFamily: 'system-ui, -apple-system, sans-serif',
+          boxShadow: '0 0 6px rgba(56, 189, 248, 0.6)',
         }}
       >
         DRX

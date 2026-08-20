@@ -82,7 +82,7 @@ export default function WarrantyPage() {
         <div className="text-center space-y-3">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-300 text-xs font-bold uppercase tracking-wider">
             <ShieldCheck className="w-4 h-4 text-cyan-400" />
-            Cổng Tra Cứu Bảo Hành Điện Tử ODS
+            Cổng Tra Cứu Bảo Hành Điện Tử DRX
           </div>
           <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight">
             Tra Cứu Hạn Bảo Hành & Lịch Sử Sửa Chữa
@@ -169,7 +169,7 @@ export default function WarrantyPage() {
                       <div className="bg-slate-950/80 rounded-xl p-4 border border-slate-800/80 space-y-2">
                         <h4 className="text-xs font-bold text-slate-400 flex items-center gap-1.5 uppercase">
                           <Wrench className="w-3.5 h-3.5 text-amber-400" />
-                          <span>Lịch sử bảo trì / bảo hành tại ODS:</span>
+                          <span>Lịch sử bảo trì / bảo hành tại DRX:</span>
                         </h4>
                         <ul className="space-y-1.5 text-xs text-slate-300">
                           {item.repairLogs.map((log, lIdx) => (

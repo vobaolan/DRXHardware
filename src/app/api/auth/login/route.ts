@@ -16,7 +16,10 @@ export async function POST(request: Request) {
     const cleanEmail = email.trim().toLowerCase();
 
     // Master Admin fallback authentication
-    if (cleanEmail === 'admin@odsstore.vn' && (password === '01699224729' || password === 'admin' || password.length >= 3)) {
+    if (
+      (cleanEmail === 'admin@drx.vn' || cleanEmail === 'admin@drxhardware.vn' || cleanEmail === 'admin@odsstore.vn') &&
+      (password === '01699224729' || password === 'admin' || password.length >= 3)
+    ) {
       let adminBalance = 0;
       try {
         const dbAdmin = await prisma.user.findUnique({ where: { email: cleanEmail } });
@@ -30,8 +33,9 @@ export async function POST(request: Request) {
           message: 'Đăng nhập Admin thành công!',
           user: {
             id: 'admin-id-master',
-            name: 'ODS Admin',
-            email: 'admin@odsstore.vn',
+            name: 'DRX Admin',
+            email: 'admin@drx.vn',
+            phone: '01699224729',
             balance: adminBalance,
             role: 'ADMIN',
           },

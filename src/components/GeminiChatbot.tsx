@@ -37,7 +37,7 @@ export const GeminiChatbot: React.FC = () => {
     {
       id: 'msg-welcome',
       sender: 'bot',
-      text: 'Xin chào! Mình là ODS CyberBot AI 🤖⚡ — Trợ lý AI thế hệ mới được thiết kế riêng cho ODS Store. Bạn có thể hỏi mình bất kỳ điều gì: từ thời tiết hôm nay, tư vấn game hay tra cứu kho hàng và Flash Sale nhé!',
+      text: 'Xin chào! Mình là DRX CyberBot AI 🤖⚡ — Trợ lý AI thế hệ mới được thiết kế riêng cho DRX Hardware. Bạn có thể hỏi mình bất kỳ điều gì: từ tư vấn build PC, kiểm tra socket CPU, VGA, Mainboard hay tra cứu linh kiện và Flash Sale nhé!',
       timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
@@ -94,7 +94,7 @@ export const GeminiChatbot: React.FC = () => {
   // Fallback response generator if API route fails
   const generateFallbackResponse = (query: string) => {
     const q = query.toLowerCase().trim();
-    let replyText = `🤖 ODS CyberBot AI: Cảm ơn bạn đã nhắn tin! CyberBot luôn sẵn sàng hỗ trợ bạn tra cứu thông tin sản phẩm game, giá bán, khuyến mãi Flash Sale và bảo hành 100% tại ODS Store ⚡!`;
+    let replyText = `🤖 DRX CyberBot AI: Cảm ơn bạn đã nhắn tin! CyberBot luôn sẵn sàng hỗ trợ bạn tra cứu linh kiện máy tính, tư vấn cấu hình PC, kiểm tra khuyến mãi Flash Sale và bảo hành 36T tại DRX Hardware ⚡!`;
     let matchedProducts: any[] = [];
 
     if (
@@ -104,7 +104,7 @@ export const GeminiChatbot: React.FC = () => {
       q.includes('nhiệt độ') ||
       q.includes('mấy giờ')
     ) {
-      replyText = `🤖 ODS CyberBot AI: CyberBot là trợ lý AI chuyên trách riêng của ODS Store, tập trung 100% hỗ trợ kho game bản quyền và dịch vụ mua bán tại ODS Store 🎮⚡.\n\nCyberBot không hỗ trợ các thông tin ngoài lề như thời tiết hay xem giờ. Bạn cần CyberBot tra cứu giá hoặc kiểm tra sản phẩm nào tại ODS Store không ạ? 😊`;
+      replyText = `🤖 DRX CyberBot AI: CyberBot là trợ lý AI chuyên trách riêng của DRX Hardware, tập trung 100% hỗ trợ tư vấn linh kiện máy tính và dịch vụ mua bán tại DRX Hardware 💻⚡.\n\nCyberBot không hỗ trợ các thông tin ngoài lề như thời tiết hay xem giờ. Bạn cần CyberBot tra cứu giá hoặc kiểm tra linh kiện nào tại DRX Hardware không ạ? 😊`;
       matchedProducts = products.slice(0, 2);
     } else {
       const directMatches = products.filter((p) =>
@@ -114,11 +114,11 @@ export const GeminiChatbot: React.FC = () => {
       if (directMatches.length > 0) {
         matchedProducts = directMatches;
         const p = directMatches[0];
-        replyText = `🤖 ODS CyberBot AI:\n• Tên sản phẩm: ${p.name}\n• Tình trạng: ${
+        replyText = `🤖 DRX CyberBot AI:\n• Tên sản phẩm: ${p.name}\n• Tình trạng: ${
           p.status !== false ? '📦 ĐANG CÒN HÀNG' : '🚫 HẾT HÀNG'
         }\n• Giá bán: ${
           p.discountPrice ? `${formatPrice(p.discountPrice)} (Gốc ${formatPrice(p.price)})` : formatPrice(p.price)
-        }\n• Dịch vụ: Giao key tự động 24/7 tức thì & Bảo hành 100%!`;
+        }\n• Dịch vụ: Bảo hành 1 đổi 1 36 tháng & Giao hàng toàn quốc!`;
       } else {
         matchedProducts = products.slice(0, 2);
       }
@@ -256,12 +256,12 @@ export const GeminiChatbot: React.FC = () => {
                 <CyberBotAvatar size="md" isThinking={isTyping} />
                 <div>
                   <div className="flex items-center gap-1.5 font-bold text-sm text-zinc-900">
-                    <span>ODS CyberBot AI</span>
+                    <span>DRX CyberBot AI</span>
                     <Sparkles className="h-3.5 w-3.5 text-cyan-600 animate-pulse" />
                   </div>
                   <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 mt-0.5">
                     <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="font-semibold text-emerald-700">ONLINE • CYBER AI 2.0</span>
+                    <span className="font-semibold text-emerald-700">ONLINE • HARDWARE AI 2.0</span>
                   </div>
                 </div>
               </div>
@@ -273,7 +273,7 @@ export const GeminiChatbot: React.FC = () => {
                       {
                         id: 'msg-reset',
                         sender: 'bot',
-                        text: 'Đã reset hệ thống CyberBot! Bạn cần trợ giúp thông tin gì tiếp theo?',
+                        text: 'Đã reset hệ thống CyberBot! Bạn cần tư vấn linh kiện hay kiểm tra giá gì tiếp theo?',
                         timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
                       },
                     ])
@@ -378,19 +378,19 @@ export const GeminiChatbot: React.FC = () => {
             <div className="px-3 py-2 bg-zinc-50 border-t border-zinc-200/60 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
               <button
                 type="button"
-                onClick={() => handleSendMessage('ODS Store chuyên về gì?')}
+                onClick={() => handleSendMessage('DRX Hardware chuyên về gì?')}
                 className="shrink-0 px-2.5 py-1 rounded-full bg-white hover:bg-sky-50 text-zinc-700 hover:text-sky-700 text-[10px] font-semibold border border-zinc-200 hover:border-sky-300 transition-all flex items-center gap-1 shadow-xs cursor-pointer active:scale-95"
               >
                 <Sparkles className="h-3 w-3 text-sky-500" />
-                <span>ODS Store chuyên về gì?</span>
+                <span>DRX Hardware chuyên về gì?</span>
               </button>
               <button
                 type="button"
-                onClick={() => handleSendMessage('Game đang Flash Deals hôm nay?')}
+                onClick={() => handleSendMessage('Linh kiện Flash Deals hôm nay?')}
                 className="shrink-0 px-2.5 py-1 rounded-full bg-white hover:bg-rose-50 text-zinc-700 hover:text-rose-700 text-[10px] font-semibold border border-zinc-200 hover:border-rose-300 transition-all flex items-center gap-1 shadow-xs cursor-pointer active:scale-95"
               >
                 <Zap className="h-3 w-3 text-rose-500" />
-                <span>Game Flash Deals hôm nay</span>
+                <span>Linh kiện Flash Deals</span>
               </button>
               <button
                 type="button"

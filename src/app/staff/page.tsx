@@ -74,7 +74,7 @@ export default function StaffWarehousePortalPage() {
   // PC Assembly Orders List State
   const [assemblyOrders, setAssemblyOrders] = useState([
     {
-      id: "ODS-8819",
+      id: "DRX-8819",
       customerName: "Nguyễn Văn Hùng",
       phone: "0988123456",
       pcConfig: "PC Gaming Core i7 13700H / RTX 4060 8GB / 32GB RAM DDR5",
@@ -84,7 +84,7 @@ export default function StaffWarehousePortalPage() {
       date: "2026-08-11 14:30"
     },
     {
-      id: "ODS-8820",
+      id: "DRX-8820",
       customerName: "Trần Thị Mai",
       phone: "0912345678",
       pcConfig: "Màn Hình ASUS TUF Gaming 27 Inch 180Hz IPS",
@@ -94,7 +94,7 @@ export default function StaffWarehousePortalPage() {
       date: "2026-08-11 11:15"
     },
     {
-      id: "ODS-8821",
+      id: "DRX-8821",
       customerName: "Lê Hoàng Nam",
       phone: "0977112233",
       pcConfig: "SSD Samsung 990 PRO 1TB PCIe 4.0 NVMe",
@@ -302,7 +302,7 @@ export default function StaffWarehousePortalPage() {
               Khu Vực Nghiệp Vụ Kho & Kỹ Thuật
             </h1>
             <p className="text-xs text-slate-500 leading-relaxed max-w-sm mx-auto">
-              Trang này chỉ dành cho Nhân Viên Kỹ Thuật, Thủ Kho & Quản Lý ODSStore (`/staff`). Vui lòng sử dụng tài khoản nhân viên được cấp quyền.
+              Trang này chỉ dành cho Nhân Viên Kỹ Thuật, Thủ Kho & Quản Lý DRX Hardware (`/staff`). Vui lòng sử dụng tài khoản nhân viên được cấp quyền.
             </p>
           </div>
 

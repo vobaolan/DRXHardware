@@ -51,7 +51,7 @@ export default function AdminLayout({
     );
   }
 
-  const isAdmin = currentUser && (currentUser.email === 'admin@odsstore.vn' || currentUser.role === 'ADMIN');
+  const isAdmin = currentUser && (currentUser.email === 'admin@drx.vn' || currentUser.email === 'admin@drxhardware.vn' || currentUser.email === 'admin@odsstore.vn' || currentUser.role === 'ADMIN');
 
   // 🔴 403 FORBIDDEN PAGE - WHEN NOT AUTHORIZED
   if (!isAdmin) {
@@ -82,7 +82,7 @@ export default function AdminLayout({
           </h1>
           
           <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-6 font-light">
-            Bạn không có quyền truy cập vào bảng quản trị **ODS Admin System**. Khu vực này yêu cầu xác thực tài khoản Quản Trị Viên chính thức.
+            Bạn không có quyền truy cập vào bảng quản trị **DRX Admin System**. Khu vực này yêu cầu xác thực tài khoản Quản Trị Viên chính thức.
           </p>
 
           {/* User Status Card */}
@@ -129,8 +129,8 @@ export default function AdminLayout({
           
           <div className="flex items-center gap-3">
             <Link href="/" className="flex items-center gap-2 group">
-              <div className="h-8 w-8 rounded-xl bg-gradient-to-tr from-[#5B3DF5] to-[#7257F7] flex items-center justify-center text-white font-black text-xs font-heading shadow-md shadow-[#5B3DF5]/30">
-                ODS
+              <div className="h-8 w-8 rounded-xl bg-gradient-to-tr from-[#0284c7] to-[#38bdf8] flex items-center justify-center text-white font-black text-xs font-heading shadow-md shadow-sky-500/30">
+                DRX
               </div>
               <span className="font-heading font-black text-sm tracking-wider text-slate-900 dark:text-slate-100">
                 ADMIN PANEL

@@ -79,19 +79,19 @@ export async function POST(request: Request) {
             type: 'PURCHASE',
             status: 'SUCCESS',
             paymentGateway: 'WALLET',
-            description: 'Thanh toán đơn hàng từ ví ODS',
+            description: 'Thanh toán đơn hàng từ ví DRX',
           }
         });
       }
 
-      // Generate Custom Order ID: ODS + 1 Digit + 5 Alphanumeric
+      // Generate Custom Order ID: DRX + 1 Digit + 5 Alphanumeric
       const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
       let randStr = '';
       for (let i = 0; i < 5; i++) {
         randStr += chars.charAt(Math.floor(Math.random() * chars.length));
       }
       const firstDigit = Math.floor(Math.random() * 10);
-      const customOrderId = `ODS${firstDigit}${randStr}`;
+      const customOrderId = `DRX${firstDigit}${randStr}`;
 
       const productIds = cartItems.map((i: any) => i.productId || i.id);
       const productsInCart = await tx.product.findMany({
@@ -128,7 +128,7 @@ export async function POST(request: Request) {
             data: {
               productId: actualProductId,
               variantName: item.variantName || null,
-              keyCode: `Chờ ODS Liên Hệ & Gửi Gift`,
+              keyCode: `Chờ DRX Liên Hệ & Giao Hàng`,
               status: 'SOLD',
               orderId: newOrder.id,
               userId: userId,

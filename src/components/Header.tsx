@@ -52,7 +52,7 @@ export const Header: React.FC = () => {
   const [isUserNotifOpen, setIsUserNotifOpen] = useState(false);
   const [customerChatOpen, setCustomerChatOpen] = useState(false);
 
-  const isAdmin = currentUser?.email === 'admin@drxhardware.vn' || currentUser?.email === 'admin@odsstore.vn' || currentUser?.role === 'ADMIN';
+  const isAdmin = currentUser?.email === 'admin@drx.vn' || currentUser?.email === 'admin@drxhardware.vn' || currentUser?.email === 'admin@odsstore.vn' || currentUser?.role === 'ADMIN';
 
   // Load products for Header live search
   useEffect(() => {

@@ -88,7 +88,7 @@ export default function BestSellersPage() {
                 <span>SẢN PHẨM MUA NHIỀU (HOT BEST SELLERS)</span>
               </h1>
               <p className="text-xs text-ods-textMuted font-light mt-1">
-                Top các tựa game và gói tài khoản bán chạy nhất được đông đảo khách hàng tin tưởng lựa chọn tại ODS Store.
+                Top các linh kiện máy tính, màn hình và PC bán chạy nhất được đông đảo khách hàng tin tưởng lựa chọn tại DRX Hardware.
               </p>
             </div>
 
