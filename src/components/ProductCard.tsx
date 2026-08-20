@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { ShoppingCart, Cpu, Shield } from 'lucide-react';
+import { ShoppingCart, Cpu, Shield, Sparkles } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
@@ -75,7 +75,7 @@ export const ProductCard: React.FC<{ product: ProductProps }> = ({ product }) =>
       whileHover={{ y: -6 }}
       viewport={{ once: true }}
       transition={{ duration: 0.25 }}
-      className="uiverse-card overflow-hidden flex flex-col group relative h-full cursor-pointer"
+      className="uiverse-card-cyber flex flex-col group relative h-full cursor-pointer shadow-md hover:shadow-2xl transition-all duration-300"
     >
       <Link href={`/products/${product.slug}`} className="flex flex-col h-full">
         {/* Product Media Box */}
@@ -83,16 +83,19 @@ export const ProductCard: React.FC<{ product: ProductProps }> = ({ product }) =>
           <img
             src={product.coverImage}
             alt={product.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-700 brightness-95 group-hover:brightness-105"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent opacity-80" />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent opacity-85" />
 
+          {/* Discount Badge */}
           {hasDiscount && (
-            <div className="absolute top-2.5 right-2.5 uiverse-badge-glow px-2.5 py-0.5 text-[10px] font-black tracking-wider rounded-full z-20">
-              -{discountPercent}%
+            <div className="absolute top-2.5 right-2.5 bg-gradient-to-r from-rose-600 to-amber-500 text-white font-black text-[10px] px-2.5 py-0.5 rounded-full shadow-lg border border-white/20 z-20 flex items-center gap-1">
+              <Sparkles className="w-2.5 h-2.5 fill-white" />
+              <span>-{discountPercent}%</span>
             </div>
           )}
 
+          {/* Brand Tag */}
           {product.brand && (
             <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1.5 bg-slate-950/90 backdrop-blur-md px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider text-[#6EC2F7] border border-[#6EC2F7]/30 shadow-lg z-20">
               <Cpu className="h-3 w-3 text-[#6EC2F7]" />
@@ -100,9 +103,10 @@ export const ProductCard: React.FC<{ product: ProductProps }> = ({ product }) =>
             </div>
           )}
 
+          {/* Warranty Pill */}
           <div className="absolute bottom-2.5 right-2.5 bg-slate-950/90 backdrop-blur-md px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider text-emerald-400 border border-emerald-500/30 shadow-lg z-20 flex items-center gap-1.5">
             <Shield className="h-3 w-3 text-emerald-400" />
-            <span>{product.warrantyMonths || 24}T BH</span>
+            <span>{product.warrantyMonths || 36}T BH</span>
           </div>
         </div>
 
@@ -115,17 +119,17 @@ export const ProductCard: React.FC<{ product: ProductProps }> = ({ product }) =>
           {/* Specs Pills List */}
           <div className="flex flex-wrap gap-1.5 pt-1 font-mono-tech text-[10px]">
             {product.socket && (
-              <span className="bg-sky-50 dark:bg-slate-950/90 border border-sky-200 dark:border-slate-800 text-[#0284c7] dark:text-[#6EC2F7] px-2 py-0.5 rounded font-bold">
+              <span className="bg-sky-50 dark:bg-slate-950/90 border border-sky-200 dark:border-slate-800 text-[#0284c7] dark:text-[#6EC2F7] px-2 py-0.5 rounded-md font-bold">
                 Socket {product.socket}
               </span>
             )}
             {product.ramType && (
-              <span className="bg-emerald-50 dark:bg-slate-950/90 border border-emerald-200 dark:border-slate-800 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded font-bold">
+              <span className="bg-emerald-50 dark:bg-slate-950/90 border border-emerald-200 dark:border-slate-800 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-md font-bold">
                 {product.ramType}
               </span>
             )}
             {product.wattage && (
-              <span className="bg-amber-50 dark:bg-slate-950/90 border border-amber-200 dark:border-slate-800 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded font-bold">
+              <span className="bg-amber-50 dark:bg-slate-950/90 border border-amber-200 dark:border-slate-800 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-md font-bold">
                 {product.wattage}W
               </span>
             )}
@@ -146,7 +150,7 @@ export const ProductCard: React.FC<{ product: ProductProps }> = ({ product }) =>
             {product.status !== false ? (
               <button
                 onClick={handleBuyNow}
-                className="uiverse-btn-primary px-4 py-2 text-xs font-heading font-extrabold shadow-md z-30 relative"
+                className="uiverse-btn-shimmer px-4 py-2 text-xs font-heading font-extrabold rounded-xl shadow-md z-30 relative cursor-pointer flex items-center gap-1.5"
               >
                 <ShoppingCart className="h-3.5 w-3.5" />
                 <span>MUA</span>

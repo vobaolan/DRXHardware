@@ -629,7 +629,7 @@ export default function CheckoutPage() {
                     type="button"
                     onClick={handleProcessPayment}
                     disabled={isProcessing}
-                    className="w-full mt-4 py-3.5 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 text-white font-extrabold text-xs uppercase tracking-wider hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
+                    className="w-full mt-4 py-3.5 rounded-2xl uiverse-btn-shimmer text-white font-heading font-black text-xs uppercase tracking-wider hover:shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
                   >
                     <Zap className="h-4 w-4 text-amber-300 fill-amber-300 animate-bounce" />
                     <span>{deliveryBadgeInfo.buttonLabel}</span>
@@ -650,7 +650,7 @@ export default function CheckoutPage() {
                       type="button"
                       onClick={handleProcessPayment}
                       disabled={isProcessing}
-                      className="w-full py-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-extrabold text-xs uppercase tracking-wider hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
+                      className="w-full py-4 rounded-2xl uiverse-btn-shimmer text-white font-heading font-black text-xs uppercase tracking-wider hover:shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
                     >
                       <Sparkles className="h-4 w-4 text-amber-300" />
                       <span>Xác Nhận Thanh Toán Bằng Ví ({formatCurrency(netAmount)})</span>
@@ -660,7 +660,7 @@ export default function CheckoutPage() {
                       <p className="text-xs text-rose-600 font-bold">Số dư ví của bạn không đủ để thực hiện thanh toán này.</p>
                       <Link
                         href="/deposit"
-                        className="block w-full py-3 rounded-xl bg-sky-600 text-white font-extrabold text-xs uppercase text-center hover:bg-sky-700 transition-colors"
+                        className="block w-full py-3.5 rounded-2xl uiverse-btn-primary text-white font-heading font-black text-xs uppercase text-center"
                       >
                         Nạp Thêm Tiền Vào Ví Ngay
                       </Link>
@@ -684,7 +684,7 @@ export default function CheckoutPage() {
                     type="button"
                     onClick={handleProcessPayment}
                     disabled={isProcessing}
-                    className="w-full py-4 rounded-xl bg-gradient-to-r from-[#0284c7] to-[#0369a1] text-white font-extrabold text-xs uppercase tracking-wider hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
+                    className="w-full py-4 rounded-2xl uiverse-btn-shimmer text-white font-heading font-black text-xs uppercase tracking-wider hover:shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
                   >
                     <Calculator className="h-4 w-4 text-amber-300" />
                     <span>Xác Nhận Đăng Ký Trả Góp HD SAISON</span>
@@ -708,7 +708,7 @@ export default function CheckoutPage() {
                       type="button"
                       onClick={handleProcessPayment}
                       disabled={isProcessing}
-                      className="w-full py-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 text-white font-extrabold text-xs uppercase tracking-wider hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
+                      className="w-full py-4 rounded-2xl uiverse-btn-shimmer text-white font-heading font-black text-xs uppercase tracking-wider hover:shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
                     >
                       <ShieldCheck className="h-4 w-4 text-amber-300" />
                       <span>Trích Cọc Ví ({formatCurrency(depositRequiredAmount)}) & Khóa Tồn Kho</span>

@@ -190,7 +190,7 @@ export default function CategoryShowcaseBlock({
             {/* Banner Header Info */}
             <div className="relative z-10 space-y-1">
               <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border ${themeStyles.badgeBg} inline-block mb-1`}>
-                ODS SPECIAL FEATURE
+                DRX SPECIAL FEATURE
               </span>
               <h3 className="font-heading font-black text-xl sm:text-2xl uppercase leading-tight text-slate-900 dark:text-slate-100">
                 {title}

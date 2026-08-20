@@ -319,7 +319,7 @@ export const Header: React.FC = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => setIsSearchFocused(true)}
               onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
-              className="w-full uiverse-input py-2 pl-10 pr-10 text-xs font-bold text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 transition-all shadow-xs"
+              className="w-full uiverse-input-glow py-2.5 pl-10 pr-10 text-xs font-bold text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 transition-all shadow-xs"
             />
             {searchQuery && (
               <button
@@ -334,9 +334,10 @@ export const Header: React.FC = () => {
 
           {/* Autocomplete Suggestions Overlay */}
           {isSearchFocused && autocompleteList.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-1 rounded-2xl border border-sky-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-2 shadow-2xl z-50 space-y-1">
-              <div className="text-[10px] font-bold text-[#0284c7] dark:text-[#6EC2F7] px-2 py-1 uppercase tracking-widest">
-                Gợi ý tìm kiếm linh kiện
+            <div className="absolute top-full left-0 right-0 mt-1.5 rounded-2xl border border-sky-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl p-2 shadow-2xl z-50 space-y-1">
+              <div className="text-[10px] font-bold text-[#0284c7] dark:text-[#6EC2F7] px-2 py-1 uppercase tracking-widest flex items-center gap-1.5">
+                <Sparkles className="w-3 h-3" />
+                <span>Gợi ý tìm kiếm linh kiện</span>
               </div>
               {autocompleteList.map((item) => (
                 <Link
@@ -361,7 +362,7 @@ export const Header: React.FC = () => {
           {/* STEP 4: GIỎ HÀNG (CART TOGGLE) */}
           <button
             onClick={() => setCartOpen(true)}
-            className="relative flex items-center justify-center rounded-xl border border-sky-200 dark:border-slate-800 bg-sky-50/50 dark:bg-slate-900 p-2 text-slate-700 dark:text-slate-200 hover:text-[#0284c7] hover:border-[#6EC2F7] transition-all cursor-pointer shadow-xs"
+            className="relative flex items-center justify-center rounded-xl border border-sky-200 dark:border-slate-800 bg-sky-50/50 dark:bg-slate-900 p-2 text-slate-700 dark:text-slate-200 hover:text-[#0284c7] hover:border-[#6EC2F7] hover:shadow-md hover:shadow-sky-400/20 transition-all cursor-pointer shadow-xs"
             title="Giỏ hàng của bạn"
           >
             <ShoppingBag className="h-4.5 w-4.5 text-[#0284c7] dark:text-[#6EC2F7]" />

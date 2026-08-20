@@ -220,15 +220,16 @@ export const CartDrawer: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Checkout Trigger Button (NZXT sky blue style) */}
+                {/* Checkout Trigger Button (UIverse Shimmer style) */}
                 <button
                   onClick={() => {
                     setCartOpen(false);
                     router.push('/checkout');
                   }}
-                  className="w-full rounded-ods bg-ods-primary py-3.5 text-center text-xs font-bold uppercase tracking-wider text-white hover:bg-ods-primaryHover transition-all hover:shadow-buttonGlow active:scale-95 cursor-pointer"
+                  className="w-full rounded-2xl uiverse-btn-shimmer py-3.5 text-center text-xs font-heading font-black uppercase tracking-wider text-white hover:shadow-xl transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2"
                 >
-                  Tiến Hành Thanh Toán
+                  <ShoppingCart className="w-4 h-4" />
+                  <span>TIẾN HÀNH THANH TOÁN</span>
                 </button>
               </div>
             )}

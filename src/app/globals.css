@@ -116,10 +116,10 @@ body {
 }
 
 /* ==============================================================
-   UI VERSE COMPONENT UTILITIES (SKYBLUE #6EC2F7 ENHANCED)
+   UI VERSE COMPONENT SUITE (UIVERSE.IO HIGH-CRAFT EFFECTS)
    ============================================================== */
 
-/* 1. UI VERSE GLOSSY SHINE BUTTON */
+/* 1. UI VERSE GLOSSY SHINE BUTTON (PRIMARY CTA) */
 .uiverse-btn-primary {
   position: relative;
   background: linear-gradient(135deg, #6EC2F7 0%, #0284c7 100%);
@@ -167,38 +167,149 @@ body {
   box-shadow: 0 2px 10px rgba(110, 194, 247, 0.3);
 }
 
-/* 2. UI VERSE GLASS & BORDER GLOW HARDWARE CARD */
-.uiverse-card {
+/* 2. UI VERSE SHIMMER BUTTON (RIPPLE LIGHT SWEEP) */
+.uiverse-btn-shimmer {
   position: relative;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(110, 194, 247, 0.3);
-  border-radius: 20px;
-  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
+  overflow: hidden;
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  color: #ffffff;
+  font-weight: 800;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.uiverse-btn-shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -150%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 100%
+  );
+  transform: skewX(-20deg);
+  animation: uiverseShimmer 3.5s infinite ease-in-out;
+}
+
+@keyframes uiverseShimmer {
+  0% { left: -150%; }
+  35%, 100% { left: 150%; }
+}
+
+.uiverse-btn-shimmer:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(2, 132, 199, 0.45);
+}
+
+.uiverse-btn-shimmer:active {
+  transform: scale(0.97);
+}
+
+/* 3. UI VERSE 3D CYBER PRODUCT CARD */
+.uiverse-card-cyber {
+  position: relative;
+  background: #ffffff;
+  border-radius: 24px;
+  border: 1.5px solid #e2e8f0;
   transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
 }
 
-.uiverse-card:hover {
-  border-color: #6EC2F7;
+.uiverse-card-cyber::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 24px;
+  padding: 2px;
+  background: linear-gradient(135deg, transparent, rgba(110, 194, 247, 0.6), transparent);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+.uiverse-card-cyber:hover {
   transform: translateY(-6px);
-  box-shadow: 0 14px 35px -5px rgba(110, 194, 247, 0.3);
+  border-color: #6EC2F7;
+  box-shadow: 0 16px 36px -8px rgba(110, 194, 247, 0.25);
 }
 
-/* 3. UI VERSE FOCUS GLOW INPUT */
-.uiverse-input {
+.uiverse-card-cyber:hover::before {
+  opacity: 1;
+}
+
+.dark .uiverse-card-cyber {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.92) 0%, rgba(10, 15, 29, 0.96) 100%);
+  border-color: rgba(51, 65, 85, 0.6);
+}
+
+.dark .uiverse-card-cyber:hover {
+  border-color: #6EC2F7;
+  box-shadow: 0 0 30px rgba(110, 194, 247, 0.2);
+}
+
+/* 4. UI VERSE BREATHING NEON GLOW INPUT */
+.uiverse-input-glow {
   background: #ffffff;
   border: 1.5px solid #e2e8f0;
-  border-radius: 14px;
-  transition: all 0.25s ease;
+  border-radius: 16px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.uiverse-input:focus {
+.uiverse-input-glow:focus,
+.uiverse-input-glow:focus-within {
   outline: none;
   border-color: #6EC2F7;
-  box-shadow: 0 0 0 4px rgba(110, 194, 247, 0.2);
+  box-shadow: 0 0 0 4px rgba(110, 194, 247, 0.25), 0 0 20px rgba(110, 194, 247, 0.15);
 }
 
-/* 5. UI VERSE ANIMATED CHECKBOX */
+.dark .uiverse-input-glow {
+  background: rgba(15, 23, 42, 0.85);
+  border-color: rgba(51, 65, 85, 0.8);
+}
+
+.dark .uiverse-input-glow:focus,
+.dark .uiverse-input-glow:focus-within {
+  border-color: #6EC2F7;
+  box-shadow: 0 0 0 4px rgba(110, 194, 247, 0.3), 0 0 25px rgba(110, 194, 247, 0.25);
+}
+
+/* 5. UI VERSE RADIANT PULSING BADGE */
+.uiverse-badge-pulse {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.uiverse-badge-dot {
+  position: relative;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #6EC2F7;
+}
+
+.uiverse-badge-dot::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  background: #6EC2F7;
+  animation: uiversePing 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes uiversePing {
+  0% { transform: scale(0.8); opacity: 0.8; }
+  75%, 100% { transform: scale(2.4); opacity: 0; }
+}
+
+/* 6. UI VERSE ANIMATED CHECKBOX */
 .uiverse-checkbox-box {
   width: 20px;
   height: 20px;
@@ -218,7 +329,7 @@ body {
   box-shadow: 0 4px 12px rgba(110, 194, 247, 0.4);
 }
 
-/* 6. UI VERSE ANIMATED RADIO BUTTON */
+/* 7. UI VERSE ANIMATED RADIO BUTTON */
 .uiverse-radio-box {
   width: 20px;
   height: 20px;
@@ -251,7 +362,7 @@ body {
   100% { transform: scale(1); }
 }
 
-/* 7. UI VERSE NEUMORPHIC 3D TOGGLE SWITCH */
+/* 8. UI VERSE NEUMORPHIC 3D TOGGLE SWITCH */
 .uiverse-toggle-track {
   width: 48px;
   height: 26px;
@@ -283,7 +394,7 @@ body {
   transform: translateX(22px);
 }
 
-/* 8. UI VERSE QUANTUM WAVE LOADER */
+/* 9. UI VERSE QUANTUM WAVE LOADER */
 .uiverse-loader-dots {
   display: inline-flex;
   align-items: center;
@@ -306,7 +417,7 @@ body {
   50% { transform: translateY(-8px); opacity: 1; background: #0284c7; }
 }
 
-/* 9. UI VERSE GLASS TOOLTIP */
+/* 10. UI VERSE GLASS TOOLTIP */
 .uiverse-tooltip-container {
   position: relative;
   display: inline-block;
@@ -350,5 +461,3 @@ body {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
-
-

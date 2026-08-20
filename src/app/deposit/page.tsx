@@ -406,7 +406,7 @@ export default function DepositPage() {
                   type="button"
                   onClick={handleConfirmDeposit}
                   disabled={isProcessing}
-                  className="w-full py-4 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-600 to-sky-600 text-white font-extrabold text-xs uppercase tracking-wider hover:shadow-lg transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 cursor-pointer"
+                  className="w-full py-4 rounded-2xl uiverse-btn-shimmer text-white font-heading font-black text-xs uppercase tracking-wider hover:shadow-xl transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 cursor-pointer"
                 >
                   {isProcessing ? (
                     <>
