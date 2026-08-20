@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   ChevronLeft, ChevronRight, Gift, Tag, Clock, Sparkles, ArrowRight, 
-  Zap, Cpu, Laptop, Monitor, CreditCard, ShieldCheck, Flame, Award
+  Zap, Cpu, Laptop, Monitor, CreditCard, ShieldCheck, Flame, Award, Percent
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -19,7 +19,8 @@ export interface TabBanner {
   vouchers: Array<{
     title: string;
     value: string;
-    tag?: string;
+    icon: any;
+    iconColor?: string;
   }>;
   specs?: Array<{ label: string; value: string }>;
   dateRange: string;
@@ -38,10 +39,10 @@ const TIN_HOC_NGOI_SAO_BANNERS: TabBanner[] = [
     mainTitleText: 'TƯƠNG LAI VỤT SÁNG',
     highlightText: 'SIÊU SALE TỰA TRƯỜNG • VOUCHER 500K',
     vouchers: [
-      { title: 'ĐỔI ĐIỂM NHẬN', value: 'VOUCHER 500K' },
-      { title: 'LAPTOP GIẢM ĐẾN', value: '2.5 TR + 🎁 QUÀ' },
-      { title: 'HSSV & GIÁO VIÊN', value: 'GIẢM ĐẾN 300K' },
-      { title: 'RAM / SSD GIẢM ĐẾN', value: '1.4 TR' },
+      { title: 'ĐỔI ĐIỂM NHẬN', value: 'VOUCHER 500K', icon: Gift, iconColor: 'text-amber-400' },
+      { title: 'LAPTOP GAMING', value: 'GIẢM ĐẾN 2.5 TR', icon: Laptop, iconColor: 'text-sky-400' },
+      { title: 'HSSV & GIÁO VIÊN', value: 'GIẢM ĐẾN 300K', icon: Award, iconColor: 'text-emerald-400' },
+      { title: 'RAM / SSD GEN4', value: 'GIẢM ĐẾN 1.4 TR', icon: Cpu, iconColor: 'text-purple-400' },
     ],
     specs: [
       { label: 'QUÀ TẶNG', value: 'Balo Gaming' },
@@ -61,10 +62,10 @@ const TIN_HOC_NGOI_SAO_BANNERS: TabBanner[] = [
     mainTitleText: 'SẮM PC CHỈ TỪ 0Đ TRẢ TRƯỚC',
     highlightText: 'DUYỆT HỒ SƠ 15 PHÚT ONLINE',
     vouchers: [
-      { title: 'TRẢ TRƯỚC HÔM NAY', value: 'CHỈ 0 ĐỒNG' },
-      { title: 'TRỢ GIÁ TRẢ GÓP', value: 'ĐẾN 2.0 TRIỆU' },
-      { title: 'LÃI SUẤT ƯU ĐÃI', value: 'CHỈ TỪ 0% - 1.49%' },
-      { title: 'THỜI HẠN LINH HOẠT', value: '6 - 24 THÁNG' },
+      { title: 'TRẢ TRƯỚC HÔM NAY', value: 'CHỈ 0 ĐỒNG', icon: Zap, iconColor: 'text-amber-400' },
+      { title: 'TRỢ GIÁ TRẢ GÓP', value: 'ĐẾN 2.0 TRIỆU', icon: Tag, iconColor: 'text-sky-400' },
+      { title: 'LÃI SUẤT ƯU ĐÃI', value: 'CHỈ TỪ 0% - 1.49%', icon: Percent, iconColor: 'text-emerald-400' },
+      { title: 'THỜI HẠN LINH HOẠT', value: '6 - 24 THÁNG', icon: Clock, iconColor: 'text-purple-400' },
     ],
     specs: [
       { label: 'THỦ TỤC', value: 'CCCD Online' },
@@ -84,10 +85,10 @@ const TIN_HOC_NGOI_SAO_BANNERS: TabBanner[] = [
     mainTitleText: 'PC GAMING BỂ KÍNH ARGB',
     highlightText: 'CPU 0Đ • RAM GIẢM ĐẾN 57%',
     vouchers: [
-      { title: 'MUA COMBO CORE i5', value: 'TẶNG VOUCHER 1TR' },
-      { title: 'VGA RTX 4060 SUPER', value: 'GIẢM NGAY 1.5TR' },
-      { title: 'MAINBOARD B760M', value: 'TẶNG TẢN KHÍ ARGB' },
-      { title: 'NÂNG CẤP DDR5', value: 'GIẢM ĐẾN 57%++' },
+      { title: 'COMBO CORE i5', value: 'TẶNG VOUCHER 1TR', icon: Gift, iconColor: 'text-amber-400' },
+      { title: 'VGA RTX 4060 SUPER', value: 'GIẢM NGAY 1.5TR', icon: Zap, iconColor: 'text-sky-400' },
+      { title: 'MAINBOARD B760M', value: 'TẶNG TẢN ARGB', icon: Sparkles, iconColor: 'text-emerald-400' },
+      { title: 'NÂNG CẤP DDR5', value: 'GIẢM ĐẾN 57%++', icon: Percent, iconColor: 'text-rose-400' },
     ],
     specs: [
       { label: 'VGA', value: 'RTX 4060 8GB' },
@@ -107,10 +108,10 @@ const TIN_HOC_NGOI_SAO_BANNERS: TabBanner[] = [
     mainTitleText: 'CHIẾN GAME 2K 240Hz IPS',
     highlightText: 'MUA 1 MÀN HÌNH TẶNG 1 ARM TREO',
     vouchers: [
-      { title: 'TẤM NỀN IPS 180Hz', value: 'GIÁ CHỈ 2.990K' },
-      { title: 'TẶNG ARM MÀN HÌNH', value: 'TRỊ GIÁ 590K' },
-      { title: 'BẢO HÀNH 03 NĂM', value: '1 ĐỔI 1 TẠI NHÀ' },
-      { title: 'TRỢ GIÁ TRỰC TIẾP', value: 'ĐẾN 1.0 TRIỆU' },
+      { title: 'TẤM NỀN FAST-IPS', value: 'GIÁ CHỈ 2.990K', icon: Monitor, iconColor: 'text-sky-400' },
+      { title: 'QUÀ TẶNG KÈM', value: 'TẶNG ARM TREO 590K', icon: Gift, iconColor: 'text-amber-400' },
+      { title: 'BẢO HÀNH 03 NĂM', value: '1 ĐỔI 1 TẠI NHÀ', icon: ShieldCheck, iconColor: 'text-emerald-400' },
+      { title: 'TRỢ GIÁ TRỰC TIẾP', value: 'ĐẾN 1.0 TRIỆU', icon: Tag, iconColor: 'text-purple-400' },
     ],
     specs: [
       { label: 'TẦN SỐ QUÉT', value: '180Hz - 240Hz' },
@@ -130,10 +131,10 @@ const TIN_HOC_NGOI_SAO_BANNERS: TabBanner[] = [
     mainTitleText: 'LAPTOP ASUS TUF & MSI',
     highlightText: 'TRỰC TIẾP GIẢM ĐẾN 2.5 TRIỆU',
     vouchers: [
-      { title: 'TẶNG BALO GAMING', value: 'TRỊ GIÁ 890K' },
-      { title: 'TẶNG CHUỘT KHÔNG DÂY', value: 'TRỊ GIÁ 350K' },
-      { title: 'NÂNG CẤP RAM DDR5', value: 'GIẢM 50% GIÁ' },
-      { title: 'VOUCHER TRỢ GIÁ', value: 'ĐẾN 2.5 TRIỆU' },
+      { title: 'QUÀ TẶNG BALO', value: 'TRỊ GIÁ 890K', icon: Gift, iconColor: 'text-amber-400' },
+      { title: 'CHUỘT GAMING', value: 'TẶNG KHÔNG DÂY', icon: Sparkles, iconColor: 'text-sky-400' },
+      { title: 'NÂNG CẤP RAM DDR5', value: 'GIẢM 50% GIÁ', icon: Percent, iconColor: 'text-emerald-400' },
+      { title: 'VOUCHER TRỢ GIÁ', value: 'ĐẾN 2.5 TRIỆU', icon: Tag, iconColor: 'text-rose-400' },
     ],
     specs: [
       { label: 'VGA', value: 'RTX 4050 / 4060' },
@@ -236,7 +237,7 @@ export const SummerHeroCarousel: React.FC = () => {
             transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
             className="relative z-20 my-auto grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center py-4"
           >
-            {/* LEFT COLUMN: 3D HEADLINE, WARRANTY & 4 GOLDEN VIP TICKETS */}
+            {/* LEFT COLUMN: 3D HEADLINE, WARRANTY & 4 CYBER GLASS CARDS */}
             <div className="lg:col-span-7 space-y-4 sm:space-y-5">
               
               {/* SLOGAN HEADLINE */}
@@ -260,31 +261,36 @@ export const SummerHeroCarousel: React.FC = () => {
                 </div>
               </div>
 
-              {/* 4 3D GOLDEN VIP COUPON VOUCHERS GRID */}
-              <div className="grid grid-cols-2 gap-2.5 sm:gap-3 max-w-xl">
-                {activeSlide.vouchers.map((v, idx) => (
-                  <motion.div
-                    key={idx}
-                    whileHover={{ scale: 1.03, y: -2 }}
-                    className="relative bg-gradient-to-br from-[#fffbeb] via-[#fef08a] to-[#eab308] text-slate-950 p-2.5 sm:p-3 rounded-2xl border-2 border-amber-300 shadow-[0_8px_20px_rgba(234,179,8,0.25)] hover:shadow-[0_12px_28px_rgba(234,179,8,0.45)] transition-all flex flex-col justify-between overflow-hidden group cursor-pointer"
-                  >
-                    {/* Shimmer Light Ray Effect */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none" />
+              {/* 4 HIGH-TECH CYBER GLASS CARDS (ROG/RAZER STYLE) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 max-w-xl">
+                {activeSlide.vouchers.map((v, idx) => {
+                  const IconComp = v.icon || Sparkles;
+                  return (
+                    <motion.div
+                      key={idx}
+                      whileHover={{ scale: 1.03, y: -2 }}
+                      className="relative bg-slate-950/80 hover:bg-slate-950/95 backdrop-blur-xl p-3 sm:p-3.5 rounded-2xl border border-sky-400/30 hover:border-sky-400 shadow-[0_8px_20px_rgba(0,0,0,0.45)] hover:shadow-[0_0_25px_rgba(110,194,247,0.35)] transition-all flex items-center gap-3.5 group cursor-pointer overflow-hidden"
+                    >
+                      {/* Subtle Top Inner Highlight */}
+                      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sky-400/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
-                    {/* Left & Right Ticket Notches */}
-                    <div className="absolute -left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-[#0284c7] border-r-2 border-amber-400" />
-                    <div className="absolute -right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-[#0284c7] border-l-2 border-amber-400" />
+                      {/* Left Glowing Icon Box */}
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-400/20 via-blue-600/10 to-transparent border border-sky-400/30 flex items-center justify-center shrink-0 shadow-inner group-hover:border-sky-300 group-hover:scale-105 transition-all">
+                        <IconComp className={`w-5 h-5 ${v.iconColor || 'text-sky-300'}`} />
+                      </div>
 
-                    <div className="px-1.5">
-                      <span className="text-[10px] font-extrabold uppercase text-amber-950 tracking-wider font-heading block">
-                        {v.title}
-                      </span>
-                      <span className="text-sm sm:text-base font-black text-rose-600 font-heading tracking-wide uppercase drop-shadow-xs block mt-0.5">
-                        {v.value}
-                      </span>
-                    </div>
-                  </motion.div>
-                ))}
+                      {/* Right Info Details */}
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-sky-200/80 font-mono-tech truncate">
+                          {v.title}
+                        </span>
+                        <span className="text-sm sm:text-base font-black text-white font-heading tracking-wide uppercase group-hover:text-[#6EC2F7] transition-colors truncate drop-shadow-sm">
+                          {v.value}
+                        </span>
+                      </div>
+                    </motion.div>
+                  );
+                })}
               </div>
 
               {/* ACTION CTA BUTTON (UIVERSE SHIMMER PILL) */}
