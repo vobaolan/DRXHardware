@@ -227,14 +227,14 @@ export const Header: React.FC = () => {
         {/* STEP 1: LOGO */}
         <Link href="/" className="group flex items-center gap-2.5 shrink-0" title="Trang chủ DRX HARDWARE">
           <img 
-            src="/logo/logo-footer.png" 
+            src="/logo/logo-header.png" 
             alt="DRX HARDWARE Logo" 
-            className="h-10 w-auto object-contain dark:hidden group-hover:scale-105 transition-transform" 
+            className="h-8 md:h-9 w-auto object-contain dark:hidden group-hover:scale-105 transition-transform" 
           />
           <img 
             src="/logo/logo-white.png" 
             alt="DRX HARDWARE Logo" 
-            className="h-10 w-auto object-contain hidden dark:block group-hover:scale-105 transition-transform" 
+            className="h-8 md:h-9 w-auto object-contain hidden dark:block group-hover:scale-105 transition-transform" 
           />
         </Link>
 
