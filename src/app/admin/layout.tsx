@@ -21,7 +21,20 @@ export default function AdminLayout({
       const stored = localStorage.getItem('ods_user');
       if (stored) {
         try {
-          setCurrentUser(JSON.parse(stored));
+          let parsed = JSON.parse(stored);
+          let changed = false;
+          if (parsed.email === 'admin@odsstore.vn' || parsed.email === 'admin@drxhardware.vn' || parsed.email?.toLowerCase().includes('ods')) {
+            parsed.email = 'admin@drx.vn';
+            changed = true;
+          }
+          if (parsed.name === 'ODS ADMIN' || parsed.name === 'ODS Store' || parsed.name?.includes('ODS')) {
+            parsed.name = parsed.name.replace(/ODS/g, 'DRX');
+            changed = true;
+          }
+          if (changed) {
+            localStorage.setItem('ods_user', JSON.stringify(parsed));
+          }
+          setCurrentUser(parsed);
         } catch (e) {
           setCurrentUser(null);
         }

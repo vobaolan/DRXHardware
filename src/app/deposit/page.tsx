@@ -112,10 +112,10 @@ export default function DepositPage() {
       let updatedUser = { ...currentUser, balance: newBal };
       if (!currentUser) {
         updatedUser = {
-          id: 'usr-guest',
-          name: 'Khách Hàng',
-          email: 'customer@odsstore.vn',
-          balance: newBal,
+          id: `user-${Date.now()}`,
+          name: 'Khách Hàng DRX',
+          email: 'customer@drx.vn',
+          balance: effectiveAmount,
           role: 'USER',
         };
       }

@@ -85,7 +85,20 @@ function ProfileContent() {
     const storedUser = localStorage.getItem('ods_user');
     if (storedUser) {
       try {
-        const parsed = JSON.parse(storedUser);
+        let parsed = JSON.parse(storedUser);
+        let changed = false;
+        if (parsed.email === 'admin@odsstore.vn' || parsed.email === 'admin@drxhardware.vn' || parsed.email?.toLowerCase().includes('ods')) {
+          parsed.email = 'admin@drx.vn';
+          changed = true;
+        }
+        if (parsed.name === 'ODS ADMIN' || parsed.name === 'ODS Store' || parsed.name?.includes('ODS')) {
+          parsed.name = parsed.name.replace(/ODS/g, 'DRX');
+          changed = true;
+        }
+        if (changed) {
+          localStorage.setItem('ods_user', JSON.stringify(parsed));
+          window.dispatchEvent(new Event('ods_user_update'));
+        }
         setCurrentUser(parsed);
         setIsLoggedIn(true);
       } catch (err) {
@@ -96,7 +109,7 @@ function ProfileContent() {
     const savedEmail = localStorage.getItem('ods_remembered_email');
     const isRemembered = localStorage.getItem('ods_remember_me') === 'true';
     if (savedEmail) {
-      setLoginEmail(savedEmail);
+      setLoginEmail(savedEmail === 'admin@odsstore.vn' ? 'admin@drx.vn' : savedEmail);
     }
     setRememberMe(isRemembered);
   }, []);
@@ -234,6 +247,12 @@ function ProfileContent() {
 
   // Calculate total registered hardware items
   const totalHardwareItems = orders.reduce((acc, curr) => acc + (curr.gameKeys ? curr.gameKeys.length : 0), 0);
+
+  // Sanitized display values
+  const sanitizedName = currentUser?.name ? currentUser.name.replace(/ODS/g, 'DRX') : 'Khách Hàng DRX';
+  const rawEmail = currentUser?.email || '';
+  const sanitizedEmail = rawEmail === 'admin@odsstore.vn' || rawEmail === 'admin@drxhardware.vn' ? 'admin@drx.vn' : rawEmail;
+  const sanitizedInitial = sanitizedName.charAt(0).toUpperCase();
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#090d16] text-slate-900 dark:text-slate-100 flex flex-col antialiased tech-grid-pattern transition-colors duration-300">
@@ -432,39 +451,39 @@ function ProfileContent() {
             /* ================== HARDWARE SHOWROOM USER DASHBOARD ================== */
             <div className="space-y-8 my-4">
               
-              {/* 1. TOP HARDWARE ENTHUSIAST STATS BANNER */}
-              <div className="relative rounded-3xl overflow-hidden border border-sky-400/30 dark:border-slate-800 bg-gradient-to-r from-slate-950 via-[#071930] to-slate-950 text-white p-6 sm:p-8 shadow-2xl">
-                <div className="absolute inset-0 tech-grid-pattern opacity-25 pointer-events-none" />
-                <div className="absolute top-0 right-0 w-96 h-96 bg-[#0284c7]/20 rounded-full blur-3xl pointer-events-none" />
+              {/* 1. TOP HARDWARE ENTHUSIAST STATS BANNER (CRISP LIGHT THEME) */}
+              <div className="relative rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white p-6 sm:p-8 shadow-sm">
+                <div className="absolute inset-0 bg-gradient-to-r from-sky-50/70 via-white to-sky-50/50 dark:from-slate-900 dark:via-slate-900/90 dark:to-slate-950 pointer-events-none" />
+                <div className="absolute top-0 right-0 w-96 h-96 bg-[#0284c7]/5 dark:bg-[#0284c7]/20 rounded-full blur-3xl pointer-events-none" />
 
                 <div className="relative z-10 grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
                   
                   {/* Left User Profile Avatar & Tag (5 cols) */}
                   <div className="md:col-span-5 flex items-center gap-5">
                     <div className="relative shrink-0">
-                      <div className="h-20 w-20 rounded-3xl bg-gradient-to-br from-sky-400 via-[#0284c7] to-blue-700 p-0.5 shadow-xl shadow-sky-500/20">
-                        <div className="h-full w-full rounded-[22px] bg-slate-950 flex items-center justify-center text-white font-black text-2xl font-heading">
-                          {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : 'D'}
+                      <div className="h-20 w-20 rounded-3xl bg-gradient-to-br from-[#6EC2F7] via-[#0284c7] to-blue-600 p-0.5 shadow-md shadow-sky-500/20">
+                        <div className="h-full w-full rounded-[22px] bg-white dark:bg-slate-950 flex items-center justify-center text-[#0284c7] dark:text-white font-black text-2xl font-heading shadow-inner">
+                          {sanitizedInitial}
                         </div>
                       </div>
-                      <div className="absolute -bottom-1 -right-1 p-1.5 rounded-full bg-emerald-500 border-2 border-slate-950 text-white" title="Trạng thái trực tuyến">
+                      <div className="absolute -bottom-1 -right-1 p-1.5 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-950 text-white shadow-xs" title="Trạng thái trực tuyến">
                         <CheckCircle className="h-3.5 w-3.5" />
                       </div>
                     </div>
 
                     <div className="space-y-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <h2 className="font-heading text-lg sm:text-xl font-black uppercase text-white tracking-wide truncate">
-                          {currentUser?.name || 'Khách Hàng DRX'}
+                        <h2 className="font-heading text-lg sm:text-xl font-black uppercase text-slate-900 dark:text-white tracking-wide truncate">
+                          {sanitizedName}
                         </h2>
                       </div>
-                      <p className="text-xs text-sky-200/80 font-mono truncate">{currentUser?.email || ''}</p>
+                      <p className="text-xs text-slate-500 dark:text-sky-200/80 font-mono truncate">{sanitizedEmail}</p>
                       
                       <div className="flex items-center gap-2 pt-1">
-                        <span className="inline-flex items-center gap-1 bg-amber-400/20 text-amber-300 border border-amber-400/40 text-[9.5px] font-black uppercase px-2.5 py-0.5 rounded-full shadow-xs">
+                        <span className="inline-flex items-center gap-1 bg-amber-50 dark:bg-amber-400/20 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-400/40 text-[9.5px] font-black uppercase px-2.5 py-0.5 rounded-full shadow-xs">
                           <Award className="h-3 w-3" /> DRX ELITE BUILDER
                         </span>
-                        <span className="text-[10px] text-emerald-400 font-bold">
+                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">
                           ● Chiết khấu 3% PC Prebuilt
                         </span>
                       </div>
@@ -475,16 +494,16 @@ function ProfileContent() {
                   <div className="md:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-3.5">
                     
                     {/* Metric 1: Wallet Balance */}
-                    <div className="bg-slate-900/80 border border-sky-400/30 p-3.5 rounded-2xl backdrop-blur-md flex flex-col justify-between">
+                    <div className="bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-sky-400/30 p-3.5 rounded-2xl flex flex-col justify-between shadow-xs">
                       <div className="flex justify-between items-center">
-                        <span className="text-[10px] font-bold text-sky-200/70 uppercase tracking-wider">Số Dư Ví DRX</span>
-                        <CreditCard className="h-4 w-4 text-sky-400" />
+                        <span className="text-[10px] font-bold text-slate-500 dark:text-sky-200/70 uppercase tracking-wider">Số Dư Ví DRX</span>
+                        <CreditCard className="h-4 w-4 text-[#0284c7]" />
                       </div>
                       <div className="mt-2">
-                        <span className="font-heading text-base sm:text-lg font-black text-white block truncate">
+                        <span className="font-heading text-base sm:text-lg font-black text-slate-900 dark:text-white block truncate">
                           {formatCurrency(currentUser?.balance || 0)}
                         </span>
-                        <Link href="/deposit" className="text-[10px] font-bold text-sky-400 hover:text-sky-300 hover:underline inline-flex items-center gap-0.5 mt-0.5">
+                        <Link href="/deposit" className="text-[10px] font-bold text-[#0284c7] hover:underline inline-flex items-center gap-0.5 mt-0.5">
                           <span>Nạp tiền VietQR</span>
                           <ChevronRight className="h-3 w-3" />
                         </Link>
@@ -492,16 +511,16 @@ function ProfileContent() {
                     </div>
 
                     {/* Metric 2: Hardware Warranty Items */}
-                    <div className="bg-slate-900/80 border border-emerald-500/30 p-3.5 rounded-2xl backdrop-blur-md flex flex-col justify-between">
+                    <div className="bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-emerald-500/30 p-3.5 rounded-2xl flex flex-col justify-between shadow-xs">
                       <div className="flex justify-between items-center">
-                        <span className="text-[10px] font-bold text-emerald-300/70 uppercase tracking-wider">Linh Kiện Bảo Hành</span>
-                        <ShieldCheck className="h-4 w-4 text-emerald-400" />
+                        <span className="text-[10px] font-bold text-slate-500 dark:text-emerald-300/70 uppercase tracking-wider">Linh Kiện Bảo Hành</span>
+                        <ShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                       </div>
                       <div className="mt-2">
-                        <span className="font-heading text-base sm:text-lg font-black text-emerald-400 block">
-                          {totalHardwareItems} <span className="text-xs font-normal text-slate-300">thiết bị</span>
+                        <span className="font-heading text-base sm:text-lg font-black text-emerald-600 dark:text-emerald-400 block">
+                          {totalHardwareItems} <span className="text-xs font-normal text-slate-500 dark:text-slate-300">thiết bị</span>
                         </span>
-                        <button onClick={() => setDashboardTab('vault')} className="text-[10px] font-bold text-emerald-400 hover:text-emerald-300 hover:underline inline-flex items-center gap-0.5 mt-0.5 cursor-pointer">
+                        <button onClick={() => setDashboardTab('vault')} className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-0.5 mt-0.5 cursor-pointer">
                           <span>Xem mã Serial</span>
                           <ChevronRight className="h-3 w-3" />
                         </button>
@@ -509,16 +528,16 @@ function ProfileContent() {
                     </div>
 
                     {/* Metric 3: Orders Count */}
-                    <div className="bg-slate-900/80 border border-amber-500/30 p-3.5 rounded-2xl backdrop-blur-md flex flex-col justify-between col-span-2 sm:col-span-1">
+                    <div className="bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-amber-500/30 p-3.5 rounded-2xl flex flex-col justify-between col-span-2 sm:col-span-1 shadow-xs">
                       <div className="flex justify-between items-center">
-                        <span className="text-[10px] font-bold text-amber-300/70 uppercase tracking-wider">Tổng Đơn Hàng</span>
-                        <PackageCheck className="h-4 w-4 text-amber-400" />
+                        <span className="text-[10px] font-bold text-slate-500 dark:text-amber-300/70 uppercase tracking-wider">Tổng Đơn Hàng</span>
+                        <PackageCheck className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                       </div>
                       <div className="mt-2">
-                        <span className="font-heading text-base sm:text-lg font-black text-amber-300 block">
-                          {orders.length} <span className="text-xs font-normal text-slate-300">đơn</span>
+                        <span className="font-heading text-base sm:text-lg font-black text-amber-600 dark:text-amber-300 block">
+                          {orders.length} <span className="text-xs font-normal text-slate-500 dark:text-slate-300">đơn</span>
                         </span>
-                        <button onClick={() => setDashboardTab('orders')} className="text-[10px] font-bold text-amber-400 hover:text-amber-300 hover:underline inline-flex items-center gap-0.5 mt-0.5 cursor-pointer">
+                        <button onClick={() => setDashboardTab('orders')} className="text-[10px] font-bold text-amber-600 dark:text-amber-400 hover:underline inline-flex items-center gap-0.5 mt-0.5 cursor-pointer">
                           <span>Xem chi tiết</span>
                           <ChevronRight className="h-3 w-3" />
                         </button>

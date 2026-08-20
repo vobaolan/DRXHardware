@@ -100,8 +100,21 @@ export const Header: React.FC = () => {
       const stored = localStorage.getItem('ods_user');
       if (stored) {
         try {
-          const parsed = JSON.parse(stored);
-          setCurrentUser(prev => prev?.id === parsed.id && prev?.balance === parsed.balance ? prev : parsed);
+          let parsed = JSON.parse(stored);
+          let changed = false;
+          if (parsed.email === 'admin@odsstore.vn' || parsed.email === 'admin@drxhardware.vn' || parsed.email?.toLowerCase().includes('ods')) {
+            parsed.email = 'admin@drx.vn';
+            changed = true;
+          }
+          if (parsed.name === 'ODS ADMIN' || parsed.name === 'ODS Store' || parsed.name?.includes('ODS')) {
+            parsed.name = parsed.name.replace(/ODS/g, 'DRX');
+            changed = true;
+          }
+          if (changed) {
+            localStorage.setItem('ods_user', JSON.stringify(parsed));
+          }
+
+          setCurrentUser(prev => prev?.id === parsed.id && prev?.balance === parsed.balance && prev?.name === parsed.name && prev?.email === parsed.email ? prev : parsed);
 
           if (parsed && parsed.email) {
             try {
