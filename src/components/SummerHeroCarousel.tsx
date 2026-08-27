@@ -174,36 +174,33 @@ export const SummerHeroCarousel: React.FC = () => {
     <div
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
-      className="w-full flex flex-col rounded-3xl overflow-hidden border border-sky-400/30 dark:border-slate-800 shadow-2xl bg-white dark:bg-slate-950 transition-all duration-300"
+      className="w-full flex flex-col rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-lg bg-white dark:bg-slate-950 transition-all duration-300"
     >
-      {/* ─── 1. TOP ULTRA-WIDE HERO BANNER CANVAS (EXPANSIVE 12-COL FLAGSHIP LAYOUT) ─── */}
-      <div className="relative min-h-[440px] sm:min-h-[480px] lg:min-h-[520px] w-full overflow-hidden bg-gradient-to-br from-[#0369a1] via-[#0284c7] to-[#0ea5e9] text-white p-6 sm:p-8 lg:p-10 flex flex-col justify-between">
+      {/* ─── 1. TOP HERO BANNER CANVAS ─── */}
+      <div className="relative min-h-[440px] sm:min-h-[480px] lg:min-h-[480px] w-full overflow-hidden bg-slate-900 text-white p-6 sm:p-8 lg:p-10 flex flex-col justify-between">
         
-        {/* Dynamic Background Matrix Grid & Cyber Ambient Glow */}
-        <div className="absolute inset-0 tech-grid-pattern opacity-30 pointer-events-none" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-sky-300/30 via-transparent to-black/40 pointer-events-none" />
-        <div className="absolute -top-32 -left-32 w-96 h-96 bg-[#6EC2F7]/25 rounded-full blur-3xl pointer-events-none animate-pulse" />
-        <div className="absolute -right-24 -bottom-24 w-[32rem] h-[32rem] bg-sky-400/20 rounded-full blur-3xl pointer-events-none" />
-
+        {/* Subtle Background Gradient */}
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-900/40 to-slate-900 pointer-events-none" />
+        
         {/* TOP BRAND HEADER ROW & SLIDE CONTROLS */}
         <div className="relative z-20 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            {/* DRX HARDWARE LOGO BADGE (HIGH CONTRAST CYBER GLASS) */}
+          <div className="flex items-center gap-4">
+            {/* DRX HARDWARE LOGO BADGE */}
             <Link 
               href="/" 
-              className="inline-flex items-center gap-2.5 bg-slate-950/90 backdrop-blur-xl px-4 py-1.5 rounded-full border border-sky-400/40 shadow-lg shadow-sky-950/40 hover:border-sky-300 hover:scale-105 transition-all group" 
+              className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10 hover:bg-white/20 transition-all"
               title="Trang chủ DRX HARDWARE"
             >
               <img 
                 src="/logo/logo-blue.png" 
                 alt="DRX Hardware Logo" 
-                className="h-6 w-auto object-contain drop-shadow-[0_0_8px_rgba(110,194,247,0.6)]" 
+                className="h-5 w-auto object-contain brightness-0 invert" 
               />
             </Link>
 
             {/* EVENT TAG */}
-            <div className="hidden sm:inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-slate-950/80 backdrop-blur-md text-[11px] font-black uppercase text-amber-300 tracking-wider border border-amber-400/40 shadow-md">
-              <Sparkles className="w-3.5 h-3.5 text-amber-300 fill-amber-300 animate-pulse" />
+            <div className="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-600/20 text-xs font-semibold text-blue-300 border border-blue-500/30">
+              <Sparkles className="w-4 h-4 text-blue-400" />
               <span>{activeSlide.badgeTag}</span>
             </div>
           </div>
@@ -213,82 +210,68 @@ export const SummerHeroCarousel: React.FC = () => {
             <button
               onClick={handlePrev}
               aria-label="Banner trước"
-              className="p-2.5 rounded-full bg-slate-950/70 hover:bg-[#6EC2F7] text-white hover:text-slate-950 border border-white/30 hover:border-[#6EC2F7] transition-all cursor-pointer shadow-lg backdrop-blur-md active:scale-95"
+              className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white border border-white/10 transition-all cursor-pointer active:scale-95"
             >
-              <ChevronLeft className="h-4 w-4 stroke-[3]" />
+              <ChevronLeft className="h-5 w-5" />
             </button>
             <button
               onClick={handleNext}
               aria-label="Banner tiếp"
-              className="p-2.5 rounded-full bg-slate-950/70 hover:bg-[#6EC2F7] text-white hover:text-slate-950 border border-white/30 hover:border-[#6EC2F7] transition-all cursor-pointer shadow-lg backdrop-blur-md active:scale-95"
+              className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white border border-white/10 transition-all cursor-pointer active:scale-95"
             >
-              <ChevronRight className="h-4 w-4 stroke-[3]" />
+              <ChevronRight className="h-5 w-5" />
             </button>
           </div>
         </div>
 
-        {/* SLIDE CONTENT AREA (EXPANSIVE 12-COL GRID) */}
+        {/* SLIDE CONTENT AREA */}
         <AnimatePresence mode="wait">
           <motion.div
             key={activeSlide.id + '-slide'}
-            initial={{ opacity: 0, x: 25, filter: 'blur(4px)' }}
-            animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
-            exit={{ opacity: 0, x: -25, filter: 'blur(4px)' }}
-            transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-            className="relative z-20 my-auto grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-center py-6"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3 }}
+            className="relative z-20 my-auto grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center py-8"
           >
-            {/* LEFT COLUMN: HEADLINE, WARRANTY & EXPANSIVE 4 CYBER GLASS CARDS (Col 12 -> Col 7) */}
-            <div className="lg:col-span-7 space-y-4 sm:space-y-5">
+            {/* LEFT COLUMN */}
+            <div className="lg:col-span-7 space-y-6">
               
               {/* SLOGAN HEADLINE */}
-              <div>
-                <div className="flex items-center gap-2 mb-1.5">
-                  <span className="text-[11px] font-black uppercase tracking-widest text-amber-300 font-heading bg-amber-950/60 border border-amber-400/40 px-2.5 py-0.5 rounded-full drop-shadow-md inline-flex items-center gap-1.5">
-                    <Flame className="w-3 h-3 text-rose-500 fill-rose-500" />
-                    <span>{activeSlide.badgeTag}</span>
-                  </span>
-                </div>
-                
-                <h1 className="font-heading text-3xl sm:text-4xl lg:text-5xl font-black uppercase text-white tracking-tight drop-shadow-[0_4px_16px_rgba(0,0,0,0.6)] leading-tight">
+              <div className="space-y-3">
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-tight">
                   {activeSlide.mainTitleText}
                 </h1>
 
-                <div className="flex flex-wrap items-center gap-2.5 mt-2">
-                  <span className="text-xs font-bold text-emerald-300 bg-slate-950/70 border border-emerald-400/40 px-3 py-0.5 rounded-full inline-flex items-center gap-1.5 shadow-sm">
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                <div className="flex flex-wrap items-center gap-3 text-slate-300">
+                  <span className="flex items-center gap-1.5 text-sm font-medium">
+                    <Clock className="w-4 h-4" />
                     <span>{activeSlide.dateRange}</span>
                   </span>
                 </div>
               </div>
 
-              {/* 4 HIGH-TECH CYBER GLASS CARDS (EXPANSIVE GRID, ZERO TRUNCATION) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5">
+              {/* 4 INFO CARDS */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {activeSlide.vouchers.map((v, idx) => {
                   const IconComp = v.icon || Sparkles;
                   return (
-                    <motion.div
+                    <div
                       key={idx}
-                      whileHover={{ scale: 1.03, y: -2 }}
-                      className="relative bg-slate-950/80 hover:bg-slate-950/95 backdrop-blur-xl p-3.5 rounded-2xl border border-sky-400/30 hover:border-sky-400 shadow-[0_8px_20px_rgba(0,0,0,0.45)] hover:shadow-[0_0_25px_rgba(110,194,247,0.35)] transition-all flex items-center gap-3.5 group cursor-pointer overflow-hidden"
+                      className="bg-white/5 border border-white/10 p-4 rounded-xl flex items-center gap-4 hover:bg-white/10 transition-colors cursor-pointer"
                     >
-                      {/* Top Inner Highlight */}
-                      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sky-400/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-
-                      {/* Left Glowing Icon Box */}
-                      <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-sky-400/20 via-blue-600/10 to-transparent border border-sky-400/30 flex items-center justify-center shrink-0 shadow-inner group-hover:border-sky-300 group-hover:scale-105 transition-all">
-                        <IconComp className={`w-5 h-5 ${v.iconColor || 'text-sky-300'}`} />
+                      <div className="w-12 h-12 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
+                        <IconComp className="w-6 h-6" />
                       </div>
-
-                      {/* Right Info Details */}
-                      <div className="flex flex-col min-w-0 flex-1">
-                        <span className="text-[11px] font-bold uppercase tracking-wider text-sky-200/90 font-mono-tech">
+                      <div className="flex flex-col">
+                        <span className="text-xs font-medium text-slate-400">
                           {v.title}
                         </span>
-                        <span className="text-base sm:text-lg font-black text-white font-heading tracking-wide uppercase group-hover:text-[#6EC2F7] transition-colors drop-shadow-sm">
+                        <span className="text-base font-bold text-white mt-0.5">
                           {v.value}
                         </span>
                       </div>
-                    </motion.div>
+                    </div>
                   );
                 })}
               </div>
@@ -297,59 +280,39 @@ export const SummerHeroCarousel: React.FC = () => {
               <div className="pt-2">
                 <Link
                   href={activeSlide.ctaLink}
-                  className="uiverse-btn-shimmer inline-flex items-center justify-center gap-2.5 px-8 py-3.5 rounded-2xl text-white font-heading font-black text-xs uppercase tracking-wider shadow-xl shadow-sky-950/40 hover:shadow-2xl transition-all active:scale-95 cursor-pointer border border-white/40"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm transition-all active:scale-95"
                 >
-                  <Zap className="w-4 h-4 text-amber-300 fill-amber-300 animate-bounce" />
                   <span>{activeSlide.ctaText}</span>
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>
             </div>
 
-            {/* RIGHT COLUMN: HIGH RESOLUTION 3D AI BANANA POSTER SHOWCASE (Col 12 -> Col 5) */}
+            {/* RIGHT COLUMN: VISUAL IMAGE */}
             <div className="lg:col-span-5 flex items-center justify-center">
-              <motion.div
-                whileHover={{ scale: 1.02 }}
-                className="relative w-full max-w-lg aspect-4/3 rounded-3xl overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.7),0_0_40px_rgba(110,194,247,0.35)] border-2 border-sky-300/40 bg-slate-950/90 backdrop-blur-xl p-2.5 group/img"
-              >
-                {/* Visual AI Poster Image */}
-                <div className="w-full h-full rounded-2xl overflow-hidden relative">
-                  <img
-                    src={activeSlide.rightVisualImage}
-                    alt={activeSlide.mainTitleText}
-                    className="w-full h-full object-cover group-hover/img:scale-108 transition-transform duration-700 brightness-95 group-hover/img:brightness-105"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-80" />
-                </div>
+              <div className="relative w-full max-w-lg aspect-4/3 rounded-2xl overflow-hidden shadow-2xl bg-slate-800">
+                <img
+                  src={activeSlide.rightVisualImage}
+                  alt={activeSlide.mainTitleText}
+                  className="w-full h-full object-cover"
+                />
                 
-                {/* Floating Live Spec Badges */}
-                {activeSlide.specs && activeSlide.specs.length > 0 && (
-                  <div className="absolute top-5 right-5 flex flex-col gap-1.5 z-20">
-                    {activeSlide.specs.map((sp, i) => (
-                      <div key={i} className="bg-slate-950/90 backdrop-blur-md px-3 py-1 rounded-full border border-sky-400/40 text-[10px] font-black uppercase text-[#6EC2F7] shadow-lg flex items-center gap-1.5">
-                        <Cpu className="w-3 h-3 text-[#6EC2F7]" />
-                        <span>{sp.label}: {sp.value}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
                 {/* Floating Highlight Pill */}
-                <div className="absolute bottom-5 left-5 right-5 bg-slate-950/90 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-sky-400/30 text-white text-center shadow-2xl">
-                  <span className="text-[11px] font-black uppercase text-amber-300 block tracking-wider flex items-center justify-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
+                <div className="absolute bottom-4 left-4 right-4 bg-slate-900/80 backdrop-blur-md px-4 py-3 rounded-xl border border-white/10 text-center">
+                  <span className="text-sm font-bold text-blue-300 flex items-center justify-center gap-2">
+                    <Sparkles className="w-4 h-4" />
                     <span>{activeSlide.highlightText}</span>
                   </span>
                 </div>
-              </motion.div>
+              </div>
             </div>
           </motion.div>
         </AnimatePresence>
       </div>
 
-      {/* ─── 2. BOTTOM 5-TAB NAVIGATION BAR (EXPANSIVE FULL-WIDTH TABS) ─── */}
-      <div className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 px-4 py-3.5">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 max-w-7xl mx-auto">
+      {/* ─── 2. BOTTOM 5-TAB NAVIGATION BAR ─── */}
+      <div className="bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 p-2 sm:p-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 max-w-7xl mx-auto">
           {TIN_HOC_NGOI_SAO_BANNERS.map((banner, idx) => {
             const isActive = currentIndex === idx;
             const TabIcon = banner.tabIcon;
@@ -357,31 +320,30 @@ export const SummerHeroCarousel: React.FC = () => {
               <button
                 key={banner.id}
                 onClick={() => setCurrentIndex(idx)}
-                className={`relative text-left p-3.5 rounded-2xl transition-all cursor-pointer flex flex-col justify-between ${
+                className={`relative text-left p-3 rounded-xl transition-all flex flex-col justify-between ${
                   isActive
-                    ? 'bg-sky-50/90 dark:bg-slate-800 border border-sky-300/60 dark:border-sky-500/40 shadow-sm'
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 border border-transparent'
-                }`}
+                    ? 'bg-white dark:bg-slate-800 border-blue-200 dark:border-blue-900/50 shadow-sm'
+                    : 'hover:bg-slate-200/50 dark:hover:bg-slate-800/50 border-transparent'
+                } border`}
               >
                 <div className="flex items-center gap-2">
-                  <div className={`p-2 rounded-xl ${isActive ? 'bg-rose-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>
+                  <div className={`p-1.5 rounded-lg ${isActive ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400' : 'bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}>
                     <TabIcon className="w-4 h-4" />
                   </div>
-                  <span className={`text-xs font-black uppercase tracking-tight font-heading truncate ${isActive ? 'text-rose-600 dark:text-rose-400' : 'text-slate-800 dark:text-slate-200'}`}>
+                  <span className={`text-xs font-bold truncate ${isActive ? 'text-blue-700 dark:text-blue-400' : 'text-slate-700 dark:text-slate-300'}`}>
                     {banner.tabTitle}
                   </span>
                 </div>
                 
-                <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 line-clamp-1 mt-1.5">
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 mt-2">
                   {banner.tabSubtitle}
                 </span>
 
-                {/* RED / SKYBLUE ACTIVE INDICATOR BAR AT BOTTOM */}
+                {/* ACTIVE INDICATOR BAR */}
                 {isActive && (
                   <motion.div
                     layoutId="activeTabUnderline"
-                    className="absolute bottom-0 left-3 right-3 h-1.5 bg-rose-600 dark:bg-[#6EC2F7] rounded-full shadow-sm"
-                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500 rounded-b-xl"
                   />
                 )}
               </button>
