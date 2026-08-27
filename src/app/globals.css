@@ -461,3 +461,53 @@ body {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
+
+
+.loader {
+  position: relative;
+  font-family: 'Arial Black', Impact, sans-serif;
+  font-size: 72px;
+  font-weight: 900;
+  letter-spacing: 8px;
+  text-transform: uppercase;
+  user-select: none;
+  font-style: italic;
+}
+
+/* Light mode variables */
+:root .loader {
+  color: #cbd5e1;
+  --scan-color: #1e3a8a; /* Deep blue from the logo */
+  --scan-shadow-1: rgba(30, 58, 138, 0.8);
+  --scan-shadow-2: rgba(30, 58, 138, 0.5);
+}
+
+/* Dark mode variables */
+.dark .loader {
+  color: #334155;
+  --scan-color: #00d2ff; /* Cyan */
+  --scan-shadow-1: rgba(0, 210, 255, 0.8);
+  --scan-shadow-2: rgba(0, 210, 255, 0.5);
+}
+
+.loader::before {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0%;
+  height: 100%;
+  color: var(--scan-color);
+  overflow: hidden;
+  white-space: nowrap;
+  border-right: 4px solid var(--scan-color);
+  text-shadow: 0 0 6px var(--scan-shadow-1), 
+               0 0 5px var(--scan-shadow-2);
+  animation: scan 2s ease-in-out infinite;
+}
+
+@keyframes scan {
+  0%, 10% { width: 0%; }
+  60%, 90% { width: 100%; }
+  100% { width: 0%; }
+}

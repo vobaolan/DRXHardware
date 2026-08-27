@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Be_Vietnam_Pro, Outfit } from "next/font/google";
 import "./globals.css";
+import LoaderOverlay from "@/components/LoaderOverlay";
 import { Providers } from "@/components/Providers";
 
 const beVietnamPro = Be_Vietnam_Pro({
@@ -40,15 +41,31 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi" className="light">
+    <html lang="vi" suppressHydrationWarning>
       <head>
         <link rel="icon" href="/icon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/icon.svg" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                if (localStorage.getItem('ods_theme') === 'dark') {
+                  document.documentElement.classList.add('dark');
+                  document.documentElement.classList.remove('light');
+                } else {
+                  document.documentElement.classList.add('light');
+                  document.documentElement.classList.remove('dark');
+                }
+              } catch (_) {}
+            `,
+          }}
+        />
       </head>
       <body
         className={`${beVietnamPro.variable} ${outfit.variable} font-sans bg-ods-bg text-ods-textMain antialiased`}
       >
         <Providers>
+          <LoaderOverlay />
           {children}
         </Providers>
         <ChatbotWidget />

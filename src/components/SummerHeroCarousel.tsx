@@ -39,10 +39,10 @@ const TIN_HOC_NGOI_SAO_BANNERS: TabBanner[] = [
     mainTitleText: 'TƯƠNG LAI VỤT SÁNG',
     highlightText: 'SIÊU SALE TỰA TRƯỜNG • VOUCHER 500K',
     vouchers: [
-      { title: 'ĐỔI ĐIỂM NHẬN', value: 'VOUCHER 500K', icon: Gift, iconColor: 'text-amber-400' },
-      { title: 'LAPTOP GAMING', value: 'GIẢM ĐẾN 2.5 TR', icon: Laptop, iconColor: 'text-sky-400' },
-      { title: 'HSSV & GIÁO VIÊN', value: 'GIẢM ĐẾN 300K', icon: Award, iconColor: 'text-emerald-400' },
-      { title: 'RAM / SSD GEN4', value: 'GIẢM ĐẾN 1.4 TR', icon: Cpu, iconColor: 'text-purple-400' },
+      { title: 'ĐỔI ĐIỂM NHẬN', value: 'VOUCHER 500K', icon: Gift },
+      { title: 'LAPTOP GAMING', value: 'GIẢM ĐẾN 2.5 TR', icon: Laptop },
+      { title: 'HSSV & GIÁO VIÊN', value: 'GIẢM ĐẾN 300K', icon: Award },
+      { title: 'RAM / SSD GEN4', value: 'GIẢM ĐẾN 1.4 TR', icon: Cpu },
     ],
     specs: [
       { label: 'QUÀ TẶNG', value: 'Balo Gaming' },
@@ -62,10 +62,10 @@ const TIN_HOC_NGOI_SAO_BANNERS: TabBanner[] = [
     mainTitleText: 'SẮM PC CHỈ TỪ 0Đ TRẢ TRƯỚC',
     highlightText: 'DUYỆT HỒ SƠ 15 PHÚT ONLINE',
     vouchers: [
-      { title: 'TRẢ TRƯỚC HÔM NAY', value: 'CHỈ 0 ĐỒNG', icon: Zap, iconColor: 'text-amber-400' },
-      { title: 'TRỢ GIÁ TRẢ GÓP', value: 'ĐẾN 2.0 TRIỆU', icon: Tag, iconColor: 'text-sky-400' },
-      { title: 'LÃI SUẤT ƯU ĐÃI', value: 'CHỈ TỪ 0% - 1.49%', icon: Percent, iconColor: 'text-emerald-400' },
-      { title: 'THỜI HẠN LINH HOẠT', value: '6 - 24 THÁNG', icon: Clock, iconColor: 'text-purple-400' },
+      { title: 'TRẢ TRƯỚC HÔM NAY', value: 'CHỈ 0 ĐỒNG', icon: Zap },
+      { title: 'TRỢ GIÁ TRẢ GÓP', value: 'ĐẾN 2.0 TRIỆU', icon: Tag },
+      { title: 'LÃI SUẤT ƯU ĐÃI', value: 'CHỈ TỪ 0% - 1.49%', icon: Percent },
+      { title: 'THỜI HẠN LINH HOẠT', value: '6 - 24 THÁNG', icon: Clock },
     ],
     specs: [
       { label: 'THỦ TỤC', value: 'CCCD Online' },
@@ -85,10 +85,10 @@ const TIN_HOC_NGOI_SAO_BANNERS: TabBanner[] = [
     mainTitleText: 'PC GAMING BỂ KÍNH ARGB',
     highlightText: 'CPU 0Đ • RAM GIẢM ĐẾN 57%',
     vouchers: [
-      { title: 'COMBO CORE i5', value: 'TẶNG VOUCHER 1TR', icon: Gift, iconColor: 'text-amber-400' },
-      { title: 'VGA RTX 4060 SUPER', value: 'GIẢM NGAY 1.5TR', icon: Zap, iconColor: 'text-sky-400' },
-      { title: 'MAINBOARD B760M', value: 'TẶNG TẢN ARGB', icon: Sparkles, iconColor: 'text-emerald-400' },
-      { title: 'NÂNG CẤP DDR5', value: 'GIẢM ĐẾN 57%++', icon: Percent, iconColor: 'text-rose-400' },
+      { title: 'COMBO CORE i5', value: 'TẶNG VOUCHER 1TR', icon: Gift },
+      { title: 'VGA RTX 4060 SUPER', value: 'GIẢM NGAY 1.5TR', icon: Zap },
+      { title: 'MAINBOARD B760M', value: 'TẶNG TẢN ARGB', icon: Sparkles },
+      { title: 'NÂNG CẤP DDR5', value: 'GIẢM ĐẾN 57%++', icon: Percent },
     ],
     specs: [
       { label: 'VGA', value: 'RTX 4090 24GB' },
@@ -108,10 +108,10 @@ const TIN_HOC_NGOI_SAO_BANNERS: TabBanner[] = [
     mainTitleText: 'CHIẾN GAME 2K 240Hz IPS',
     highlightText: 'MUA 1 MÀN HÌNH TẶNG 1 ARM TREO',
     vouchers: [
-      { title: 'TẤM NỀN FAST-IPS', value: 'GIÁ CHỈ 2.990K', icon: Monitor, iconColor: 'text-sky-400' },
-      { title: 'QUÀ TẶNG KÈM', value: 'TẶNG ARM TREO 590K', icon: Gift, iconColor: 'text-amber-400' },
-      { title: 'BẢO HÀNH 03 NĂM', value: '1 ĐỔI 1 TẠI NHÀ', icon: ShieldCheck, iconColor: 'text-emerald-400' },
-      { title: 'TRỢ GIÁ TRỰC TIẾP', value: 'ĐẾN 1.0 TRIỆU', icon: Tag, iconColor: 'text-purple-400' },
+      { title: 'TẤM NỀN FAST-IPS', value: 'GIÁ CHỈ 2.990K', icon: Monitor },
+      { title: 'QUÀ TẶNG KÈM', value: 'TẶNG ARM TREO 590K', icon: Gift },
+      { title: 'BẢO HÀNH 03 NĂM', value: '1 ĐỔI 1 TẠI NHÀ', icon: ShieldCheck },
+      { title: 'TRỢ GIÁ TRỰC TIẾP', value: 'ĐẾN 1.0 TRIỆU', icon: Tag },
     ],
     specs: [
       { label: 'TẦN SỐ QUÉT', value: '240Hz Gaming' },
@@ -131,10 +131,10 @@ const TIN_HOC_NGOI_SAO_BANNERS: TabBanner[] = [
     mainTitleText: 'LAPTOP ASUS TUF & MSI',
     highlightText: 'TRỰC TIẾP GIẢM ĐẾN 2.5 TRIỆU',
     vouchers: [
-      { title: 'QUÀ TẶNG BALO', value: 'TRỊ GIÁ 890K', icon: Gift, iconColor: 'text-amber-400' },
-      { title: 'CHUỘT GAMING', value: 'TẶNG KHÔNG DÂY', icon: Sparkles, iconColor: 'text-sky-400' },
-      { title: 'NÂNG CẤP RAM DDR5', value: 'GIẢM 50% GIÁ', icon: Percent, iconColor: 'text-emerald-400' },
-      { title: 'VOUCHER TRỢ GIÁ', value: 'ĐẾN 2.5 TRIỆU', icon: Tag, iconColor: 'text-rose-400' },
+      { title: 'QUÀ TẶNG BALO', value: 'TRỊ GIÁ 890K', icon: Gift },
+      { title: 'CHUỘT GAMING', value: 'TẶNG KHÔNG DÂY', icon: Sparkles },
+      { title: 'NÂNG CẤP RAM DDR5', value: 'GIẢM 50% GIÁ', icon: Percent },
+      { title: 'VOUCHER TRỢ GIÁ', value: 'ĐẾN 2.5 TRIỆU', icon: Tag },
     ],
     specs: [
       { label: 'VGA', value: 'RTX 4060 / 4070' },
@@ -153,7 +153,6 @@ export const SummerHeroCarousel: React.FC = () => {
 
   const activeSlide = TIN_HOC_NGOI_SAO_BANNERS[currentIndex];
 
-  // Auto-advance slide every 6.5 seconds
   useEffect(() => {
     if (isPaused) return;
     const interval = setInterval(() => {
@@ -174,144 +173,115 @@ export const SummerHeroCarousel: React.FC = () => {
     <div
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
-      className="w-full flex flex-col rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-lg bg-white dark:bg-slate-950 transition-all duration-300"
+      className="w-full flex flex-col bg-[#050B14] overflow-hidden group border-b border-slate-800"
     >
-      {/* ─── 1. TOP HERO BANNER CANVAS ─── */}
-      <div className="relative min-h-[440px] sm:min-h-[480px] lg:min-h-[480px] w-full overflow-hidden bg-slate-900 text-white p-6 sm:p-8 lg:p-10 flex flex-col justify-between">
+      {/* ─── HERO BANNER SECTION ─── */}
+      <div className="relative w-full min-h-[460px] lg:min-h-[500px] flex items-center">
         
-        {/* Subtle Background Gradient */}
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-900/40 to-slate-900 pointer-events-none" />
-        
-        {/* TOP BRAND HEADER ROW & SLIDE CONTROLS */}
-        <div className="relative z-20 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            {/* DRX HARDWARE LOGO BADGE */}
-            <Link 
-              href="/" 
-              className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10 hover:bg-white/20 transition-all"
-              title="Trang chủ DRX HARDWARE"
-            >
-              <img 
-                src="/logo/logo-blue.png" 
-                alt="DRX Hardware Logo" 
-                className="h-5 w-auto object-contain brightness-0 invert" 
-              />
-            </Link>
-
-            {/* EVENT TAG */}
-            <div className="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-600/20 text-xs font-semibold text-blue-300 border border-blue-500/30">
-              <Sparkles className="w-4 h-4 text-blue-400" />
-              <span>{activeSlide.badgeTag}</span>
-            </div>
-          </div>
-
-          {/* ARROW NAVIGATION CONTROLS */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handlePrev}
-              aria-label="Banner trước"
-              className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white border border-white/10 transition-all cursor-pointer active:scale-95"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </button>
-            <button
-              onClick={handleNext}
-              aria-label="Banner tiếp"
-              className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white border border-white/10 transition-all cursor-pointer active:scale-95"
-            >
-              <ChevronRight className="h-5 w-5" />
-            </button>
-          </div>
-        </div>
-
-        {/* SLIDE CONTENT AREA */}
+        {/* Right side image with smooth gradient fade */}
         <AnimatePresence mode="wait">
           <motion.div
-            key={activeSlide.id + '-slide'}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.3 }}
-            className="relative z-20 my-auto grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center py-8"
+            key={activeSlide.id + '-bg'}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            className="absolute top-0 bottom-0 right-0 w-full md:w-[65%] lg:w-[60%]"
           >
-            {/* LEFT COLUMN */}
-            <div className="lg:col-span-7 space-y-6">
+            <img
+              src={activeSlide.rightVisualImage}
+              alt={activeSlide.mainTitleText}
+              className="w-full h-full object-cover object-center md:object-right opacity-80"
+            />
+            {/* Gradient to blend image into the solid dark background on the left */}
+            <div className="absolute inset-0 bg-gradient-to-r from-[#050B14] via-[#050B14]/80 to-transparent md:via-[#050B14]/40" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#050B14] via-transparent to-transparent md:hidden" />
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Content Container (aligned with standard site grid max-w-7xl) */}
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col justify-center">
+          
+          {/* Top Logo & Controls */}
+          <div className="absolute top-6 left-4 sm:left-6 lg:left-8 flex items-center gap-4">
+             <Link href="/">
+               <img src="/logo/logo-blue.png" alt="DRX Hardware Logo" className="h-5 w-auto brightness-0 invert opacity-90 hover:opacity-100 transition-opacity" />
+             </Link>
+          </div>
+
+          <div className="absolute top-6 right-4 sm:right-6 lg:right-8 flex gap-2">
+            <button onClick={handlePrev} className="p-2 rounded-md bg-white/5 hover:bg-white/20 text-white transition-colors border border-white/10">
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <button onClick={handleNext} className="p-2 rounded-md bg-white/5 hover:bg-white/20 text-white transition-colors border border-white/10">
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Text Content */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeSlide.id + '-content'}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.4 }}
+              className="max-w-xl lg:max-w-2xl mt-12 space-y-4"
+            >
+              <div className="inline-block px-2.5 py-1 rounded bg-blue-600 text-[11px] font-bold text-white tracking-wider uppercase">
+                {activeSlide.badgeTag}
+              </div>
+
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white leading-[1.15]">
+                {activeSlide.mainTitleText}
+              </h1>
+
+              <p className="text-base sm:text-lg text-slate-300 font-normal max-w-md">
+                {activeSlide.highlightText}
+              </p>
               
-              {/* SLOGAN HEADLINE */}
-              <div className="space-y-3">
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-tight">
-                  {activeSlide.mainTitleText}
-                </h1>
-
-                <div className="flex flex-wrap items-center gap-3 text-slate-300">
-                  <span className="flex items-center gap-1.5 text-sm font-medium">
-                    <Clock className="w-4 h-4" />
-                    <span>{activeSlide.dateRange}</span>
-                  </span>
-                </div>
-              </div>
-
-              {/* 4 INFO CARDS */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {activeSlide.vouchers.map((v, idx) => {
-                  const IconComp = v.icon || Sparkles;
-                  return (
-                    <div
-                      key={idx}
-                      className="bg-white/5 border border-white/10 p-4 rounded-xl flex items-center gap-4 hover:bg-white/10 transition-colors cursor-pointer"
-                    >
-                      <div className="w-12 h-12 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
-                        <IconComp className="w-6 h-6" />
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-xs font-medium text-slate-400">
-                          {v.title}
-                        </span>
-                        <span className="text-base font-bold text-white mt-0.5">
-                          {v.value}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* ACTION CTA BUTTON */}
-              <div className="pt-2">
+              <div className="pt-4">
                 <Link
                   href={activeSlide.ctaLink}
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm transition-all active:scale-95"
+                  className="inline-flex items-center gap-2 px-6 py-2.5 bg-white text-slate-900 hover:bg-slate-200 font-bold rounded text-sm transition-colors"
                 >
-                  <span>{activeSlide.ctaText}</span>
+                  {activeSlide.ctaText}
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>
-            </div>
+            </motion.div>
+          </AnimatePresence>
 
-            {/* RIGHT COLUMN: VISUAL IMAGE */}
-            <div className="lg:col-span-5 flex items-center justify-center">
-              <div className="relative w-full max-w-lg aspect-4/3 rounded-2xl overflow-hidden shadow-2xl bg-slate-800">
-                <img
-                  src={activeSlide.rightVisualImage}
-                  alt={activeSlide.mainTitleText}
-                  className="w-full h-full object-cover"
-                />
-                
-                {/* Floating Highlight Pill */}
-                <div className="absolute bottom-4 left-4 right-4 bg-slate-900/80 backdrop-blur-md px-4 py-3 rounded-xl border border-white/10 text-center">
-                  <span className="text-sm font-bold text-blue-300 flex items-center justify-center gap-2">
-                    <Sparkles className="w-4 h-4" />
-                    <span>{activeSlide.highlightText}</span>
-                  </span>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </AnimatePresence>
+          {/* Clean Info Cards / Vouchers */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeSlide.id + '-vouchers'}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.4, delay: 0.1 }}
+              className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-3 max-w-4xl"
+            >
+              {activeSlide.vouchers.map((v, idx) => {
+                const IconComp = v.icon || Sparkles;
+                return (
+                  <div key={idx} className="flex items-center gap-3 p-3 rounded bg-[#0A1220] border border-[#1A2942] hover:border-blue-500/50 transition-colors">
+                    <IconComp className="w-5 h-5 text-blue-500 shrink-0" />
+                    <div>
+                      <div className="text-[10px] sm:text-[11px] text-slate-400 font-medium uppercase tracking-wide">{v.title}</div>
+                      <div className="text-xs sm:text-sm font-semibold text-slate-100">{v.value}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </motion.div>
+          </AnimatePresence>
+          
+        </div>
       </div>
 
-      {/* ─── 2. BOTTOM 5-TAB NAVIGATION BAR ─── */}
-      <div className="bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 p-2 sm:p-3">
+      {/* ─── BOTTOM 5-TAB NAVIGATION BAR ─── */}
+      <div className="bg-[#030712] border-t border-[#1A2942] p-2 sm:p-3 relative z-30">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 max-w-7xl mx-auto">
           {TIN_HOC_NGOI_SAO_BANNERS.map((banner, idx) => {
             const isActive = currentIndex === idx;
@@ -320,32 +290,24 @@ export const SummerHeroCarousel: React.FC = () => {
               <button
                 key={banner.id}
                 onClick={() => setCurrentIndex(idx)}
-                className={`relative text-left p-3 rounded-xl transition-all flex flex-col justify-between ${
+                className={`relative text-left p-3 rounded-lg transition-all flex flex-col justify-between ${
                   isActive
-                    ? 'bg-white dark:bg-slate-800 border-blue-200 dark:border-blue-900/50 shadow-sm'
-                    : 'hover:bg-slate-200/50 dark:hover:bg-slate-800/50 border-transparent'
-                } border`}
+                    ? 'bg-[#111C31] shadow-sm'
+                    : 'hover:bg-[#0A1220] border-transparent'
+                } border ${isActive ? 'border-[#1E3A8A]' : 'border-transparent'}`}
               >
                 <div className="flex items-center gap-2">
-                  <div className={`p-1.5 rounded-lg ${isActive ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400' : 'bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}>
+                  <div className={`p-1.5 rounded ${isActive ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'}`}>
                     <TabIcon className="w-4 h-4" />
                   </div>
-                  <span className={`text-xs font-bold truncate ${isActive ? 'text-blue-700 dark:text-blue-400' : 'text-slate-700 dark:text-slate-300'}`}>
+                  <span className={`text-xs font-semibold truncate ${isActive ? 'text-white' : 'text-slate-400'}`}>
                     {banner.tabTitle}
                   </span>
                 </div>
                 
-                <span className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 mt-2">
+                <span className="text-[11px] text-slate-500 line-clamp-1 mt-2">
                   {banner.tabSubtitle}
                 </span>
-
-                {/* ACTIVE INDICATOR BAR */}
-                {isActive && (
-                  <motion.div
-                    layoutId="activeTabUnderline"
-                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500 rounded-b-xl"
-                  />
-                )}
               </button>
             );
           })}
