@@ -13,10 +13,10 @@ export async function POST(request: Request) {
 
     let updatedBalance = addAmount;
 
-    // 1. Try updating via Supabase
+    // 1. Try updating/upserting via Supabase
     if (userId || email) {
       try {
-        let query = supabase.from('User').select('balance').limit(1);
+        let query = supabase.from('User').select('id, balance').limit(1);
         if (userId) query = query.eq('id', userId);
         else if (email) query = query.eq('email', email);
 
@@ -29,13 +29,25 @@ export async function POST(request: Request) {
           if (userId) updateQuery = updateQuery.eq('id', userId);
           else if (email) updateQuery = updateQuery.eq('email', email);
           await updateQuery;
+        } else if (email) {
+          // If user record doesn't exist in Supabase yet, insert with initial deposited balance
+          updatedBalance = addAmount;
+          await supabase.from('User').insert({
+            id: userId || `user-${Date.now()}`,
+            email: email.toLowerCase(),
+            name: email.toLowerCase().includes('admin') ? 'DRX Admin' : email.split('@')[0],
+            role: email.toLowerCase().includes('admin') ? 'ADMIN' : 'USER',
+            balance: updatedBalance,
+          });
         }
-      } catch (e) {}
+      } catch (e) {
+        console.warn('Supabase deposit update error:', e);
+      }
 
-      // 2. Try updating via Prisma
+      // 2. Try updating/upserting via Prisma
       try {
         const user = await prisma.user.findFirst({
-          where: userId ? { id: userId } : { email },
+          where: userId ? { id: userId } : { email: email.toLowerCase() },
         });
 
         if (user) {
@@ -45,8 +57,23 @@ export async function POST(request: Request) {
             where: { id: user.id },
             data: { balance: updatedBalance },
           });
+        } else if (email) {
+          try {
+            await prisma.user.create({
+              data: {
+                id: userId || `user-${Date.now()}`,
+                email: email.toLowerCase(),
+                name: email.toLowerCase().includes('admin') ? 'DRX Admin' : email.split('@')[0],
+                role: email.toLowerCase().includes('admin') ? 'ADMIN' : 'USER',
+                password: '',
+                balance: updatedBalance,
+              },
+            });
+          } catch (e) {}
         }
-      } catch (e) {}
+      } catch (e) {
+        console.warn('Prisma deposit update error:', e);
+      }
     }
 
     return NextResponse.json(

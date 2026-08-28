@@ -123,11 +123,12 @@ export default function CheckoutPage() {
         throw new Error(data.message || 'Lỗi xử lý đơn hàng từ server');
       }
 
-      // 2. Update local state if paying with WALLET
+      // 2. Update local session state if paying with WALLET
       if (paymentMethod === 'WALLET') {
+        const { setSessionUser } = await import('@/lib/auth-client');
         const finalBal = userBalance - netAmount;
         const updatedUser = { ...currentUser, balance: finalBal };
-        localStorage.setItem('ods_user', JSON.stringify(updatedUser));
+        setSessionUser(updatedUser);
         setCurrentUser(updatedUser);
         window.dispatchEvent(new Event('ods_user_update'));
         window.dispatchEvent(new Event('storage'));

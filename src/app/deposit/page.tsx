@@ -31,18 +31,29 @@ export default function DepositPage() {
   const [isSuccess, setIsSuccess] = useState<boolean>(false);
   const [memoCode, setMemoCode] = useState<string>('');
 
-  // Load user info on mount
+  // Load user info on mount & sync on storage/user update
   useEffect(() => {
-    import('@/lib/auth-client').then(({ getStoredSessionUser }) => {
+    const syncUser = async () => {
+      const { getStoredSessionUser } = await import('@/lib/auth-client');
       const u = getStoredSessionUser();
       if (u) {
         setCurrentUser(u);
       }
-    });
+    };
+
+    syncUser();
+
+    window.addEventListener('ods_user_update', syncUser);
+    window.addEventListener('storage', syncUser);
 
     // Generate random 5-char code for deposit memo
     const randomCode = Math.random().toString(36).substring(2, 7).toUpperCase();
     setMemoCode(randomCode);
+
+    return () => {
+      window.removeEventListener('ods_user_update', syncUser);
+      window.removeEventListener('storage', syncUser);
+    };
   }, []);
 
   const effectiveAmount = useMemo(() => {
@@ -73,7 +84,7 @@ export default function DepositPage() {
     return `https://img.vietqr.io/image/MB-0399224729-compact2.png?amount=${effectiveAmount}&addInfo=${encodeURIComponent(transferMemo)}&accountName=VO%20BAO%20LAN`;
   }, [effectiveAmount, transferMemo]);
 
-  const formatCurrency = (val: number) => val.toLocaleString('vi-VN') + ' đ';
+  const formatCurrency = (val: number) => Number(val || 0).toLocaleString('vi-VN') + ' đ';
 
   const copyToClipboard = (text: string, fieldName: string) => {
     navigator.clipboard.writeText(text);
@@ -92,33 +103,36 @@ export default function DepositPage() {
     setIsProcessing(true);
 
     try {
+      const { getStoredSessionUser, setSessionUser } = await import('@/lib/auth-client');
+      const activeUser = getStoredSessionUser() || currentUser;
+
       // 1. Call Backend Wallet Deposit API
       const res = await fetch('/api/wallet/deposit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId: currentUser?.id,
-          email: currentUser?.email || 'admin@drx.vn',
+          userId: activeUser?.id,
+          email: activeUser?.email || 'admin@drx.vn',
           amount: effectiveAmount,
           memo: transferMemo,
         }),
       });
 
       const data = await res.json();
-      const newBal = data.newBalance !== undefined ? data.newBalance : (currentUser?.balance || 0) + effectiveAmount;
+      const currentBal = Number(activeUser?.balance || 0);
+      const newBal = data.newBalance !== undefined ? Number(data.newBalance) : (currentBal + effectiveAmount);
 
-      // 2. Update LocalStorage user state
-      let updatedUser = { ...currentUser, balance: newBal };
-      if (!currentUser) {
-        updatedUser = {
-          id: `user-${Date.now()}`,
-          name: 'Khách Hàng DRX',
-          email: 'customer@drx.vn',
-          balance: effectiveAmount,
-          role: 'USER',
-        };
-      }
-      localStorage.setItem('ods_user', JSON.stringify(updatedUser));
+      // 2. Update session auth user with new balance
+      const updatedUser = {
+        id: activeUser?.id || `user-${Date.now()}`,
+        name: activeUser?.name || 'Khách Hàng DRX',
+        email: activeUser?.email || 'customer@drx.vn',
+        role: activeUser?.role || 'USER',
+        ...activeUser,
+        balance: newBal,
+      };
+
+      setSessionUser(updatedUser);
       setCurrentUser(updatedUser);
 
       // 3. Save top-up transaction to history

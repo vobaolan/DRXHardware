@@ -105,9 +105,13 @@ export const Header: React.FC = () => {
         // Verify with server in background
         verifyCurrentSession().then((verified) => {
           if (verified) {
-            setCurrentUser(verified);
-          } else {
-            setCurrentUser(null);
+            const finalBalance = (verified.balance !== undefined && verified.balance !== null && Number(verified.balance) > 0)
+              ? Number(verified.balance)
+              : Number(sessionUser.balance || 0);
+            setCurrentUser({
+              ...verified,
+              balance: finalBalance,
+            });
           }
         });
       } else {
@@ -179,7 +183,7 @@ export const Header: React.FC = () => {
   }, [isAdmin, hasNewNotification, hasUserNewMessage, currentUser]);
 
   const formatCurrency = (value: number) => {
-    return value.toLocaleString('vi-VN') + ' đ';
+    return Number(value || 0).toLocaleString('vi-VN') + ' đ';
   };
 
   const hardwareCategories = [

@@ -90,7 +90,13 @@ function ProfileContent() {
         setIsLoggedIn(true);
         verifyCurrentSession().then((verified) => {
           if (verified) {
-            setCurrentUser(verified);
+            const finalBalance = (verified.balance !== undefined && verified.balance !== null && Number(verified.balance) > 0)
+              ? Number(verified.balance)
+              : Number(sessionUser.balance || 0);
+            setCurrentUser({
+              ...verified,
+              balance: finalBalance,
+            });
             setIsLoggedIn(true);
           } else {
             setCurrentUser(null);
@@ -105,12 +111,20 @@ function ProfileContent() {
 
     initAuth();
 
+    window.addEventListener('storage', initAuth);
+    window.addEventListener('ods_user_update', initAuth);
+
     const savedEmail = localStorage.getItem('ods_remembered_email');
     const isRemembered = localStorage.getItem('ods_remember_me') === 'true';
     if (savedEmail) {
       setLoginEmail(savedEmail === 'admin@odsstore.vn' ? 'admin@drx.vn' : savedEmail);
     }
     setRememberMe(isRemembered);
+
+    return () => {
+      window.removeEventListener('storage', initAuth);
+      window.removeEventListener('ods_user_update', initAuth);
+    };
   }, []);
 
   // Fetch real order history from database when user is logged in
