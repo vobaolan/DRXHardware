@@ -26,10 +26,10 @@ export const metadata: Metadata = {
   description: "Cửa hàng linh kiện máy tính, PC Building và thiết bị công nghệ chính hãng DRX Hardware. Bảo hành 36T 1 đổi 1.",
   icons: {
     icon: [
-      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/logo/symbol-white.png", type: "image/png" },
     ],
-    shortcut: "/icon.svg",
-    apple: "/icon.svg",
+    shortcut: "/logo/symbol-white.png",
+    apple: "/logo/symbol-white.png",
   },
 };
 
@@ -43,8 +43,8 @@ export default function RootLayout({
   return (
     <html lang="vi" suppressHydrationWarning>
       <head>
-        <link rel="icon" href="/icon.svg" type="image/svg+xml" />
-        <link rel="apple-touch-icon" href="/icon.svg" />
+        <link rel="icon" href="/logo/symbol-white.png" type="image/png" />
+        <link rel="apple-touch-icon" href="/logo/symbol-white.png" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
