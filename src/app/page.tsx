@@ -418,97 +418,114 @@ export default function Home() {
           </div>
         </section>
 
-        {/* FEATURED CATEGORY SHOWCASE LIST BLOCKS (HÌNH 3) */}
+        {/* FEATURED CATEGORY SHOWCASE LIST BLOCKS (HÌNH 1, 2, 3) */}
         <section className="mx-auto max-w-7xl w-full px-4 sm:px-6 lg:px-8 py-4 flex-1">
           <div className="space-y-10">
-            
-            {/* SHOWCASE 1: CASE - TẢN - NGUỒN (HÌNH 2) */}
-            <CategoryShowcaseBlock
-              title="CASE - TẢN - NGUỒN"
-              subtitle="GIÁ RẺ HÀNG TỐT"
-              badgeText="HÀNG BÁN CHẠY"
-              bannerImage="https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=600&q=80"
-              theme="cyan"
-              viewAllLink="/products?category=CASE_COOLING"
-              products={liveProducts.filter(p => p.category === 'CASE' || p.category === 'COOLING' || p.category === 'PSU')}
-              subTabs={[
-                { id: 'ALL', label: 'Tất cả Case Tản' },
-                { id: 'CASE', label: 'Case PC', filterFn: p => p.category === 'CASE' },
-                { id: 'COOLING', label: 'Tản nhiệt', filterFn: p => p.category === 'COOLING' },
-                { id: 'PSU', label: 'Bộ Nguồn PSU', filterFn: p => p.category === 'PSU' },
-              ]}
-            />
+            {(() => {
+              const matchCat = (p: any, ...targetCats: string[]) => {
+                if (!p) return false;
+                const pCats: string[] = [];
+                if (Array.isArray(p.category)) {
+                  p.category.forEach((c: any) => pCats.push(String(c).toUpperCase()));
+                } else if (p.category) {
+                  pCats.push(String(p.category).toUpperCase());
+                }
+                if (p.type) pCats.push(String(p.type).toUpperCase());
+                return targetCats.some(tc => pCats.includes(tc.toUpperCase()));
+              };
 
-            {/* SHOWCASE 2: GAMING GEAR (HÌNH 3) */}
-            <CategoryShowcaseBlock
-              title="GAMING GEAR"
-              subtitle="HÀNG CHẤT GIÁ MỀM"
-              badgeText="HÀNG BÁN CHẠY"
-              bannerImage="https://images.unsplash.com/photo-1618384887929-16ec33fab9ef?w=600&q=80"
-              theme="amber"
-              viewAllLink="/products?category=HEADSET"
-              products={liveProducts.filter(p => p.category === 'GEAR' || p.category === 'KEYBOARD' || p.category === 'HEADSET')}
-              subTabs={[
-                { id: 'ALL', label: 'Bàn phím & Gear' },
-                { id: 'KEYBOARD', label: 'Bàn phím cơ', filterFn: p => p.name.toLowerCase().includes('bàn phím') || p.category === 'KEYBOARD' || p.category === 'GEAR' },
-                { id: 'MOUSE', label: 'Chuột Gaming', filterFn: p => p.name.toLowerCase().includes('chuột') || p.category === 'GEAR' },
-                { id: 'HEADSET', label: 'Tai nghe', filterFn: p => p.name.toLowerCase().includes('tai nghe') || p.category === 'HEADSET' },
-                { id: 'CHAIR', label: 'Bàn & Ghế', filterFn: p => p.category === 'GEAR' },
-              ]}
-            />
+              return (
+                <>
+                  {/* SHOWCASE 1: CASE - TẢN - NGUỒN (HÌNH 1) */}
+                  <CategoryShowcaseBlock
+                    title="CASE - TẢN - NGUỒN"
+                    subtitle="GIÁ RẺ HÀNG TỐT"
+                    badgeText="HÀNG BÁN CHẠY"
+                    bannerImage="https://images.unsplash.com/photo-1587202372616-b43abea06c2a?w=600&q=80"
+                    theme="cyan"
+                    viewAllLink="/products?category=CASE"
+                    products={liveProducts.filter(p => matchCat(p, 'CASE', 'COOLING', 'PSU'))}
+                    subTabs={[
+                      { id: 'ALL', label: 'Tất cả Case Tản' },
+                      { id: 'CASE', label: 'Case PC', filterFn: p => matchCat(p, 'CASE') },
+                      { id: 'COOLING', label: 'Tản nhiệt', filterFn: p => matchCat(p, 'COOLING') },
+                      { id: 'PSU', label: 'Bộ Nguồn PSU', filterFn: p => matchCat(p, 'PSU') },
+                    ]}
+                  />
 
-            {/* SHOWCASE 3: MÀN HÌNH GAMING & ĐỒ HỌA (HÌNH 4) */}
-            <CategoryShowcaseBlock
-              title="MÀN HÌNH GAMING"
-              subtitle="ĐẸP HÌNH MƯỢT MẮT"
-              badgeText="HÀNG BÁN CHẠY"
-              bannerImage="https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=600&q=80"
-              theme="emerald"
-              viewAllLink="/products?category=MONITOR"
-              products={liveProducts.filter(p => p.category === 'MONITOR')}
-              subTabs={[
-                { id: 'ALL', label: 'Màn hình khuyến mãi' },
-                { id: 'GAMING', label: 'Màn hình gaming', filterFn: p => p.name.includes('144Hz') || p.name.includes('240Hz') || p.name.includes('360Hz') || p.category === 'MONITOR' },
-                { id: 'OFFICE', label: 'Màn hình văn phòng', filterFn: p => p.name.toLowerCase().includes('văn phòng') || (p.price && p.price < 6000000) },
-                { id: 'DESIGN', label: 'Màn hình đồ họa', filterFn: p => p.name.toLowerCase().includes('4k') || p.name.toLowerCase().includes('ips') },
-              ]}
-            />
+                  {/* SHOWCASE 2: GAMING GEAR (HÌNH 2) */}
+                  <CategoryShowcaseBlock
+                    title="GAMING GEAR"
+                    subtitle="HÀNG CHẤT GIÁ MỀM"
+                    badgeText="HÀNG BÁN CHẠY"
+                    bannerImage="https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=600&q=80"
+                    theme="amber"
+                    viewAllLink="/products?category=GEAR"
+                    products={liveProducts.filter(p => matchCat(p, 'GEAR', 'KEYBOARD', 'HEADSET') || p.name.toLowerCase().includes('chuột') || p.name.toLowerCase().includes('bàn phím') || p.name.toLowerCase().includes('tai nghe') || p.name.toLowerCase().includes('ghế'))}
+                    subTabs={[
+                      { id: 'ALL', label: 'Bàn phím & Gear' },
+                      { id: 'KEYBOARD', label: 'Bàn phím cơ', filterFn: p => p.name.toLowerCase().includes('bàn phím') || p.name.toLowerCase().includes('akko') || p.name.toLowerCase().includes('keychron') },
+                      { id: 'MOUSE', label: 'Chuột Gaming', filterFn: p => p.name.toLowerCase().includes('chuột') || p.name.toLowerCase().includes('razer') || p.name.toLowerCase().includes('logitech') },
+                      { id: 'HEADSET', label: 'Tai nghe', filterFn: p => p.name.toLowerCase().includes('tai nghe') || p.name.toLowerCase().includes('hyperx') || p.name.toLowerCase().includes('hs80') },
+                      { id: 'CHAIR', label: 'Bàn & Ghế', filterFn: p => p.name.toLowerCase().includes('ghế') || p.name.toLowerCase().includes('sihoo') },
+                    ]}
+                  />
 
-            {/* SHOWCASE 4: LAPTOP & LAPTOP GAMING (HÌNH 5) */}
-            <CategoryShowcaseBlock
-              title="LAPTOP & MOBILE"
-              subtitle="MỎNG NHẸ MƯỢT MÀ"
-              badgeText="HÀNG BÁN CHẠY"
-              bannerImage="https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=600&q=80"
-              theme="purple"
-              viewAllLink="/products?category=LAPTOP"
-              products={liveProducts.filter(p => p.category === 'LAPTOP' || p.category === 'LAPTOP_GAMING' || p.name.toLowerCase().includes('laptop'))}
-              subTabs={[
-                { id: 'ALL', label: 'Laptop khuyến mãi' },
-                { id: 'GAMING', label: 'Laptop gaming', filterFn: p => p.category === 'LAPTOP_GAMING' || p.name.toLowerCase().includes('gaming') || p.name.toLowerCase().includes('rog') },
-                { id: 'OFFICE', label: 'Laptop văn phòng', filterFn: p => p.category === 'LAPTOP' || p.name.toLowerCase().includes('vivobook') || p.name.toLowerCase().includes('aspire') },
-                { id: 'STAND', label: 'Phụ kiện Laptop', filterFn: p => p.ramType !== undefined },
-              ]}
-            />
+                  {/* SHOWCASE 3: MÀN HÌNH GAMING (HÌNH 3) */}
+                  <CategoryShowcaseBlock
+                    title="MÀN HÌNH GAMING"
+                    subtitle="ĐẸP HÌNH MƯỢT MẮT"
+                    badgeText="HÀNG BÁN CHẠY"
+                    bannerImage="https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=600&q=80"
+                    theme="emerald"
+                    viewAllLink="/products?category=MONITOR"
+                    products={liveProducts.filter(p => matchCat(p, 'MONITOR') || p.name.toLowerCase().includes('màn hình'))}
+                    subTabs={[
+                      { id: 'ALL', label: 'Màn hình khuyến mãi' },
+                      { id: 'GAMING', label: 'Màn hình gaming', filterFn: p => p.name.includes('144Hz') || p.name.includes('180Hz') || p.name.includes('240Hz') || p.name.includes('360Hz') || p.name.toLowerCase().includes('rog') || p.name.toLowerCase().includes('ultragear') },
+                      { id: 'OFFICE', label: 'Màn hình văn phòng', filterFn: p => (p.price && p.price < 7000000) || p.name.toLowerCase().includes('odyssey g4') },
+                      { id: 'DESIGN', label: 'Màn hình đồ họa', filterFn: p => p.name.toLowerCase().includes('ultrasharp') || p.name.toLowerCase().includes('ips black') || p.name.toLowerCase().includes('2k') || p.name.toLowerCase().includes('dell') },
+                    ]}
+                  />
 
-            {/* SHOWCASE 5: MAIN, CPU, VGA, RAM (CORE PARTS) */}
-            <CategoryShowcaseBlock
-              title="MAIN, CPU, VGA, RAM"
-              subtitle="HIỆU NĂNG BỨT PHÁ"
-              badgeText="HÀNG BÁN CHẠY"
-              bannerImage="https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?w=600&q=80"
-              theme="rose"
-              viewAllLink="/products?category=CORE_PARTS"
-              products={liveProducts.filter(p => p.category === 'CPU' || p.category === 'VGA' || p.category === 'MAINBOARD' || p.category === 'RAM' || p.category === 'STORAGE')}
-              subTabs={[
-                { id: 'ALL', label: 'Tất cả Linh Kiện' },
-                { id: 'CPU', label: 'Vi xử lý CPU', filterFn: p => p.category === 'CPU' },
-                { id: 'VGA', label: 'Card đồ họa VGA', filterFn: p => p.category === 'VGA' },
-                { id: 'MAINBOARD', label: 'Bo mạch Main', filterFn: p => p.category === 'MAINBOARD' },
-                { id: 'RAM', label: 'Bộ nhớ RAM', filterFn: p => p.category === 'RAM' },
-                { id: 'STORAGE', label: 'Ổ cứng SSD', filterFn: p => p.category === 'STORAGE' },
-              ]}
-            />
+                  {/* SHOWCASE 4: LAPTOP & LAPTOP GAMING */}
+                  <CategoryShowcaseBlock
+                    title="LAPTOP & MOBILE"
+                    subtitle="MỎNG NHẸ MƯỢT MÀ"
+                    badgeText="HÀNG BÁN CHẠY"
+                    bannerImage="https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=600&q=80"
+                    theme="purple"
+                    viewAllLink="/products?category=LAPTOP"
+                    products={liveProducts.filter(p => matchCat(p, 'LAPTOP', 'LAPTOP_GAMING') || p.name.toLowerCase().includes('laptop'))}
+                    subTabs={[
+                      { id: 'ALL', label: 'Laptop khuyến mãi' },
+                      { id: 'GAMING', label: 'Laptop gaming', filterFn: p => matchCat(p, 'LAPTOP_GAMING') || p.name.toLowerCase().includes('gaming') || p.name.toLowerCase().includes('rog') || p.name.toLowerCase().includes('loq') || p.name.toLowerCase().includes('legion') },
+                      { id: 'OFFICE', label: 'Laptop văn phòng', filterFn: p => matchCat(p, 'LAPTOP') || p.name.toLowerCase().includes('vivobook') },
+                      { id: 'STAND', label: 'Phụ kiện Laptop', filterFn: p => p.ramType !== undefined },
+                    ]}
+                  />
+
+                  {/* SHOWCASE 5: MAIN, CPU, VGA, RAM (CORE PARTS) */}
+                  <CategoryShowcaseBlock
+                    title="MAIN, CPU, VGA, RAM"
+                    subtitle="HIỆU NĂNG BỨT PHÁ"
+                    badgeText="HÀNG BÁN CHẠY"
+                    bannerImage="https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?w=600&q=80"
+                    theme="rose"
+                    viewAllLink="/products?category=CORE_PARTS"
+                    products={liveProducts.filter(p => matchCat(p, 'CPU', 'VGA', 'MAINBOARD', 'RAM', 'STORAGE'))}
+                    subTabs={[
+                      { id: 'ALL', label: 'Tất cả Linh Kiện' },
+                      { id: 'CPU', label: 'Vi xử lý CPU', filterFn: p => matchCat(p, 'CPU') },
+                      { id: 'VGA', label: 'Card đồ họa VGA', filterFn: p => matchCat(p, 'VGA') },
+                      { id: 'MAINBOARD', label: 'Bo mạch Main', filterFn: p => matchCat(p, 'MAINBOARD') },
+                      { id: 'RAM', label: 'Bộ nhớ RAM', filterFn: p => matchCat(p, 'RAM') },
+                      { id: 'STORAGE', label: 'Ổ cứng SSD', filterFn: p => matchCat(p, 'STORAGE') },
+                    ]}
+                  />
+                </>
+              );
+            })()}
           </div>
         </section>
 
