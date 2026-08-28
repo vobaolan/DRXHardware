@@ -2,33 +2,102 @@
 import React, { useState, useEffect } from 'react';
 
 export default function LoaderOverlay() {
-  const [isLoading, setIsLoading] = useState(true);
+  const [mounted, setMounted] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
+    // Prevent scrolling while loading screen is active
+    document.body.style.overflow = 'hidden';
+
+    // Trigger split doors opening after brief branding presentation
     const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1500); // show for 1.5s
-    return () => clearTimeout(timer);
+      setIsOpen(true);
+
+      // Unmount after doors slide completely open (0.85s transition)
+      const removeTimer = setTimeout(() => {
+        document.body.style.overflow = '';
+        setMounted(false);
+      }, 850);
+
+      return () => clearTimeout(removeTimer);
+    }, 700);
+
+    return () => {
+      clearTimeout(timer);
+      document.body.style.overflow = '';
+    };
   }, []);
 
-  if (!isLoading) return null;
+  if (!mounted) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-50 dark:bg-[#090d16] transition-opacity duration-500">
-      <div className="flex items-center gap-6">
-        {/* Logo Image */}
-        <div className="w-[72px] h-[72px] shrink-0 animate-pulse">
-          {/* Use the blue logo for light mode, and invert it to white for dark mode */}
-          <img 
-            src="/logo/loader-logo-blue.png" 
-            className="w-full h-full object-contain dark:brightness-0 dark:invert" 
-            alt="DRX Logo" 
-          />
+    <div 
+      id="fullPageLoading" 
+      className="fixed inset-0 z-[999999] pointer-events-none flex items-center justify-center overflow-hidden"
+    >
+      {/* 1. Left Door (Slides to Left) */}
+      <div 
+        className="absolute top-0 left-0 w-1/2 h-full bg-white dark:bg-[#070a13] shadow-2xl pointer-events-auto border-r border-slate-100 dark:border-slate-800/40"
+        style={{
+          transform: isOpen ? 'translateX(-100%)' : 'translateX(0)',
+          transition: 'transform 0.85s cubic-bezier(0.77, 0, 0.175, 1)',
+        }}
+      />
+
+      {/* 2. Right Door (Slides to Right) */}
+      <div 
+        className="absolute top-0 right-0 w-1/2 h-full bg-white dark:bg-[#070a13] shadow-2xl pointer-events-auto border-l border-slate-100 dark:border-slate-800/40"
+        style={{
+          transform: isOpen ? 'translateX(100%)' : 'translateX(0)',
+          transition: 'transform 0.85s cubic-bezier(0.77, 0, 0.175, 1)',
+        }}
+      />
+
+      {/* 3. Center DRX Brand Logo (Matching teamdrx.vercel.app & reference image) */}
+      <div 
+        className="relative z-10 flex flex-col items-center justify-center transition-all duration-500 ease-out"
+        style={{
+          opacity: isOpen ? 0 : 1,
+          transform: isOpen ? 'scale(0.92)' : 'scale(1)',
+          pointerEvents: 'none',
+        }}
+      >
+        <div className="flex items-center gap-4 sm:gap-6 px-6 py-4">
+          {/* DRX Symbol Icon */}
+          <div className="relative w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center shrink-0 animate-pulse">
+            <img 
+              src="/logo/symbol-white.png"
+              alt="DRX Symbol"
+              className="max-h-12 sm:max-h-16 object-contain hidden dark:inline-block"
+            />
+            <img 
+              src="/logo/symbol-black.png"
+              alt="DRX Symbol"
+              className="max-h-12 sm:max-h-16 object-contain inline-block dark:hidden"
+            />
+          </div>
+
+          {/* DRX Wordmark Typography */}
+          <div className="flex items-center">
+            <span className="font-heading font-black italic tracking-tighter text-3xl sm:text-5xl text-[#102284] dark:text-white select-none drop-shadow-sm">
+              DRX
+            </span>
+          </div>
+
+          {/* Sleek Vertical Divider Bar (as in media reference image) */}
+          <div className="w-[3px] h-10 sm:h-14 bg-[#102284] dark:bg-[#38bdf8] rounded-full self-center ml-1" />
         </div>
-        
-        {/* Animated Text */}
-        <div className="loader mt-2" data-text="DRX">
-          DRX
+
+        {/* Subtitle Slogan */}
+        <div className="mt-2 flex items-center gap-2">
+          <span className="text-[10px] sm:text-xs font-black tracking-[0.3em] uppercase text-slate-500 dark:text-slate-400 font-mono-tech">
+            Unbreakable Spirit
+          </span>
+        </div>
+
+        {/* Subtle Minimal Loader Line */}
+        <div className="w-24 sm:w-32 h-[2px] bg-slate-200 dark:bg-slate-800 rounded-full mt-4 overflow-hidden relative">
+          <div className="absolute inset-y-0 left-0 w-1/2 bg-[#102284] dark:bg-[#38bdf8] rounded-full animate-[shimmer_1.2s_infinite]" />
         </div>
       </div>
     </div>
