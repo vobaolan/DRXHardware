@@ -51,125 +51,138 @@ export default function Home() {
 
   // Fetch live products from database API & local admin cache
   useEffect(() => {
-    setIsLoading(true);
-    let localProds: ProductProps[] = [];
-    let deletedKeys: string[] = [];
+    const fetchHomeProducts = () => {
+      setIsLoading(true);
+      let localProds: any[] = [];
+      let deletedKeys: string[] = [];
 
-    try {
-      const storedDeleted = localStorage.getItem('ods_deleted_product_ids');
-      if (storedDeleted) deletedKeys = JSON.parse(storedDeleted);
-    } catch (e) {}
+      try {
+        const storedDeleted = localStorage.getItem('ods_deleted_product_ids');
+        if (storedDeleted) deletedKeys = JSON.parse(storedDeleted);
+      } catch (e) {}
 
-    const isDeletedOrObsolete = (p: any) => {
-      if (!p) return true;
-      const pid = String(p.id || '').toLowerCase();
-      const pslug = String(p.slug || '').toLowerCase();
-      const pname = String(p.name || p.title || '').toLowerCase();
+      const isDeletedOrObsolete = (p: any) => {
+        if (!p) return true;
+        const pid = String(p.id || '').toLowerCase();
+        const pslug = String(p.slug || '').toLowerCase();
+        const pname = String(p.name || p.title || '').toLowerCase();
 
-      // Purge old stale mock leftovers (Netflix, Rust, Stardew, Wukong) so Cốc Cốc, Chrome, and all browsers are 100% synced
-      if (
-        pname.includes('netflix') ||
-        pslug.includes('netflix') ||
-        pname.includes('rust') ||
-        pslug.includes('rust') ||
-        pname.includes('stardew') ||
-        pslug.includes('stardew') ||
-        pname.includes('wukong') ||
-        pslug.includes('wukong')
-      ) {
-        return true;
-      }
+        if (
+          pname.includes('netflix') ||
+          pslug.includes('netflix') ||
+          pname.includes('rust') ||
+          pslug.includes('rust') ||
+          pname.includes('stardew') ||
+          pslug.includes('stardew') ||
+          pname.includes('wukong') ||
+          pslug.includes('wukong')
+        ) {
+          return true;
+        }
 
-      return deletedKeys.some((dk) => {
-        const k = String(dk).toLowerCase();
-        return (
-          pid === k ||
-          pslug === k ||
-          pname === k ||
-          (pslug.length > 3 && k.includes(pslug)) ||
-          (k.length > 3 && pslug.includes(k))
-        );
-      });
+        return deletedKeys.some((dk) => {
+          const k = String(dk).toLowerCase();
+          return (
+            pid === k ||
+            pslug === k ||
+            pname === k ||
+            (pslug.length > 3 && k.includes(pslug)) ||
+            (k.length > 3 && pslug.includes(k))
+          );
+        });
+      };
+
+      try {
+        const storedCustom = localStorage.getItem('ods_custom_products');
+        if (storedCustom) {
+          const parsed = JSON.parse(storedCustom);
+          if (Array.isArray(parsed)) {
+            localProds.push(...parsed.filter((p) => !isDeletedOrObsolete(p)));
+          }
+        }
+
+        const storedAdmin = localStorage.getItem('ods_admin_products');
+        if (storedAdmin) {
+          const parsed = JSON.parse(storedAdmin);
+          if (Array.isArray(parsed)) {
+            parsed.filter((p) => !isDeletedOrObsolete(p)).forEach(ap => {
+              if (!localProds.some(lp => lp.id === ap.id)) {
+                localProds.push(ap);
+              }
+            });
+          }
+        }
+      } catch (e) {}
+
+      fetch(`/api/products?t=${Date.now()}`, { cache: 'no-store' })
+        .then((res) => res.json())
+        .then((data) => {
+          const apiProds = data.products && Array.isArray(data.products) ? data.products.filter((p: any) => !isDeletedOrObsolete(p)) : [];
+          const combined = [...DEFAULT_HOME_PRODUCTS];
+
+          // 1. Merge API products
+          apiProds.forEach((ap: any) => {
+            const idx = combined.findIndex((p) => p.id === ap.id || p.slug === ap.slug || p.name.toLowerCase() === ap.name.toLowerCase());
+            if (idx >= 0) {
+              combined[idx] = { 
+                ...combined[idx], 
+                ...ap, 
+                coverImage: ap.coverImage || combined[idx].coverImage,
+                category: Array.isArray(ap.category) ? ap.category : [ap.category || combined[idx].category[0]],
+              };
+            } else {
+              combined.push(ap);
+            }
+          });
+
+          // 2. Merge local admin edited products (highest live client priority)
+          localProds.forEach((lp: any) => {
+            const idx = combined.findIndex((p) => p.id === lp.id || p.slug === lp.slug || p.name.toLowerCase() === lp.name.toLowerCase());
+            if (idx >= 0) {
+              combined[idx] = { 
+                ...combined[idx], 
+                ...lp,
+                coverImage: lp.coverImage || combined[idx].coverImage,
+                category: Array.isArray(lp.category) ? lp.category : [lp.category || combined[idx].category[0]],
+              };
+            } else {
+              combined.push(lp);
+            }
+          });
+
+          const finalLive = combined.filter((p) => !isDeletedOrObsolete(p));
+          setLiveProducts(finalLive);
+        })
+        .catch((err) => {
+          console.error('Lỗi khi tải sản phẩm:', err);
+          const combined = [...DEFAULT_HOME_PRODUCTS];
+          localProds.forEach((lp: any) => {
+            const idx = combined.findIndex((p) => p.id === lp.id || p.slug === lp.slug || p.name.toLowerCase() === lp.name.toLowerCase());
+            if (idx >= 0) {
+              combined[idx] = { 
+                ...combined[idx], 
+                ...lp,
+                coverImage: lp.coverImage || combined[idx].coverImage,
+              };
+            } else {
+              combined.push(lp);
+            }
+          });
+          const finalLive = combined.filter((p) => !isDeletedOrObsolete(p));
+          setLiveProducts(finalLive);
+        })
+        .finally(() => setIsLoading(false));
     };
 
-    try {
-      const stored = localStorage.getItem('ods_admin_products');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          localProds = parsed.filter((p) => !isDeletedOrObsolete(p));
-        }
-      }
-    } catch (e) {}
+    fetchHomeProducts();
 
-    fetch(`/api/products?t=${Date.now()}`, { cache: 'no-store' })
-      .then((res) => res.json())
-      .then((data) => {
-        const apiProds = data.products && Array.isArray(data.products) ? data.products.filter((p: any) => !isDeletedOrObsolete(p)) : [];
-        const combined = [...DEFAULT_HOME_PRODUCTS];
+    window.addEventListener('storage', fetchHomeProducts);
+    window.addEventListener('ods_products_updated', fetchHomeProducts);
 
-        localProds.forEach((lp: any) => {
-          const idx = combined.findIndex((p) => p.id === lp.id || p.slug === lp.slug || p.name === lp.name);
-          if (idx >= 0) {
-            combined[idx] = { ...combined[idx], ...lp };
-          } else {
-            combined.push(lp);
-          }
-        });
-
-        apiProds.forEach((ap: any) => {
-          const idx = combined.findIndex((p) => p.id === ap.id || p.slug === ap.slug || p.name === ap.name);
-          if (idx >= 0) {
-            combined[idx] = { ...combined[idx], ...ap };
-          } else {
-            combined.push(ap);
-          }
-        });
-
-        // Enforce verified real images & categories from INITIAL_PRODUCTS catalog
-        const syncedCombined = combined.map((p) => {
-          const matchInit = INITIAL_PRODUCTS.find(
-            (ip) => ip.id === p.id || ip.slug === p.slug || ip.name.toLowerCase() === (p.name || '').toLowerCase()
-          );
-          if (matchInit) {
-            return {
-              ...p,
-              name: matchInit.name,
-              coverImage: matchInit.coverImage,
-              category: [matchInit.category],
-              brand: matchInit.brand,
-              type: matchInit.category,
-              platform: matchInit.brand,
-              specs: matchInit.specs,
-            };
-          }
-          return p;
-        });
-
-        const finalLive = syncedCombined.filter((p) => !isDeletedOrObsolete(p));
-        setLiveProducts(finalLive);
-        try {
-          localStorage.setItem('ods_admin_products', JSON.stringify(finalLive));
-        } catch (e) {}
-      })
-      .catch((err) => {
-        console.error('Lỗi khi tải sản phẩm thực tế:', err);
-        const combined = [...DEFAULT_HOME_PRODUCTS];
-        localProds.forEach((lp: any) => {
-          const idx = combined.findIndex((p) => p.id === lp.id || p.slug === lp.slug || p.name === lp.name);
-          if (idx >= 0) {
-            combined[idx] = { ...combined[idx], ...lp };
-          } else {
-            combined.push(lp);
-          }
-        });
-        const finalLive = combined.filter((p) => !isDeletedOrObsolete(p));
-        setLiveProducts(finalLive);
-        try {
-          localStorage.setItem('ods_admin_products', JSON.stringify(finalLive));
-        } catch (e) {}
-      })
-      .finally(() => setIsLoading(false));
+    return () => {
+      window.removeEventListener('storage', fetchHomeProducts);
+      window.removeEventListener('ods_products_updated', fetchHomeProducts);
+    };
   }, [DEFAULT_HOME_PRODUCTS]);
 
   const allProducts = liveProducts;

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useMemo, useEffect, Suspense } from 'react';
 import Link from 'next/link';
@@ -117,18 +117,44 @@ function ProductsCatalogContent() {
     }
   }, [searchParams]);
 
-  // Load products from database
+  // Load products from database & local admin cache with real-time sync
   useEffect(() => {
-    setIsLoading(true);
-    fetch('/api/products')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.products && Array.isArray(data.products)) {
-          setLiveProducts(data.products);
+    const loadProducts = () => {
+      setIsLoading(true);
+      let localProds: any[] = [];
+      try {
+        const storedCustom = localStorage.getItem('ods_custom_products');
+        if (storedCustom) {
+          const parsed = JSON.parse(storedCustom);
+          if (Array.isArray(parsed)) localProds.push(...parsed);
         }
-      })
-      .catch((err) => console.error('Lỗi khi tải sản phẩm:', err))
-      .finally(() => setIsLoading(false));
+      } catch (e) {}
+
+      fetch(`/api/products?t=${Date.now()}`, { cache: 'no-store' })
+        .then((res) => res.json())
+        .then((data) => {
+          const apiProds = data.products && Array.isArray(data.products) ? data.products : [];
+          const combined = [...apiProds];
+
+          localProds.forEach((lp) => {
+            const idx = combined.findIndex((cp) => cp.id === lp.id || cp.slug === lp.slug || cp.name.toLowerCase() === lp.name.toLowerCase());
+            if (idx >= 0) {
+              combined[idx] = { ...combined[idx], ...lp, coverImage: lp.coverImage || combined[idx].coverImage };
+            } else {
+              combined.unshift(lp);
+            }
+          });
+
+          setLiveProducts(combined);
+        })
+        .catch((err) => console.error('Lỗi khi tải sản phẩm:', err))
+        .finally(() => setIsLoading(false));
+    };
+
+    loadProducts();
+
+    window.addEventListener('storage', loadProducts);
+    window.addEventListener('ods_products_updated', loadProducts);
 
     // Load recently viewed
     try {
@@ -139,6 +165,11 @@ function ProductsCatalogContent() {
     } catch (e) {
       setRecentlyViewed([]);
     }
+
+    return () => {
+      window.removeEventListener('storage', loadProducts);
+      window.removeEventListener('ods_products_updated', loadProducts);
+    };
   }, []);
 
   // Match valid recently viewed products against live database products

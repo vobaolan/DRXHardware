@@ -53,37 +53,43 @@ export async function GET() {
         ? (typeof p.discountPrice === 'string' ? parseFloat(p.discountPrice) : Number(p.discountPrice))
         : null;
 
-      // Ensure official hardware catalog products always use verified real images and correct categories
       const matchInit = INITIAL_PRODUCTS.find(
         (ip) => ip.id === p.id || ip.slug === p.slug || ip.name.toLowerCase() === (p.name || '').toLowerCase()
       );
 
-      const coverImage = matchInit ? matchInit.coverImage : p.coverImage;
-      const category = matchInit ? matchInit.category : p.category;
-      const brand = matchInit ? matchInit.brand : (p.brand || 'DRX');
+      // Prioritize DB/edited attributes over static catalog
+      const coverImage = p.coverImage || (matchInit ? matchInit.coverImage : '');
+      const category = Array.isArray(p.category) ? p.category[0] : (p.category || matchInit?.category || 'CORE_PARTS');
+      const brand = p.brand || matchInit?.brand || p.platform || 'DRX';
+      const name = p.name || matchInit?.name || 'Linh Kiện DRX';
+      const description = p.description || matchInit?.description || '';
+      const specs = (p.specs && Object.keys(p.specs).length > 0) ? p.specs : (matchInit?.specs || {});
+      const screenshots = (Array.isArray(p.screenshots) && p.screenshots.length > 0) 
+        ? p.screenshots 
+        : (matchInit?.screenshots || [coverImage]);
 
       return {
         id: p.id,
-        name: matchInit ? matchInit.name : p.name,
-        slug: p.slug,
-        description: matchInit ? matchInit.description : (p.description || ''),
+        name,
+        slug: p.slug || name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, ''),
+        description,
         price,
         discountPrice,
         coverImage,
-        category,
+        category: Array.isArray(p.category) ? p.category : [category],
         brand,
         platform: p.platform || brand || 'PC',
         type: category,
         deliveryMethod: resolveDeliveryMethod(p),
         mediaOrder: p.mediaOrder || 'image_first',
         status: p.status !== false,
-        isFlashDeal: matchInit?.isFlashDeal ?? (p.isFlashDeal || false),
+        isFlashDeal: p.isFlashDeal !== undefined ? Boolean(p.isFlashDeal) : (matchInit?.isFlashDeal || false),
         flashSaleEnd: p.flashSaleEnd ? new Date(p.flashSaleEnd).toISOString() : null,
-        isFeaturedDeal: matchInit?.isFeatured ?? (p.isFeaturedDeal || false),
+        isFeaturedDeal: p.isFeaturedDeal !== undefined ? Boolean(p.isFeaturedDeal) : (matchInit?.isFeatured || false),
         tags: p.tags || [],
-        screenshots: matchInit ? matchInit.screenshots : (p.screenshots || [coverImage]),
-        specs: matchInit ? matchInit.specs : (p.specs || {}),
-        warrantyMonths: matchInit ? matchInit.warrantyMonths : (p.warrantyMonths || 36)
+        screenshots,
+        specs,
+        warrantyMonths: p.warrantyMonths || matchInit?.warrantyMonths || 36
       };
     });
 

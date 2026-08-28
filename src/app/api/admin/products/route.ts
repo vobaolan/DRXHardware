@@ -1,4 +1,4 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { supabase } from '@/lib/supabase';
 import { prisma } from '@/lib/prisma';
@@ -240,17 +240,35 @@ export async function PUT(request: Request) {
     if (wattage !== undefined) updatedData.wattage = Number(wattage);
     if (formFactor !== undefined) updatedData.formFactor = formFactor;
 
-    // Try Supabase update
+    // Try Supabase upsert
     try {
-      await supabase.from('Product').update(updatedData).eq('id', id);
+      await supabase.from('Product').upsert(updatedData, { onConflict: 'id' });
     } catch (e) {}
 
-    // Try Prisma update
+    // Try Prisma upsert
     try {
-      await prisma.product.update({
+      await prisma.product.upsert({
         where: { id },
-        data: {
+        update: {
           name: updatedData.name,
+          description: updatedData.description,
+          price: updatedData.price,
+          discountPrice: updatedData.discountPrice,
+          coverImage: updatedData.coverImage,
+          screenshots: updatedData.screenshots,
+          category: updatedData.category,
+          platform: updatedData.platform,
+          type: updatedData.type,
+          status: updatedData.status,
+          isFlashDeal: updatedData.isFlashDeal,
+          isFeaturedDeal: updatedData.isFeaturedDeal,
+          specs: updatedData.specs,
+          warrantyMonths: updatedData.warrantyMonths,
+        },
+        create: {
+          id,
+          name: updatedData.name,
+          slug: updatedData.slug || id,
           description: updatedData.description,
           price: updatedData.price,
           discountPrice: updatedData.discountPrice,
@@ -268,10 +286,10 @@ export async function PUT(request: Request) {
       });
     } catch (e) {}
 
-    revalidatePath('/');
-    revalidatePath('/products');
-    revalidatePath('/admin');
-    revalidatePath('/staff');
+    revalidatePath('/', 'layout');
+    revalidatePath('/products', 'layout');
+    revalidatePath('/admin', 'layout');
+    revalidatePath('/staff', 'layout');
 
     return NextResponse.json(
       { message: 'Cập nhật linh kiện thành công!', product: updatedData },

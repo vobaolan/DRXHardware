@@ -191,7 +191,16 @@ export default function AdminDashboardPage() {
       setProducts(updated);
       try {
         localStorage.setItem('ods_custom_products', JSON.stringify(updated));
+        localStorage.setItem('ods_admin_products', JSON.stringify(updated));
+        const storedDeleted = localStorage.getItem('ods_deleted_product_ids');
+        const deletedArr = storedDeleted ? JSON.parse(storedDeleted) : [];
+        if (!deletedArr.includes(p.id)) {
+          deletedArr.push(p.id);
+          localStorage.setItem('ods_deleted_product_ids', JSON.stringify(deletedArr));
+        }
       } catch (e) {}
+      window.dispatchEvent(new Event('ods_products_updated'));
+      window.dispatchEvent(new Event('storage'));
       showToast(`Đã xóa linh kiện "${p.name}" thành công!`, 'success');
     } catch (e) {
       showToast('Lỗi khi xóa linh kiện!', 'error');
@@ -233,7 +242,10 @@ export default function AdminDashboardPage() {
     setProducts(updated);
     try {
       localStorage.setItem('ods_custom_products', JSON.stringify(updated));
+      localStorage.setItem('ods_admin_products', JSON.stringify(updated));
     } catch (e) {}
+    window.dispatchEvent(new Event('ods_products_updated'));
+    window.dispatchEvent(new Event('storage'));
   };
 
   const updateOrderStatus = (orderId: string, newStatus: string) => {
