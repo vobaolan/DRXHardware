@@ -86,16 +86,23 @@ function ProfileContent() {
       const { getStoredSessionUser, verifyCurrentSession } = await import('@/lib/auth-client');
       const sessionUser = getStoredSessionUser();
       if (sessionUser) {
-        setCurrentUser(sessionUser);
+        setCurrentUser(prev => {
+          if (prev && prev.id === sessionUser.id && prev.balance === sessionUser.balance && prev.email === sessionUser.email) {
+            return prev;
+          }
+          return sessionUser;
+        });
         setIsLoggedIn(true);
         verifyCurrentSession().then((verified) => {
           if (verified) {
             const finalBalance = (verified.balance !== undefined && verified.balance !== null && Number(verified.balance) > 0)
               ? Number(verified.balance)
               : Number(sessionUser.balance || 0);
-            setCurrentUser({
-              ...verified,
-              balance: finalBalance,
+            setCurrentUser(prev => {
+              if (prev && prev.id === verified.id && prev.balance === finalBalance && prev.email === verified.email) {
+                return prev;
+              }
+              return { ...verified, balance: finalBalance };
             });
             setIsLoggedIn(true);
           } else {
@@ -127,51 +134,55 @@ function ProfileContent() {
     };
   }, []);
 
+  const userId = currentUser?.id;
+
   // Fetch real order history from database when user is logged in
   useEffect(() => {
-    if (!currentUser?.id) {
+    if (!userId) {
       setOrders([]);
       return;
     }
+    let isCancelled = false;
     const fetchOrders = async () => {
-      setIsLoadingOrders(true);
       try {
-        const res = await fetch(`/api/orders?userId=${currentUser.id}`);
+        const res = await fetch(`/api/orders?userId=${userId}`);
         const data = await res.json();
-        if (res.ok) {
+        if (res.ok && !isCancelled) {
           setOrders(data.orders || []);
         }
       } catch (err) {
         console.error('Error fetching orders:', err);
       } finally {
-        setIsLoadingOrders(false);
+        if (!isCancelled) setIsLoadingOrders(false);
       }
     };
     fetchOrders();
-  }, [currentUser]);
+    return () => { isCancelled = true; };
+  }, [userId]);
 
   // Fetch transaction history
   useEffect(() => {
-    if (!currentUser?.id) {
+    if (!userId) {
       setTransactions([]);
       return;
     }
+    let isCancelled = false;
     const fetchTransactions = async () => {
-      setIsLoadingTransactions(true);
       try {
-        const res = await fetch(`/api/wallet/transactions?userId=${currentUser.id}`);
+        const res = await fetch(`/api/wallet/transactions?userId=${userId}`);
         const data = await res.json();
-        if (res.ok) {
+        if (res.ok && !isCancelled) {
           setTransactions(data.transactions || []);
         }
       } catch (err) {
         console.error('Error fetching transactions:', err);
       } finally {
-        setIsLoadingTransactions(false);
+        if (!isCancelled) setIsLoadingTransactions(false);
       }
     };
     fetchTransactions();
-  }, [currentUser]);
+    return () => { isCancelled = true; };
+  }, [userId]);
 
   const formatCurrency = (value: number | string) => {
     const numericValue = typeof value === 'string' ? parseFloat(value) : value;
@@ -705,7 +716,7 @@ function ProfileContent() {
                 </div>
 
                 {/* RIGHT DETAIL WORKSPACE (8 cols) */}
-                <div className="lg:col-span-8 space-y-6">
+                <div className="lg:col-span-8 space-y-6 min-h-[520px] transition-all duration-300">
                   
                   {/* 1. ORDERS TAB */}
                   {dashboardTab === 'orders' && (
