@@ -82,29 +82,28 @@ function ProfileContent() {
 
   // Check login status on mount & restore remembered email
   useEffect(() => {
-    const storedUser = localStorage.getItem('ods_user');
-    if (storedUser) {
-      try {
-        let parsed = JSON.parse(storedUser);
-        let changed = false;
-        if (parsed.email === 'admin@odsstore.vn' || parsed.email === 'admin@drxhardware.vn' || parsed.email?.toLowerCase().includes('ods')) {
-          parsed.email = 'admin@drx.vn';
-          changed = true;
-        }
-        if (parsed.name === 'ODS ADMIN' || parsed.name === 'ODS Store' || parsed.name?.includes('ODS')) {
-          parsed.name = parsed.name.replace(/ODS/g, 'DRX');
-          changed = true;
-        }
-        if (changed) {
-          localStorage.setItem('ods_user', JSON.stringify(parsed));
-          window.dispatchEvent(new Event('ods_user_update'));
-        }
-        setCurrentUser(parsed);
+    const initAuth = async () => {
+      const { getStoredSessionUser, verifyCurrentSession } = await import('@/lib/auth-client');
+      const sessionUser = getStoredSessionUser();
+      if (sessionUser) {
+        setCurrentUser(sessionUser);
         setIsLoggedIn(true);
-      } catch (err) {
-        console.error('Failed to parse stored user:', err);
+        verifyCurrentSession().then((verified) => {
+          if (verified) {
+            setCurrentUser(verified);
+            setIsLoggedIn(true);
+          } else {
+            setCurrentUser(null);
+            setIsLoggedIn(false);
+          }
+        });
+      } else {
+        setCurrentUser(null);
+        setIsLoggedIn(false);
       }
-    }
+    };
+
+    initAuth();
 
     const savedEmail = localStorage.getItem('ods_remembered_email');
     const isRemembered = localStorage.getItem('ods_remember_me') === 'true';
@@ -182,7 +181,9 @@ function ProfileContent() {
         return;
       }
       showToast('Đăng nhập thành công! Chào mừng bạn quay lại DRX Hardware.', 'success');
-      localStorage.setItem('ods_user', JSON.stringify(data.user));
+      
+      const { setSessionUser } = await import('@/lib/auth-client');
+      setSessionUser(data.user);
 
       if (rememberMe) {
         localStorage.setItem('ods_remembered_email', loginEmail);
@@ -192,7 +193,6 @@ function ProfileContent() {
         localStorage.removeItem('ods_remember_me');
       }
 
-      window.dispatchEvent(new Event('ods_user_update'));
       setCurrentUser(data.user);
       setIsLoggedIn(true);
     } catch (err) {
@@ -219,8 +219,10 @@ function ProfileContent() {
         return;
       }
       showToast('Đăng ký tài khoản DRX Hardware thành công!', 'success');
-      localStorage.setItem('ods_user', JSON.stringify(data.user));
-      window.dispatchEvent(new Event('ods_user_update'));
+      
+      const { setSessionUser } = await import('@/lib/auth-client');
+      setSessionUser(data.user);
+
       setCurrentUser(data.user);
       setIsLoggedIn(true);
     } catch (err) {
@@ -229,9 +231,9 @@ function ProfileContent() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('ods_user');
-    window.dispatchEvent(new Event('ods_user_update'));
+  const handleLogout = async () => {
+    const { clearSessionUser } = await import('@/lib/auth-client');
+    await clearSessionUser();
     setCurrentUser(null);
     setOrders([]);
     setIsLoggedIn(false);

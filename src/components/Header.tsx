@@ -97,58 +97,31 @@ export const Header: React.FC = () => {
 
   useEffect(() => {
     const loadUser = async () => {
-      const stored = localStorage.getItem('ods_user');
-      if (stored) {
-        try {
-          let parsed = JSON.parse(stored);
-          let changed = false;
-          if (parsed.email === 'admin@odsstore.vn' || parsed.email === 'admin@drxhardware.vn' || parsed.email?.toLowerCase().includes('ods')) {
-            parsed.email = 'admin@drx.vn';
-            changed = true;
+      // Import client auth helper dynamically
+      const { getStoredSessionUser, verifyCurrentSession } = await import('@/lib/auth-client');
+      const sessionUser = getStoredSessionUser();
+      if (sessionUser) {
+        setCurrentUser(sessionUser);
+        // Verify with server in background
+        verifyCurrentSession().then((verified) => {
+          if (verified) {
+            setCurrentUser(verified);
+          } else {
+            setCurrentUser(null);
           }
-          if (parsed.name === 'ODS ADMIN' || parsed.name === 'ODS Store' || parsed.name?.includes('ODS')) {
-            parsed.name = parsed.name.replace(/ODS/g, 'DRX');
-            changed = true;
-          }
-          if (changed) {
-            localStorage.setItem('ods_user', JSON.stringify(parsed));
-          }
-
-          setCurrentUser(prev => prev?.id === parsed.id && prev?.balance === parsed.balance && prev?.name === parsed.name && prev?.email === parsed.email ? prev : parsed);
-
-          if (parsed && parsed.email) {
-            try {
-              const res = await fetch('/api/admin/users');
-              if (res.ok) {
-                const data = await res.json();
-                if (data && Array.isArray(data.users)) {
-                  const match = data.users.find((u: any) => u.email === parsed.email || u.id === parsed.id);
-                  if (match && match.balance !== undefined && Number(match.balance) !== Number(parsed.balance)) {
-                    const updatedUser = { ...parsed, balance: Number(match.balance) };
-                    setCurrentUser(updatedUser);
-                    localStorage.setItem('ods_user', JSON.stringify(updatedUser));
-                  }
-                }
-              }
-            } catch (e) {}
-          }
-        } catch (e) {
-          console.error('Failed to parse user info in Header:', e);
-          setCurrentUser(null);
-        }
+        });
       } else {
         setCurrentUser(null);
       }
     };
 
-    const handleStorage = () => loadUser();
     loadUser();
 
-    window.addEventListener('storage', handleStorage);
+    window.addEventListener('storage', loadUser);
     window.addEventListener('ods_user_update', loadUser);
     
     return () => {
-      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('storage', loadUser);
       window.removeEventListener('ods_user_update', loadUser);
     };
   }, []);

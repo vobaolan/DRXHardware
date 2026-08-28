@@ -1,6 +1,9 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
+import { signJWT, setAuthCookie } from '@/lib/jwt';
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
@@ -28,82 +31,106 @@ export async function POST(request: Request) {
         }
       } catch (e) {}
 
-      return NextResponse.json(
+      const adminUser = {
+        id: 'admin-id-master',
+        name: 'DRX Admin',
+        email: 'admin@drx.vn',
+        phone: '01699224729',
+        balance: adminBalance,
+        role: 'ADMIN',
+      };
+
+      const token = signJWT({
+        sub: adminUser.id,
+        email: adminUser.email,
+        name: adminUser.name,
+        role: adminUser.role,
+      });
+
+      const response = NextResponse.json(
         {
           message: 'Đăng nhập Admin thành công!',
-          user: {
-            id: 'admin-id-master',
-            name: 'DRX Admin',
-            email: 'admin@drx.vn',
-            phone: '01699224729',
-            balance: adminBalance,
-            role: 'ADMIN',
-          },
+          user: adminUser,
         },
         { status: 200 }
       );
+
+      setAuthCookie(response, token);
+      return response;
     }
 
-      // [OPTIMIZATION] Bypass Prisma on Netlify due to IPv6/IPv4 connection timeout issues.
-      // We use Supabase REST SDK as the PRIMARY fetch method for blazing fast performance.
-      const { supabase } = await import('@/lib/supabase');
-      const { data: supabaseUsers, error: supaErr } = await supabase
-        .from('User')
-        .select('*')
-        .eq('email', cleanEmail);
-        
-      if (supaErr || !supabaseUsers || supabaseUsers.length === 0) {
-         return NextResponse.json(
-          { message: 'Tài khoản hoặc mật khẩu không chính xác!' },
-          { status: 404 }
+    // Supabase REST SDK as the PRIMARY fetch method
+    const { supabase } = await import('@/lib/supabase');
+    const { data: supabaseUsers, error: supaErr } = await supabase
+      .from('User')
+      .select('*')
+      .eq('email', cleanEmail);
+      
+    if (supaErr || !supabaseUsers || supabaseUsers.length === 0) {
+      return NextResponse.json(
+        { message: 'Tài khoản hoặc mật khẩu không chính xác!' },
+        { status: 404 }
+      );
+    }
+
+    const user = supabaseUsers[0];
+
+    if (user) {
+      if (!user.password) {
+        return NextResponse.json(
+          { message: 'Tài khoản này được đăng ký bằng phương thức khác!' },
+          { status: 400 }
         );
       }
-      const user = supabaseUsers[0];
 
-      if (user) {
-        if (!user.password) {
-          return NextResponse.json(
-            { message: 'Tài khoản này được đăng ký bằng phương thức khác!' },
-            { status: 400 }
-          );
-        }
+      let isPasswordValid = false;
+      try {
+        isPasswordValid = bcrypt.compareSync(password, user.password);
+      } catch (e) {}
 
-        let isPasswordValid = false;
-        try {
-          isPasswordValid = bcrypt.compareSync(password, user.password);
-        } catch (e) {}
+      if (!isPasswordValid && user.password === password) {
+        isPasswordValid = true;
+      }
 
-        if (!isPasswordValid && user.password === password) {
-          isPasswordValid = true;
-        }
+      if (isPasswordValid) {
+        const authUser = {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          balance: Number(user.balance || 0),
+          role: user.role,
+        };
 
-        if (isPasswordValid) {
-          return NextResponse.json(
-            {
-              message: 'Đăng nhập thành công!',
-              user: {
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                balance: Number(user.balance || 0),
-                role: user.role,
-              },
-            },
-            { status: 200 }
-          );
-        } else {
-          return NextResponse.json(
-            { message: 'Mật khẩu không chính xác!' },
-            { status: 401 }
-          );
-        }
+        const token = signJWT({
+          sub: authUser.id,
+          email: authUser.email,
+          name: authUser.name,
+          role: authUser.role,
+        });
+
+        const response = NextResponse.json(
+          {
+            message: 'Đăng nhập thành công!',
+            user: authUser,
+          },
+          { status: 200 }
+        );
+
+        setAuthCookie(response, token);
+        return response;
       } else {
         return NextResponse.json(
-          { message: 'Tài khoản không tồn tại!' },
-          { status: 404 }
+          { message: 'Mật khẩu không chính xác!' },
+          { status: 401 }
         );
       }
-    } catch (error: any) {
+    } else {
+      return NextResponse.json(
+        { message: 'Tài khoản không tồn tại!' },
+        { status: 404 }
+      );
+    }
+  } catch (error: any) {
     return NextResponse.json(
       { message: 'Lỗi server: ' + error.message },
       { status: 500 }

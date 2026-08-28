@@ -52,12 +52,12 @@ export default function CheckoutPage() {
   const [orderCode, setOrderCode] = useState<string>('');
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem('ods_user');
-      if (stored) {
-        setCurrentUser(JSON.parse(stored));
+    import('@/lib/auth-client').then(({ getStoredSessionUser }) => {
+      const u = getStoredSessionUser();
+      if (u) {
+        setCurrentUser(u);
       }
-    } catch (e) {}
+    });
 
     const randomOrd = 'DRX' + Math.floor(100000 + Math.random() * 900000);
     setOrderCode(randomOrd);

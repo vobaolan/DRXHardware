@@ -33,13 +33,12 @@ export default function DepositPage() {
 
   // Load user info on mount
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem('ods_user');
-      if (stored) {
-        const u = JSON.parse(stored);
+    import('@/lib/auth-client').then(({ getStoredSessionUser }) => {
+      const u = getStoredSessionUser();
+      if (u) {
         setCurrentUser(u);
       }
-    } catch (e) {}
+    });
 
     // Generate random 5-char code for deposit memo
     const randomCode = Math.random().toString(36).substring(2, 7).toUpperCase();

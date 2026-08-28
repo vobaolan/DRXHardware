@@ -32,31 +32,34 @@ export default function AdminDashboardPage() {
 
   // 1. Authenticate Role on Mount & Sync LocalStorage Products
   useEffect(() => {
-    try {
-      // Sync products from localStorage if staff added any custom products
-      const customLocal = localStorage.getItem('ods_custom_products');
-      if (customLocal) {
-        const parsedCustom: HardwareProduct[] = JSON.parse(customLocal);
-        setProducts([...parsedCustom, ...INITIAL_PRODUCTS]);
-      }
+    const initAdmin = async () => {
+      try {
+        const customLocal = localStorage.getItem('ods_custom_products');
+        if (customLocal) {
+          const parsedCustom: HardwareProduct[] = JSON.parse(customLocal);
+          setProducts([...parsedCustom, ...INITIAL_PRODUCTS]);
+        }
 
-      const stored = localStorage.getItem('ods_user');
-      if (stored) {
-        const user = JSON.parse(stored);
-        setCurrentUser(user);
-        if (user?.role === 'ADMIN' || user?.role === 'MANAGER' || (user?.email && user.email.includes('admin'))) {
-          setIsAdmin(true);
+        const { getStoredSessionUser } = await import('@/lib/auth-client');
+        const user = getStoredSessionUser();
+        if (user) {
+          setCurrentUser(user);
+          if (user?.role === 'ADMIN' || user?.role === 'MANAGER' || (user?.email && user.email.includes('admin'))) {
+            setIsAdmin(true);
+          } else {
+            setIsAdmin(true);
+          }
         } else {
           setIsAdmin(true);
         }
-      } else {
+      } catch (e) {
         setIsAdmin(true);
+      } finally {
+        setIsAuthChecking(false);
       }
-    } catch (e) {
-      setIsAdmin(true);
-    } finally {
-      setIsAuthChecking(false);
-    }
+    };
+
+    initAdmin();
   }, []);
 
   // Stats Data for CEO

@@ -1,6 +1,9 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
+import { signJWT, setAuthCookie } from '@/lib/jwt';
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
@@ -44,37 +47,61 @@ export async function POST(request: Request) {
         },
       });
 
-      return NextResponse.json(
+      const authUser = {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        balance: Number(user.balance),
+        role: user.role,
+      };
+
+      const token = signJWT({
+        sub: authUser.id,
+        email: authUser.email,
+        name: authUser.name,
+        role: authUser.role,
+      });
+
+      const response = NextResponse.json(
         {
           message: 'Đăng ký tài khoản thành công!',
-          user: {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            balance: Number(user.balance),
-            role: user.role,
-          },
+          user: authUser,
         },
         { status: 201 }
       );
+
+      setAuthCookie(response, token);
+      return response;
     } catch (dbErr: any) {
       console.warn('Prisma DB connection issue during registration:', dbErr.message);
     }
 
     // Fallback response if DB is offline
-    return NextResponse.json(
+    const fallbackUser = {
+      id: `user-${Date.now()}`,
+      name: userName,
+      email: cleanEmail,
+      balance: 0,
+      role: assignedRole,
+    };
+
+    const token = signJWT({
+      sub: fallbackUser.id,
+      email: fallbackUser.email,
+      name: fallbackUser.name,
+      role: fallbackUser.role,
+    });
+
+    const response = NextResponse.json(
       {
         message: 'Đăng ký tài khoản thành công!',
-        user: {
-          id: `user-${Date.now()}`,
-          name: userName,
-          email: cleanEmail,
-          balance: 0,
-          role: assignedRole,
-        },
+        user: fallbackUser,
       },
       { status: 201 }
     );
+
+    setAuthCookie(response, token);
+    return response;
   } catch (error: any) {
     console.error('Lỗi khi đăng ký tài khoản:', error);
     return NextResponse.json(
