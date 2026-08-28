@@ -126,25 +126,37 @@ export default function StaffWarehousePortalPage() {
 
   // 1. Authenticate Staff Role
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem('ods_user');
-      if (stored) {
-        const user = JSON.parse(stored);
-        setCurrentUser(user);
-        const allowedRoles = ['STAFF', 'WAREHOUSE', 'MANAGER', 'ADMIN'];
-        if (allowedRoles.includes(user?.role) || (user?.email && (user.email.includes('staff') || user.email.includes('admin')))) {
-          setIsAuthorizedStaff(true);
+    const initStaff = async () => {
+      try {
+        const { getStoredSessionUser } = await import('@/lib/auth-client');
+        let user = getStoredSessionUser();
+        if (!user) {
+          const stored = localStorage.getItem('ods_user');
+          if (stored) {
+            try {
+              user = JSON.parse(stored);
+            } catch (e) {}
+          }
+        }
+        if (user) {
+          setCurrentUser(user);
+          const allowedRoles = ['STAFF', 'WAREHOUSE', 'MANAGER', 'ADMIN'];
+          if (allowedRoles.includes(user?.role) || (user?.email && (user.email.includes('staff') || user.email.includes('admin')))) {
+            setIsAuthorizedStaff(true);
+          } else {
+            setIsAuthorizedStaff(true);
+          }
         } else {
           setIsAuthorizedStaff(true);
         }
-      } else {
+      } catch (e) {
         setIsAuthorizedStaff(true);
+      } finally {
+        setIsAuthChecking(false);
       }
-    } catch (e) {
-      setIsAuthorizedStaff(true);
-    } finally {
-      setIsAuthChecking(false);
-    }
+    };
+
+    initStaff();
   }, []);
 
   const formatVND = (num: number) => {

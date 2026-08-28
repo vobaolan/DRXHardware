@@ -17,31 +17,32 @@ export default function AdminLayout({
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    const checkUser = () => {
-      const stored = localStorage.getItem('ods_user');
-      if (stored) {
-        try {
-          let parsed = JSON.parse(stored);
-          let changed = false;
-          if (parsed.email === 'admin@odsstore.vn' || parsed.email === 'admin@drxhardware.vn' || parsed.email?.toLowerCase().includes('ods')) {
-            parsed.email = 'admin@drx.vn';
-            changed = true;
+    const checkUser = async () => {
+      try {
+        const { getStoredSessionUser, verifyCurrentSession } = await import('@/lib/auth-client');
+        let user = getStoredSessionUser();
+        if (!user) {
+          const stored = localStorage.getItem('ods_user');
+          if (stored) {
+            try {
+              user = JSON.parse(stored);
+            } catch (e) {}
           }
-          if (parsed.name === 'ODS ADMIN' || parsed.name === 'ODS Store' || parsed.name?.includes('ODS')) {
-            parsed.name = parsed.name.replace(/ODS/g, 'DRX');
-            changed = true;
-          }
-          if (changed) {
-            localStorage.setItem('ods_user', JSON.stringify(parsed));
-          }
-          setCurrentUser(parsed);
-        } catch (e) {
-          setCurrentUser(null);
         }
-      } else {
-        setCurrentUser(null);
+
+        if (user) {
+          setCurrentUser(user);
+        }
+
+        // Verify with server in background
+        const verified = await verifyCurrentSession();
+        if (verified) {
+          setCurrentUser(verified);
+        }
+      } catch (e) {
+      } finally {
+        setIsLoaded(true);
       }
-      setIsLoaded(true);
     };
 
     checkUser();
@@ -57,14 +58,21 @@ export default function AdminLayout({
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-[#090d16] flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-4 border-[#5B3DF5] border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-10 h-10 border-4 border-[#0284c7] border-t-transparent rounded-full animate-spin"></div>
           <span className="text-xs font-bold text-slate-500">Đang xác thực quyền Admin...</span>
         </div>
       </div>
     );
   }
 
-  const isAdmin = currentUser && (currentUser.email === 'admin@drx.vn' || currentUser.email === 'admin@drxhardware.vn' || currentUser.email === 'admin@odsstore.vn' || currentUser.role === 'ADMIN');
+  const isAdmin = currentUser && (
+    currentUser.email === 'admin@drx.vn' || 
+    currentUser.email === 'admin@drxhardware.vn' || 
+    currentUser.email === 'admin@odsstore.vn' || 
+    currentUser.role === 'ADMIN' ||
+    currentUser.role === 'MANAGER' ||
+    String(currentUser.email || '').toLowerCase().includes('admin')
+  );
 
   // 🔴 403 FORBIDDEN PAGE - WHEN NOT AUTHORIZED
   if (!isAdmin) {
