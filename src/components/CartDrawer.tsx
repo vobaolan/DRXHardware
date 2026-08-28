@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, Trash2, Plus, Minus, Tag, ShieldCheck } from 'lucide-react';
+import { X, Trash2, Plus, Minus, Tag, ShieldCheck, ShoppingCart } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { motion, AnimatePresence } from 'framer-motion';
 
