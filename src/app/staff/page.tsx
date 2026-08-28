@@ -12,6 +12,7 @@ import {
 import { INITIAL_PRODUCTS, HardwareProduct } from '@/lib/hardware-data';
 import { showToast } from '@/components/Toast';
 import { ProductFormModal, ProductFormData } from '@/components/admin/ProductFormModal';
+import { supabase } from '@/lib/supabase';
 
 export default function StaffWarehousePortalPage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -120,7 +121,7 @@ export default function StaffWarehousePortalPage() {
     { id: '4', product: 'RAM Corsair Vengeance 32GB RGB DDR5', serial: 'SN-RAM-[#0284c7]-CORSAIR-00', supplier: 'Khai Trí', status: 'IN_STOCK', importDate: '2026-08-10' }
   ]);
 
-  // Load live database products on mount with local fallback
+  // Load live database products on mount with local fallback & Supabase Realtime
   useEffect(() => {
     const loadStaffProducts = async () => {
       try {
@@ -144,6 +145,20 @@ export default function StaffWarehousePortalPage() {
     };
 
     loadStaffProducts();
+
+    const channel = supabase
+      .channel('realtime_staff_products')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'Product' }, () => {
+        loadStaffProducts();
+      })
+      .subscribe();
+
+    window.addEventListener('ods_products_updated', loadStaffProducts);
+
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener('ods_products_updated', loadStaffProducts);
+    };
   }, []);
 
   // 1. Authenticate Staff Role

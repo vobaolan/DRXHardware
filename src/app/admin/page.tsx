@@ -13,6 +13,7 @@ import {
 import { INITIAL_PRODUCTS, HardwareProduct } from '@/lib/hardware-data';
 import { showToast } from '@/components/Toast';
 import { ProductFormModal, ProductFormData } from '@/components/admin/ProductFormModal';
+import { supabase } from '@/lib/supabase';
 
 export default function AdminDashboardPage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -35,24 +36,23 @@ export default function AdminDashboardPage() {
   const [snProdName, setSnProdName] = useState('Card Màn Hình ASUS ROG Strix RTX 4060');
   const [snCode, setSnCode] = useState('');
 
-  // 1. Authenticate Role on Mount & Sync Live DB Products
+  const fetchLiveProducts = async () => {
+    try {
+      const res = await fetch(`/api/admin/products?t=${Date.now()}`, { cache: 'no-store' });
+      const data = await res.json();
+      if (data && data.products && Array.isArray(data.products)) {
+        setProducts(data.products);
+      }
+    } catch (e) {
+      console.error('Lỗi tải sản phẩm live:', e);
+    }
+  };
+
+  // 1. Authenticate Role on Mount & Sync Live DB Products with Supabase Realtime
   useEffect(() => {
     const initAdmin = async () => {
       try {
-        // Fetch live database products first
-        try {
-          const res = await fetch(`/api/admin/products?t=${Date.now()}`, { cache: 'no-store' });
-          const data = await res.json();
-          if (data && data.products && Array.isArray(data.products)) {
-            setProducts(data.products);
-          }
-        } catch (e) {
-          const customLocal = localStorage.getItem('ods_custom_products');
-          if (customLocal) {
-            const parsedCustom: HardwareProduct[] = JSON.parse(customLocal);
-            setProducts(parsedCustom);
-          }
-        }
+        await fetchLiveProducts();
 
         const { getStoredSessionUser } = await import('@/lib/auth-client');
         const user = getStoredSessionUser();
@@ -74,6 +74,21 @@ export default function AdminDashboardPage() {
     };
 
     initAdmin();
+
+    // Supabase Realtime Subscription
+    const channel = supabase
+      .channel('realtime_admin_products')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'Product' }, () => {
+        fetchLiveProducts();
+      })
+      .subscribe();
+
+    window.addEventListener('ods_products_updated', fetchLiveProducts);
+
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener('ods_products_updated', fetchLiveProducts);
+    };
   }, []);
 
   // Stats Data for CEO
@@ -261,6 +276,9 @@ export default function AdminDashboardPage() {
     } catch (e) {}
     window.dispatchEvent(new Event('ods_products_updated'));
     window.dispatchEvent(new Event('storage'));
+    setTimeout(() => {
+      fetchLiveProducts();
+    }, 300);
   };
 
   const updateOrderStatus = (orderId: string, newStatus: string) => {

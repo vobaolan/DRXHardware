@@ -41,25 +41,6 @@ interface ProductFormModalProps {
   onSaved: (product: ProductFormData) => void;
 }
 
-const PRESET_REAL_PHOTOS = [
-  { label: 'Intel Core CPU (LGA)', url: 'https://images.unsplash.com/photo-1580584126903-c17d41830450?w=800&q=80', cat: 'CPU' },
-  { label: 'AMD Ryzen CPU (Gold)', url: 'https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?w=800&q=80', cat: 'CPU' },
-  { label: 'ASUS TUF RTX 4060 GPU', url: 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=800&q=80', cat: 'VGA' },
-  { label: 'MSI RTX Dual Fan GPU', url: 'https://images.unsplash.com/photo-1591488320449-011701bb6704?w=800&q=80', cat: 'VGA' },
-  { label: 'AORUS RTX Triple Fan', url: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800&q=80', cat: 'VGA' },
-  { label: 'Bo Mạch Mainboard ATX', url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&q=80', cat: 'MAINBOARD' },
-  { label: 'RAM Corsair RGB DDR5', url: 'https://images.unsplash.com/photo-1562976540-1502c2145186?w=800&q=80', cat: 'RAM' },
-  { label: 'SSD Samsung 990 PRO M.2', url: 'https://images.unsplash.com/photo-1597872200969-2b65d56bd16b?w=800&q=80', cat: 'STORAGE' },
-  { label: 'Case NZXT H9 Flow Kính', url: 'https://images.unsplash.com/photo-1587202372616-b43abea06c2a?w=800&q=80', cat: 'CASE' },
-  { label: 'Nguồn Corsair RM Gold Modular', url: 'https://images.unsplash.com/photo-1544652478-6653e09f18a2?w=800&q=80', cat: 'PSU' },
-  { label: 'Tản Nước NZXT Kraken LCD', url: 'https://images.unsplash.com/photo-1587202372634-32705e3bf49c?w=800&q=80', cat: 'COOLING' },
-  { label: 'Phím Cơ Custom Akko RGB', url: 'https://images.unsplash.com/photo-1595225476474-87563907a212?w=800&q=80', cat: 'GEAR' },
-  { label: 'Chuột Gaming Siêu Nhẹ', url: 'https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=800&q=80', cat: 'GEAR' },
-  { label: 'Tai Nghe HyperX 7.1', url: 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=800&q=80', cat: 'GEAR' },
-  { label: 'Màn Hình Gaming Viền Mỏng', url: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800&q=80', cat: 'MONITOR' },
-  { label: 'Laptop Gaming ROG Strix', url: 'https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=800&q=80', cat: 'LAPTOP_GAMING' }
-];
-
 export const ProductFormModal: React.FC<ProductFormModalProps> = ({
   isOpen,
   mode,
@@ -231,7 +212,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
       }
 
       showToast(mode === 'edit' ? 'Đã cập nhật linh kiện thành công!' : 'Đã thêm linh kiện mới vào kho!', 'success');
-      onSaved(payload);
+      onSaved(data.product || payload);
       onClose();
     } catch (err: any) {
       console.error(err);
@@ -424,32 +405,6 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
               <span className="text-[10px] text-slate-500 dark:text-slate-400">
                 100% Ảnh chụp phần cứng thật, độ nét cao
               </span>
-            </div>
-
-            {/* Quick Preset Selector */}
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-extrabold text-slate-600 dark:text-slate-400 flex items-center gap-1">
-                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                <span>Chọn Nhanh Ảnh Mẫu Phần Cứng Thực Tế Chuẩn HD:</span>
-              </label>
-              <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto p-1.5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
-                {PRESET_REAL_PHOTOS.map((p, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => {
-                      setCoverImage(p.url);
-                      if (!screenshots.includes(p.url)) {
-                        setScreenshots([...screenshots, p.url]);
-                      }
-                      showToast('Đã gán ảnh mẫu: ' + p.label, 'info');
-                    }}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-100 dark:bg-slate-800 hover:bg-[#0284c7] hover:text-white dark:hover:bg-[#0284c7] transition-all cursor-pointer border border-slate-200/80 dark:border-slate-700"
-                  >
-                    <span>{p.label}</span>
-                  </button>
-                ))}
-              </div>
             </div>
 
             {/* Cover Image Input & Live Preview */}

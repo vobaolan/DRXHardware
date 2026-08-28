@@ -110,28 +110,32 @@ export async function POST(request: Request) {
     const originalPrice = parseFloat(String(price));
     const discPrice = discountPrice ? parseFloat(String(discountPrice)) : null;
     const finalScreenshots = Array.isArray(screenshots) && screenshots.length > 0 ? screenshots : [coverImage];
+    const singleCategory = Array.isArray(category) ? (category[0] || 'CORE_PARTS') : (category || 'CORE_PARTS');
+    const now = new Date().toISOString();
+    const productId = (body.id && body.id.length > 20 && !body.id.startsWith('prod-')) ? body.id : crypto.randomUUID();
 
     const productData: any = {
-      name,
+      id: productId,
+      name: name.trim(),
       slug,
       description: description || `Linh kiện chính hãng ${name} bảo hành ${warrantyMonths || 36} tháng tại DRX Hardware.`,
       price: originalPrice,
       discountPrice: discPrice,
       costPrice: costPrice ? parseFloat(String(costPrice)) : undefined,
-      coverImage,
+      coverImage: coverImage.trim(),
       screenshots: finalScreenshots,
-      category: Array.isArray(category) ? category : [category || 'CORE_PARTS'],
-      brand: brand || 'DRX',
-      modelCode: modelCode || '',
+      category: singleCategory,
+      brand: (brand || 'DRX').trim(),
+      modelCode: (modelCode || '').trim(),
       specs: specs || {},
       warrantyMonths: warrantyMonths ? Number(warrantyMonths) : 36,
       stockQuantity: stockQuantity !== undefined ? Number(stockQuantity) : 15,
       isFlashDeal: Boolean(isFlashDeal),
-      isFeaturedDeal: Boolean(isFeatured),
+      isFeatured: Boolean(isFeatured),
       isPrebuilt: Boolean(isPrebuilt),
       status: true,
-      platform: brand || 'PC',
-      type: Array.isArray(category) ? category[0] : (category || 'CORE_PARTS'),
+      createdAt: now,
+      updatedAt: now,
     };
 
     if (socket) productData.socket = socket;
@@ -139,7 +143,7 @@ export async function POST(request: Request) {
     if (wattage) productData.wattage = Number(wattage);
     if (formFactor) productData.formFactor = formFactor;
 
-    // 1. Save to Supabase
+    // 1. Save directly to Supabase
     let savedProduct: any = null;
     try {
       const { data, error } = await supabase
@@ -150,8 +154,12 @@ export async function POST(request: Request) {
 
       if (!error && data) {
         savedProduct = data;
+      } else if (error) {
+        console.error('Lỗi khi insert Supabase:', error);
       }
-    } catch (e) {}
+    } catch (e) {
+      console.error('Ngoại lệ Supabase POST:', e);
+    }
 
     // 2. Fallback to Prisma
     if (!savedProduct) {
@@ -159,13 +167,16 @@ export async function POST(request: Request) {
         savedProduct = await prisma.product.create({
           data: {
             ...productData,
-            id: `prod-${Date.now()}`,
+            platform: brand || 'PC',
+            type: singleCategory,
           },
         });
-      } catch (e) {}
+      } catch (e) {
+        console.error('Ngoại lệ Prisma POST:', e);
+      }
     }
 
-    const finalProduct = savedProduct || { ...productData, id: `prod-${Date.now()}` };
+    const finalProduct = savedProduct || productData;
 
     revalidatePath('/', 'layout');
     revalidatePath('/products', 'layout');
@@ -228,29 +239,31 @@ export async function PUT(request: Request) {
     const discPrice = discountPrice ? parseFloat(String(discountPrice)) : null;
     const finalScreenshots = Array.isArray(screenshots) && screenshots.length > 0 ? screenshots : (coverImage ? [coverImage] : []);
 
+    const singleCategory = Array.isArray(category) ? (category[0] || 'CORE_PARTS') : (category || 'CORE_PARTS');
+    const now = new Date().toISOString();
+
     const updatedData: any = {
-      name,
+      name: name.trim(),
       slug: prodSlug,
       description: description || `Linh kiện chính hãng ${name} bảo hành ${warrantyMonths || 36} tháng tại DRX Hardware.`,
       price: originalPrice,
       discountPrice: discPrice,
       costPrice: costPrice ? parseFloat(String(costPrice)) : undefined,
-      category: Array.isArray(category) ? category : [category || 'CORE_PARTS'],
-      brand: brand || 'DRX',
-      modelCode: modelCode || '',
+      category: singleCategory,
+      brand: (brand || 'DRX').trim(),
+      modelCode: (modelCode || '').trim(),
       specs: specs || {},
       warrantyMonths: warrantyMonths ? Number(warrantyMonths) : 36,
       stockQuantity: stockQuantity !== undefined ? Number(stockQuantity) : 15,
       isFlashDeal: isFlashDeal !== undefined ? Boolean(isFlashDeal) : false,
-      isFeaturedDeal: isFeatured !== undefined ? Boolean(isFeatured) : false,
+      isFeatured: isFeatured !== undefined ? Boolean(isFeatured) : false,
       isPrebuilt: isPrebuilt !== undefined ? Boolean(isPrebuilt) : false,
       status: status !== undefined ? Boolean(status) : true,
-      platform: brand || 'PC',
-      type: Array.isArray(category) ? category[0] : (category || 'CORE_PARTS'),
+      updatedAt: now,
     };
 
     if (coverImage) {
-      updatedData.coverImage = coverImage;
+      updatedData.coverImage = coverImage.trim();
     }
     if (finalScreenshots.length > 0) {
       updatedData.screenshots = finalScreenshots;
@@ -271,7 +284,9 @@ export async function PUT(request: Request) {
       if (resById.data && resById.data.length > 0) {
         supaUpdated = true;
       }
-    } catch (e) {}
+    } catch (e) {
+      console.error('Lỗi update by ID Supabase:', e);
+    }
 
     // 2. If no row matched by id, update by slug
     if (!supaUpdated) {
@@ -304,16 +319,34 @@ export async function PUT(request: Request) {
     // 4. If product not yet in Supabase table, insert it
     if (!supaUpdated) {
       try {
-        await supabase.from('Product').insert({ ...updatedData, id });
-      } catch (e) {}
+        const insertId = (id && id.length > 20 && !id.startsWith('prod-')) ? id : crypto.randomUUID();
+        await supabase.from('Product').insert([{
+          ...updatedData,
+          id: insertId,
+          createdAt: now,
+          updatedAt: now,
+        }]);
+      } catch (e) {
+        console.error('Lỗi fallback insert Supabase:', e);
+      }
     }
 
     // 5. Try Prisma update
     try {
       await prisma.product.upsert({
         where: { id },
-        update: updatedData,
-        create: { ...updatedData, id, slug: prodSlug },
+        update: {
+          ...updatedData,
+          platform: brand || 'PC',
+          type: singleCategory,
+        },
+        create: {
+          ...updatedData,
+          id,
+          slug: prodSlug,
+          platform: brand || 'PC',
+          type: singleCategory,
+        },
       });
     } catch (e) {}
 
@@ -323,7 +356,7 @@ export async function PUT(request: Request) {
     revalidatePath('/staff', 'layout');
 
     return NextResponse.json(
-      { message: 'Cập nhật linh kiện thành công!', product: updatedData },
+      { message: 'Cập nhật linh kiện thành công!', product: { ...updatedData, id } },
       { status: 200 }
     );
   } catch (error: any) {
@@ -346,7 +379,10 @@ export async function DELETE(request: Request) {
 
     try {
       await supabase.from('Product').delete().eq('id', id);
-    } catch (e) {}
+      await supabase.from('Product').delete().eq('slug', id);
+    } catch (e) {
+      console.error('Lỗi xóa Supabase:', e);
+    }
 
     try {
       await prisma.product.delete({
@@ -354,10 +390,10 @@ export async function DELETE(request: Request) {
       });
     } catch (e) {}
 
-    revalidatePath('/');
-    revalidatePath('/products');
-    revalidatePath('/admin');
-    revalidatePath('/staff');
+    revalidatePath('/', 'layout');
+    revalidatePath('/products', 'layout');
+    revalidatePath('/admin', 'layout');
+    revalidatePath('/staff', 'layout');
 
     return NextResponse.json({ message: 'Đã xóa linh kiện thành công!' }, { status: 200 });
   } catch (error: any) {
