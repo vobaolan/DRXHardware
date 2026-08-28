@@ -53,28 +53,37 @@ export async function GET() {
         ? (typeof p.discountPrice === 'string' ? parseFloat(p.discountPrice) : Number(p.discountPrice))
         : null;
 
+      // Ensure official hardware catalog products always use verified real images and correct categories
+      const matchInit = INITIAL_PRODUCTS.find(
+        (ip) => ip.id === p.id || ip.slug === p.slug || ip.name.toLowerCase() === (p.name || '').toLowerCase()
+      );
+
+      const coverImage = matchInit ? matchInit.coverImage : p.coverImage;
+      const category = matchInit ? matchInit.category : p.category;
+      const brand = matchInit ? matchInit.brand : (p.brand || 'DRX');
+
       return {
         id: p.id,
-        name: p.name,
+        name: matchInit ? matchInit.name : p.name,
         slug: p.slug,
-        description: p.description || '',
+        description: matchInit ? matchInit.description : (p.description || ''),
         price,
         discountPrice,
-        coverImage: p.coverImage,
-        category: p.category,
-        brand: p.brand || 'ODS',
-        platform: p.platform || p.brand || 'PC',
-        type: p.type || p.category || 'HARDWARE',
+        coverImage,
+        category,
+        brand,
+        platform: p.platform || brand || 'PC',
+        type: category,
         deliveryMethod: resolveDeliveryMethod(p),
         mediaOrder: p.mediaOrder || 'image_first',
         status: p.status !== false,
-        isFlashDeal: p.isFlashDeal || false,
+        isFlashDeal: matchInit?.isFlashDeal ?? (p.isFlashDeal || false),
         flashSaleEnd: p.flashSaleEnd ? new Date(p.flashSaleEnd).toISOString() : null,
-        isFeaturedDeal: p.isFeaturedDeal || false,
+        isFeaturedDeal: matchInit?.isFeatured ?? (p.isFeaturedDeal || false),
         tags: p.tags || [],
-        screenshots: p.screenshots || [p.coverImage],
-        specs: p.specs || {},
-        warrantyMonths: p.warrantyMonths || 36
+        screenshots: matchInit ? matchInit.screenshots : (p.screenshots || [coverImage]),
+        specs: matchInit ? matchInit.specs : (p.specs || {}),
+        warrantyMonths: matchInit ? matchInit.warrantyMonths : (p.warrantyMonths || 36)
       };
     });
 

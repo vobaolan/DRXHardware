@@ -114,7 +114,15 @@ export const ProductCard: React.FC<{ product: ProductProps }> = ({ product }) =>
         <div className="flex flex-col flex-1 p-4 pb-3.5 space-y-2.5 bg-white dark:bg-slate-900/90">
           <h3 
             title={product.name}
-            className="font-heading text-sm font-extrabold leading-[20px] h-[40px] overflow-hidden text-slate-900 dark:text-slate-100 group-hover:text-[#0284c7] dark:group-hover:text-[#6EC2F7] line-clamp-2 transition-colors"
+            style={{
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+              height: '44px',
+              lineHeight: '22px',
+            }}
+            className="font-heading text-sm font-extrabold text-slate-900 dark:text-slate-100 group-hover:text-[#0284c7] dark:group-hover:text-[#6EC2F7] transition-colors"
           >
             {product.name}
           </h3>

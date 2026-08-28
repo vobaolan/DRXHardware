@@ -287,7 +287,15 @@ export default function CategoryShowcaseBlock({
                         <div className="space-y-1.5 flex-1 flex flex-col justify-between">
                           <h4 
                             title={product.name}
-                            className="font-heading font-extrabold text-xs leading-[18px] h-[36px] overflow-hidden text-slate-900 dark:text-slate-100 group-hover:text-[#0284c7] dark:group-hover:text-[#38bdf8] line-clamp-2 transition-colors"
+                            style={{
+                              display: '-webkit-box',
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden',
+                              height: '40px',
+                              lineHeight: '20px',
+                            }}
+                            className="font-heading font-extrabold text-xs text-slate-900 dark:text-slate-100 group-hover:text-[#0284c7] dark:group-hover:text-[#38bdf8] transition-colors"
                           >
                             {product.name}
                           </h4>
