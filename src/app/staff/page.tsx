@@ -120,15 +120,30 @@ export default function StaffWarehousePortalPage() {
     { id: '4', product: 'RAM Corsair Vengeance 32GB RGB DDR5', serial: 'SN-RAM-[#0284c7]-CORSAIR-00', supplier: 'Khai Trí', status: 'IN_STOCK', importDate: '2026-08-10' }
   ]);
 
-  // Load custom products from localStorage
+  // Load live database products on mount with local fallback
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem('ods_custom_products');
-      if (stored) {
-        const customProds = JSON.parse(stored);
-        setProducts(prev => [...customProds, ...prev]);
-      }
-    } catch (e) {}
+    const loadStaffProducts = async () => {
+      try {
+        const res = await fetch(`/api/admin/products?t=${Date.now()}`, { cache: 'no-store' });
+        const data = await res.json();
+        if (data && data.products && Array.isArray(data.products)) {
+          setProducts(data.products);
+          return;
+        }
+      } catch (e) {}
+
+      try {
+        const stored = localStorage.getItem('ods_custom_products');
+        if (stored) {
+          const customProds = JSON.parse(stored);
+          if (Array.isArray(customProds)) {
+            setProducts(customProds);
+          }
+        }
+      } catch (e) {}
+    };
+
+    loadStaffProducts();
   }, []);
 
   // 1. Authenticate Staff Role
@@ -228,22 +243,28 @@ export default function StaffWarehousePortalPage() {
 
   const handleProductSaved = (saved: ProductFormData) => {
     let updated: HardwareProduct[];
-    const existingIndex = products.findIndex(p => p.id === saved.id);
+    const existingIndex = products.findIndex(p => 
+      p.id === saved.id || 
+      (saved.id && p.id.includes(saved.id)) ||
+      p.name.toLowerCase().trim() === saved.name.toLowerCase().trim()
+    );
 
     const mappedProduct: HardwareProduct = {
       id: saved.id || `prod-${Date.now()}`,
       name: saved.name,
-      slug: saved.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, ''),
+      slug: (existingIndex >= 0 && products[existingIndex].slug) ? products[existingIndex].slug : saved.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
       category: saved.category as any,
       brand: saved.brand,
       price: saved.price,
       discountPrice: saved.discountPrice,
       inStock: saved.status !== false,
       stockCount: saved.stockQuantity,
+      stockQuantity: saved.stockQuantity,
       warrantyMonths: saved.warrantyMonths,
       rating: 5.0,
       reviewCount: 1,
       coverImage: saved.coverImage,
+      screenshots: saved.screenshots,
       images: saved.screenshots,
       specs: saved.specs as any,
       isFlashDeal: saved.isFlashDeal,
@@ -253,7 +274,7 @@ export default function StaffWarehousePortalPage() {
 
     if (existingIndex >= 0) {
       updated = [...products];
-      updated[existingIndex] = mappedProduct;
+      updated[existingIndex] = { ...products[existingIndex], ...mappedProduct };
     } else {
       updated = [mappedProduct, ...products];
     }

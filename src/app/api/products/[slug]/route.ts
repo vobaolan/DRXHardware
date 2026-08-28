@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { prisma } from '@/lib/prisma';
+import { INITIAL_PRODUCTS } from '@/lib/hardware-data';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,20 +25,53 @@ export async function GET(
 
     const baseSlug = slug.split('-')[0].toLowerCase();
 
-    // 1. Primary: Prisma fallback to bypass Next.js fetch cache!
-    let product = await prisma.product.findUnique({
-      where: { slug },
-    });
+    // 1. Primary: Supabase
+    let supaProduct: any = null;
+    try {
+      const { data: supabaseProducts } = await supabase
+        .from('Product')
+        .select('*');
+      if (supabaseProducts && supabaseProducts.length > 0) {
+        supaProduct = supabaseProducts.find((p: any) => 
+          p.slug === slug || 
+          p.id === slug || 
+          slug.startsWith(p.slug) || 
+          p.slug.startsWith(baseSlug) ||
+          p.name.toLowerCase().includes(baseSlug)
+        );
+      }
+    } catch (e) {}
 
-    if (!product) {
-      const allPrisma = await prisma.product.findMany();
-      product = allPrisma.find((p) => 
-        p.slug === slug || 
-        slug.startsWith(p.slug) || 
-        p.slug.startsWith(baseSlug) ||
-        p.name.toLowerCase().includes(baseSlug)
-      ) || null;
+    // 2. Prisma fallback
+    let prismaProduct: any = null;
+    if (!supaProduct) {
+      try {
+        prismaProduct = await prisma.product.findUnique({
+          where: { slug },
+        });
+        if (!prismaProduct) {
+          const allPrisma = await prisma.product.findMany();
+          prismaProduct = allPrisma.find((p) => 
+            p.slug === slug || 
+            slug.startsWith(p.slug) || 
+            p.slug.startsWith(baseSlug) ||
+            p.name.toLowerCase().includes(baseSlug)
+          ) || null;
+        }
+      } catch (e) {}
     }
+
+    // 3. INITIAL_PRODUCTS hardware catalog fallback
+    const initMatch = INITIAL_PRODUCTS.find(
+      (p) => p.slug === slug || p.id === slug || slug.startsWith(p.slug) || p.slug.startsWith(baseSlug)
+    );
+
+    const product = supaProduct || prismaProduct || (initMatch ? {
+      ...initMatch,
+      platform: initMatch.brand,
+      type: initMatch.category,
+      status: true,
+    } : null);
 
     if (product) {
       const price = typeof product.price === 'string' ? parseFloat(product.price) : Number(product.price);
@@ -47,12 +81,12 @@ export async function GET(
 
       let trailerUrls: string[] = [];
       if (product.trailerUrl) {
-        trailerUrls = product.trailerUrl.split(' | ').filter((u) => u.trim().length > 0).map((u) => u.trim());
+        trailerUrls = product.trailerUrl.split(' | ').filter((u: any) => u.trim().length > 0).map((u: any) => u.trim());
       }
 
       const screenshots = product.screenshots && Array.isArray(product.screenshots) && product.screenshots.length > 0 
         ? product.screenshots 
-        : [product.coverImage];
+        : (product.coverImage ? [product.coverImage] : []);
 
       return NextResponse.json(
         {
@@ -65,16 +99,18 @@ export async function GET(
             discountPrice,
             coverImage: product.coverImage,
             screenshots,
-            category: product.category,
-            platform: product.platform,
-            type: product.type,
-            deliveryMethod: product.deliveryMethod || 'AUTO_KEY',
+            category: Array.isArray(product.category) ? product.category : [product.category],
+            platform: product.platform || product.brand || 'PC',
+            type: product.type || product.category,
+            deliveryMethod: product.deliveryMethod || 'GIFT',
             mediaOrder: product.mediaOrder || 'image_first',
-            status: product.status,
-            isFlashDeal: product.isFlashDeal || false,
+            status: product.status !== false,
+            isFlashDeal: Boolean(product.isFlashDeal),
             flashSaleEnd: product.flashSaleEnd ? new Date(product.flashSaleEnd).toISOString() : null,
-            isFeaturedDeal: product.isFeaturedDeal || false,
-            tags: product.tags,
+            isFeaturedDeal: Boolean(product.isFeaturedDeal || product.isFeatured),
+            tags: product.tags || [],
+            specs: product.specs || {},
+            warrantyMonths: product.warrantyMonths || 36,
             trailerUrl: product.trailerUrl,
             trailerUrls,
             minimumReq: product.minimumReq,
@@ -83,67 +119,6 @@ export async function GET(
         },
         { status: 200, headers }
       );
-    }
-
-    // 2. Query Supabase REST SDK (Fallback)
-    const { data: supabaseProducts } = await supabase
-      .from('Product')
-      .select('*');
-
-    if (supabaseProducts && supabaseProducts.length > 0) {
-      const match = supabaseProducts.find((p: any) => 
-        p.slug === slug || 
-        p.id === slug || 
-        slug.startsWith(p.slug) || 
-        p.slug.startsWith(baseSlug) ||
-        p.name.toLowerCase().includes(baseSlug)
-      );
-
-      if (match) {
-        const price = typeof match.price === 'string' ? parseFloat(match.price) : Number(match.price);
-        const discountPrice = match.discountPrice
-          ? (typeof match.discountPrice === 'string' ? parseFloat(match.discountPrice) : Number(match.discountPrice))
-          : null;
-
-        let trailerUrls: string[] = [];
-        if (match.trailerUrl) {
-          trailerUrls = match.trailerUrl.split(' | ').filter((u: any) => u.trim().length > 0).map((u: any) => u.trim());
-        }
-
-        const screenshots = match.screenshots && match.screenshots.length > 0 
-          ? match.screenshots 
-          : [match.coverImage];
-
-        return NextResponse.json(
-          {
-            product: {
-              id: match.id,
-              name: match.name,
-              slug: match.slug,
-              description: match.description,
-              price,
-              discountPrice,
-              coverImage: match.coverImage,
-              screenshots,
-              category: match.category,
-              platform: match.platform,
-              type: match.type,
-              deliveryMethod: match.deliveryMethod || 'AUTO_KEY',
-              mediaOrder: match.mediaOrder || 'image_first',
-              status: match.status,
-              isFlashDeal: match.isFlashDeal || false,
-              flashSaleEnd: match.flashSaleEnd ? new Date(match.flashSaleEnd).toISOString() : null,
-              isFeaturedDeal: match.isFeaturedDeal || false,
-              tags: match.tags,
-              trailerUrl: match.trailerUrl,
-              trailerUrls,
-              minimumReq: match.minimumReq,
-              recommendedReq: match.recommendedReq,
-            },
-          },
-          { status: 200, headers }
-        );
-      }
     }
 
     return NextResponse.json({ message: 'Không tìm thấy sản phẩm' }, { status: 404, headers });

@@ -35,14 +35,23 @@ export default function AdminDashboardPage() {
   const [snProdName, setSnProdName] = useState('Card Màn Hình ASUS ROG Strix RTX 4060');
   const [snCode, setSnCode] = useState('');
 
-  // 1. Authenticate Role on Mount & Sync LocalStorage Products
+  // 1. Authenticate Role on Mount & Sync Live DB Products
   useEffect(() => {
     const initAdmin = async () => {
       try {
-        const customLocal = localStorage.getItem('ods_custom_products');
-        if (customLocal) {
-          const parsedCustom: HardwareProduct[] = JSON.parse(customLocal);
-          setProducts([...parsedCustom, ...INITIAL_PRODUCTS]);
+        // Fetch live database products first
+        try {
+          const res = await fetch(`/api/admin/products?t=${Date.now()}`, { cache: 'no-store' });
+          const data = await res.json();
+          if (data && data.products && Array.isArray(data.products)) {
+            setProducts(data.products);
+          }
+        } catch (e) {
+          const customLocal = localStorage.getItem('ods_custom_products');
+          if (customLocal) {
+            const parsedCustom: HardwareProduct[] = JSON.parse(customLocal);
+            setProducts(parsedCustom);
+          }
         }
 
         const { getStoredSessionUser } = await import('@/lib/auth-client');
@@ -209,22 +218,28 @@ export default function AdminDashboardPage() {
 
   const handleProductSaved = (saved: ProductFormData) => {
     let updated: HardwareProduct[];
-    const existingIndex = products.findIndex(p => p.id === saved.id);
+    const existingIndex = products.findIndex(p => 
+      p.id === saved.id || 
+      (saved.id && p.id.includes(saved.id)) ||
+      p.name.toLowerCase().trim() === saved.name.toLowerCase().trim()
+    );
 
     const mappedProduct: HardwareProduct = {
       id: saved.id || `prod-${Date.now()}`,
       name: saved.name,
-      slug: saved.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, ''),
+      slug: (existingIndex >= 0 && products[existingIndex].slug) ? products[existingIndex].slug : saved.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
       category: saved.category as any,
       brand: saved.brand,
       price: saved.price,
       discountPrice: saved.discountPrice,
       inStock: saved.status !== false,
       stockCount: saved.stockQuantity,
+      stockQuantity: saved.stockQuantity,
       warrantyMonths: saved.warrantyMonths,
       rating: 5.0,
       reviewCount: 1,
       coverImage: saved.coverImage,
+      screenshots: saved.screenshots,
       images: saved.screenshots,
       specs: saved.specs as any,
       isFlashDeal: saved.isFlashDeal,
@@ -234,7 +249,7 @@ export default function AdminDashboardPage() {
 
     if (existingIndex >= 0) {
       updated = [...products];
-      updated[existingIndex] = mappedProduct;
+      updated[existingIndex] = { ...products[existingIndex], ...mappedProduct };
     } else {
       updated = [mappedProduct, ...products];
     }

@@ -35,38 +35,51 @@ export async function GET() {
       console.warn('Supabase fetch notice, falling back to hardware catalog data');
     }
 
-    // Fallback to INITIAL_PRODUCTS if Supabase has 0 products
-    const rawProducts = (supabaseProducts && supabaseProducts.length > 0) 
-      ? supabaseProducts 
-      : INITIAL_PRODUCTS.map(p => ({
-          ...p,
-          discountPrice: p.discountPrice || null,
-          platform: p.brand,
-          type: p.category,
-          status: p.inStock,
-          screenshots: p.screenshots || [p.coverImage]
-        }));
+    // Merge database products over INITIAL_PRODUCTS catalog
+    const combined = INITIAL_PRODUCTS.map(p => ({
+      ...p,
+      discountPrice: p.discountPrice || null,
+      platform: p.brand,
+      type: p.category,
+      status: (p.stockQuantity ?? 1) > 0,
+      screenshots: p.screenshots || [p.coverImage]
+    }));
 
-    const formattedProducts = rawProducts.map((p: any) => {
+    if (supabaseProducts && Array.isArray(supabaseProducts)) {
+      supabaseProducts.forEach((sp: any) => {
+        const idx = combined.findIndex(
+          (cp) => cp.id === sp.id || cp.slug === sp.slug || cp.name.toLowerCase() === (sp.name || '').toLowerCase()
+        );
+        if (idx >= 0) {
+          combined[idx] = {
+            ...combined[idx],
+            ...sp,
+            id: sp.id || combined[idx].id,
+            coverImage: sp.coverImage || combined[idx].coverImage,
+            screenshots: (Array.isArray(sp.screenshots) && sp.screenshots.length > 0) ? sp.screenshots : (sp.coverImage ? [sp.coverImage] : combined[idx].screenshots),
+            specs: (sp.specs && Object.keys(sp.specs).length > 0) ? sp.specs : combined[idx].specs,
+          };
+        } else {
+          combined.unshift(sp);
+        }
+      });
+    }
+
+    const formattedProducts = combined.map((p: any) => {
       const price = typeof p.price === 'string' ? parseFloat(p.price) : Number(p.price);
       const discountPrice = p.discountPrice
         ? (typeof p.discountPrice === 'string' ? parseFloat(p.discountPrice) : Number(p.discountPrice))
         : null;
 
-      const matchInit = INITIAL_PRODUCTS.find(
-        (ip) => ip.id === p.id || ip.slug === p.slug || ip.name.toLowerCase() === (p.name || '').toLowerCase()
-      );
-
-      // Prioritize DB/edited attributes over static catalog
-      const coverImage = p.coverImage || (matchInit ? matchInit.coverImage : '');
-      const category = Array.isArray(p.category) ? p.category[0] : (p.category || matchInit?.category || 'CORE_PARTS');
-      const brand = p.brand || matchInit?.brand || p.platform || 'DRX';
-      const name = p.name || matchInit?.name || 'Linh Kiện DRX';
-      const description = p.description || matchInit?.description || '';
-      const specs = (p.specs && Object.keys(p.specs).length > 0) ? p.specs : (matchInit?.specs || {});
+      const category = Array.isArray(p.category) ? p.category[0] : (p.category || 'CORE_PARTS');
+      const brand = p.brand || p.platform || 'DRX';
+      const name = p.name || 'Linh Kiện DRX';
+      const description = p.description || '';
+      const coverImage = p.coverImage || '';
+      const specs = (p.specs && Object.keys(p.specs).length > 0) ? p.specs : {};
       const screenshots = (Array.isArray(p.screenshots) && p.screenshots.length > 0) 
         ? p.screenshots 
-        : (matchInit?.screenshots || [coverImage]);
+        : (coverImage ? [coverImage] : []);
 
       return {
         id: p.id,
@@ -83,13 +96,13 @@ export async function GET() {
         deliveryMethod: resolveDeliveryMethod(p),
         mediaOrder: p.mediaOrder || 'image_first',
         status: p.status !== false,
-        isFlashDeal: p.isFlashDeal !== undefined ? Boolean(p.isFlashDeal) : (matchInit?.isFlashDeal || false),
+        isFlashDeal: Boolean(p.isFlashDeal),
         flashSaleEnd: p.flashSaleEnd ? new Date(p.flashSaleEnd).toISOString() : null,
-        isFeaturedDeal: p.isFeaturedDeal !== undefined ? Boolean(p.isFeaturedDeal) : (matchInit?.isFeatured || false),
+        isFeaturedDeal: Boolean(p.isFeaturedDeal || p.isFeatured),
         tags: p.tags || [],
         screenshots,
         specs,
-        warrantyMonths: p.warrantyMonths || matchInit?.warrantyMonths || 36
+        warrantyMonths: p.warrantyMonths || 36
       };
     });
 
