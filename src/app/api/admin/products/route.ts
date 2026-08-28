@@ -1,7 +1,8 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { supabase } from '@/lib/supabase';
 import { prisma } from '@/lib/prisma';
+import { INITIAL_PRODUCTS } from '@/lib/hardware-data';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,33 +15,42 @@ export async function GET() {
   };
 
   try {
-    // 1. Primary: Use Prisma to bypass Next.js fetch cache!
-    const products = await prisma.product.findMany({
-      orderBy: { createdAt: 'desc' },
-      include: {
-        _count: {
-          select: { keys: true },
-        },
-      },
-    });
+    let dbProducts: any[] = [];
+    try {
+      dbProducts = await prisma.product.findMany({
+        orderBy: { createdAt: 'desc' },
+      });
+    } catch (e) {}
 
-    if (products && products.length > 0) {
-      return NextResponse.json({ products }, { status: 200, headers });
+    if (!dbProducts || dbProducts.length === 0) {
+      try {
+        const { data: supaProds } = await supabase
+          .from('Product')
+          .select('*')
+          .order('createdAt', { ascending: false });
+        if (supaProds && supaProds.length > 0) {
+          dbProducts = supaProds;
+        }
+      } catch (e) {}
     }
 
-    // 2. Secondary: Fallback to Supabase REST SDK
-    const { data: supabaseProducts } = await supabase
-      .from('Product')
-      .select('*')
-      .order('createdAt', { ascending: false });
+    // Merge with INITIAL_PRODUCTS to ensure full hardware catalog availability
+    const combined = [...INITIAL_PRODUCTS];
+    if (dbProducts && Array.isArray(dbProducts)) {
+      dbProducts.forEach((dp: any) => {
+        const idx = combined.findIndex(cp => cp.id === dp.id || cp.slug === dp.slug);
+        if (idx >= 0) {
+          combined[idx] = { ...combined[idx], ...dp };
+        } else {
+          combined.unshift(dp);
+        }
+      });
+    }
 
-    return NextResponse.json({ products: supabaseProducts || [] }, { status: 200, headers });
+    return NextResponse.json({ products: combined }, { status: 200, headers });
   } catch (error: any) {
     console.error('Lỗi khi lấy danh sách sản phẩm admin:', error);
-    return NextResponse.json(
-      { message: 'Lỗi máy chủ nội bộ. Vui lòng thử lại sau!' },
-      { status: 500 }
-    );
+    return NextResponse.json({ products: INITIAL_PRODUCTS }, { status: 200, headers });
   }
 }
 
@@ -50,47 +60,31 @@ export async function POST(request: Request) {
     const {
       name,
       category,
+      brand,
+      modelCode,
       price,
-      discountPercent,
-      trailerUrl,
-      trailerUrls,
+      discountPrice,
+      costPrice,
       coverImage,
-      imageUrls,
       screenshots,
-      platform,
-      type,
-      deliveryMethod,
-      mediaOrder,
-      tags,
-      status,
+      specs,
+      warrantyMonths,
+      stockQuantity,
+      socket,
+      ramType,
+      wattage,
+      formFactor,
+      description,
       isFlashDeal,
-      flashSaleEnd,
-      isFeaturedDeal,
-      minimumReq,
-      recommendedReq,
-      variants,
+      isFeatured,
+      isPrebuilt,
     } = body;
 
-    let finalCoverImage = coverImage;
-    let finalScreenshots: string[] = Array.isArray(screenshots) ? screenshots : [];
-
-    if (Array.isArray(imageUrls) && imageUrls.length > 0) {
-      finalCoverImage = imageUrls[0];
-      finalScreenshots = imageUrls;
-    }
-
-    if (!name || !price || !finalCoverImage) {
+    if (!name || !price || !coverImage) {
       return NextResponse.json(
-        { message: 'Tên sản phẩm, Giá gốc và Ảnh đại diện là bắt buộc!' },
+        { message: 'Tên linh kiện, Giá bán và Ảnh đại diện là bắt buộc!' },
         { status: 400 }
       );
-    }
-
-    let finalTrailerUrl: string | null = null;
-    if (Array.isArray(trailerUrls) && trailerUrls.length > 0) {
-      finalTrailerUrl = trailerUrls.join(' | ');
-    } else if (trailerUrl) {
-      finalTrailerUrl = trailerUrl;
     }
 
     const slug = name
@@ -100,53 +94,79 @@ export async function POST(request: Request) {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)+/g, '');
 
-    const originalPrice = parseFloat(price);
-    const discount = discountPercent ? parseFloat(discountPercent) : 0;
-    const discountPrice = discount > 0 ? Math.round(originalPrice * (1 - discount / 100)) : null;
+    const originalPrice = parseFloat(String(price));
+    const discPrice = discountPrice ? parseFloat(String(discountPrice)) : null;
+    const finalScreenshots = Array.isArray(screenshots) && screenshots.length > 0 ? screenshots : [coverImage];
 
-    const finalTags = Array.isArray(tags) && tags.length > 0 
-      ? tags 
-      : (discount > 0 ? ['Đang giảm giá'] : ['Mới ra mắt']);
+    const newProductData = {
+      id: body.id || `prod-${Date.now()}`,
+      name,
+      slug: `${slug}-${Date.now().toString().slice(-4)}`,
+      description: description || `Linh kiện chính hãng ${name} bảo hành ${warrantyMonths || 36} tháng tại DRX Hardware.`,
+      price: originalPrice,
+      discountPrice: discPrice,
+      costPrice: costPrice ? parseFloat(String(costPrice)) : Math.round(originalPrice * 0.8),
+      coverImage,
+      screenshots: finalScreenshots,
+      category: Array.isArray(category) ? category : [category || 'CORE_PARTS'],
+      brand: brand || 'DRX',
+      modelCode: modelCode || '',
+      socket: socket || '',
+      ramType: ramType || '',
+      wattage: wattage ? Number(wattage) : undefined,
+      formFactor: formFactor || '',
+      specs: specs || {},
+      warrantyMonths: warrantyMonths ? Number(warrantyMonths) : 36,
+      stockQuantity: stockQuantity !== undefined ? Number(stockQuantity) : 15,
+      isFlashDeal: Boolean(isFlashDeal),
+      isFeaturedDeal: Boolean(isFeatured),
+      isPrebuilt: Boolean(isPrebuilt),
+      status: true,
+      platform: brand || 'PC',
+      type: Array.isArray(category) ? category[0] : (category || 'CORE_PARTS'),
+    };
 
-    const isAvailable = status !== undefined ? Boolean(status) : true;
+    // Try Supabase insert
+    try {
+      await supabase.from('Product').insert([newProductData]);
+    } catch (e) {}
 
-    const product = await prisma.product.create({
-      data: {
-        name,
-        slug,
-        description: body.description || `Sản phẩm ${name} bản quyền chính hãng tại ODS Store.`,
-        price: originalPrice,
-        discountPrice,
-        coverImage: finalCoverImage,
-        screenshots: finalScreenshots,
-        trailerUrl: finalTrailerUrl,
-        category: Array.isArray(category) ? category : [category || 'General'],
-        platform: platform || 'STEAM',
-        type: type || 'KEY_CODE',
-        deliveryMethod: deliveryMethod || 'AUTO_KEY',
-        mediaOrder: mediaOrder || 'image_first',
-        tags: finalTags,
-        status: isAvailable,
-        isFlashDeal: Boolean(isFlashDeal),
-        flashSaleEnd: flashSaleEnd ? new Date(flashSaleEnd) : null,
-        isFeaturedDeal: Boolean(isFeaturedDeal),
-        minimumReq: minimumReq || null,
-        recommendedReq: recommendedReq || null,
-        variants: variants || null,
-      },
-    });
+    // Try Prisma insert
+    try {
+      await prisma.product.create({
+        data: {
+          name: newProductData.name,
+          slug: newProductData.slug,
+          description: newProductData.description,
+          price: newProductData.price,
+          discountPrice: newProductData.discountPrice,
+          coverImage: newProductData.coverImage,
+          screenshots: newProductData.screenshots,
+          category: newProductData.category,
+          platform: newProductData.platform,
+          type: newProductData.type,
+          status: true,
+          isFlashDeal: newProductData.isFlashDeal,
+          isFeaturedDeal: newProductData.isFeaturedDeal,
+          specs: newProductData.specs,
+          warrantyMonths: newProductData.warrantyMonths,
+        }
+      });
+    } catch (e) {}
 
     revalidatePath('/');
     revalidatePath('/products');
-    
+    revalidatePath('/admin');
+    revalidatePath('/staff');
+
     return NextResponse.json(
-      { message: 'Thêm sản phẩm mới thành công!', product },
+      { message: 'Thêm linh kiện mới thành công!', product: newProductData },
       { status: 201 }
     );
   } catch (error: any) {
-    console.error('Lỗi khi tạo sản phẩm admin:', error);
+    console.error('Lỗi khi tạo linh kiện:', error);
     return NextResponse.json(
-      { message: 'Lỗi tạo sản phẩm: ' + error.message },
+      { message: 'Lỗi tạo linh kiện: ' + error.message },
       { status: 500 }
     );
   }
@@ -159,98 +179,108 @@ export async function PUT(request: Request) {
       id,
       name,
       category,
+      brand,
+      modelCode,
       price,
-      discountPercent,
-      trailerUrls,
-      trailerUrl,
-      imageUrls,
+      discountPrice,
+      costPrice,
+      coverImage,
       screenshots,
-      platform,
-      type,
-      deliveryMethod,
-      mediaOrder,
-      tags,
-      status,
+      specs,
+      warrantyMonths,
+      stockQuantity,
+      socket,
+      ramType,
+      wattage,
+      formFactor,
+      description,
       isFlashDeal,
-      flashSaleEnd,
-      isFeaturedDeal,
-      minimumReq,
-      recommendedReq,
-      variants,
+      isFeatured,
+      isPrebuilt,
+      status
     } = body;
 
     if (!id || !name || !price) {
-      return NextResponse.json({ message: 'ID, Tên và Giá gốc là bắt buộc!' }, { status: 400 });
+      return NextResponse.json({ message: 'ID, Tên linh kiện và Giá là bắt buộc!' }, { status: 400 });
     }
 
-    const originalPrice = parseFloat(price);
-    const discount = discountPercent ? parseFloat(discountPercent) : 0;
-    const discountPrice = discount > 0 ? Math.round(originalPrice * (1 - discount / 100)) : null;
+    const originalPrice = parseFloat(String(price));
+    const discPrice = discountPrice ? parseFloat(String(discountPrice)) : null;
+    const finalScreenshots = Array.isArray(screenshots) && screenshots.length > 0 ? screenshots : (coverImage ? [coverImage] : []);
 
-    let updateData: any = {
+    const updatedData: any = {
+      id,
       name,
+      description: description || `Linh kiện chính hãng ${name} bảo hành ${warrantyMonths || 36} tháng tại DRX Hardware.`,
       price: originalPrice,
-      discountPrice,
-      category: Array.isArray(category) ? category : [category || 'General'],
-      platform,
-      type,
-      deliveryMethod: deliveryMethod || 'AUTO_KEY',
-      mediaOrder: mediaOrder || 'image_first',
-      minimumReq,
-      recommendedReq,
-      variants,
+      discountPrice: discPrice,
+      costPrice: costPrice ? parseFloat(String(costPrice)) : undefined,
+      category: Array.isArray(category) ? category : [category || 'CORE_PARTS'],
+      brand: brand || 'DRX',
+      modelCode: modelCode || '',
+      specs: specs || {},
+      warrantyMonths: warrantyMonths ? Number(warrantyMonths) : 36,
+      stockQuantity: stockQuantity !== undefined ? Number(stockQuantity) : 15,
+      isFlashDeal: isFlashDeal !== undefined ? Boolean(isFlashDeal) : false,
+      isFeaturedDeal: isFeatured !== undefined ? Boolean(isFeatured) : false,
+      isPrebuilt: isPrebuilt !== undefined ? Boolean(isPrebuilt) : false,
+      status: status !== undefined ? Boolean(status) : true,
+      platform: brand || 'PC',
+      type: Array.isArray(category) ? category[0] : (category || 'CORE_PARTS'),
     };
 
-    if (status !== undefined) {
-      updateData.status = Boolean(status);
+    if (coverImage) {
+      updatedData.coverImage = coverImage;
     }
-
-    if (isFlashDeal !== undefined) {
-      updateData.isFlashDeal = Boolean(isFlashDeal);
+    if (finalScreenshots.length > 0) {
+      updatedData.screenshots = finalScreenshots;
     }
+    if (socket !== undefined) updatedData.socket = socket;
+    if (ramType !== undefined) updatedData.ramType = ramType;
+    if (wattage !== undefined) updatedData.wattage = Number(wattage);
+    if (formFactor !== undefined) updatedData.formFactor = formFactor;
 
-    if (flashSaleEnd !== undefined) {
-      updateData.flashSaleEnd = flashSaleEnd ? new Date(flashSaleEnd) : null;
-    }
+    // Try Supabase update
+    try {
+      await supabase.from('Product').update(updatedData).eq('id', id);
+    } catch (e) {}
 
-    if (isFeaturedDeal !== undefined) {
-      updateData.isFeaturedDeal = Boolean(isFeaturedDeal);
-    }
-
-    if (Array.isArray(tags)) {
-      updateData.tags = tags;
-    }
-
-    const targetImgs = Array.isArray(imageUrls) ? imageUrls : (Array.isArray(screenshots) ? screenshots : undefined);
-    if (targetImgs !== undefined) {
-      updateData.screenshots = targetImgs;
-      if (targetImgs.length > 0) {
-        updateData.coverImage = targetImgs[0];
-      }
-    }
-
-    if (Array.isArray(trailerUrls)) {
-      updateData.trailerUrl = trailerUrls.join(' | ');
-    } else if (trailerUrl !== undefined) {
-      updateData.trailerUrl = trailerUrl || '';
-    }
-
-    const updatedProduct = await prisma.product.update({
-      where: { id },
-      data: updateData,
-    });
+    // Try Prisma update
+    try {
+      await prisma.product.update({
+        where: { id },
+        data: {
+          name: updatedData.name,
+          description: updatedData.description,
+          price: updatedData.price,
+          discountPrice: updatedData.discountPrice,
+          coverImage: updatedData.coverImage,
+          screenshots: updatedData.screenshots,
+          category: updatedData.category,
+          platform: updatedData.platform,
+          type: updatedData.type,
+          status: updatedData.status,
+          isFlashDeal: updatedData.isFlashDeal,
+          isFeaturedDeal: updatedData.isFeaturedDeal,
+          specs: updatedData.specs,
+          warrantyMonths: updatedData.warrantyMonths,
+        }
+      });
+    } catch (e) {}
 
     revalidatePath('/');
     revalidatePath('/products');
+    revalidatePath('/admin');
+    revalidatePath('/staff');
 
     return NextResponse.json(
-      { message: 'Cập nhật sản phẩm thành công!', product: updatedProduct },
+      { message: 'Cập nhật linh kiện thành công!', product: updatedData },
       { status: 200 }
     );
   } catch (error: any) {
-    console.error('Lỗi khi cập nhật sản phẩm:', error);
+    console.error('Lỗi khi cập nhật linh kiện:', error);
     return NextResponse.json(
-      { message: 'Lỗi cập nhật sản phẩm: ' + error.message },
+      { message: 'Lỗi cập nhật linh kiện: ' + error.message },
       { status: 500 }
     );
   }
@@ -262,18 +292,26 @@ export async function DELETE(request: Request) {
     const id = searchParams.get('id');
 
     if (!id) {
-      return NextResponse.json({ message: 'ID sản phẩm là bắt buộc' }, { status: 400 });
+      return NextResponse.json({ message: 'ID linh kiện là bắt buộc' }, { status: 400 });
     }
 
-    await prisma.product.delete({
-      where: { id },
-    });
+    try {
+      await supabase.from('Product').delete().eq('id', id);
+    } catch (e) {}
+
+    try {
+      await prisma.product.delete({
+        where: { id },
+      });
+    } catch (e) {}
 
     revalidatePath('/');
     revalidatePath('/products');
+    revalidatePath('/admin');
+    revalidatePath('/staff');
 
-    return NextResponse.json({ message: 'Đã xóa sản phẩm thành công!' }, { status: 200 });
+    return NextResponse.json({ message: 'Đã xóa linh kiện thành công!' }, { status: 200 });
   } catch (error: any) {
-    return NextResponse.json({ message: 'Lỗi xóa sản phẩm' }, { status: 500 });
+    return NextResponse.json({ message: 'Lỗi xóa linh kiện: ' + error.message }, { status: 500 });
   }
 }

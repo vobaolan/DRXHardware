@@ -6,10 +6,12 @@ import {
   Boxes, Package, ShoppingCart, Users, ShieldCheck, 
   TrendingUp, AlertTriangle, Plus, Search, CheckCircle2, 
   Wrench, ArrowLeft, RefreshCw, Lock, ShieldAlert,
-  ChevronRight, Truck, FileText, SearchCode, Database, Tag, Clock, HardDrive, Cpu
+  ChevronRight, Truck, FileText, SearchCode, Database, Tag, Clock, HardDrive, Cpu,
+  Edit2, Trash2, Eye
 } from 'lucide-react';
 import { INITIAL_PRODUCTS, HardwareProduct } from '@/lib/hardware-data';
 import { showToast } from '@/components/Toast';
+import { ProductFormModal, ProductFormData } from '@/components/admin/ProductFormModal';
 
 export default function StaffWarehousePortalPage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -21,8 +23,13 @@ export default function StaffWarehousePortalPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
 
-  // Modals
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  // Full Hardware CRUD Modals
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [formModalMode, setFormModalMode] = useState<'create' | 'edit'>('create');
+  const [editingProduct, setEditingProduct] = useState<ProductFormData | null>(null);
+  const [viewingProduct, setViewingProduct] = useState<HardwareProduct | null>(null);
+
+  // Serial & Legacy Modals
   const [isSnModalOpen, setIsSnModalOpen] = useState(false);
 
   // New Hardware Form States
@@ -161,6 +168,91 @@ export default function StaffWarehousePortalPage() {
 
   const formatVND = (num: number) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(num);
+  };
+
+  const handleOpenCreate = () => {
+    setEditingProduct(null);
+    setFormModalMode('create');
+    setIsFormModalOpen(true);
+  };
+
+  const handleOpenEdit = (p: HardwareProduct) => {
+    const formattedData: ProductFormData = {
+      id: p.id,
+      name: p.name,
+      category: p.category,
+      brand: p.brand,
+      price: p.price,
+      discountPrice: p.discountPrice,
+      stockQuantity: p.stockCount ?? 15,
+      warrantyMonths: p.warrantyMonths || 36,
+      coverImage: p.coverImage,
+      screenshots: p.images || [p.coverImage],
+      specs: (p.specs as any) || {},
+      isFlashDeal: Boolean(p.isFlashDeal),
+      isFeatured: Boolean(p.isBestSeller),
+      isPrebuilt: Boolean(p.isPrebuilt),
+      status: p.inStock !== false,
+    };
+    setEditingProduct(formattedData);
+    setFormModalMode('edit');
+    setIsFormModalOpen(true);
+  };
+
+  const handleDeleteProduct = async (p: HardwareProduct) => {
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa linh kiện "${p.name}" khỏi hệ thống kho?`)) {
+      return;
+    }
+
+    try {
+      await fetch(`/api/admin/products?id=${p.id}`, { method: 'DELETE' });
+      const updated = products.filter(item => item.id !== p.id);
+      setProducts(updated);
+      try {
+        localStorage.setItem('ods_custom_products', JSON.stringify(updated));
+      } catch (e) {}
+      showToast(`Đã xóa linh kiện "${p.name}" khỏi hệ thống kho!`, 'success');
+    } catch (e) {
+      showToast('Lỗi khi xóa linh kiện!', 'error');
+    }
+  };
+
+  const handleProductSaved = (saved: ProductFormData) => {
+    let updated: HardwareProduct[];
+    const existingIndex = products.findIndex(p => p.id === saved.id);
+
+    const mappedProduct: HardwareProduct = {
+      id: saved.id || `prod-${Date.now()}`,
+      name: saved.name,
+      slug: saved.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, ''),
+      category: saved.category as any,
+      brand: saved.brand,
+      price: saved.price,
+      discountPrice: saved.discountPrice,
+      inStock: saved.status !== false,
+      stockCount: saved.stockQuantity,
+      warrantyMonths: saved.warrantyMonths,
+      rating: 5.0,
+      reviewCount: 1,
+      coverImage: saved.coverImage,
+      images: saved.screenshots,
+      specs: saved.specs as any,
+      isFlashDeal: saved.isFlashDeal,
+      isBestSeller: saved.isFeatured,
+      isPrebuilt: saved.isPrebuilt,
+    };
+
+    if (existingIndex >= 0) {
+      updated = [...products];
+      updated[existingIndex] = mappedProduct;
+    } else {
+      updated = [mappedProduct, ...products];
+    }
+
+    setProducts(updated);
+    try {
+      localStorage.setItem('ods_custom_products', JSON.stringify(updated));
+    } catch (e) {}
   };
 
   const filteredProducts = products.filter(p => {
@@ -497,42 +589,86 @@ export default function StaffWarehousePortalPage() {
                 </div>
 
                 <button
-                  onClick={() => setIsAddModalOpen(true)}
-                  className="px-4 py-2 bg-[#0284c7] hover:bg-[#0369a1] text-white text-xs font-bold uppercase rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-xs shrink-0"
+                  onClick={handleOpenCreate}
+                  className="px-4 py-2 bg-gradient-to-r from-[#0284c7] to-[#38bdf8] hover:from-[#0369a1] hover:to-[#0284c7] text-white text-xs font-bold uppercase rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-sm shrink-0"
                 >
                   <Plus className="w-4 h-4" />
-                  <span>Thêm Sản Phẩm Mới</span>
+                  <span>Thêm Linh Kiện Mới</span>
                 </button>
               </div>
 
               <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
-                <table className="w-full text-left text-xs">
-                  <thead>
-                    <tr className="border-b border-slate-200 bg-slate-50 text-slate-500 font-extrabold uppercase tracking-wider text-[10px]">
-                      <th className="py-3 px-4">Sản Phẩm Linh Kiện</th>
-                      <th className="py-3 px-4">Danh Mục</th>
-                      <th className="py-3 px-4">Thương Hiệu</th>
-                      <th className="py-3 px-4">Giá Niêm Yết</th>
-                      <th className="py-3 px-4">Tồn Kho Thực Tế</th>
-                      <th className="py-3 px-4">Bảo Hành</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 font-medium">
-                    {filteredProducts.slice(0, 15).map((p) => (
-                      <tr key={p.id} className="hover:bg-sky-50/50 transition-colors">
-                        <td className="py-3 px-4 flex items-center gap-3">
-                          <img src={p.coverImage} alt={p.name} className="w-9 h-9 rounded-lg object-cover bg-slate-100 border border-slate-200" />
-                          <span className="font-bold text-slate-900 line-clamp-1">{p.name}</span>
-                        </td>
-                        <td className="py-3 px-4 text-[#0284c7] font-bold uppercase text-[10px]">{p.category}</td>
-                        <td className="py-3 px-4 text-slate-700 font-semibold">{p.brand}</td>
-                        <td className="py-3 px-4 font-bold text-slate-900">{formatVND(p.price)}</td>
-                        <td className="py-3 px-4 text-emerald-600 font-bold">{p.stockCount ?? 12} món</td>
-                        <td className="py-3 px-4 text-slate-500">{p.warrantyMonths || 36}T</td>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-slate-200 bg-slate-50 text-slate-500 font-extrabold uppercase tracking-wider text-[10px]">
+                        <th className="py-3 px-4 min-w-[240px]">Sản Phẩm Linh Kiện</th>
+                        <th className="py-3 px-4 whitespace-nowrap">Danh Mục</th>
+                        <th className="py-3 px-4 whitespace-nowrap">Thương Hiệu</th>
+                        <th className="py-3 px-4 whitespace-nowrap">Giá Niêm Yết</th>
+                        <th className="py-3 px-4 text-center whitespace-nowrap">Tồn Kho Thực Tế</th>
+                        <th className="py-3 px-4 text-center whitespace-nowrap">Bảo Hành</th>
+                        <th className="py-3 px-4 text-right whitespace-nowrap">Thao Tác Kho</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 font-medium">
+                      {filteredProducts.map((p) => (
+                        <tr key={p.id} className="hover:bg-sky-50/50 transition-colors">
+                          <td className="py-3 px-4 flex items-center gap-3 min-w-[240px]">
+                            <img src={p.coverImage} alt={p.name} className="w-9 h-9 rounded-lg object-cover bg-slate-100 border border-slate-200 shrink-0 shadow-2xs" />
+                            <div className="min-w-0 flex-1">
+                              <span className="font-bold text-slate-900 line-clamp-1 text-xs" title={p.name}>{p.name}</span>
+                              <span className="text-[10px] text-slate-400 font-mono block mt-0.5">ID: {p.id}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-[#0284c7] font-bold uppercase text-[10px] whitespace-nowrap">{p.category}</td>
+                          <td className="py-3 px-4 text-slate-700 font-semibold whitespace-nowrap">{p.brand}</td>
+                          <td className="py-3 px-4 font-bold text-slate-900 whitespace-nowrap">{formatVND(p.price)}</td>
+                          <td className="py-3 px-4 text-center whitespace-nowrap">
+                            <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-full text-[10.5px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              {p.stockCount ?? 12} món
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-center whitespace-nowrap">
+                            <span className="text-slate-600 font-bold">{p.warrantyMonths || 36} Tháng</span>
+                          </td>
+                          <td className="py-3 px-4 text-right whitespace-nowrap">
+                            <div className="flex items-center justify-end gap-1.5">
+                              {/* Edit Button */}
+                              <button
+                                onClick={() => handleOpenEdit(p)}
+                                className="inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-500 text-amber-700 hover:text-white border border-amber-200 font-extrabold text-[11px] transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
+                                title="Chỉnh sửa thông tin & hình ảnh linh kiện"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                                <span>Sửa</span>
+                              </button>
+
+                              {/* View Specs Button */}
+                              <button
+                                onClick={() => setViewingProduct(p)}
+                                className="inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-xl bg-sky-50 hover:bg-[#0284c7] text-[#0284c7] hover:text-white border border-sky-200 font-extrabold text-[11px] transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
+                                title="Xem chi tiết thông số kỹ thuật"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                                <span>Xem</span>
+                              </button>
+
+                              {/* Delete Button */}
+                              <button
+                                onClick={() => handleDeleteProduct(p)}
+                                className="inline-flex items-center justify-center p-1.5 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white border border-rose-200 font-extrabold text-[11px] transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
+                                title="Xóa linh kiện này khỏi kho"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
@@ -1118,6 +1254,92 @@ export default function StaffWarehousePortalPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* FULL HARDWARE COMPONENT CRUD MODAL (ADD & EDIT WITH REAL PHOTO PRESETS & GALLERY) */}
+      <ProductFormModal
+        isOpen={isFormModalOpen}
+        mode={formModalMode}
+        initialData={editingProduct}
+        onClose={() => setIsFormModalOpen(false)}
+        onSaved={handleProductSaved}
+      />
+
+      {/* PRODUCT SPECIFICATIONS INSPECTION MODAL */}
+      {viewingProduct && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-2xl w-full space-y-6 shadow-2xl overflow-y-auto max-h-[90vh]">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-sky-50 text-[#0284c7] border border-sky-200">
+                  <Eye className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-extrabold uppercase text-[#0284c7] tracking-wider block">THÔNG SỐ KỸ THUẬT LINH KIỆN</span>
+                  <h3 className="font-heading text-base font-black text-slate-900 line-clamp-1">{viewingProduct.name}</h3>
+                </div>
+              </div>
+              <button
+                onClick={() => setViewingProduct(null)}
+                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-5 items-center bg-slate-50 p-4 rounded-2xl border border-slate-200">
+              <div className="sm:col-span-4 aspect-square rounded-xl overflow-hidden bg-white border border-slate-200 p-2 flex items-center justify-center shadow-2xs">
+                <img src={viewingProduct.coverImage} alt={viewingProduct.name} className="w-full h-full object-contain" />
+              </div>
+              <div className="sm:col-span-8 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-[#0284c7] text-white">
+                    {viewingProduct.category}
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-700">
+                    Hãng: {viewingProduct.brand}
+                  </span>
+                </div>
+                <div className="text-xl font-black text-slate-900 font-heading">
+                  {formatVND(viewingProduct.price)}
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs font-semibold pt-1">
+                  <div className="p-2 rounded-lg bg-white border border-slate-200">
+                    <span className="text-slate-400 text-[10px] block uppercase font-bold">Tồn Kho Khả Dụng</span>
+                    <span className="text-emerald-600 font-extrabold">{viewingProduct.stockCount ?? 12} chiếc</span>
+                  </div>
+                  <div className="p-2 rounded-lg bg-white border border-slate-200">
+                    <span className="text-slate-400 text-[10px] block uppercase font-bold">Bảo Hành</span>
+                    <span className="text-slate-900 font-extrabold">{viewingProduct.warrantyMonths || 36} Tháng</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {viewingProduct.specs && typeof viewingProduct.specs === 'object' && (
+              <div className="space-y-2">
+                <span className="text-xs font-black uppercase text-slate-900 tracking-wider block">Bảng Thông Số Kỹ Thuật</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  {Object.entries(viewingProduct.specs).map(([key, val], idx) => (
+                    <div key={idx} className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex justify-between">
+                      <span className="text-slate-500 font-bold">{key}:</span>
+                      <span className="text-slate-900 font-extrabold">{String(val)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center justify-end border-t border-slate-100 pt-4">
+              <button
+                onClick={() => setViewingProduct(null)}
+                className="px-5 py-2 rounded-xl bg-slate-900 hover:bg-[#0284c7] text-white font-extrabold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-md"
+              >
+                Đóng
+              </button>
+            </div>
           </div>
         </div>
       )}

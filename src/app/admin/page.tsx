@@ -7,10 +7,12 @@ import {
   TrendingUp, DollarSign, AlertTriangle, Plus, Search, Printer, 
   Eye, CheckCircle2, XCircle, Truck, ArrowUpRight, ChevronRight, 
   Boxes, Cpu, ShieldAlert, Lock, ArrowLeft, RefreshCw, Download,
-  Wrench, FileText, Sparkles, Filter, X, Award, ExternalLink
+  Wrench, FileText, Sparkles, Filter, X, Award, ExternalLink,
+  Edit2, Trash2
 } from 'lucide-react';
 import { INITIAL_PRODUCTS, HardwareProduct } from '@/lib/hardware-data';
 import { showToast } from '@/components/Toast';
+import { ProductFormModal, ProductFormData } from '@/components/admin/ProductFormModal';
 
 export default function AdminDashboardPage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -23,8 +25,11 @@ export default function AdminDashboardPage() {
   const [timeFilter, setTimeFilter] = useState<'7days' | '30days' | 'year'>('7days');
   const [isSnModalOpen, setIsSnModalOpen] = useState(false);
 
-  // READ-ONLY PRODUCT INSPECTION STATE (FOR CEO / ADMIN ONLY)
+  // PRODUCT MODALS (ADD, EDIT, INSPECT)
   const [viewingProduct, setViewingProduct] = useState<HardwareProduct | null>(null);
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [formModalMode, setFormModalMode] = useState<'create' | 'edit'>('create');
+  const [editingProduct, setEditingProduct] = useState<ProductFormData | null>(null);
 
   // SN import form state
   const [snProdName, setSnProdName] = useState('Card Màn Hình ASUS ROG Strix RTX 4060');
@@ -144,6 +149,91 @@ export default function AdminDashboardPage() {
     setIsSnModalOpen(false);
     setSnCode('');
     showToast(`Đã nhập mã Serial ${snCode} vào kho linh kiện!`, 'success');
+  };
+
+  const handleOpenCreate = () => {
+    setEditingProduct(null);
+    setFormModalMode('create');
+    setIsFormModalOpen(true);
+  };
+
+  const handleOpenEdit = (p: HardwareProduct) => {
+    const formattedData: ProductFormData = {
+      id: p.id,
+      name: p.name,
+      category: p.category,
+      brand: p.brand,
+      price: p.price,
+      discountPrice: p.discountPrice,
+      stockQuantity: p.stockCount ?? 15,
+      warrantyMonths: p.warrantyMonths || 36,
+      coverImage: p.coverImage,
+      screenshots: p.images || [p.coverImage],
+      specs: (p.specs as any) || {},
+      isFlashDeal: Boolean(p.isFlashDeal),
+      isFeatured: Boolean(p.isBestSeller),
+      isPrebuilt: Boolean(p.isPrebuilt),
+      status: p.inStock !== false,
+    };
+    setEditingProduct(formattedData);
+    setFormModalMode('edit');
+    setIsFormModalOpen(true);
+  };
+
+  const handleDeleteProduct = async (p: HardwareProduct) => {
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa linh kiện "${p.name}" khỏi hệ thống?`)) {
+      return;
+    }
+
+    try {
+      await fetch(`/api/admin/products?id=${p.id}`, { method: 'DELETE' });
+      const updated = products.filter(item => item.id !== p.id);
+      setProducts(updated);
+      try {
+        localStorage.setItem('ods_custom_products', JSON.stringify(updated));
+      } catch (e) {}
+      showToast(`Đã xóa linh kiện "${p.name}" thành công!`, 'success');
+    } catch (e) {
+      showToast('Lỗi khi xóa linh kiện!', 'error');
+    }
+  };
+
+  const handleProductSaved = (saved: ProductFormData) => {
+    let updated: HardwareProduct[];
+    const existingIndex = products.findIndex(p => p.id === saved.id);
+
+    const mappedProduct: HardwareProduct = {
+      id: saved.id || `prod-${Date.now()}`,
+      name: saved.name,
+      slug: saved.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, ''),
+      category: saved.category as any,
+      brand: saved.brand,
+      price: saved.price,
+      discountPrice: saved.discountPrice,
+      inStock: saved.status !== false,
+      stockCount: saved.stockQuantity,
+      warrantyMonths: saved.warrantyMonths,
+      rating: 5.0,
+      reviewCount: 1,
+      coverImage: saved.coverImage,
+      images: saved.screenshots,
+      specs: saved.specs as any,
+      isFlashDeal: saved.isFlashDeal,
+      isBestSeller: saved.isFeatured,
+      isPrebuilt: saved.isPrebuilt,
+    };
+
+    if (existingIndex >= 0) {
+      updated = [...products];
+      updated[existingIndex] = mappedProduct;
+    } else {
+      updated = [mappedProduct, ...products];
+    }
+
+    setProducts(updated);
+    try {
+      localStorage.setItem('ods_custom_products', JSON.stringify(updated));
+    } catch (e) {}
   };
 
   const updateOrderStatus = (orderId: string, newStatus: string) => {
@@ -516,7 +606,7 @@ export default function AdminDashboardPage() {
             </div>
           )}
 
-          {/* ==================== TAB 2: PRODUCTS CATALOG INSPECTOR (READ-ONLY FOR ADMIN) ==================== */}
+          {/* ==================== TAB 2: PRODUCTS CATALOG INSPECTOR (FULL CRUD FOR ADMIN) ==================== */}
           {activeTab === 'products' && (
             <div className="space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
@@ -564,10 +654,18 @@ export default function AdminDashboardPage() {
                   >
                     Màn Hình
                   </button>
+
+                  <button
+                    onClick={handleOpenCreate}
+                    className="px-4 py-2 bg-gradient-to-r from-[#0284c7] to-[#38bdf8] hover:from-[#0369a1] hover:to-[#0284c7] text-white text-xs font-bold uppercase rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-sm shrink-0 ml-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Thêm Linh Kiện Mới</span>
+                  </button>
                 </div>
               </div>
 
-              {/* READ-ONLY PRODUCT CATALOG TABLE */}
+              {/* PRODUCT CATALOG TABLE WITH EDIT/DELETE ACTIONS */}
               <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
@@ -579,7 +677,7 @@ export default function AdminDashboardPage() {
                         <th className="py-3.5 px-4 whitespace-nowrap">Giá Niêm Yết</th>
                         <th className="py-3.5 px-4 text-center whitespace-nowrap">Tồn Kho</th>
                         <th className="py-3.5 px-4 text-center whitespace-nowrap">Bảo Hành</th>
-                        <th className="py-3.5 px-4 text-right whitespace-nowrap">Chi Tiết Thông Số</th>
+                        <th className="py-3.5 px-4 text-right whitespace-nowrap">Thao Tác Quản Trị</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 font-medium">
@@ -606,13 +704,36 @@ export default function AdminDashboardPage() {
                             </span>
                           </td>
                           <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                            <button
-                              onClick={() => setViewingProduct(p)}
-                              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-sky-50 hover:bg-[#0284c7] text-[#0284c7] hover:text-white border border-sky-200/80 font-extrabold text-[11px] transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95 whitespace-nowrap"
-                            >
-                              <Eye className="w-3.5 h-3.5 shrink-0" />
-                              <span>Xem Chi Tiết</span>
-                            </button>
+                            <div className="flex items-center justify-end gap-1.5">
+                              {/* Edit Button */}
+                              <button
+                                onClick={() => handleOpenEdit(p)}
+                                className="inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-500 text-amber-700 hover:text-white border border-amber-200 font-extrabold text-[11px] transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
+                                title="Chỉnh sửa thông tin & hình ảnh linh kiện"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                                <span>Sửa</span>
+                              </button>
+
+                              {/* View Specs Button */}
+                              <button
+                                onClick={() => setViewingProduct(p)}
+                                className="inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-xl bg-sky-50 hover:bg-[#0284c7] text-[#0284c7] hover:text-white border border-sky-200 font-extrabold text-[11px] transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
+                                title="Xem chi tiết thông số kỹ thuật"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                                <span>Xem</span>
+                              </button>
+
+                              {/* Delete Button */}
+                              <button
+                                onClick={() => handleDeleteProduct(p)}
+                                className="inline-flex items-center justify-center p-1.5 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white border border-rose-200 font-extrabold text-[11px] transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
+                                title="Xóa linh kiện này"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -792,6 +913,15 @@ export default function AdminDashboardPage() {
           </div>
         </div>
       )}
+
+      {/* FULL HARDWARE COMPONENT CRUD MODAL (ADD & EDIT WITH REAL PHOTO PRESETS & GALLERY) */}
+      <ProductFormModal
+        isOpen={isFormModalOpen}
+        mode={formModalMode}
+        initialData={editingProduct}
+        onClose={() => setIsFormModalOpen(false)}
+        onSaved={handleProductSaved}
+      />
     </div>
   );
 }
