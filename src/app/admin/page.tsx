@@ -866,24 +866,82 @@ export default function AdminDashboardPage() {
       {/* MODAL 2: IMPORT SERIAL NUMBER (LIGHT THEME) */}
       {isSnModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-md w-full space-y-5 shadow-2xl">
-            <h3 className="font-heading text-sm font-black uppercase text-slate-900 border-b border-slate-100 pb-3 flex items-center gap-2">
-              <Boxes className="w-4 h-4 text-emerald-600" />
-              <span>GÁN MÃ SERIAL (SN) VÀO KHO LINH KIỆN</span>
-            </h3>
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-lg w-full space-y-5 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="font-heading text-sm font-black uppercase text-slate-900 flex items-center gap-2">
+                <Boxes className="w-4 h-4 text-emerald-600" />
+                <span>GÁN MÃ SERIAL (SN) VÀO KHO LINH KIỆN</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsSnModalOpen(false)}
+                className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
             <form onSubmit={handleAddSn} className="space-y-4 text-xs">
-              <div className="space-y-1">
-                <label className="text-slate-500 font-bold uppercase">Sản Phẩm Cần Gán SN</label>
-                <input
-                  type="text"
+              {/* 1. SELECT PRODUCT DROPDOWN */}
+              <div className="space-y-1.5">
+                <label className="text-slate-700 font-bold uppercase text-[11px] flex items-center justify-between">
+                  <span>Chọn Linh Kiện Cần Gán SN</span>
+                  <span className="text-[10px] text-[#0284c7] font-semibold">{products.length} linh kiện có sẵn</span>
+                </label>
+                <select
                   value={snProdName}
-                  onChange={(e) => setSnProdName(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-900 font-semibold"
-                />
+                  onChange={(e) => {
+                    setSnProdName(e.target.value);
+                    const prod = products.find(p => p.name === e.target.value);
+                    if (prod) {
+                      const cleanBrand = (prod.brand || 'DRX').toUpperCase();
+                      const cleanCat = (prod.category || 'PART').toUpperCase();
+                      setSnCode(`SN-${cleanCat}-${cleanBrand}-${Math.floor(10000 + Math.random() * 90000)}`);
+                    }
+                  }}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 font-bold text-xs focus:border-[#0284c7] focus:bg-white focus:outline-none cursor-pointer"
+                >
+                  {products.map((p) => (
+                    <option key={p.id} value={p.name}>
+                      [{p.category}] {p.name} • {p.brand} ({p.stockCount ?? 15} món trong kho)
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-slate-500 font-bold uppercase">Mã Serial Number (SN)</label>
+              {/* 2. SELECTED PRODUCT PREVIEW CARD */}
+              {(() => {
+                const selectedProd = products.find(p => p.name === snProdName) || products[0];
+                if (!selectedProd) return null;
+                return (
+                  <div className="flex items-center gap-3 p-3 rounded-2xl bg-sky-50/70 border border-sky-200/80">
+                    <img src={selectedProd.coverImage} alt={selectedProd.name} className="w-12 h-12 rounded-xl object-cover bg-white border border-slate-200 shadow-2xs shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <span className="text-[10px] font-black uppercase text-[#0284c7] block">{selectedProd.category} • Hãng: {selectedProd.brand}</span>
+                      <span className="text-xs font-bold text-slate-900 line-clamp-1 block">{selectedProd.name}</span>
+                      <span className="text-[10px] text-slate-500 font-medium">Bảo hành: {selectedProd.warrantyMonths || 36} Tháng chính hãng</span>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* 3. SERIAL CODE INPUT WITH AUTO-GENERATE BUTTON */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-slate-700 font-bold uppercase text-[11px]">Mã Serial Number (SN)</label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const prod = products.find(p => p.name === snProdName) || products[0];
+                      const cleanBrand = (prod?.brand || 'DRX').toUpperCase();
+                      const cleanCat = (prod?.category || 'PART').toUpperCase();
+                      setSnCode(`SN-${cleanCat}-${cleanBrand}-${Math.floor(10000 + Math.random() * 90000)}`);
+                    }}
+                    className="text-[10px] font-bold text-[#0284c7] hover:underline cursor-pointer"
+                  >
+                    ⚡ Tạo mã tự động
+                  </button>
+                </div>
                 <input
                   type="text"
                   required
@@ -898,13 +956,13 @@ export default function AdminDashboardPage() {
                 <button
                   type="button"
                   onClick={() => setIsSnModalOpen(false)}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl"
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl cursor-pointer"
                 >
                   Hủy Bỏ
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold uppercase rounded-xl shadow-md"
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold uppercase rounded-xl shadow-md cursor-pointer"
                 >
                   Lưu Mã Serial
                 </button>
