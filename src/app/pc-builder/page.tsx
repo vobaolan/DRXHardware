@@ -5,13 +5,6 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { INITIAL_PRODUCTS, HardwareProduct } from '@/lib/hardware-data';
 import { 
-  Cpu, 
-  MonitorPlay, 
-  CircuitBoard, 
-  MemoryStick, 
-  HardDrive, 
-  Zap, 
-  Box, 
   CheckCircle2, 
   Trash2, 
   Printer, 
@@ -26,6 +19,15 @@ import {
   ShieldCheck,
   ChevronRight
 } from 'lucide-react';
+import { 
+  IconCpu, 
+  IconMainboard, 
+  IconRam, 
+  IconVga, 
+  IconStorage, 
+  IconPsu, 
+  IconCase 
+} from '@/components/icons/HardwareIcons';
 import Link from 'next/link';
 
 type BuildStep = {
@@ -39,13 +41,13 @@ type BuildStep = {
 };
 
 const BUILD_STEPS: BuildStep[] = [
-  { key: "cpu", stepNum: "01", name: "Bộ Vi Xử Lý (CPU)", shortBtn: "Chọn CPU", subtitle: "Intel Core i5 / i7 / i9 thế hệ mới hoặc AMD Ryzen 5 / 7 / 9", category: "CPU", icon: Cpu },
-  { key: "mainboard", stepNum: "02", name: "Bo Mạch Chủ (Mainboard)", shortBtn: "Chọn Mainboard", subtitle: "Tương thích Socket LGA1700, AM4, AM5 chuẩn kích thước ATX/mATX", category: "MAINBOARD", icon: CircuitBoard },
-  { key: "ram", stepNum: "03", name: "Bộ Nhớ Trong (RAM)", shortBtn: "Chọn RAM", subtitle: "Chuẩn DDR4 hoặc DDR5 tốc độ cao (Bus 3200MHz - 6000MHz+)", category: "RAM", icon: MemoryStick },
-  { key: "vga", stepNum: "04", name: "Card Màn Hình (VGA)", shortBtn: "Chọn Card VGA", subtitle: "NVIDIA GeForce RTX 40/30 Series hoặc AMD Radeon RX chuyên Gaming/Đồ Họa", category: "VGA", icon: MonitorPlay },
-  { key: "storage", stepNum: "05", name: "Ổ Cứng Lưu Trữ (SSD)", shortBtn: "Chọn Ổ Cứng SSD", subtitle: "SSD M.2 NVMe PCIe Gen 4/5 tốc độ đọc siêu tốc 5000MB/s - 7400MB/s", category: "STORAGE", icon: HardDrive },
-  { key: "psu", stepNum: "06", name: "Nguồn Máy Tính (PSU)", shortBtn: "Chọn Nguồn PSU", subtitle: "Chuẩn 80 Plus Bronze / Gold công suất thực, bảo vệ linh kiện", category: "PSU", icon: Zap },
-  { key: "case", stepNum: "07", name: "Vỏ Case Máy Tính", shortBtn: "Chọn Vỏ Case", subtitle: "Kính cường lực Panoramic, tối ưu lưu thông gió và hỗ trợ quạt ARGB", category: "CASE", icon: Box },
+  { key: "cpu", stepNum: "01", name: "Bộ Vi Xử Lý (CPU)", shortBtn: "Chọn CPU", subtitle: "Intel Core i5 / i7 / i9 thế hệ mới hoặc AMD Ryzen 5 / 7 / 9", category: "CPU", icon: IconCpu },
+  { key: "mainboard", stepNum: "02", name: "Bo Mạch Chủ (Mainboard)", shortBtn: "Chọn Mainboard", subtitle: "Tương thích Socket LGA1700, AM4, AM5 chuẩn kích thước ATX/mATX", category: "MAINBOARD", icon: IconMainboard },
+  { key: "ram", stepNum: "03", name: "Bộ Nhớ Trong (RAM)", shortBtn: "Chọn RAM", subtitle: "Chuẩn DDR4 hoặc DDR5 tốc độ cao (Bus 3200MHz - 6000MHz+)", category: "RAM", icon: IconRam },
+  { key: "vga", stepNum: "04", name: "Card Màn Hình (VGA)", shortBtn: "Chọn Card VGA", subtitle: "NVIDIA GeForce RTX 40/30 Series hoặc AMD Radeon RX chuyên Gaming/Đồ Họa", category: "VGA", icon: IconVga },
+  { key: "storage", stepNum: "05", name: "Ổ Cứng Lưu Trữ (SSD)", shortBtn: "Chọn Ổ Cứng SSD", subtitle: "SSD M.2 NVMe PCIe Gen 4/5 tốc độ đọc siêu tốc 5000MB/s - 7400MB/s", category: "STORAGE", icon: IconStorage },
+  { key: "psu", stepNum: "06", name: "Nguồn Máy Tính (PSU)", shortBtn: "Chọn Nguồn PSU", subtitle: "Chuẩn 80 Plus Bronze / Gold công suất thực, bảo vệ linh kiện", category: "PSU", icon: IconPsu },
+  { key: "case", stepNum: "07", name: "Vỏ Case Máy Tính", shortBtn: "Chọn Vỏ Case", subtitle: "Kính cường lực Panoramic, tối ưu lưu thông gió và hỗ trợ quạt ARGB", category: "CASE", icon: IconCase },
 ];
 
 export default function PCBuilderPage() {

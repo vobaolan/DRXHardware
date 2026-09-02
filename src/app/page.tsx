@@ -10,7 +10,11 @@ import CategoryShowcaseBlock from '@/components/CategoryShowcaseBlock';
 import { CartDrawer } from '@/components/CartDrawer';
 import { Footer } from '@/components/Footer';
 import { CartProvider, useCart } from '@/context/CartContext';
-import { Search, SlidersHorizontal, Flame, Award, Clock, ShoppingCart, Percent, Sparkles, Laptop, Gamepad2, Cpu, Box, Headphones, Monitor, Keyboard, HardDrive, ArrowRight, Layers, Zap } from 'lucide-react';
+import { Search, SlidersHorizontal, Flame, Award, Clock, ShoppingCart, Percent, Sparkles, ArrowRight, Layers, Zap } from 'lucide-react';
+import { 
+  IconLaptop, IconLaptopGaming, IconCpu, IconCase, 
+  IconHeadset, IconMonitor, IconKeyboard, IconStorage 
+} from '@/components/icons/HardwareIcons';
 import { motion, AnimatePresence } from 'framer-motion';
 import { INITIAL_PRODUCTS } from '@/lib/hardware-data';
 
@@ -409,14 +413,14 @@ export default function Home() {
 
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { id: 'LAPTOP', title: 'Laptop', desc: 'Mỏng nhẹ, Doanh nhân, Sinh viên', icon: Laptop, badge: 'MỚI VỀ', color: 'from-cyan-500/20 to-blue-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/30' },
-              { id: 'LAPTOP_GAMING', title: 'Laptop Gaming', desc: 'ROG, Legion, RTX 40 Series', icon: Gamepad2, badge: 'GIẢM SÂU', color: 'from-rose-500/20 to-amber-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30' },
-              { id: 'CORE_PARTS', title: 'Main, CPU, VGA, RAM', desc: 'Vi xử lý, Card đồ họa, Bo mạch', icon: Cpu, badge: 'HOT', color: 'from-amber-500/20 to-yellow-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30' },
-              { id: 'CASE_COOLING', title: 'Case, Nguồn, Tản Nhiệt', desc: 'Vỏ PC, PSU 80 Plus, Tản AIO', icon: Box, badge: 'PC BUILD', color: 'from-emerald-500/20 to-teal-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30' },
-              { id: 'HEADSET', title: 'Tai Nghe', desc: 'Tai nghe Gaming 7.1, Mic lọc ồn', icon: Headphones, badge: 'GEAR', color: 'from-purple-500/20 to-pink-500/10 text-purple-600 dark:text-purple-400 border-purple-500/30' },
-              { id: 'MONITOR', title: 'Màn Hình', desc: '144Hz - 360Hz, 2K/4K OLED, IPS', icon: Monitor, badge: 'BÁN CHẠY', color: 'from-blue-500/20 to-indigo-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30' },
-              { id: 'KEYBOARD', title: 'Bàn Phím', desc: 'Phím cơ Custom, Wireless, Hot-swap', icon: Keyboard, badge: 'CUSTOM', color: 'from-teal-500/20 to-emerald-500/10 text-teal-600 dark:text-teal-400 border-teal-500/30' },
-              { id: 'STORAGE', title: 'Ổ Cứng', desc: 'SSD NVMe PCIe 4.0/5.0, HDD 4TB', icon: HardDrive, badge: 'TỐC ĐỘ', color: 'from-indigo-500/20 to-cyan-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30' },
+              { id: 'LAPTOP', title: 'Laptop', desc: 'Mỏng nhẹ, Doanh nhân, Sinh viên', icon: IconLaptop, badge: 'MỚI VỀ', color: 'from-cyan-500/20 to-blue-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/30' },
+              { id: 'LAPTOP_GAMING', title: 'Laptop Gaming', desc: 'ROG, Legion, RTX 40 Series', icon: IconLaptopGaming, badge: 'GIẢM SÂU', color: 'from-rose-500/20 to-amber-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30' },
+              { id: 'CORE_PARTS', title: 'Main, CPU, VGA, RAM', desc: 'Vi xử lý, Card đồ họa, Bo mạch', icon: IconCpu, badge: 'HOT', color: 'from-amber-500/20 to-yellow-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30' },
+              { id: 'CASE_COOLING', title: 'Case, Nguồn, Tản Nhiệt', desc: 'Vỏ PC, PSU 80 Plus, Tản AIO', icon: IconCase, badge: 'PC BUILD', color: 'from-emerald-500/20 to-teal-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30' },
+              { id: 'HEADSET', title: 'Tai Nghe', desc: 'Tai nghe Gaming 7.1, Mic lọc ồn', icon: IconHeadset, badge: 'GEAR', color: 'from-purple-500/20 to-pink-500/10 text-purple-600 dark:text-purple-400 border-purple-500/30' },
+              { id: 'MONITOR', title: 'Màn Hình', desc: '144Hz - 360Hz, 2K/4K OLED, IPS', icon: IconMonitor, badge: 'BÁN CHẠY', color: 'from-blue-500/20 to-indigo-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30' },
+              { id: 'KEYBOARD', title: 'Bàn Phím', desc: 'Phím cơ Custom, Wireless, Hot-swap', icon: IconKeyboard, badge: 'CUSTOM', color: 'from-teal-500/20 to-emerald-500/10 text-teal-600 dark:text-teal-400 border-teal-500/30' },
+              { id: 'STORAGE', title: 'Ổ Cứng', desc: 'SSD NVMe PCIe 4.0/5.0, HDD 4TB', icon: IconStorage, badge: 'TỐC ĐỘ', color: 'from-indigo-500/20 to-cyan-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30' },
             ].map((cat) => {
               const Icon = cat.icon;
               return (

@@ -5,10 +5,13 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { 
   ShoppingBag, User, Wallet, ShieldAlert, Package, Users, ChevronDown,
-  Clock, Flame, Tag, Key, Bell, ClipboardList, MessageCircle, Cpu, ShieldCheck,
-  Sun, Moon, Search, Grid, Receipt, Sparkles, Layers, HardDrive, Zap, Award, HelpCircle,
-  Laptop, Gamepad2, Box, Headphones, Monitor, Keyboard
+  Clock, Flame, Tag, Key, Bell, ClipboardList, MessageCircle, ShieldCheck,
+  Sun, Moon, Search, Grid, Receipt, Sparkles, Layers, Zap, Award, HelpCircle
 } from 'lucide-react';
+import { 
+  IconLaptop, IconLaptopGaming, IconCpu, IconCase, 
+  IconHeadset, IconMonitor, IconKeyboard, IconStorage 
+} from '@/components/icons/HardwareIcons';
 import { useCart } from '../context/CartContext';
 import { useTheme } from '../context/ThemeContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -187,14 +190,14 @@ export const Header: React.FC = () => {
   };
 
   const hardwareCategories = [
-    { id: 'LAPTOP', name: 'Laptop', desc: 'Laptop văn phòng, mỏng nhẹ, pin trâu', icon: Laptop, color: 'text-cyan-500' },
-    { id: 'LAPTOP_GAMING', name: 'Laptop Gaming', desc: 'ASUS ROG, MSI, Legion RTX 40 Series', icon: Gamepad2, color: 'text-rose-500' },
-    { id: 'CORE_PARTS', name: 'Main, CPU, VGA, RAM', desc: 'Vi xử lý, Card đồ họa, Bo mạch chủ, RAM', icon: Cpu, color: 'text-amber-500' },
-    { id: 'CASE_COOLING', name: 'Case, Nguồn, Tản Nhiệt', desc: 'Vỏ PC gaming, PSU 80 Plus, Tản AIO', icon: Box, color: 'text-emerald-500' },
-    { id: 'HEADSET', name: 'Tai Nghe', desc: 'Tai nghe gaming 7.1, không dây, mic lọc ồn', icon: Headphones, color: 'text-purple-500' },
-    { id: 'MONITOR', name: 'Màn Hình', desc: 'Màn hình 144Hz - 360Hz, 2K/4K OLED, IPS', icon: Monitor, color: 'text-blue-500' },
-    { id: 'KEYBOARD', name: 'Bàn Phím', desc: 'Bàn phím cơ Custom, Wireless, Hot-swap', icon: Keyboard, color: 'text-teal-500' },
-    { id: 'STORAGE', name: 'Ổ Cứng', desc: 'SSD NVMe PCIe 4.0/5.0, HDD lưu trữ', icon: HardDrive, color: 'text-indigo-500' },
+    { id: 'LAPTOP', name: 'Laptop', desc: 'Laptop văn phòng, mỏng nhẹ, pin trâu', icon: IconLaptop, color: 'text-cyan-500' },
+    { id: 'LAPTOP_GAMING', name: 'Laptop Gaming', desc: 'ASUS ROG, MSI, Legion RTX 40 Series', icon: IconLaptopGaming, color: 'text-rose-500' },
+    { id: 'CORE_PARTS', name: 'Main, CPU, VGA, RAM', desc: 'Vi xử lý, Card đồ họa, Bo mạch chủ, RAM', icon: IconCpu, color: 'text-amber-500' },
+    { id: 'CASE_COOLING', name: 'Case, Nguồn, Tản Nhiệt', desc: 'Vỏ PC gaming, PSU 80 Plus, Tản AIO', icon: IconCase, color: 'text-emerald-500' },
+    { id: 'HEADSET', name: 'Tai Nghe', desc: 'Tai nghe gaming 7.1, không dây, mic lọc ồn', icon: IconHeadset, color: 'text-purple-500' },
+    { id: 'MONITOR', name: 'Màn Hình', desc: 'Màn hình 144Hz - 360Hz, 2K/4K OLED, IPS', icon: IconMonitor, color: 'text-blue-500' },
+    { id: 'KEYBOARD', name: 'Bàn Phím', desc: 'Bàn phím cơ Custom, Wireless, Hot-swap', icon: IconKeyboard, color: 'text-teal-500' },
+    { id: 'STORAGE', name: 'Ổ Cứng', desc: 'SSD NVMe PCIe 4.0/5.0, HDD lưu trữ', icon: IconStorage, color: 'text-indigo-500' },
   ];
 
   const sponsorBrands = [
@@ -475,7 +478,7 @@ export const Header: React.FC = () => {
               href="/pc-builder"
               className="flex items-center gap-1.5 font-heading text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-1 group"
             >
-              <Cpu className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+              <IconCpu size={14} className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
               <span>BUILD PC TỰ ĐỘNG</span>
             </Link>
 

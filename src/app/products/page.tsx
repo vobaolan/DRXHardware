@@ -8,9 +8,12 @@ import { ProductCard, ProductProps } from '@/components/ProductCard';
 import { Footer } from '@/components/Footer';
 import { CartProvider } from '@/context/CartContext';
 import { 
-  Search, SlidersHorizontal, Flame, Clock, Tag, ArrowLeft, Grid,
-  Laptop, Gamepad2, Cpu, Box, Headphones, Monitor, Keyboard, HardDrive, Layers
+  Search, SlidersHorizontal, Flame, Clock, Tag, ArrowLeft, Grid, Layers
 } from 'lucide-react';
+import { 
+  IconLaptop, IconLaptopGaming, IconCpu, IconCase, 
+  IconHeadset, IconMonitor, IconKeyboard, IconStorage 
+} from '@/components/icons/HardwareIcons';
 
 const CATEGORY_CONFIG: Record<string, { title: string; subtitle: string; iconName: string }> = {
   ALL: {
@@ -62,26 +65,26 @@ const CATEGORY_CONFIG: Record<string, { title: string; subtitle: string; iconNam
 
 const CATEGORY_PILLS = [
   { id: 'ALL', label: 'Tất Cả', icon: Grid },
-  { id: 'LAPTOP', label: 'Laptop', icon: Laptop },
-  { id: 'LAPTOP_GAMING', label: 'Laptop Gaming', icon: Gamepad2 },
-  { id: 'CORE_PARTS', label: 'Linh Kiện Core', icon: Cpu },
-  { id: 'CASE_COOLING', label: 'Case & Tản Nhiệt', icon: Box },
-  { id: 'HEADSET', label: 'Tai Nghe Gaming', icon: Headphones },
-  { id: 'MONITOR', label: 'Màn Hình', icon: Monitor },
-  { id: 'KEYBOARD', label: 'Bàn Phím & Chuột', icon: Keyboard },
-  { id: 'STORAGE', label: 'Ổ Cứng SSD', icon: HardDrive },
+  { id: 'LAPTOP', label: 'Laptop', icon: IconLaptop },
+  { id: 'LAPTOP_GAMING', label: 'Laptop Gaming', icon: IconLaptopGaming },
+  { id: 'CORE_PARTS', label: 'Linh Kiện Core', icon: IconCpu },
+  { id: 'CASE_COOLING', label: 'Case & Tản Nhiệt', icon: IconCase },
+  { id: 'HEADSET', label: 'Tai Nghe Gaming', icon: IconHeadset },
+  { id: 'MONITOR', label: 'Màn Hình', icon: IconMonitor },
+  { id: 'KEYBOARD', label: 'Bàn Phím & Chuột', icon: IconKeyboard },
+  { id: 'STORAGE', label: 'Ổ Cứng SSD', icon: IconStorage },
 ];
 
 function CategoryIcon({ name, className }: { name: string; className?: string }) {
   switch (name) {
-    case 'Laptop': return <Laptop className={className} />;
-    case 'Gamepad2': return <Gamepad2 className={className} />;
-    case 'Cpu': return <Cpu className={className} />;
-    case 'Box': return <Box className={className} />;
-    case 'Headphones': return <Headphones className={className} />;
-    case 'Monitor': return <Monitor className={className} />;
-    case 'Keyboard': return <Keyboard className={className} />;
-    case 'HardDrive': return <HardDrive className={className} />;
+    case 'Laptop': return <IconLaptop className={className} />;
+    case 'Gamepad2': return <IconLaptopGaming className={className} />;
+    case 'Cpu': return <IconCpu className={className} />;
+    case 'Box': return <IconCase className={className} />;
+    case 'Headphones': return <IconHeadset className={className} />;
+    case 'Monitor': return <IconMonitor className={className} />;
+    case 'Keyboard': return <IconKeyboard className={className} />;
+    case 'HardDrive': return <IconStorage className={className} />;
     default: return <Grid className={className} />;
   }
 }

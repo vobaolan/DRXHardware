@@ -6,9 +6,12 @@ import Footer from '@/components/Footer';
 import Link from 'next/link';
 import { 
   ShieldCheck, Search, CheckCircle2, Clock, Wrench, 
-  Award, Cpu, AlertCircle, ArrowRight, Barcode,
-  HelpCircle, ExternalLink, HardDrive, Monitor, Check
+  Award, AlertCircle, ArrowRight, Barcode,
+  HelpCircle, ExternalLink, Check
 } from 'lucide-react';
+import { 
+  IconVga, IconCpu, IconMainboard, IconStorage 
+} from '@/components/icons/HardwareIcons';
 import { useToast } from '@/components/Toast';
 
 type WarrantyItem = {
@@ -537,31 +540,51 @@ export default function WarrantyPage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-            <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-1.5">
-              <span className="font-black text-[#0284c7] uppercase text-[11px] block">1. Card Màn Hình (VGA)</span>
+            <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-sky-100 dark:bg-sky-950 text-[#0284c7]">
+                  <IconVga className="w-4 h-4" />
+                </div>
+                <span className="font-black text-[#0284c7] uppercase text-[11px] block">1. Card VGA</span>
+              </div>
               <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
-                Dán trên tấm ốp lưng (Backplate) kim loại phía sau hoặc cạnh trên bo mạch quạt.
+                Dán trên tấm ốp lưng (Backplate) kim loại phía sau hoặc cạnh bo mạch quạt.
               </p>
             </div>
 
-            <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-1.5">
-              <span className="font-black text-[#0284c7] uppercase text-[11px] block">2. Bộ Vi Xử Lý (CPU)</span>
+            <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-sky-100 dark:bg-sky-950 text-[#0284c7]">
+                  <IconCpu className="w-4 h-4" />
+                </div>
+                <span className="font-black text-[#0284c7] uppercase text-[11px] block">2. Vi Xử Lý CPU</span>
+              </div>
               <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
-                Khắc laser sắc nét trên mặt kim loại nắp lưng chip (IHS) và tem mã vạch trên vỏ hộp.
+                Khắc laser sắc nét trên nắp kim loại chip (IHS) và tem mã vạch trên vỏ hộp.
               </p>
             </div>
 
-            <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-1.5">
-              <span className="font-black text-[#0284c7] uppercase text-[11px] block">3. Bo Mạch Chủ (Main)</span>
+            <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-sky-100 dark:bg-sky-950 text-[#0284c7]">
+                  <IconMainboard className="w-4 h-4" />
+                </div>
+                <span className="font-black text-[#0284c7] uppercase text-[11px] block">3. Bo Mạch Main</span>
+              </div>
               <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
                 Dán ở cạnh khe cắm RAM DDR5 hoặc gần cổng cấp nguồn chính 24-Pin ATX.
               </p>
             </div>
 
-            <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-1.5">
-              <span className="font-black text-[#0284c7] uppercase text-[11px] block">4. RAM &amp; Ổ Cứng SSD</span>
+            <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-sky-100 dark:bg-sky-950 text-[#0284c7]">
+                  <IconStorage className="w-4 h-4" />
+                </div>
+                <span className="font-black text-[#0284c7] uppercase text-[11px] block">4. RAM &amp; SSD</span>
+              </div>
               <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
-                In trực tiếp trên tem nhãn nhôm tản nhiệt hoặc mặt sau của ổ cứng chuẩn M.2 NVMe.
+                In trực tiếp trên tem nhôm tản nhiệt hoặc mặt sau của ổ cứng M.2 NVMe.
               </p>
             </div>
           </div>
