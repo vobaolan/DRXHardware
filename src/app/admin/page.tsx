@@ -44,6 +44,19 @@ const CATEGORY_NAMES: Record<string, string> = {
   PREBUILT_PC: 'PC Lắp Sẵn DRX',
 };
 
+const CATEGORY_FILTER_OPTIONS: SelectOption[] = Object.entries(CATEGORY_NAMES).map(([key, label]) => ({
+  value: key,
+  label: label,
+  badge: key === 'ALL' ? 'TẤT CẢ' : key,
+}));
+
+const SERIAL_STATUS_OPTIONS: SelectOption[] = [
+  { value: 'ALL', label: 'Tất Cả Trạng Thái SN', badge: 'TẤT CẢ' },
+  { value: 'AVAILABLE', label: 'Trong Kho (AVAILABLE)', badge: 'SẴN SÀNG' },
+  { value: 'SOLD', label: 'Đã Xuất Bán (SOLD)', badge: 'ĐÃ BÁN' },
+  { value: 'WARRANTY', label: 'Đang Bảo Hành (WARRANTY)', badge: 'BẢO HÀNH' },
+];
+
 const formatVND = (num: number | string | null | undefined) => {
   const n = Number(num) || 0;
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
@@ -1064,20 +1077,19 @@ export default function AdminDashboardPage() {
                   />
                 </div>
 
-                <div className="flex items-center gap-2 flex-wrap">
-                  <select
-                    value={selectedCategoryFilter}
-                    onChange={(e) => setSelectedCategoryFilter(e.target.value)}
-                    className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus:border-[#0284c7]"
-                  >
-                    {Object.entries(CATEGORY_NAMES).map(([key, label]) => (
-                      <option key={key} value={key}>{label}</option>
-                    ))}
-                  </select>
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <div className="w-52 sm:w-60">
+                    <ModernSelect
+                      options={CATEGORY_FILTER_OPTIONS}
+                      value={selectedCategoryFilter}
+                      onChange={(val) => setSelectedCategoryFilter(String(val))}
+                      placeholder="Lọc theo danh mục..."
+                    />
+                  </div>
 
                   <button
                     onClick={handleOpenCreate}
-                    className="px-4 py-2 bg-gradient-to-r from-[#0284c7] to-[#38bdf8] hover:from-[#0369a1] hover:to-[#0284c7] text-white text-xs font-bold uppercase rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-sm shadow-sky-500/20 shrink-0"
+                    className="px-4 py-2.5 bg-gradient-to-r from-[#0284c7] to-[#38bdf8] hover:from-[#0369a1] hover:to-[#0284c7] text-white text-xs font-bold uppercase rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-sm shadow-sky-500/20 shrink-0"
                   >
                     <Plus className="w-4 h-4" />
                     <span>Thêm Mới</span>
@@ -1303,17 +1315,15 @@ export default function AdminDashboardPage() {
                   />
                 </div>
 
-                <div className="flex items-center gap-2 flex-wrap">
-                  <select
-                    value={serialStatusFilter}
-                    onChange={(e) => setSerialStatusFilter(e.target.value)}
-                    className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus:border-[#0284c7]"
-                  >
-                    <option value="ALL">Tất Cả Trạng Thái SN</option>
-                    <option value="AVAILABLE">AVAILABLE (Trong Kho)</option>
-                    <option value="SOLD">SOLD (Đã Xuất Bán)</option>
-                    <option value="WARRANTY">WARRANTY (Đang Bảo Hành)</option>
-                  </select>
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <div className="w-56 sm:w-64">
+                    <ModernSelect
+                      options={SERIAL_STATUS_OPTIONS}
+                      value={serialStatusFilter}
+                      onChange={(val) => setSerialStatusFilter(String(val))}
+                      placeholder="Trạng thái Serial..."
+                    />
+                  </div>
 
                   <button
                     onClick={() => {
