@@ -128,10 +128,9 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
   const [stockQuantity, setStockQuantity] = useState<number>(15);
   const [warrantyMonths, setWarrantyMonths] = useState<number>(36);
   
-  // Images
+  // Images (Direct upload to Supabase Storage - Anti Copyright)
   const [coverImage, setCoverImage] = useState('');
   const [screenshots, setScreenshots] = useState<string[]>([]);
-  const [newScreenshotUrl, setNewScreenshotUrl] = useState('');
   const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [isUploadingGallery, setIsUploadingGallery] = useState(false);
 
@@ -185,8 +184,8 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
 
         setStockQuantity(15);
         setWarrantyMonths(36);
-        setCoverImage('https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=800&q=80');
-        setScreenshots(['https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=800&q=80']);
+        setCoverImage('');
+        setScreenshots([]);
         setDescription('');
         setIsFlashDeal(false);
         setIsFeatured(false);
@@ -299,17 +298,17 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
     }
   };
 
-  const handleAddScreenshotUrl = () => {
-    if (!newScreenshotUrl.trim()) return;
-    setScreenshots([...screenshots, newScreenshotUrl.trim()]);
-    setNewScreenshotUrl('');
+  const handleRemoveCoverImage = () => {
+    setCoverImage('');
+    showToast('Đã gỡ ảnh đại diện. Vui lòng tải ảnh mới từ máy tính!', 'info');
   };
 
   const handleRemoveScreenshot = (index: number) => {
+    const removedUrl = screenshots[index];
     const updated = screenshots.filter((_, idx) => idx !== index);
     setScreenshots(updated);
-    if (coverImage === screenshots[index] && updated.length > 0) {
-      setCoverImage(updated[0]);
+    if (coverImage === removedUrl) {
+      setCoverImage(updated.length > 0 ? updated[0] : '');
     }
   };
 
@@ -589,78 +588,103 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <h3 className="text-xs font-black uppercase text-[#0284c7] tracking-wider flex items-center gap-2">
                 <ImageIcon className="w-4 h-4" />
-                <span>3. Quản Lý Hình Ảnh & Tải Ảnh Trực Tiếp Từ Máy Tính</span>
+                <span>3. Quản Lý Hình Ảnh & Tải Trực Tiếp Từ Máy Tính</span>
               </h3>
               <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
                 <ShieldCheck className="w-3.5 h-3.5" />
-                <span>Lưu trữ hệ thống DRX (Tránh lỗi bản quyền link ngoài)</span>
+                <span>Lưu trữ hệ thống DRX Supabase (Tránh lỗi bản quyền link ngoài)</span>
               </span>
             </div>
 
-            {/* COVER IMAGE SECTION */}
-            <div className="space-y-2">
+            {/* COVER IMAGE SECTION (UPLOAD ONLY) */}
+            <div className="space-y-2.5">
               <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
                 <span>Ảnh Đại Diện Chính (Cover Image) <span className="text-rose-500">*</span></span>
                 <span className="text-[10.5px] text-slate-400 font-normal">Hiển thị ở trang chủ & danh mục</span>
               </label>
 
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                {/* PREVIEW THUMBNAIL */}
-                <div className="w-20 h-20 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden bg-slate-100 dark:bg-slate-800 shrink-0 flex items-center justify-center relative shadow-inner">
-                  {isUploadingCover ? (
-                    <div className="flex flex-col items-center gap-1">
-                      <RefreshCw className="w-5 h-5 text-[#0284c7] animate-spin" />
-                      <span className="text-[9px] font-bold text-[#0284c7]">Đang tải...</span>
-                    </div>
-                  ) : coverImage ? (
+              {coverImage ? (
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3.5 p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                  {/* PREVIEW THUMBNAIL */}
+                  <div className="w-20 h-20 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden bg-slate-100 dark:bg-slate-800 shrink-0 flex items-center justify-center relative shadow-inner">
                     <img src={coverImage} alt="Cover Preview" className="w-full h-full object-cover" />
-                  ) : (
-                    <ImageIcon className="w-8 h-8 text-slate-400" />
-                  )}
-                </div>
-
-                {/* UPLOAD BUTTON & URL INPUT */}
-                <div className="flex-1 space-y-2 w-full">
-                  <div className="flex flex-wrap items-center gap-2">
-                    {/* BUTTON: UPLOAD FROM COMPUTER */}
-                    <label className="cursor-pointer inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#0284c7] to-[#38bdf8] hover:from-[#0369a1] hover:to-[#0284c7] text-white text-xs font-extrabold transition-all shadow-md shadow-sky-500/20">
-                      <Upload className="w-4 h-4" />
-                      <span>{isUploadingCover ? 'Đang Tải Ảnh Lên...' : '📁 Tải Ảnh Từ Máy Tính'}</span>
-                      <input
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
-                        disabled={isUploadingCover}
-                        onChange={handleUploadCoverImage}
-                        className="hidden"
-                      />
-                    </label>
-
-                    <span className="text-[11px] text-slate-400 font-bold">hoặc nhập URL:</span>
                   </div>
 
-                  <input
-                    type="text"
-                    required
-                    placeholder="https://... hoặc đường dẫn tệp tải lên"
-                    value={coverImage}
-                    onChange={(e) => setCoverImage(e.target.value)}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2 text-xs font-mono text-slate-900 dark:text-slate-100 focus:border-[#0284c7] outline-none"
-                  />
+                  {/* INFO & ACTIONS */}
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-wider flex items-center gap-1 border border-emerald-500/20">
+                        <CheckCircle2 className="w-3 h-3" />
+                        <span>Đã Tải Lên Supabase Storage Thành Công</span>
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      {/* BUTTON: CHANGE COVER */}
+                      <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-[#0284c7] hover:text-white text-slate-700 dark:text-slate-300 text-xs font-bold transition-all border border-slate-200 dark:border-slate-700">
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>{isUploadingCover ? 'Đang Tải...' : '📁 Thay Ảnh Bìa Khác'}</span>
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
+                          disabled={isUploadingCover}
+                          onChange={handleUploadCoverImage}
+                          className="hidden"
+                        />
+                      </label>
+
+                      {/* BUTTON: REMOVE COVER */}
+                      <button
+                        type="button"
+                        onClick={handleRemoveCoverImage}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 text-rose-600 dark:text-rose-400 text-xs font-bold transition-all border border-rose-200 dark:border-rose-900/50 cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Gỡ Ảnh</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                /* EMPTY DROPZONE / UPLOAD BUTTON */
+                <label className="cursor-pointer flex flex-col items-center justify-center gap-2.5 p-6 rounded-2xl border-2 border-dashed border-sky-300 dark:border-sky-800 hover:border-[#0284c7] bg-sky-50/50 dark:bg-sky-950/20 hover:bg-sky-50 dark:hover:bg-sky-950/40 transition-all text-center group">
+                  <div className="w-12 h-12 rounded-2xl bg-white dark:bg-slate-900 shadow-md flex items-center justify-center text-[#0284c7] group-hover:scale-110 transition-transform">
+                    {isUploadingCover ? (
+                      <RefreshCw className="w-6 h-6 animate-spin text-[#0284c7]" />
+                    ) : (
+                      <Upload className="w-6 h-6" />
+                    )}
+                  </div>
+                  <div>
+                    <span className="text-xs font-extrabold text-[#0284c7] block">
+                      {isUploadingCover ? 'Đang Tải Ảnh Lên Supabase...' : '📁 Nhấp Để Tải Ảnh Bìa Từ Máy Tính'}
+                    </span>
+                    <span className="text-[10px] text-slate-400 block mt-0.5">
+                      Định dạng hỗ trợ: JPG, PNG, WebP, AVIF (Tự động lưu vào hệ thống an toàn)
+                    </span>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
+                    disabled={isUploadingCover}
+                    onChange={handleUploadCoverImage}
+                    className="hidden"
+                  />
+                </label>
+              )}
             </div>
 
-            {/* GALLERY SECTION (MULTI-UPLOAD & THUMBNAILS) */}
-            <div className="space-y-2.5 pt-3 border-t border-slate-200 dark:border-slate-800">
+            {/* GALLERY SECTION (MULTI-UPLOAD ONLY - NO URL INPUT) */}
+            <div className="space-y-3 pt-3 border-t border-slate-200 dark:border-slate-800">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
                   Bộ Sưu Tập Hình Ảnh Chi Tiết ({screenshots.length} ảnh)
                 </label>
 
                 {/* BUTTON: MULTI-UPLOAD FROM COMPUTER */}
-                <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 text-[#0284c7] border border-sky-200 dark:border-sky-800 text-xs font-bold transition-all shadow-xs">
+                <label className="cursor-pointer inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#0284c7] to-[#38bdf8] hover:from-[#0369a1] hover:to-[#0284c7] text-white text-xs font-extrabold transition-all shadow-md shadow-sky-500/20">
                   <Upload className="w-3.5 h-3.5" />
-                  <span>{isUploadingGallery ? 'Đang tải lên...' : '📁 Tải Thêm Nhiều Ảnh Từ Máy'}</span>
+                  <span>{isUploadingGallery ? 'Đang Tải Lên...' : '📁 Tải Thêm Nhiều Ảnh Từ Máy Tính'}</span>
                   <input
                     type="file"
                     multiple
@@ -672,28 +696,9 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                 </label>
               </div>
 
-              {/* MANUAL URL INPUT */}
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Nhập thêm URL hình ảnh chi tiết khác nếu có..."
-                  value={newScreenshotUrl}
-                  onChange={(e) => setNewScreenshotUrl(e.target.value)}
-                  className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2 text-xs font-mono outline-none focus:border-[#0284c7]"
-                />
-                <button
-                  type="button"
-                  onClick={handleAddScreenshotUrl}
-                  className="px-3.5 py-2 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-[#0284c7] hover:text-white text-slate-800 dark:text-slate-200 text-xs font-bold transition-all flex items-center gap-1 cursor-pointer shrink-0"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Thêm Link</span>
-                </button>
-              </div>
-
               {/* THUMBNAILS GRID */}
-              {screenshots.length > 0 && (
-                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2.5 pt-2">
+              {screenshots.length > 0 ? (
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2.5 pt-1">
                   {screenshots.map((img, idx) => {
                     const isCurrentCover = img === coverImage;
                     return (
@@ -706,7 +711,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                             type="button"
                             onClick={() => handleRemoveScreenshot(idx)}
                             className="self-end p-1 rounded-full bg-rose-600 text-white cursor-pointer shadow-md hover:bg-rose-700"
-                            title="Xóa ảnh này"
+                            title="Xóa ảnh này khỏi bộ sưu tập"
                           >
                             <X className="w-3 h-3" />
                           </button>
@@ -732,6 +737,10 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                       </div>
                     );
                   })}
+                </div>
+              ) : (
+                <div className="py-4 px-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center text-[11px] text-slate-400">
+                  Chưa có ảnh chi tiết. Bấm <span className="font-bold text-[#0284c7]">"📁 Tải Thêm Nhiều Ảnh Từ Máy Tính"</span> để thêm các góc chụp thực tế của linh kiện.
                 </div>
               )}
             </div>
