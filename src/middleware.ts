@@ -43,25 +43,37 @@ export function middleware(request: NextRequest) {
   const isAdmin = userRole === 'ADMIN' || userEmail === 'admin@drx.vn' || (userEmail.includes('admin') && !userEmail.includes('staff'));
   const isStaff = isAdmin || userRole === 'STAFF' || userRole === 'WAREHOUSE' || userRole === 'MANAGER' || userEmail === 'staff@drx.vn' || userEmail.includes('staff');
 
-  // 2. Protect Admin API Routes (/api/admin/*)
+  // 2. Protect Admin & Staff API Routes (/api/admin/*)
   if (pathname.startsWith('/api/admin')) {
-    if (!user || !isAdmin) {
+    if (!user) {
       return NextResponse.json(
-        { message: 'Truy cập bị từ chối: Yêu cầu quyền Quản Trị Viên (ADMIN) của DRX Hardware!' },
-        { status: 403 }
+        { message: 'Truy cập bị từ chối: Yêu cầu đăng nhập tài khoản Quản trị hoặc Nhân viên!' },
+        { status: 401 }
       );
+    }
+
+    // High-Privilege Endpoints: Only ADMIN can view Revenue Stats & User Permissions
+    if (pathname.startsWith('/api/admin/stats') || pathname.startsWith('/api/admin/users')) {
+      if (!isAdmin) {
+        return NextResponse.json(
+          { message: 'Truy cập bị từ chối: Chỉ Quản Trị Viên (ADMIN) mới có quyền truy cập dữ liệu doanh thu & người dùng!' },
+          { status: 403 }
+        );
+      }
+    } else {
+      // Operational Endpoints (products, serials, orders): Both ADMIN and STAFF are authorized
+      if (!isStaff && !isAdmin) {
+        return NextResponse.json(
+          { message: 'Truy cập bị từ chối: Yêu cầu quyền Nhân Viên (STAFF) hoặc Quản Trị Viên (ADMIN)!' },
+          { status: 403 }
+        );
+      }
     }
   }
 
   // 3. Protect Admin Web Portal (/admin)
   if (pathname === '/admin' || pathname.startsWith('/admin/')) {
-    if (!user) {
-      const loginUrl = new URL('/profile', request.url);
-      loginUrl.searchParams.set('redirect', pathname);
-      return NextResponse.redirect(loginUrl);
-    }
-
-    if (!isAdmin) {
+    if (user && !isAdmin) {
       // If user is Staff trying to access Admin, redirect to Staff Portal
       if (isStaff) {
         return NextResponse.redirect(new URL('/staff', request.url));
@@ -72,13 +84,7 @@ export function middleware(request: NextRequest) {
 
   // 4. Protect Staff Web Portal (/staff)
   if (pathname === '/staff' || pathname.startsWith('/staff/')) {
-    if (!user) {
-      const loginUrl = new URL('/profile', request.url);
-      loginUrl.searchParams.set('redirect', pathname);
-      return NextResponse.redirect(loginUrl);
-    }
-
-    if (!isStaff) {
+    if (user && !isStaff && !isAdmin) {
       return NextResponse.redirect(new URL('/profile', request.url));
     }
   }
