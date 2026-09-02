@@ -168,20 +168,20 @@ const VERIFIED_WARRANTY_DB: Record<string, WarrantyItem> = {
   }
 };
 
-// Official Hardware Brand Logos from Wikipedia / Wikimedia
+// Official Hardware Brand Logos saved locally for 100% reliability (0 broken images)
 const AUTHORIZED_BRAND_LOGOS = [
-  { name: 'Intel', logo: 'https://upload.wikimedia.org/wikipedia/commons/7/7d/Intel_logo_%282020%29.svg', desc: 'Vi Xử Lý CPU' },
-  { name: 'AMD', logo: 'https://upload.wikimedia.org/wikipedia/commons/7/7c/AMD_Logo.svg', desc: 'Ryzen & Radeon' },
-  { name: 'NVIDIA', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/21/Nvidia_logo.svg', desc: 'GeForce RTX' },
-  { name: 'ASUS ROG', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/2e/ASUS_Logo.svg', desc: 'Bo Mạch & VGA' },
-  { name: 'MSI', logo: 'https://upload.wikimedia.org/wikipedia/commons/b/b3/MSI_Logo.svg', desc: 'Gaming Series' },
-  { name: 'GIGABYTE', logo: 'https://upload.wikimedia.org/wikipedia/commons/c/ca/Gigabyte_Technology_logo_20080107.svg', desc: 'AORUS Master' },
-  { name: 'CORSAIR', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/22/Corsair_Components_logo.svg', desc: 'RAM & Tản Nhiệt' },
-  { name: 'SAMSUNG', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/24/Samsung_Logo.svg', desc: 'Ổ Cứng SSD M.2' },
-  { name: 'KINGSTON', logo: 'https://upload.wikimedia.org/wikipedia/commons/f/fe/Kingston_Technology_logo.svg', desc: 'FURY Gaming' },
-  { name: 'WESTERN DIGITAL', logo: 'https://upload.wikimedia.org/wikipedia/commons/5/53/Western_Digital_logo.svg', desc: 'Lưu Trữ Black' },
-  { name: 'NZXT', logo: 'https://upload.wikimedia.org/wikipedia/commons/c/cc/NZXT_Logo.svg', desc: 'Kraken & Vỏ Case' },
-  { name: 'LIAN LI', logo: 'https://upload.wikimedia.org/wikipedia/commons/7/7b/Lian_Li_logo.svg', desc: 'Vỏ Máy & Quạt RGB' },
+  { name: 'Intel', logo: '/logos/brands/intel.svg', desc: 'Vi Xử Lý CPU' },
+  { name: 'AMD', logo: '/logos/brands/amd.svg', desc: 'Ryzen & Radeon' },
+  { name: 'NVIDIA', logo: '/logos/brands/nvidia.svg', desc: 'GeForce RTX' },
+  { name: 'ASUS ROG', logo: '/logos/brands/asus.svg', desc: 'Bo Mạch & VGA' },
+  { name: 'MSI', logo: '/logos/brands/msi.svg', desc: 'Gaming Series' },
+  { name: 'GIGABYTE', logo: '/logos/brands/gigabyte.svg', desc: 'AORUS Master' },
+  { name: 'CORSAIR', logo: '/logos/brands/corsair.svg', desc: 'RAM & Tản Nhiệt' },
+  { name: 'SAMSUNG', logo: '/logos/brands/samsung.svg', desc: 'Ổ Cứng SSD M.2' },
+  { name: 'KINGSTON', logo: '/logos/brands/kingston.svg', desc: 'FURY Gaming' },
+  { name: 'WESTERN DIGITAL', logo: '/logos/brands/westerndigital.svg', desc: 'Lưu Trữ Black' },
+  { name: 'NZXT', logo: '/logos/brands/nzxt.svg', desc: 'Kraken & Vỏ Case' },
+  { name: 'LIAN LI', logo: '/logos/brands/lianli.svg', desc: 'Vỏ Máy & Quạt RGB' },
 ];
 
 export default function WarrantyPage() {
@@ -510,7 +510,7 @@ export default function WarrantyPage() {
                   <img
                     src={brand.logo}
                     alt={brand.name}
-                    className="max-h-7 max-w-[90px] object-contain filter grayscale group-hover:grayscale-0 dark:brightness-200 dark:contrast-125 transition-all duration-300"
+                    className="max-h-7 max-w-[90px] object-contain transition-all duration-300 group-hover:scale-105 dark:brightness-0 dark:invert opacity-80 group-hover:opacity-100"
                   />
                 </div>
                 <div className="text-center">
