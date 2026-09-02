@@ -32,7 +32,7 @@ export interface ProductProps {
 }
 
 export const ProductCard: React.FC<{ product: ProductProps }> = ({ product }) => {
-  const { addToCart } = useCart();
+  const { addToCart, setIsOpen } = useCart();
   const router = useRouter();
   const activePrice = product.discountPrice ?? product.price;
   const hasDiscount = product.discountPrice !== null && product.discountPrice !== undefined && product.discountPrice < product.price;
@@ -56,7 +56,7 @@ export const ProductCard: React.FC<{ product: ProductProps }> = ({ product }) =>
       coverImage: product.coverImage,
       platform: product.platform,
     });
-    setCartOpen(true);
+    setIsOpen(true);
   };
 
   return (

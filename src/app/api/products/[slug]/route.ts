@@ -5,6 +5,14 @@ import { INITIAL_PRODUCTS } from '@/lib/hardware-data';
 
 export const dynamic = 'force-dynamic';
 
+function cleanSlug(str: string) {
+  return decodeURIComponent(str || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]/g, '');
+}
+
 export async function GET(
   request: Request,
   { params }: { params: { slug: string } }
@@ -17,102 +25,133 @@ export async function GET(
   };
 
   try {
-    const { slug } = params;
+    const rawSlug = params?.slug;
 
-    if (!slug) {
+    if (!rawSlug) {
       return NextResponse.json({ message: 'Slug là bắt buộc' }, { status: 400, headers });
     }
 
-    const baseSlug = slug.split('-')[0].toLowerCase();
+    const decodedSlug = decodeURIComponent(rawSlug).trim().toLowerCase();
+    const normalizedTarget = cleanSlug(decodedSlug);
 
-    // 1. Primary: Supabase PostgreSQL
-    let supaProduct: any = null;
+    let matchedProduct: any = null;
+
+    // 1. Primary: Query Supabase Database
     try {
       const { data: supabaseProducts } = await supabase
         .from('Product')
         .select('*');
-      if (supabaseProducts && supabaseProducts.length > 0) {
-        // Exact match first
-        supaProduct = supabaseProducts.find((p: any) => p.slug === slug || p.id === slug);
-        if (!supaProduct) {
-          supaProduct = supabaseProducts.find((p: any) => 
-            (p.slug && slug.includes(p.slug)) || 
-            (p.slug && p.slug.includes(slug))
-          );
-        }
-      }
-    } catch (e) {}
 
-    // 2. Prisma fallback
-    let prismaProduct: any = null;
-    if (!supaProduct) {
-      try {
-        prismaProduct = await prisma.product.findUnique({
-          where: { slug },
-        });
-        if (!prismaProduct) {
-          prismaProduct = await prisma.product.findUnique({
-            where: { id: slug },
+      if (supabaseProducts && supabaseProducts.length > 0) {
+        // Exact match slug or id
+        matchedProduct = supabaseProducts.find((p: any) => 
+          (p.slug && p.slug.toLowerCase() === decodedSlug) || 
+          p.id === decodedSlug || 
+          p.id === rawSlug
+        );
+
+        // Normalized slug match
+        if (!matchedProduct) {
+          matchedProduct = supabaseProducts.find((p: any) => {
+            const normSlug = cleanSlug(p.slug);
+            const normName = cleanSlug(p.name);
+            const normId = cleanSlug(p.id);
+            return normSlug === normalizedTarget || 
+                   normId === normalizedTarget ||
+                   (normSlug && (normalizedTarget.includes(normSlug) || normSlug.includes(normalizedTarget))) ||
+                   (normName && (normalizedTarget.includes(normName) || normName.includes(normalizedTarget)));
           });
         }
-      } catch (e) {}
+      }
+    } catch (e) {
+      console.warn('Supabase product slug query warning:', e);
     }
 
-    // 3. INITIAL_PRODUCTS hardware catalog fallback
-    let initMatch = INITIAL_PRODUCTS.find((p) => p.slug === slug || p.id === slug);
-    if (!initMatch) {
-      initMatch = INITIAL_PRODUCTS.find((p) => (p.slug && slug.includes(p.slug)) || (p.slug && p.slug.includes(slug)));
+    // 2. Secondary: Prisma Query Fallback
+    if (!matchedProduct) {
+      try {
+        matchedProduct = await prisma.product.findFirst({
+          where: {
+            OR: [
+              { slug: decodedSlug },
+              { id: decodedSlug },
+              { id: rawSlug }
+            ]
+          }
+        });
+      } catch (e) {
+        console.warn('Prisma product slug query warning:', e);
+      }
     }
 
-    const product = supaProduct || prismaProduct || (initMatch ? {
-      ...initMatch,
-      platform: initMatch.brand,
-      type: initMatch.category,
-      status: true,
-    } : null);
+    // 3. Fallback: INITIAL_PRODUCTS Hardware Catalog
+    if (!matchedProduct) {
+      matchedProduct = INITIAL_PRODUCTS.find((p) => 
+        (p.slug && p.slug.toLowerCase() === decodedSlug) || 
+        p.id === decodedSlug || 
+        p.id === rawSlug
+      );
 
-    if (product) {
-      const price = typeof product.price === 'string' ? parseFloat(product.price) : Number(product.price);
-      const discountPrice = product.discountPrice
-        ? (typeof product.discountPrice === 'string' ? parseFloat(product.discountPrice) : Number(product.discountPrice))
+      if (!matchedProduct) {
+        matchedProduct = INITIAL_PRODUCTS.find((p) => {
+          const normSlug = cleanSlug(p.slug);
+          const normName = cleanSlug(p.name);
+          return normSlug === normalizedTarget ||
+                 (normSlug && (normalizedTarget.includes(normSlug) || normSlug.includes(normalizedTarget))) ||
+                 (normName && (normalizedTarget.includes(normName) || normName.includes(normalizedTarget)));
+        });
+      }
+    }
+
+    // 4. Broadest keyword match fallback (e.g. searching key parts like 4070, 13400f, etc.)
+    if (!matchedProduct) {
+      const keywords = decodedSlug.split('-').filter(k => k.length >= 3);
+      if (keywords.length > 0) {
+        matchedProduct = INITIAL_PRODUCTS.find((p) => {
+          const pText = (p.name + ' ' + (p.slug || '')).toLowerCase();
+          return keywords.filter(kw => pText.includes(kw)).length >= 2;
+        });
+      }
+    }
+
+    if (matchedProduct) {
+      const price = typeof matchedProduct.price === 'string' ? parseFloat(matchedProduct.price) : Number(matchedProduct.price);
+      const discountPrice = matchedProduct.discountPrice
+        ? (typeof matchedProduct.discountPrice === 'string' ? parseFloat(matchedProduct.discountPrice) : Number(matchedProduct.discountPrice))
         : null;
 
-      let trailerUrls: string[] = [];
-      if (product.trailerUrl) {
-        trailerUrls = product.trailerUrl.split(' | ').filter((u: any) => u.trim().length > 0).map((u: any) => u.trim());
-      }
-
-      const screenshots = product.screenshots && Array.isArray(product.screenshots) && product.screenshots.length > 0 
-        ? product.screenshots 
-        : (product.coverImage ? [product.coverImage] : []);
+      const coverImage = matchedProduct.coverImage || matchedProduct.image || 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=800&q=80';
+      const screenshots = matchedProduct.screenshots && Array.isArray(matchedProduct.screenshots) && matchedProduct.screenshots.length > 0 
+        ? matchedProduct.screenshots 
+        : [coverImage];
 
       return NextResponse.json(
         {
           product: {
-            id: product.id,
-            name: product.name,
-            slug: product.slug,
-            description: product.description,
-            price,
-            discountPrice,
-            coverImage: product.coverImage,
-            screenshots,
-            category: Array.isArray(product.category) ? product.category : [product.category],
-            platform: product.platform || product.brand || 'PC',
-            type: product.type || product.category,
-            deliveryMethod: product.deliveryMethod || 'GIFT',
-            mediaOrder: product.mediaOrder || 'image_first',
-            status: product.status !== false,
-            isFlashDeal: Boolean(product.isFlashDeal),
-            flashSaleEnd: product.flashSaleEnd ? new Date(product.flashSaleEnd).toISOString() : null,
-            isFeaturedDeal: Boolean(product.isFeaturedDeal || product.isFeatured),
-            tags: product.tags || [],
-            specs: product.specs || {},
-            warrantyMonths: product.warrantyMonths || 36,
-            trailerUrl: product.trailerUrl,
-            trailerUrls,
-            minimumReq: product.minimumReq,
-            recommendedReq: product.recommendedReq,
+            id: matchedProduct.id,
+            name: matchedProduct.name,
+            slug: matchedProduct.slug || decodedSlug,
+            description: matchedProduct.description || 'Linh kiện phần cứng máy tính chính hãng DRX Hardware, bảo hành 36 tháng 1 đổi 1.',
+            price: price || 0,
+            discountPrice: discountPrice,
+            coverImage: coverImage,
+            screenshots: screenshots,
+            category: Array.isArray(matchedProduct.category) ? matchedProduct.category : [matchedProduct.category || 'VGA'],
+            brand: matchedProduct.brand || 'DRX',
+            platform: matchedProduct.platform || matchedProduct.brand || 'PC',
+            type: matchedProduct.type || matchedProduct.category || 'HARDWARE',
+            modelCode: matchedProduct.modelCode || '',
+            warrantyMonths: matchedProduct.warrantyMonths || 36,
+            stockQuantity: matchedProduct.stockQuantity ?? matchedProduct.stockCount ?? 10,
+            status: matchedProduct.status !== false && matchedProduct.inStock !== false,
+            isFlashDeal: Boolean(matchedProduct.isFlashDeal),
+            flashSaleEnd: matchedProduct.flashSaleEnd ? new Date(matchedProduct.flashSaleEnd).toISOString() : null,
+            isFeaturedDeal: Boolean(matchedProduct.isFeaturedDeal || matchedProduct.isFeatured),
+            tags: matchedProduct.tags || [matchedProduct.brand, matchedProduct.category].filter(Boolean),
+            specs: typeof matchedProduct.specs === 'object' && matchedProduct.specs !== null ? matchedProduct.specs : {},
+            socket: matchedProduct.socket || '',
+            ramType: matchedProduct.ramType || '',
+            wattage: matchedProduct.wattage || 0,
           },
         },
         { status: 200, headers }
