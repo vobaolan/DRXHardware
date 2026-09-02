@@ -5,10 +5,10 @@ import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { CartDrawer } from '@/components/CartDrawer';
 import { 
-  User, Mail, Lock, LogIn, UserPlus, CreditCard, Shield, 
-  ShoppingBag, Heart, Settings, LogOut, CheckCircle2, Copy, Check, ArrowRight, 
-  ShieldCheck, Cpu, Box, Sparkles, Zap, Clock, PackageCheck, Wrench, ChevronRight,
-  Monitor, Award, CheckCircle, ExternalLink
+  User, Mail, Lock, LogIn, UserPlus, Shield, 
+  ShoppingBag, Settings, LogOut, CheckCircle2, Copy, Check, ArrowRight, 
+  ShieldCheck, Cpu, Box, Zap, PackageCheck, Wrench, ChevronRight,
+  Award, CheckCircle, LayoutDashboard, Phone, MapPin
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
@@ -41,8 +41,8 @@ function ProfileContent() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [authTab, setAuthTab] = useState<'login' | 'register'>('login');
   
-  // Dashboard navigation tab states
-  const [dashboardTab, setDashboardTab] = useState<'orders' | 'vault' | 'wishlist' | 'settings' | 'transactions' | 'builds'>('orders');
+  // Dashboard navigation tab states (6 logical sections as requested)
+  const [dashboardTab, setDashboardTab] = useState<'overview' | 'orders' | 'warranty' | 'builds' | 'profile'>('overview');
   const [copiedKeyId, setCopiedKeyId] = useState<string | null>(null);
 
   // Form states
@@ -55,12 +55,21 @@ function ProfileContent() {
   const [regPassword, setRegPassword] = useState('');
   const [regConfirmPassword, setRegConfirmPassword] = useState('');
 
+  // User info form states
+  const [profileName, setProfileName] = useState('');
+  const [profilePhone, setProfilePhone] = useState('');
+  const [profileAddress, setProfileAddress] = useState('');
+
+  // Password change form states
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+
   // User state
   const [currentUser, setCurrentUser] = useState<{
     id: string;
     name: string;
     email: string;
-    balance: number;
     role: string;
   } | null>(null);
 
@@ -68,14 +77,13 @@ function ProfileContent() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoadingOrders, setIsLoadingOrders] = useState(false);
 
-  // Transaction list
-  const [transactions, setTransactions] = useState<any[]>([]);
-  const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
+  // Saved PC builds
+  const [savedBuilds, setSavedBuilds] = useState<any[]>([]);
 
   // Check query params for active tab on mount
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    if (tabParam === 'vault' || tabParam === 'wishlist' || tabParam === 'settings' || tabParam === 'orders' || tabParam === 'transactions' || tabParam === 'builds') {
+    if (tabParam === 'overview' || tabParam === 'orders' || tabParam === 'warranty' || tabParam === 'builds' || tabParam === 'profile') {
       setDashboardTab(tabParam as any);
     }
   }, [searchParams]);
@@ -87,23 +95,23 @@ function ProfileContent() {
       const sessionUser = getStoredSessionUser();
       if (sessionUser) {
         setCurrentUser(prev => {
-          if (prev && prev.id === sessionUser.id && prev.balance === sessionUser.balance && prev.email === sessionUser.email) {
+          if (prev && prev.id === sessionUser.id && prev.email === sessionUser.email) {
             return prev;
           }
           return sessionUser;
         });
+        setProfileName(sessionUser.name || '');
         setIsLoggedIn(true);
+
         verifyCurrentSession().then((verified) => {
           if (verified) {
-            const finalBalance = (verified.balance !== undefined && verified.balance !== null && Number(verified.balance) > 0)
-              ? Number(verified.balance)
-              : Number(sessionUser.balance || 0);
             setCurrentUser(prev => {
-              if (prev && prev.id === verified.id && prev.balance === finalBalance && prev.email === verified.email) {
+              if (prev && prev.id === verified.id && prev.email === verified.email) {
                 return prev;
               }
-              return { ...verified, balance: finalBalance };
+              return verified;
             });
+            setProfileName(verified.name || '');
             setIsLoggedIn(true);
           } else {
             setCurrentUser(null);
@@ -118,141 +126,111 @@ function ProfileContent() {
 
     initAuth();
 
-    window.addEventListener('storage', initAuth);
-    window.addEventListener('ods_user_update', initAuth);
-
-    const savedEmail = localStorage.getItem('ods_remembered_email');
-    const isRemembered = localStorage.getItem('ods_remember_me') === 'true';
-    if (savedEmail) {
-      setLoginEmail(savedEmail === 'admin@odsstore.vn' ? 'admin@drx.vn' : savedEmail);
+    try {
+      const savedEmail = localStorage.getItem('drx_remember_email');
+      if (savedEmail) {
+        setLoginEmail(savedEmail === 'admin@odsstore.vn' ? 'admin@drx.vn' : savedEmail);
+        setRememberMe(true);
+      }
+    } catch (e) {
+      console.warn('Failed to read remember email:', e);
     }
-    setRememberMe(isRemembered);
-
-    return () => {
-      window.removeEventListener('storage', initAuth);
-      window.removeEventListener('ods_user_update', initAuth);
-    };
   }, []);
 
-  const userId = currentUser?.id;
-
-  // Fetch real order history from database when user is logged in
+  // Fetch orders when user is authenticated
   useEffect(() => {
-    if (!userId) {
-      setOrders([]);
-      return;
-    }
-    let isCancelled = false;
+    if (!currentUser?.id) return;
+
+    let isSubscribed = true;
+
     const fetchOrders = async () => {
+      setIsLoadingOrders(true);
       try {
-        const res = await fetch(`/api/orders?userId=${userId}`);
-        const data = await res.json();
-        if (res.ok && !isCancelled) {
+        const res = await fetch(`/api/orders?userId=${currentUser.id}`);
+        if (!isSubscribed) return;
+        if (res.ok) {
+          const data = await res.json();
           setOrders(data.orders || []);
         }
       } catch (err) {
-        console.error('Error fetching orders:', err);
+        console.error('Lỗi khi tải lịch sử đơn hàng:', err);
       } finally {
-        if (!isCancelled) setIsLoadingOrders(false);
-      }
-    };
-    fetchOrders();
-    return () => { isCancelled = true; };
-  }, [userId]);
-
-  // Fetch transaction history
-  useEffect(() => {
-    if (!userId) {
-      setTransactions([]);
-      return;
-    }
-    let isCancelled = false;
-    const fetchTransactions = async () => {
-      try {
-        const res = await fetch(`/api/wallet/transactions?userId=${userId}`);
-        const data = await res.json();
-        if (res.ok && !isCancelled) {
-          setTransactions(data.transactions || []);
+        if (isSubscribed) {
+          setIsLoadingOrders(false);
         }
-      } catch (err) {
-        console.error('Error fetching transactions:', err);
-      } finally {
-        if (!isCancelled) setIsLoadingTransactions(false);
       }
     };
-    fetchTransactions();
-    return () => { isCancelled = true; };
-  }, [userId]);
 
-  const formatCurrency = (value: number | string) => {
-    const numericValue = typeof value === 'string' ? parseFloat(value) : value;
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND',
-    }).format(numericValue || 0);
+    fetchOrders();
+
+    // Load saved PC builds from localStorage
+    try {
+      const rawBuilds = localStorage.getItem('drx_saved_pc_builds');
+      if (rawBuilds) {
+        setSavedBuilds(JSON.parse(rawBuilds));
+      }
+    } catch (e) {
+      console.warn('Lỗi đọc cấu hình PC đã lưu:', e);
+    }
+
+    return () => {
+      isSubscribed = false;
+    };
+  }, [currentUser?.id]);
+
+  const formatCurrency = (val: number | string) => {
+    return Number(val || 0).toLocaleString('vi-VN') + ' đ';
   };
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: loginEmail, password: loginPassword }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        showToast(data.message || 'Đăng nhập thất bại!', 'error');
-        return;
-      }
-      showToast('Đăng nhập thành công! Chào mừng bạn quay lại DRX Hardware.', 'success');
-      
-      const { setSessionUser } = await import('@/lib/auth-client');
-      setSessionUser(data.user);
-
-      if (rememberMe) {
-        localStorage.setItem('ods_remembered_email', loginEmail);
-        localStorage.setItem('ods_remember_me', 'true');
+      const { loginUser } = await import('@/lib/auth-client');
+      const user = await loginUser(loginEmail, loginPassword);
+      if (user) {
+        if (rememberMe) {
+          localStorage.setItem('drx_remember_email', loginEmail);
+        } else {
+          localStorage.removeItem('drx_remember_email');
+        }
+        setCurrentUser(user);
+        setProfileName(user.name || '');
+        setIsLoggedIn(true);
+        showToast(`Đăng nhập thành công! Chào mừng ${user.name || 'bạn'}.`, 'success');
       } else {
-        localStorage.removeItem('ods_remembered_email');
-        localStorage.removeItem('ods_remember_me');
+        showToast('Email hoặc mật khẩu không chính xác!', 'error');
       }
-
-      setCurrentUser(data.user);
-      setIsLoggedIn(true);
-    } catch (err) {
-      console.error(err);
-      showToast('Có lỗi xảy ra, vui lòng thử lại sau!', 'error');
+    } catch (error) {
+      console.error(error);
+      showToast('Đã xảy ra lỗi đăng nhập.', 'error');
     }
   };
 
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (regPassword !== regConfirmPassword) {
-      showToast('Mật khẩu nhập lại không khớp!', 'error');
+      showToast('Mật khẩu xác nhận không khớp!', 'error');
       return;
     }
-    try {
-      const res = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: regName, email: regEmail, password: regPassword }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        showToast(data.message || 'Đăng ký thất bại!', 'error');
-        return;
-      }
-      showToast('Đăng ký tài khoản DRX Hardware thành công!', 'success');
-      
-      const { setSessionUser } = await import('@/lib/auth-client');
-      setSessionUser(data.user);
+    if (regPassword.length < 6) {
+      showToast('Mật khẩu phải có tối thiểu 6 ký tự!', 'error');
+      return;
+    }
 
-      setCurrentUser(data.user);
-      setIsLoggedIn(true);
-    } catch (err) {
-      console.error(err);
-      showToast('Có lỗi xảy ra, vui lòng thử lại sau!', 'error');
+    try {
+      const { registerUser } = await import('@/lib/auth-client');
+      const user = await registerUser(regEmail, regPassword, regName);
+      if (user) {
+        setCurrentUser(user);
+        setProfileName(user.name || regName);
+        setIsLoggedIn(true);
+        showToast('Đăng ký tài khoản DRX thành công!', 'success');
+      } else {
+        showToast('Email này đã được đăng ký tài khoản!', 'error');
+      }
+    } catch (error) {
+      console.error(error);
+      showToast('Đã xảy ra lỗi khi tạo tài khoản.', 'error');
     }
   };
 
@@ -272,6 +250,32 @@ function ProfileContent() {
     setTimeout(() => setCopiedKeyId(null), 2000);
   };
 
+  const handleUpdateProfile = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (currentUser) {
+      const updated = { ...currentUser, name: profileName.trim() || currentUser.name };
+      setCurrentUser(updated);
+      localStorage.setItem('ods_session_user', JSON.stringify(updated));
+    }
+    showToast('Cập nhật thông tin cá nhân thành công!', 'success');
+  };
+
+  const handleChangePassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword.length < 6) {
+      showToast('Mật khẩu mới phải có tối thiểu 6 ký tự!', 'error');
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      showToast('Xác nhận mật khẩu mới không khớp!', 'error');
+      return;
+    }
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmNewPassword('');
+    showToast('Đổi mật khẩu tài khoản thành công!', 'success');
+  };
+
   // Calculate total registered hardware items
   const totalHardwareItems = orders.reduce((acc, curr) => acc + (curr.gameKeys ? curr.gameKeys.length : 0), 0);
 
@@ -283,7 +287,6 @@ function ProfileContent() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#090d16] text-slate-900 dark:text-slate-100 flex flex-col antialiased tech-grid-pattern transition-colors duration-300">
-      {/* HEADER */}
       <Header />
 
       <main className="flex-1 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
@@ -308,7 +311,7 @@ function ProfileContent() {
                     DRX HARDWARE ACCOUNT
                   </h2>
                   <p className="text-xs text-slate-500 dark:text-slate-400 font-light">
-                    Quản lý đơn hàng linh kiện, bảo hành 36T và cấu hình PC
+                    Quản lý đơn hàng linh kiện, bảo hành chính hãng và cấu hình PC
                   </p>
                 </div>
 
@@ -338,7 +341,6 @@ function ProfileContent() {
 
                 {/* Tab Contents */}
                 {authTab === 'login' ? (
-                  /* LOGIN FORM */
                   <form onSubmit={handleLoginSubmit} className="space-y-4">
                     <div className="space-y-1.5">
                       <label className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider block">Địa chỉ Email</label>
@@ -373,7 +375,6 @@ function ProfileContent() {
                       </div>
                     </div>
 
-                    {/* REMEMBER ME CHECKBOX */}
                     <div className="flex items-center justify-between pt-1">
                       <label className="flex items-center gap-2 cursor-pointer select-none text-xs font-semibold text-slate-600 dark:text-slate-400">
                         <input
@@ -395,7 +396,6 @@ function ProfileContent() {
                     </button>
                   </form>
                 ) : (
-                  /* REGISTER FORM */
                   <form onSubmit={handleRegisterSubmit} className="space-y-4">
                     <div className="space-y-1.5">
                       <label className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider block">Họ và Tên</label>
@@ -467,7 +467,6 @@ function ProfileContent() {
                   </form>
                 )}
 
-                {/* Secure Notice */}
                 <div className="mt-6 border-t border-slate-200 dark:border-slate-800 pt-4 text-center flex items-center justify-center gap-2 text-[9.5px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider">
                   <Shield className="h-3.5 w-3.5 text-emerald-500" />
                   <span>Bảo mật dữ liệu 256-bit chuẩn thương mại điện tử DRX</span>
@@ -475,10 +474,10 @@ function ProfileContent() {
               </div>
             </motion.div>
           ) : (
-            /* ================== HARDWARE SHOWROOM USER DASHBOARD ================== */
+            /* ================== USER DASHBOARD (NO WALLET, 5 CLEAN TABS) ================== */
             <div className="space-y-8 my-4">
               
-              {/* 1. TOP HARDWARE ENTHUSIAST STATS BANNER (CRISP LIGHT THEME) */}
+              {/* 1. TOP STATS BANNER (NO WALLET BALANCE - ONLY ESSENTIAL HARDWARE STATS) */}
               <div className="relative rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white p-6 sm:p-8 shadow-sm">
                 <div className="absolute inset-0 bg-gradient-to-r from-sky-50/70 via-white to-sky-50/50 dark:from-slate-900 dark:via-slate-900/90 dark:to-slate-950 pointer-events-none" />
                 <div className="absolute top-0 right-0 w-96 h-96 bg-[#0284c7]/5 dark:bg-[#0284c7]/20 rounded-full blur-3xl pointer-events-none" />
@@ -511,61 +510,61 @@ function ProfileContent() {
                           <Award className="h-3 w-3" /> DRX ELITE BUILDER
                         </span>
                         <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">
-                          ● Chiết khấu 3% PC Prebuilt
+                          ● Bảo hành 1 đổi 1 36T
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Right Quick Metrics Grid (7 cols) */}
-                  <div className="md:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-3.5">
+                  {/* Right Quick Metrics Grid (7 cols - NO WALLET, ONLY REAL HARDWARE STATS) */}
+                  <div className="md:col-span-7 grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                     
-                    {/* Metric 1: Wallet Balance */}
-                    <div className="bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-sky-400/30 p-3.5 rounded-2xl flex flex-col justify-between shadow-xs">
+                    {/* Metric 1: Orders Count */}
+                    <div className="bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-sky-400/30 p-4 rounded-2xl flex flex-col justify-between shadow-xs">
                       <div className="flex justify-between items-center">
-                        <span className="text-[10px] font-bold text-slate-500 dark:text-sky-200/70 uppercase tracking-wider">Số Dư Ví DRX</span>
-                        <CreditCard className="h-4 w-4 text-[#0284c7]" />
+                        <span className="text-[10px] font-bold text-slate-500 dark:text-sky-200/70 uppercase tracking-wider">Đơn Hàng Của Tôi</span>
+                        <ShoppingBag className="h-4 w-4 text-[#0284c7]" />
                       </div>
                       <div className="mt-2">
-                        <span className="font-heading text-base sm:text-lg font-black text-slate-900 dark:text-white block truncate">
-                          {formatCurrency(currentUser?.balance || 0)}
+                        <span className="font-heading text-lg font-black text-slate-900 dark:text-white block">
+                          {orders.length} <span className="text-xs font-normal text-slate-500 dark:text-slate-400">đơn hàng</span>
                         </span>
-                        <Link href="/deposit" className="text-[10px] font-bold text-[#0284c7] hover:underline inline-flex items-center gap-0.5 mt-0.5">
-                          <span>Nạp tiền VietQR</span>
-                          <ChevronRight className="h-3 w-3" />
-                        </Link>
-                      </div>
-                    </div>
-
-                    {/* Metric 2: Hardware Warranty Items */}
-                    <div className="bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-emerald-500/30 p-3.5 rounded-2xl flex flex-col justify-between shadow-xs">
-                      <div className="flex justify-between items-center">
-                        <span className="text-[10px] font-bold text-slate-500 dark:text-emerald-300/70 uppercase tracking-wider">Linh Kiện Bảo Hành</span>
-                        <ShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                      </div>
-                      <div className="mt-2">
-                        <span className="font-heading text-base sm:text-lg font-black text-emerald-600 dark:text-emerald-400 block">
-                          {totalHardwareItems} <span className="text-xs font-normal text-slate-500 dark:text-slate-300">thiết bị</span>
-                        </span>
-                        <button onClick={() => setDashboardTab('vault')} className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-0.5 mt-0.5 cursor-pointer">
-                          <span>Xem mã Serial</span>
+                        <button onClick={() => setDashboardTab('orders')} className="text-[10px] font-bold text-[#0284c7] hover:underline inline-flex items-center gap-0.5 mt-0.5 cursor-pointer">
+                          <span>Xem danh sách</span>
                           <ChevronRight className="h-3 w-3" />
                         </button>
                       </div>
                     </div>
 
-                    {/* Metric 3: Orders Count */}
-                    <div className="bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-amber-500/30 p-3.5 rounded-2xl flex flex-col justify-between col-span-2 sm:col-span-1 shadow-xs">
+                    {/* Metric 2: Hardware Warranty Items */}
+                    <div className="bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-emerald-500/30 p-4 rounded-2xl flex flex-col justify-between shadow-xs">
                       <div className="flex justify-between items-center">
-                        <span className="text-[10px] font-bold text-slate-500 dark:text-amber-300/70 uppercase tracking-wider">Tổng Đơn Hàng</span>
-                        <PackageCheck className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                        <span className="text-[10px] font-bold text-slate-500 dark:text-emerald-300/70 uppercase tracking-wider">Linh Kiện Bảo Hành</span>
+                        <ShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                       </div>
                       <div className="mt-2">
-                        <span className="font-heading text-base sm:text-lg font-black text-amber-600 dark:text-amber-300 block">
-                          {orders.length} <span className="text-xs font-normal text-slate-500 dark:text-slate-300">đơn</span>
+                        <span className="font-heading text-lg font-black text-emerald-600 dark:text-emerald-400 block">
+                          {totalHardwareItems} <span className="text-xs font-normal text-slate-500 dark:text-slate-400">thiết bị</span>
                         </span>
-                        <button onClick={() => setDashboardTab('orders')} className="text-[10px] font-bold text-amber-600 dark:text-amber-400 hover:underline inline-flex items-center gap-0.5 mt-0.5 cursor-pointer">
-                          <span>Xem chi tiết</span>
+                        <button onClick={() => setDashboardTab('warranty')} className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-0.5 mt-0.5 cursor-pointer">
+                          <span>Xem Serial Number</span>
+                          <ChevronRight className="h-3 w-3" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Metric 3: Saved PC Builds */}
+                    <div className="bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-amber-500/30 p-4 rounded-2xl flex flex-col justify-between shadow-xs">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] font-bold text-slate-500 dark:text-amber-300/70 uppercase tracking-wider">Cấu Hình Tự Ráp</span>
+                        <Wrench className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                      </div>
+                      <div className="mt-2">
+                        <span className="font-heading text-lg font-black text-amber-600 dark:text-amber-300 block">
+                          {savedBuilds.length} <span className="text-xs font-normal text-slate-500 dark:text-slate-400">cấu hình</span>
+                        </span>
+                        <button onClick={() => setDashboardTab('builds')} className="text-[10px] font-bold text-amber-600 dark:text-amber-400 hover:underline inline-flex items-center gap-0.5 mt-0.5 cursor-pointer">
+                          <span>Xem PC Builder</span>
                           <ChevronRight className="h-3 w-3" />
                         </button>
                       </div>
@@ -575,10 +574,10 @@ function ProfileContent() {
                 </div>
               </div>
 
-              {/* 2. MAIN DASHBOARD WORKSPACE GRID */}
+              {/* 2. MAIN WORKSPACE GRID */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                 
-                {/* LEFT NAVIGATION MENU (4 cols) */}
+                {/* LEFT SIDEBAR NAVIGATION MENU (EXACTLY 6 LOGICAL ITEMS) */}
                 <div className="lg:col-span-4 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-5 shadow-sm space-y-4">
                   <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-3 block">
                     QUẢN LÝ TÀI KHOẢN & LINH KIỆN
@@ -586,7 +585,23 @@ function ProfileContent() {
 
                   <div className="flex flex-col space-y-1.5">
                     
-                    {/* TAB 1: ĐƠN HÀNG LINH KIỆN */}
+                    {/* 1. TỔNG QUAN */}
+                    <button
+                      onClick={() => setDashboardTab('overview')}
+                      className={`flex items-center justify-between w-full text-left px-4 py-3 rounded-2xl text-xs font-heading font-black uppercase tracking-wider transition-all cursor-pointer ${
+                        dashboardTab === 'overview'
+                          ? 'bg-[#0284c7] text-white shadow-md shadow-sky-500/20'
+                          : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <LayoutDashboard className="h-4 w-4" />
+                        <span>Tổng Quan</span>
+                      </div>
+                      <ChevronRight className="h-3.5 w-3.5 opacity-60" />
+                    </button>
+
+                    {/* 2. ĐƠN HÀNG CỦA TÔI */}
                     <button
                       onClick={() => setDashboardTab('orders')}
                       className={`flex items-center justify-between w-full text-left px-4 py-3 rounded-2xl text-xs font-heading font-black uppercase tracking-wider transition-all cursor-pointer ${
@@ -597,7 +612,7 @@ function ProfileContent() {
                     >
                       <div className="flex items-center gap-3">
                         <ShoppingBag className="h-4 w-4" />
-                        <span>Đơn Hàng Linh Kiện & PC</span>
+                        <span>Đơn Hàng Của Tôi</span>
                       </div>
                       <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold ${
                         dashboardTab === 'orders'
@@ -608,21 +623,21 @@ function ProfileContent() {
                       </span>
                     </button>
 
-                    {/* TAB 2: QUẢN LÝ BẢO HÀNH & SERIAL */}
+                    {/* 3. BẢO HÀNH */}
                     <button
-                      onClick={() => setDashboardTab('vault')}
+                      onClick={() => setDashboardTab('warranty')}
                       className={`flex items-center justify-between w-full text-left px-4 py-3 rounded-2xl text-xs font-heading font-black uppercase tracking-wider transition-all cursor-pointer ${
-                        dashboardTab === 'vault'
+                        dashboardTab === 'warranty'
                           ? 'bg-[#0284c7] text-white shadow-md shadow-sky-500/20'
                           : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        <ShieldCheck className={`h-4 w-4 ${dashboardTab === 'vault' ? 'text-white' : 'text-emerald-600 dark:text-emerald-400'}`} />
-                        <span>Kho Linh Kiện & Bảo Hành</span>
+                        <ShieldCheck className={`h-4 w-4 ${dashboardTab === 'warranty' ? 'text-white' : 'text-emerald-600 dark:text-emerald-400'}`} />
+                        <span>Bảo Hành</span>
                       </div>
                       <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold ${
-                        dashboardTab === 'vault'
+                        dashboardTab === 'warranty'
                           ? 'bg-white/20 text-white'
                           : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
                       }`}>
@@ -630,29 +645,7 @@ function ProfileContent() {
                       </span>
                     </button>
 
-                    {/* TAB 3: LỊCH SỬ NẠP VÍ */}
-                    <button
-                      onClick={() => setDashboardTab('transactions')}
-                      className={`flex items-center justify-between w-full text-left px-4 py-3 rounded-2xl text-xs font-heading font-black uppercase tracking-wider transition-all cursor-pointer ${
-                        dashboardTab === 'transactions'
-                          ? 'bg-[#0284c7] text-white shadow-md shadow-sky-500/20'
-                          : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <CreditCard className="h-4 w-4" />
-                        <span>Lịch Sử Giao Dịch & Ví</span>
-                      </div>
-                      <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold ${
-                        dashboardTab === 'transactions'
-                          ? 'bg-white/20 text-white'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
-                      }`}>
-                        {transactions.length}
-                      </span>
-                    </button>
-
-                    {/* TAB 4: CẤU HÌNH PC ĐÃ LƯU */}
+                    {/* 4. CẤU HÌNH PC TỰ RÁP */}
                     <button
                       onClick={() => setDashboardTab('builds')}
                       className={`flex items-center justify-between w-full text-left px-4 py-3 rounded-2xl text-xs font-heading font-black uppercase tracking-wider transition-all cursor-pointer ${
@@ -674,43 +667,29 @@ function ProfileContent() {
                       </span>
                     </button>
 
-                    {/* TAB 5: DANH SÁCH YÊU THÍCH */}
+                    {/* 5. THÔNG TIN CÁ NHÂN (GỒM ĐỔI MẬT KHẨU BÊN TRONG) */}
                     <button
-                      onClick={() => setDashboardTab('wishlist')}
+                      onClick={() => setDashboardTab('profile')}
                       className={`flex items-center justify-between w-full text-left px-4 py-3 rounded-2xl text-xs font-heading font-black uppercase tracking-wider transition-all cursor-pointer ${
-                        dashboardTab === 'wishlist'
+                        dashboardTab === 'profile'
                           ? 'bg-[#0284c7] text-white shadow-md shadow-sky-500/20'
                           : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        <Heart className="h-4 w-4 text-rose-500" />
-                        <span>Linh Kiện Yêu Thích</span>
+                        <User className="h-4 w-4" />
+                        <span>Thông Tin Cá Nhân</span>
                       </div>
+                      <ChevronRight className="h-3.5 w-3.5 opacity-60" />
                     </button>
 
-                    {/* TAB 6: THIẾT LẬP BẢO MẬT */}
-                    <button
-                      onClick={() => setDashboardTab('settings')}
-                      className={`flex items-center justify-between w-full text-left px-4 py-3 rounded-2xl text-xs font-heading font-black uppercase tracking-wider transition-all cursor-pointer ${
-                        dashboardTab === 'settings'
-                          ? 'bg-[#0284c7] text-white shadow-md shadow-sky-500/20'
-                          : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <Settings className="h-4 w-4" />
-                        <span>Đổi Mật Khẩu & Bảo Mật</span>
-                      </div>
-                    </button>
-
-                    {/* LOGOUT */}
+                    {/* 6. ĐĂNG XUẤT */}
                     <button
                       onClick={handleLogout}
                       className="flex items-center gap-3 w-full text-left px-4 py-3 rounded-2xl text-xs font-heading font-black uppercase tracking-wider text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-all mt-4 cursor-pointer"
                     >
                       <LogOut className="h-4 w-4" />
-                      <span>Đăng Xuất Tài Khoản</span>
+                      <span>Đăng Xuất</span>
                     </button>
                   </div>
                 </div>
@@ -718,14 +697,125 @@ function ProfileContent() {
                 {/* RIGHT DETAIL WORKSPACE (8 cols) */}
                 <div className="lg:col-span-8 space-y-6 min-h-[520px] transition-all duration-300">
                   
-                  {/* 1. ORDERS TAB */}
+                  {/* TAB 1: TỔNG QUAN (OVERVIEW DASHBOARD) */}
+                  {dashboardTab === 'overview' && (
+                    <div className="space-y-6">
+                      {/* Welcome Card */}
+                      <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-6 sm:p-8 space-y-4 shadow-sm">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-5">
+                          <div>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-[#0284c7] block">
+                              BẢNG ĐIỀU KHIỂN TÀI KHOẢN
+                            </span>
+                            <h3 className="font-heading text-lg font-black uppercase text-slate-900 dark:text-white mt-0.5">
+                              Xin Chào, {sanitizedName}!
+                            </h3>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                              Chào mừng bạn quay trở lại trung tâm quản lý linh kiện phần cứng &amp; PC Gaming DRX.
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                              Tài khoản đã xác thực
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Quick Action Grid */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+                          <div 
+                            onClick={() => setDashboardTab('orders')}
+                            className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-[#0284c7] transition-all cursor-pointer group"
+                          >
+                            <div className="w-10 h-10 rounded-xl bg-sky-100 dark:bg-slate-800 text-[#0284c7] flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                              <ShoppingBag className="w-5 h-5" />
+                            </div>
+                            <h4 className="font-heading text-xs font-black uppercase text-slate-900 dark:text-white">
+                              Đơn Hàng ({orders.length})
+                            </h4>
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                              Theo dõi tiến độ giao nhận linh kiện và hóa đơn mua sắm.
+                            </p>
+                          </div>
+
+                          <div 
+                            onClick={() => setDashboardTab('warranty')}
+                            className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-emerald-500 transition-all cursor-pointer group"
+                          >
+                            <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-slate-800 text-emerald-600 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                              <ShieldCheck className="w-5 h-5" />
+                            </div>
+                            <h4 className="font-heading text-xs font-black uppercase text-slate-900 dark:text-white">
+                              Bảo Hành ({totalHardwareItems})
+                            </h4>
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                              Quản lý mã Serial Number (SN) và hạn bảo hành 1 đổi 1.
+                            </p>
+                          </div>
+
+                          <div 
+                            onClick={() => setDashboardTab('builds')}
+                            className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-amber-500 transition-all cursor-pointer group"
+                          >
+                            <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-slate-800 text-amber-600 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                              <Wrench className="w-5 h-5" />
+                            </div>
+                            <h4 className="font-heading text-xs font-black uppercase text-slate-900 dark:text-white">
+                              Cấu Hình PC ({savedBuilds.length})
+                            </h4>
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                              Xem lại cấu hình PC Gaming đã tự phối linh kiện.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Quick Links Banner */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <Link 
+                          href="/pc-builder"
+                          className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-gradient-to-br from-sky-500/10 via-transparent to-transparent p-6 space-y-2 hover:border-[#0284c7] transition-all block group"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-black uppercase text-[#0284c7]">DRX PC BUILDER</span>
+                            <ArrowRight className="w-4 h-4 text-[#0284c7] group-hover:translate-x-1 transition-transform" />
+                          </div>
+                          <h4 className="font-heading text-sm font-black uppercase text-slate-900 dark:text-white">
+                            Tự Tay Ráp Dàn PC Mới
+                          </h4>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                            Công cụ kiểm tra tương thích thông minh giữa CPU, Mainboard, RAM và VGA.
+                          </p>
+                        </Link>
+
+                        <Link 
+                          href="/warranty"
+                          className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-gradient-to-br from-emerald-500/10 via-transparent to-transparent p-6 space-y-2 hover:border-emerald-500 transition-all block group"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-black uppercase text-emerald-600">TRA CỨU TRỰC TUYẾN</span>
+                            <ArrowRight className="w-4 h-4 text-emerald-600 group-hover:translate-x-1 transition-transform" />
+                          </div>
+                          <h4 className="font-heading text-sm font-black uppercase text-slate-900 dark:text-white">
+                            Tra Cứu Bảo Hành Bằng Serial (SN)
+                          </h4>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                            Nhập mã Serial Number trên tem linh kiện để kiểm tra lịch sử bảo trì.
+                          </p>
+                        </Link>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* TAB 2: ĐƠN HÀNG CỦA TÔI */}
                   {dashboardTab === 'orders' && (
                     <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-6 space-y-5 shadow-sm">
                       <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
                         <div>
                           <h3 className="font-heading text-sm font-black uppercase tracking-wider text-slate-900 dark:text-slate-100 flex items-center gap-2">
                             <ShoppingBag className="h-4 w-4 text-[#0284c7]" />
-                            <span>LỊCH SỬ ĐƠN HÀNG LINH KIỆN & PC GAMING</span>
+                            <span>ĐƠN HÀNG CỦA TÔI</span>
                           </h3>
                           <p className="text-xs text-slate-500 dark:text-slate-400 font-light mt-0.5">
                             Theo dõi trạng thái đóng gói, kiểm tra benchmark và bàn giao linh kiện.
@@ -743,7 +833,7 @@ function ProfileContent() {
                             <Box className="h-8 w-8" />
                           </div>
                           <div className="space-y-1">
-                            <h4 className="text-xs font-black text-slate-900 dark:text-slate-100 uppercase tracking-wider">Chưa có đơn hàng linh kiện nào</h4>
+                            <h4 className="text-xs font-black text-slate-900 dark:text-slate-100 uppercase tracking-wider">Chưa có đơn hàng nào</h4>
                             <p className="text-xs text-slate-500 dark:text-slate-400 font-light max-w-sm leading-relaxed mx-auto">
                               Bạn chưa đặt mua linh kiện hoặc PC nào. Hãy khám phá kho linh kiện chính hãng tại DRX Hardware!
                             </p>
@@ -752,7 +842,7 @@ function ProfileContent() {
                             href="/products"
                             className="uiverse-btn-shimmer inline-flex items-center gap-2 rounded-2xl text-white px-6 py-3 text-xs font-heading font-black uppercase tracking-wider shadow-lg"
                           >
-                            <span>Khám Phá Linh Kiện Ngay</span>
+                            <span>Mua Sắm Linh Kiện Ngay</span>
                             <ArrowRight className="h-4 w-4" />
                           </Link>
                         </div>
@@ -760,64 +850,51 @@ function ProfileContent() {
                         <div className="space-y-4">
                           {orders.map((order) => (
                             <div key={order.id} className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-5 space-y-4">
-                              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
+                              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 border-b border-slate-200 dark:border-slate-800/60 pb-3">
                                 <div>
-                                  <span className="text-[10px] text-slate-400 font-mono">
-                                    {new Date(order.createdAt).toLocaleDateString('vi-VN', {
-                                      year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
-                                    })}
+                                  <span className="text-[10px] text-slate-400 font-mono block">MÃ ĐƠN: #{order.id.slice(0, 8).toUpperCase()}</span>
+                                  <span className="text-xs font-bold text-slate-600 dark:text-slate-300">
+                                    Ngày đặt: {new Date(order.createdAt).toLocaleDateString('vi-VN')}
                                   </span>
-                                  <h4 className="font-heading text-xs font-black uppercase text-slate-900 dark:text-slate-100 mt-0.5">
-                                    Mã Đơn: #{order.id.slice(0, 10).toUpperCase()}
-                                  </h4>
                                 </div>
-                                <div className="text-left sm:text-right shrink-0">
-                                  <span className="text-sm font-black text-emerald-600 dark:text-emerald-400 block font-heading">
+                                <div className="flex items-center gap-3">
+                                  <span className="text-xs font-black font-heading text-[#0284c7]">
                                     {formatCurrency(order.netAmount)}
                                   </span>
-                                  <span className="inline-flex items-center gap-1 text-[9.5px] text-emerald-600 font-bold uppercase mt-0.5 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 px-2 py-0.5 rounded-full">
-                                    <CheckCircle2 className="h-3 w-3" /> Đã thanh toán & Bàn giao
+                                  <span className="inline-flex items-center gap-1 text-[9.5px] font-black uppercase px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                                    <CheckCircle2 className="h-3 w-3" /> Đã xác nhận
                                   </span>
                                 </div>
                               </div>
 
-                              {/* LIST OF HARDWARE ITEMS IN ORDER */}
-                              <div className="space-y-2">
-                                {order.gameKeys && order.gameKeys.map((item) => (
-                                  <div key={item.id} className="flex items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 rounded-xl">
-                                    <div className="flex items-center gap-2.5 min-w-0">
-                                      <Cpu className="h-4 w-4 text-[#0284c7] shrink-0" />
-                                      <div className="min-w-0">
-                                        <span className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate block">
-                                          {item.product?.name || 'Linh Kiện Máy Tính Chính Hãng'}
-                                        </span>
-                                        <div className="flex items-center gap-2 mt-0.5">
-                                          <span className="text-[10px] text-slate-400 font-mono">Mã Serial SN:</span>
-                                          <code className="text-[11px] font-mono text-[#0284c7] font-bold select-all">
-                                            {item.keyCode}
-                                          </code>
+                              {order.gameKeys && order.gameKeys.length > 0 && (
+                                <div className="space-y-2">
+                                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
+                                    Linh Kiện Trong Đơn ({order.gameKeys.length}):
+                                  </span>
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    {order.gameKeys.map((item) => (
+                                      <div key={item.id} className="flex items-center gap-2.5 bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800">
+                                        {item.product?.coverImage && (
+                                          <img
+                                            src={item.product.coverImage}
+                                            alt={item.product.name}
+                                            className="h-10 w-14 object-cover rounded-lg bg-slate-900 border border-slate-200 dark:border-slate-800 shrink-0"
+                                          />
+                                        )}
+                                        <div className="min-w-0 flex-1">
+                                          <h5 className="font-heading text-xs font-black text-slate-900 dark:text-white truncate">
+                                            {item.product?.name || 'Linh Kiện Máy Tính'}
+                                          </h5>
+                                          <span className="text-[10px] font-mono text-[#0284c7] block">
+                                            SN: {item.keyCode}
+                                          </span>
                                         </div>
                                       </div>
-                                    </div>
-                                    <button
-                                      onClick={() => handleCopy(item.id, item.keyCode)}
-                                      className="flex items-center gap-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 text-[10px] font-bold text-slate-800 dark:text-slate-200 hover:bg-[#0284c7] hover:text-white transition-all shrink-0 cursor-pointer"
-                                    >
-                                      {copiedKeyId === item.id ? (
-                                        <>
-                                          <Check className="h-3.5 w-3.5 text-emerald-400" />
-                                          <span className="text-emerald-400">ĐÃ LƯU</span>
-                                        </>
-                                      ) : (
-                                        <>
-                                          <Copy className="h-3.5 w-3.5" />
-                                          <span>COPY SN</span>
-                                        </>
-                                      )}
-                                    </button>
+                                    ))}
                                   </div>
-                                ))}
-                              </div>
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>
@@ -825,25 +902,25 @@ function ProfileContent() {
                     </div>
                   )}
 
-                  {/* 2. HARDWARE VAULT & WARRANTY TAB */}
-                  {dashboardTab === 'vault' && (
+                  {/* TAB 3: BẢO HÀNH */}
+                  {dashboardTab === 'warranty' && (
                     <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-6 space-y-5 shadow-sm">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4 gap-2">
+                      <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
                         <div>
                           <h3 className="font-heading text-sm font-black uppercase tracking-wider text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                            <ShieldCheck className="h-5 w-5 text-emerald-500" />
-                            <span>KHO LINH KIỆN & QUẢN LÝ BẢO HÀNH CHÍNH HÃNG</span>
+                            <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                            <span>KHO LINH KIỆN &amp; BẢO HÀNH CHÍNH HÃNG</span>
                           </h3>
                           <p className="text-xs text-slate-500 dark:text-slate-400 font-light mt-0.5">
-                            Quản lý mã Serial Number (SN) linh kiện CPU, VGA, Mainboard, RAM & phiếu bảo hành 36T 1 đổi 1.
+                            Quản lý toàn bộ mã Serial Number (SN) linh kiện đã mua và kích hoạt bảo hành 1 đổi 1 trong 36 tháng.
                           </p>
                         </div>
                         <Link
                           href="/warranty"
-                          className="inline-flex items-center gap-1.5 text-xs font-black text-[#0284c7] uppercase hover:underline bg-sky-50 dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-sky-200 dark:border-sky-500/30"
+                          className="hidden sm:inline-flex items-center gap-1.5 text-xs font-bold text-[#0284c7] hover:underline"
                         >
-                          <span>Tra cứu online</span>
-                          <ExternalLink className="h-3.5 w-3.5" />
+                          <span>Cổng tra cứu bảo hành</span>
+                          <ChevronRight className="w-3.5 h-3.5" />
                         </Link>
                       </div>
 
@@ -954,73 +1031,66 @@ function ProfileContent() {
                     </div>
                   )}
 
-                  {/* 3. TRANSACTIONS TAB */}
-                  {dashboardTab === 'transactions' && (
+                  {/* TAB 4: CẤU HÌNH PC TỰ RÁP */}
+                  {dashboardTab === 'builds' && (
                     <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-6 space-y-5 shadow-sm">
                       <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
                         <div>
                           <h3 className="font-heading text-sm font-black uppercase tracking-wider text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                            <CreditCard className="h-4 w-4 text-[#0284c7]" />
-                            <span>LỊCH SỬ BIẾN ĐỘNG SỐ DƯ VÍ DRX</span>
+                            <Wrench className="h-4 w-4 text-amber-500" />
+                            <span>CẤU HÌNH PC TỰ RÁP ĐÃ LƯU</span>
                           </h3>
                           <p className="text-xs text-slate-500 dark:text-slate-400 font-light mt-0.5">
-                            Ghi nhận nạp tiền tự động VietQR không phí và thanh toán đơn hàng.
+                            Quản lý các bộ cấu hình PC bạn đã tự phối linh kiện trên công cụ DRX PC Builder.
                           </p>
                         </div>
                         <Link
-                          href="/deposit"
+                          href="/pc-builder"
                           className="uiverse-btn-shimmer inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-white text-xs font-heading font-black uppercase"
                         >
                           <Zap className="h-3.5 w-3.5 text-amber-300" />
-                          <span>Nạp Tiền Ngay</span>
+                          <span>Ráp Cấu Hình Mới</span>
                         </Link>
                       </div>
 
-                      {isLoadingTransactions ? (
-                        <div className="text-center py-12 text-xs text-slate-400">
-                          Đang tải lịch sử nạp tiền...
-                        </div>
-                      ) : transactions.length === 0 ? (
+                      {savedBuilds.length === 0 ? (
                         <div className="text-center py-12 px-4 flex flex-col items-center justify-center space-y-4">
-                          <div className="h-16 w-16 rounded-3xl bg-blue-50 dark:bg-slate-800 flex items-center justify-center text-[#0284c7]">
-                            <CreditCard className="h-8 w-8" />
+                          <div className="h-16 w-16 rounded-3xl bg-amber-50 dark:bg-slate-800 flex items-center justify-center text-amber-500">
+                            <Wrench className="h-8 w-8" />
                           </div>
                           <div className="space-y-1">
-                            <h4 className="text-xs font-black text-slate-900 dark:text-slate-100 uppercase tracking-wider">Chưa có giao dịch nạp tiền</h4>
+                            <h4 className="text-xs font-black text-slate-900 dark:text-slate-100 uppercase tracking-wider">Chưa có cấu hình PC nào được lưu</h4>
                             <p className="text-xs text-slate-500 dark:text-slate-400 font-light max-w-sm leading-relaxed mx-auto">
-                              Nạp tiền vào ví DRX để thanh toán nhanh chóng đơn hàng linh kiện và nhận chiết khấu VIP!
+                              Tự tay lựa chọn CPU, VGA, Mainboard, RAM và kiểm tra tương thích tự động với công cụ PC Builder của DRX!
                             </p>
                           </div>
+                          <Link
+                            href="/pc-builder"
+                            className="uiverse-btn-shimmer inline-flex items-center gap-2 rounded-2xl text-white px-6 py-3 text-xs font-heading font-black uppercase tracking-wider shadow-lg"
+                          >
+                            <Zap className="h-4 w-4 text-amber-300" />
+                            <span>Tự Xây Dựng Cấu Hình PC Ngay</span>
+                          </Link>
                         </div>
                       ) : (
-                        <div className="space-y-3">
-                          {transactions.map((tx) => (
-                            <div key={tx.id} className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-4 space-y-2">
-                              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-                                <div>
-                                  <span className="text-[10px] text-slate-400 font-mono block mb-1">
-                                    {new Date(tx.createdAt).toLocaleDateString('vi-VN', {
-                                      year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
-                                    })}
-                                  </span>
-                                  <h4 className="font-heading text-xs font-black text-slate-900 dark:text-slate-100">
-                                    {tx.description || 'Nạp tiền vào ví DRX'}
-                                  </h4>
-                                  {tx.referenceId && (
-                                    <span className="text-[10px] text-slate-400 font-mono mt-0.5 block">
-                                      Mã GD: {tx.referenceId}
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="text-left sm:text-right shrink-0">
-                                  <span className={`text-sm font-black font-heading block ${tx.type === 'DEPOSIT' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'}`}>
-                                    {tx.type === 'DEPOSIT' ? '+' : '-'}{formatCurrency(tx.amount)}
-                                  </span>
-                                  <span className="inline-flex items-center gap-1 text-[9.5px] text-emerald-600 dark:text-emerald-400 font-bold uppercase mt-1">
-                                    <CheckCircle2 className="h-3 w-3" /> Thành công
-                                  </span>
-                                </div>
+                        <div className="space-y-4">
+                          {savedBuilds.map((build: any, bIdx: number) => (
+                            <div key={bIdx} className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-5 space-y-3">
+                              <div className="flex items-center justify-between">
+                                <h4 className="font-heading text-sm font-black uppercase text-slate-900 dark:text-white">
+                                  {build.name || `Cấu hình PC #${bIdx + 1}`}
+                                </h4>
+                                <span className="font-heading text-xs font-black text-[#0284c7]">
+                                  {formatCurrency(build.totalPrice || 0)}
+                                </span>
                               </div>
+                              <Link
+                                href="/pc-builder"
+                                className="inline-flex items-center gap-1 text-xs font-bold text-[#0284c7] hover:underline"
+                              >
+                                <span>Mở lại trong PC Builder</span>
+                                <ArrowRight className="w-3.5 h-3.5" />
+                              </Link>
                             </div>
                           ))}
                         </div>
@@ -1028,118 +1098,137 @@ function ProfileContent() {
                     </div>
                   )}
 
-                  {/* 4. SAVED PC BUILDS TAB */}
-                  {dashboardTab === 'builds' && (
-                    <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-6 space-y-5 shadow-sm">
-                      <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
-                        <div>
+                  {/* TAB 5: THÔNG TIN CÁ NHÂN (GỒM CẢ ĐỔI MẬT KHẨU) */}
+                  {dashboardTab === 'profile' && (
+                    <div className="space-y-6">
+                      
+                      {/* CARD 1: THÔNG TIN TÀI KHOẢN */}
+                      <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-6 sm:p-8 space-y-5 shadow-sm">
+                        <div className="border-b border-slate-200 dark:border-slate-800 pb-4">
                           <h3 className="font-heading text-sm font-black uppercase tracking-wider text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                            <Wrench className="h-4 w-4 text-amber-500" />
-                            <span>CẤU HÌNH PC GAMING & ĐỒ HỌA ĐÃ LƯU</span>
+                            <User className="h-4 w-4 text-[#0284c7]" />
+                            <span>THÔNG TIN CÁ NHÂN</span>
                           </h3>
                           <p className="text-xs text-slate-500 dark:text-slate-400 font-light mt-0.5">
-                            Quản lý các bộ cấu hình PC bạn đã tự phối linh kiện trên công cụ DRX PC Builder.
+                            Cập nhật họ tên và thông tin liên hệ nhận hàng của bạn.
                           </p>
                         </div>
+
+                        <form onSubmit={handleUpdateProfile} className="space-y-4 max-w-lg">
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block">Họ và tên</label>
+                            <input
+                              type="text"
+                              required
+                              value={profileName}
+                              onChange={(e) => setProfileName(e.target.value)}
+                              placeholder="Họ và tên khách hàng"
+                              className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-3 px-4 text-xs font-semibold text-slate-900 dark:text-slate-100 focus:border-[#0284c7] focus:outline-none"
+                            />
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block">Địa chỉ Email</label>
+                            <input
+                              type="email"
+                              disabled
+                              value={sanitizedEmail}
+                              className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900/60 py-3 px-4 text-xs font-semibold text-slate-500 cursor-not-allowed"
+                            />
+                            <span className="text-[10px] text-slate-400">Email được liên kết cố định với tài khoản.</span>
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block">Số điện thoại nhận hàng</label>
+                            <input
+                              type="tel"
+                              value={profilePhone}
+                              onChange={(e) => setProfilePhone(e.target.value)}
+                              placeholder="Ví dụ: 0908889999"
+                              className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-3 px-4 text-xs font-semibold text-slate-900 dark:text-slate-100 focus:border-[#0284c7] focus:outline-none"
+                            />
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block">Địa chỉ giao hàng mặc định</label>
+                            <textarea
+                              rows={2}
+                              value={profileAddress}
+                              onChange={(e) => setProfileAddress(e.target.value)}
+                              placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố"
+                              className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-3 px-4 text-xs font-semibold text-slate-900 dark:text-slate-100 focus:border-[#0284c7] focus:outline-none"
+                            />
+                          </div>
+
+                          <button
+                            type="submit"
+                            className="uiverse-btn-shimmer inline-flex items-center gap-2 rounded-2xl text-white px-6 py-3 text-xs font-heading font-black uppercase tracking-wider shadow-lg cursor-pointer"
+                          >
+                            <Check className="h-4 w-4" />
+                            <span>Lưu Thông Tin Cá Nhân</span>
+                          </button>
+                        </form>
                       </div>
 
-                      <div className="text-center py-12 px-4 flex flex-col items-center justify-center space-y-4">
-                        <div className="h-16 w-16 rounded-3xl bg-amber-50 dark:bg-slate-800 flex items-center justify-center text-amber-500">
-                          <Wrench className="h-8 w-8" />
-                        </div>
-                        <div className="space-y-1">
-                          <h4 className="text-xs font-black text-slate-900 dark:text-slate-100 uppercase tracking-wider">Chưa có cấu hình PC nào được lưu</h4>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 font-light max-w-sm leading-relaxed mx-auto">
-                            Tự tay lựa chọn CPU, VGA, Mainboard, RAM và kiểm tra tương thích tự động với công cụ PC Builder của DRX!
-                          </p>
-                        </div>
-                        <Link
-                          href="/pc-builder"
-                          className="uiverse-btn-shimmer inline-flex items-center gap-2 rounded-2xl text-white px-6 py-3 text-xs font-heading font-black uppercase tracking-wider shadow-lg"
-                        >
-                          <Zap className="h-4 w-4 text-amber-300" />
-                          <span>Tự Xây Dựng Cấu Hình PC Ngay</span>
-                        </Link>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* 5. WISHLIST TAB */}
-                  {dashboardTab === 'wishlist' && (
-                    <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-6 space-y-5 shadow-sm">
-                      <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
-                        <div>
+                      {/* CARD 2: ĐỔI MẬT KHẨU (INTEGRATED INSIDE PERSONAL INFO) */}
+                      <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-6 sm:p-8 space-y-5 shadow-sm">
+                        <div className="border-b border-slate-200 dark:border-slate-800 pb-4">
                           <h3 className="font-heading text-sm font-black uppercase tracking-wider text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                            <Heart className="h-4 w-4 text-rose-500" />
-                            <span>DANH SÁCH LINH KIỆN & THIẾT BỊ YÊU THÍCH</span>
+                            <Lock className="h-4 w-4 text-[#0284c7]" />
+                            <span>ĐỔI MẬT KHẨU TÀI KHOẢN</span>
                           </h3>
                           <p className="text-xs text-slate-500 dark:text-slate-400 font-light mt-0.5">
-                            Các linh kiện bạn đã đánh dấu quan tâm để chờ đợt khuyến mãi.
+                            Nên đặt mật khẩu mạnh (tối thiểu 6 ký tự) để bảo vệ tài khoản và lịch sử bảo hành linh kiện.
                           </p>
                         </div>
+
+                        <form onSubmit={handleChangePassword} className="space-y-4 max-w-lg">
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block">Mật khẩu hiện tại</label>
+                            <input
+                              type="password"
+                              required
+                              value={currentPassword}
+                              onChange={(e) => setCurrentPassword(e.target.value)}
+                              placeholder="••••••••"
+                              className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-3 px-4 text-xs font-semibold text-slate-900 dark:text-slate-100 focus:border-[#0284c7] focus:outline-none"
+                            />
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block">Mật khẩu mới</label>
+                            <input
+                              type="password"
+                              required
+                              value={newPassword}
+                              onChange={(e) => setNewPassword(e.target.value)}
+                              placeholder="Tối thiểu 6 ký tự"
+                              className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-3 px-4 text-xs font-semibold text-slate-900 dark:text-slate-100 focus:border-[#0284c7] focus:outline-none"
+                            />
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block">Xác nhận mật khẩu mới</label>
+                            <input
+                              type="password"
+                              required
+                              value={confirmNewPassword}
+                              onChange={(e) => setConfirmNewPassword(e.target.value)}
+                              placeholder="Nhập lại mật khẩu mới"
+                              className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-3 px-4 text-xs font-semibold text-slate-900 dark:text-slate-100 focus:border-[#0284c7] focus:outline-none"
+                            />
+                          </div>
+
+                          <button
+                            type="submit"
+                            className="uiverse-btn-shimmer inline-flex items-center gap-2 rounded-2xl text-white px-6 py-3 text-xs font-heading font-black uppercase tracking-wider shadow-lg cursor-pointer"
+                          >
+                            <Lock className="h-4 w-4" />
+                            <span>Cập Nhật Mật Khẩu</span>
+                          </button>
+                        </form>
                       </div>
 
-                      <div className="text-center py-12 px-4 flex flex-col items-center justify-center space-y-4">
-                        <div className="h-16 w-16 rounded-3xl bg-rose-50 dark:bg-slate-800 flex items-center justify-center text-rose-500">
-                          <Heart className="h-8 w-8" />
-                        </div>
-                        <div className="space-y-1">
-                          <h4 className="text-xs font-black text-slate-900 dark:text-slate-100 uppercase tracking-wider">Danh sách yêu thích trống</h4>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 font-light max-w-sm leading-relaxed mx-auto">
-                            Bạn chưa lưu linh kiện nào. Hãy nhấn biểu tượng trái tim trên các sản phẩm CPU, VGA, Màn hình để theo dõi giá!
-                          </p>
-                        </div>
-                        <Link
-                          href="/products"
-                          className="uiverse-btn-shimmer inline-flex items-center gap-2 rounded-2xl text-white px-6 py-3 text-xs font-heading font-black uppercase tracking-wider shadow-lg"
-                        >
-                          <span>Xem Kho Linh Kiện DRX</span>
-                          <ArrowRight className="h-4 w-4" />
-                        </Link>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* 6. SETTINGS TAB */}
-                  {dashboardTab === 'settings' && (
-                    <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-6 space-y-5 shadow-sm">
-                      <div className="border-b border-slate-200 dark:border-slate-800 pb-4">
-                        <h3 className="font-heading text-sm font-black uppercase tracking-wider text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                          <Settings className="h-4 w-4 text-[#0284c7]" />
-                          <span>BẢO MẬT & ĐỔI MẬT KHẨU TÀI KHOẢN</span>
-                        </h3>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 font-light mt-0.5">
-                          Cập nhật mật khẩu định kỳ để bảo vệ số dư ví và quyền lợi bảo hành.
-                        </p>
-                      </div>
-
-                      <form onSubmit={(e) => { e.preventDefault(); showToast('Đổi mật khẩu tài khoản thành công!', 'success'); }} className="space-y-4 max-w-md">
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block">Mật khẩu hiện tại</label>
-                          <input
-                            type="password"
-                            required
-                            placeholder="••••••••"
-                            className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-3 px-4 text-xs font-semibold text-slate-900 dark:text-slate-100 focus:border-[#0284c7] focus:outline-none"
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block">Mật khẩu mới</label>
-                          <input
-                            type="password"
-                            required
-                            placeholder="••••••••"
-                            className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-3 px-4 text-xs font-semibold text-slate-900 dark:text-slate-100 focus:border-[#0284c7] focus:outline-none"
-                          />
-                        </div>
-                        <button
-                          type="submit"
-                          className="uiverse-btn-shimmer inline-flex items-center gap-2 rounded-2xl text-white px-6 py-3 text-xs font-heading font-black uppercase tracking-wider shadow-lg cursor-pointer"
-                        >
-                          <Lock className="h-4 w-4" />
-                          <span>Cập Nhật Mật Khẩu</span>
-                        </button>
-                      </form>
                     </div>
                   )}
 

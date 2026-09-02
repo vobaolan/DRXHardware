@@ -367,27 +367,6 @@ export const Header: React.FC = () => {
             )}
           </button>
 
-          {/* SỐ DƯ & NẠP TIỀN (When logged in) */}
-          {currentUser && (
-            <div className="hidden lg:flex items-center gap-2">
-              <Link
-                href="/deposit"
-                className="uiverse-btn-primary px-3.5 py-1.5 text-xs font-heading font-black tracking-wide"
-                title="Nạp tiền tài khoản"
-              >
-                <Wallet className="h-3.5 w-3.5" />
-                <span>NẠP TIỀN</span>
-              </Link>
-
-              <Link
-                href="/profile"
-                className="flex items-center gap-1.5 rounded-xl border border-sky-200 dark:border-slate-800 bg-sky-50/40 dark:bg-slate-900 px-3 py-1.5 text-xs font-bold text-slate-900 dark:text-slate-100 hover:border-[#6EC2F7] transition-all shadow-xs"
-                title="Xem số dư"
-              >
-                <span className="text-[#0284c7] dark:text-[#6EC2F7] font-mono-tech">{formatCurrency(currentUser.balance)}</span>
-              </Link>
-            </div>
-          )}
 
           {/* BELL THÔNG BÁO (When logged in) */}
           {currentUser && (
