@@ -1,37 +1,25 @@
 "use client";
 
 import { useEffect } from 'react';
-import { showToast } from '@/components/Toast';
 
 /**
- * SecurityShield Component
+ * SecurityShield Component (Silent Background Defense)
  * Protects DRX Hardware website from:
  * 1. F12 DevTools inspection shortcuts (F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C, Ctrl+U, Ctrl+S)
- * 2. Unauthorized right-click context menu inspection
- * 3. Leaking sensitive data / debug objects into Console
- * 4. Self-XSS attacks via Console warning banner
+ * 2. Leaking sensitive data / debug objects into Console in Production
+ * 3. Self-XSS attacks via Console warning banner
  */
 export function SecurityShield() {
   useEffect(() => {
     // Only run in browser environment
     if (typeof window === 'undefined') return;
 
-    let lastToastTime = 0;
-    const showSecurityNotice = (message: string) => {
-      const now = Date.now();
-      if (now - lastToastTime > 3000) {
-        lastToastTime = now;
-        showToast(message, 'info');
-      }
-    };
-
-    // 1. Keyboard Shortcut Blocker
+    // 1. Keyboard Shortcut Blocker (Silent - no annoying popups)
     const handleKeyDown = (e: KeyboardEvent) => {
       // F12
       if (e.key === 'F12' || e.keyCode === 123) {
         e.preventDefault();
         e.stopPropagation();
-        showSecurityNotice('Hệ thống DRX Hardware đã khóa phím tắt F12 để bảo vệ an toàn dữ liệu.');
         return false;
       }
 
@@ -44,7 +32,6 @@ export function SecurityShield() {
       ) {
         e.preventDefault();
         e.stopPropagation();
-        showSecurityNotice('Tính năng kiểm tra mã nguồn (Inspect DevTools) đã được vô hiệu hóa vì lý do an ninh.');
         return false;
       }
 
@@ -52,7 +39,6 @@ export function SecurityShield() {
       if ((e.ctrlKey || e.metaKey) && (e.key === 'U' || e.key === 'u')) {
         e.preventDefault();
         e.stopPropagation();
-        showSecurityNotice('Tính năng xem mã nguồn trực tiếp (View Source) đã bị khóa.');
         return false;
       }
 
@@ -68,20 +54,7 @@ export function SecurityShield() {
       }
     };
 
-    // 2. Right-click Context Menu Protection
-    const handleContextMenu = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      // Allow user to right-click inside form inputs and textareas for copy/paste
-      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
-        return true;
-      }
-
-      e.preventDefault();
-      showSecurityNotice('Bảo vệ bản quyền & an ninh mã nguồn: Thao tác nhấp chuột phải đã được bảo vệ.');
-      return false;
-    };
-
-    // 3. Cyber Defense Console Banner & Overwrite in Production
+    // 2. Cyber Defense Console Banner & Overwrite in Production
     const printSecurityBanner = () => {
       try {
         console.log(
@@ -108,7 +81,7 @@ export function SecurityShield() {
       printSecurityBanner();
     }
 
-    // 4. DevTools Detection via Dimension Monitoring
+    // 3. DevTools Detection via Dimension Monitoring
     let isDevToolsOpen = false;
     const checkDevTools = () => {
       const threshold = 160;
@@ -126,12 +99,10 @@ export function SecurityShield() {
     };
 
     window.addEventListener('keydown', handleKeyDown, true);
-    window.addEventListener('contextmenu', handleContextMenu, true);
     window.addEventListener('resize', checkDevTools);
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown, true);
-      window.removeEventListener('contextmenu', handleContextMenu, true);
       window.removeEventListener('resize', checkDevTools);
     };
   }, []);
