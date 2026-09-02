@@ -8,83 +8,107 @@ import { ProductCard, ProductProps } from '@/components/ProductCard';
 import { Footer } from '@/components/Footer';
 import { CartProvider } from '@/context/CartContext';
 import { 
-  Search, SlidersHorizontal, Flame, Clock, Tag, ArrowLeft, Grid, Layers
+  Search, SlidersHorizontal, Flame, Clock, Tag, ArrowLeft, Grid, 
+  X, RotateCcw, ChevronDown, Check, Filter
 } from 'lucide-react';
 import { 
-  IconLaptop, IconLaptopGaming, IconCpu, IconCase, 
-  IconHeadset, IconMonitor, IconKeyboard, IconStorage 
+  IconLaptop, IconLaptopGaming, IconCpu, IconMainboard, 
+  IconVga, IconRam, IconStorage, IconCase, IconHeadset, 
+  IconMonitor, IconKeyboard, IconMouse 
 } from '@/components/icons/HardwareIcons';
 
-const CATEGORY_CONFIG: Record<string, { title: string; subtitle: string; iconName: string }> = {
+// Clean 1-line titles as requested by user
+const CATEGORY_DEFINITIONS: Record<string, { title: string; iconName: string }> = {
   ALL: {
-    title: 'Toàn Bộ Kho Linh Kiện & Laptop DRX',
-    subtitle: 'Khám phá hàng ngàn linh kiện máy tính, Laptop, màn hình & phụ kiện gaming chính hãng bảo hành 36T',
+    title: 'Tất Cả Sản Phẩm & Linh Kiện DRX',
     iconName: 'Grid',
   },
   LAPTOP: {
-    title: 'Laptop Văn Phòng & Đồ Họa Cao Cấp',
-    subtitle: 'Laptop mỏng nhẹ, hiệu năng cao, pin lâu dành cho doanh nhân, kỹ sư & sáng tạo nội dung',
-    iconName: 'Laptop',
+    title: 'Laptop - Học Tập và Làm Việc',
+    iconName: 'IconLaptop',
   },
   LAPTOP_GAMING: {
-    title: 'Laptop Gaming Cấu Hình Khủng',
-    subtitle: 'Laptop chơi game mạnh mẽ, card đồ họa Nvidia RTX 40-Series, màn hình 144Hz - 240Hz sắc nét',
-    iconName: 'Gamepad2',
+    title: 'Laptop Gaming & Đồ Họa',
+    iconName: 'IconLaptopGaming',
   },
   CORE_PARTS: {
-    title: 'Linh Kiện Core (CPU, VGA, Mainboard & RAM)',
-    subtitle: 'Bo mạch chủ, Vi xử lý Intel Core / AMD Ryzen, Card màn hình RTX, RAM DDR5 chính hãng 1 đổi 1',
-    iconName: 'Cpu',
+    title: 'Linh Kiện Core - CPU, Main, VGA & RAM',
+    iconName: 'IconCpu',
+  },
+  CPU: {
+    title: 'Bộ Vi Xử Lý - CPU Intel & AMD',
+    iconName: 'IconCpu',
+  },
+  VGA: {
+    title: 'Card Màn Hình - VGA NVIDIA & AMD',
+    iconName: 'IconVga',
+  },
+  MAINBOARD: {
+    title: 'Bo Mạch Chủ - Mainboard',
+    iconName: 'IconMainboard',
+  },
+  RAM: {
+    title: 'Bộ Nhớ Trong - RAM DDR4 & DDR5',
+    iconName: 'IconRam',
+  },
+  STORAGE: {
+    title: 'Ổ Cứng Lưu Trữ - SSD M.2 & HDD',
+    iconName: 'IconStorage',
   },
   CASE_COOLING: {
-    title: 'Vỏ Case & Tản Nhiệt Nước AIO RGB',
-    subtitle: 'Vỏ máy tính kính cường lực Panoramic & Tản nhiệt nước AIO 240mm/360mm giải nhiệt cực tốt',
-    iconName: 'Box',
-  },
-  HEADSET: {
-    title: 'Tai Nghe Gaming & Âm Thanh Chuyên Nghiệp',
-    subtitle: 'Tai nghe gaming 7.1 vòm, tai nghe không dây Wireless độ trễ siêu thấp từ HyperX, Logitech, Corsair',
-    iconName: 'Headphones',
+    title: 'Vỏ Case, Nguồn Máy Tính & Tản Nhiệt',
+    iconName: 'IconCase',
   },
   MONITOR: {
-    title: 'Màn Hình Chơi Game & Đồ Họa 4K Chuẩn Màu',
-    subtitle: 'Màn hình tần số quét cao 144Hz - 360Hz, tấm nền Fast-IPS/OLED màu chuẩn đồ họa từ ASUS ROG, LG, Samsung',
-    iconName: 'Monitor',
+    title: 'Màn Hình Máy Tính - Gaming & Đồ Họa',
+    iconName: 'IconMonitor',
   },
   KEYBOARD: {
     title: 'Bàn Phím Cơ Custom & Chuột Gaming',
-    subtitle: 'Bàn phím cơ Hotswap gõ êm mượt, Chuột chơi game siêu nhẹ 8KHz Polling Rate chuẩn eSports',
-    iconName: 'Keyboard',
+    iconName: 'IconKeyboard',
   },
-  STORAGE: {
-    title: 'Ổ Cứng SSD NVMe Siêu Tốc & HDD Dung Lượng Cao',
-    subtitle: 'Ổ cứng SSD NVMe M.2 PCIe Gen4/Gen5 tốc độ đọc siêu tốc 7400MB/s từ Samsung, Kingston, WD Black',
-    iconName: 'HardDrive',
+  HEADSET: {
+    title: 'Tai Nghe Gaming & Âm Thanh',
+    iconName: 'IconHeadset',
   },
 };
 
-const CATEGORY_PILLS = [
-  { id: 'ALL', label: 'Tất Cả', icon: Grid },
-  { id: 'LAPTOP', label: 'Laptop', icon: IconLaptop },
+const SIDEBAR_CATEGORIES = [
+  { id: 'ALL', label: 'Tất Cả Sản Phẩm', icon: Grid },
+  { id: 'LAPTOP', label: 'Laptop - Học Tập & Làm Việc', icon: IconLaptop },
   { id: 'LAPTOP_GAMING', label: 'Laptop Gaming', icon: IconLaptopGaming },
-  { id: 'CORE_PARTS', label: 'Linh Kiện Core', icon: IconCpu },
-  { id: 'CASE_COOLING', label: 'Case & Tản Nhiệt', icon: IconCase },
-  { id: 'HEADSET', label: 'Tai Nghe Gaming', icon: IconHeadset },
-  { id: 'MONITOR', label: 'Màn Hình', icon: IconMonitor },
+  { id: 'CPU', label: 'Bộ Vi Xử Lý (CPU)', icon: IconCpu },
+  { id: 'VGA', label: 'Card Màn Hình (VGA)', icon: IconVga },
+  { id: 'MAINBOARD', label: 'Bo Mạch Chủ (Mainboard)', icon: IconMainboard },
+  { id: 'RAM', label: 'Bộ Nhớ RAM', icon: IconRam },
+  { id: 'STORAGE', label: 'Ổ Cứng SSD NVMe', icon: IconStorage },
+  { id: 'CASE_COOLING', label: 'Vỏ Case, Nguồn & Tản', icon: IconCase },
+  { id: 'MONITOR', label: 'Màn Hình Máy Tính', icon: IconMonitor },
   { id: 'KEYBOARD', label: 'Bàn Phím & Chuột', icon: IconKeyboard },
-  { id: 'STORAGE', label: 'Ổ Cứng SSD', icon: IconStorage },
+  { id: 'HEADSET', label: 'Tai Nghe Gaming', icon: IconHeadset },
+];
+
+const PRICE_RANGES = [
+  { id: 'ALL', label: 'Tất Cả Mức Giá' },
+  { id: 'UNDER_10M', label: 'Dưới 10 Triệu' },
+  { id: '10M_20M', label: 'Từ 10 - 20 Triệu' },
+  { id: '20M_30M', label: 'Từ 20 - 30 Triệu' },
+  { id: 'ABOVE_30M', label: 'Trên 30 Triệu' },
 ];
 
 function CategoryIcon({ name, className }: { name: string; className?: string }) {
   switch (name) {
-    case 'Laptop': return <IconLaptop className={className} />;
-    case 'Gamepad2': return <IconLaptopGaming className={className} />;
-    case 'Cpu': return <IconCpu className={className} />;
-    case 'Box': return <IconCase className={className} />;
-    case 'Headphones': return <IconHeadset className={className} />;
-    case 'Monitor': return <IconMonitor className={className} />;
-    case 'Keyboard': return <IconKeyboard className={className} />;
-    case 'HardDrive': return <IconStorage className={className} />;
+    case 'IconLaptop': return <IconLaptop className={className} />;
+    case 'IconLaptopGaming': return <IconLaptopGaming className={className} />;
+    case 'IconCpu': return <IconCpu className={className} />;
+    case 'IconVga': return <IconVga className={className} />;
+    case 'IconMainboard': return <IconMainboard className={className} />;
+    case 'IconRam': return <IconRam className={className} />;
+    case 'IconStorage': return <IconStorage className={className} />;
+    case 'IconCase': return <IconCase className={className} />;
+    case 'IconMonitor': return <IconMonitor className={className} />;
+    case 'IconKeyboard': return <IconKeyboard className={className} />;
+    case 'IconHeadset': return <IconHeadset className={className} />;
     default: return <Grid className={className} />;
   }
 }
@@ -103,9 +127,19 @@ function ProductsCatalogContent() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [sortBy, setSortBy] = useState<string>('FEATURED');
 
+  // Filter States (Sidebar)
+  const [selectedPriceRange, setSelectedPriceRange] = useState<string>('ALL');
+  const [selectedBrand, setSelectedBrand] = useState<string>('ALL');
+  const [selectedRam, setSelectedRam] = useState<string>('ALL');
+  const [selectedSsd, setSelectedSsd] = useState<string>('ALL');
+  const [selectedCpuBrand, setSelectedCpuBrand] = useState<string>('ALL');
+  const [selectedGpuBrand, setSelectedGpuBrand] = useState<string>('ALL');
+  const [selectedRefreshRate, setSelectedRefreshRate] = useState<string>('ALL');
+
+  const [showMobileFilters, setShowMobileFilters] = useState<boolean>(false);
   const [liveProducts, setLiveProducts] = useState<ProductProps[]>([]);
   const [recentlyViewed, setRecentlyViewed] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // Sync state with query parameters
   useEffect(() => {
@@ -120,7 +154,7 @@ function ProductsCatalogContent() {
     }
   }, [searchParams]);
 
-  // Load products from database & local admin cache with real-time sync
+  // Load products from database & local admin cache
   useEffect(() => {
     const loadProducts = () => {
       setIsLoading(true);
@@ -175,7 +209,7 @@ function ProductsCatalogContent() {
     };
   }, []);
 
-  // Match valid recently viewed products against live database products
+  // Match valid recently viewed products
   const validRecentlyViewed = useMemo(() => {
     const matched: ProductProps[] = [];
     recentlyViewed.forEach((rv) => {
@@ -187,24 +221,82 @@ function ProductsCatalogContent() {
     return matched;
   }, [recentlyViewed, liveProducts]);
 
-  // Filter products based on active category & filters
+  // Current category info for 1-row header
+  const currentCategoryInfo = useMemo(() => {
+    const key = selectedCategory.toUpperCase();
+    return CATEGORY_DEFINITIONS[key] || {
+      title: selectedCategory.replace(/_/g, ' '),
+      iconName: 'Grid',
+    };
+  }, [selectedCategory]);
+
+  const handleCategorySelect = (catId: string) => {
+    setSelectedCategory(catId);
+    // Reset specific sub-filters when switching category
+    setSelectedRam('ALL');
+    setSelectedSsd('ALL');
+    setSelectedCpuBrand('ALL');
+    setSelectedGpuBrand('ALL');
+    setSelectedRefreshRate('ALL');
+
+    if (catId === 'ALL') {
+      router.push('/products');
+    } else {
+      router.push(`/products?category=${catId}`);
+    }
+  };
+
+  // Reset all filters
+  const handleResetAllFilters = () => {
+    setSelectedPriceRange('ALL');
+    setSelectedBrand('ALL');
+    setSelectedRam('ALL');
+    setSelectedSsd('ALL');
+    setSelectedCpuBrand('ALL');
+    setSelectedGpuBrand('ALL');
+    setSelectedRefreshRate('ALL');
+    setActiveFilter('ALL');
+    setSearchQuery('');
+  };
+
+  const hasActiveFilters = useMemo(() => {
+    return (
+      selectedPriceRange !== 'ALL' ||
+      selectedBrand !== 'ALL' ||
+      selectedRam !== 'ALL' ||
+      selectedSsd !== 'ALL' ||
+      selectedCpuBrand !== 'ALL' ||
+      selectedGpuBrand !== 'ALL' ||
+      selectedRefreshRate !== 'ALL' ||
+      searchQuery.trim() !== ''
+    );
+  }, [selectedPriceRange, selectedBrand, selectedRam, selectedSsd, selectedCpuBrand, selectedGpuBrand, selectedRefreshRate, searchQuery]);
+
+  // Available brands in the current products list
+  const availableBrands = useMemo(() => {
+    const brandsSet = new Set<string>();
+    liveProducts.forEach((p) => {
+      if (p.brand) brandsSet.add(p.brand.trim());
+    });
+    return Array.from(brandsSet).slice(0, 8);
+  }, [liveProducts]);
+
+  // Filter products based on active category & all sidebar criteria
   const filteredProducts = useMemo(() => {
     let list = liveProducts;
 
-    // Filter by Header Quick Nav Filter
+    // 1. Filter by Quick Nav Tabs
     if (activeFilter === 'recently_viewed') {
       return validRecentlyViewed;
     }
-
     if (activeFilter === 'best_sellers') {
       list = list.filter((p) => p.isFeaturedDeal || (p.tags && p.tags.some((t: string) => t.toLowerCase().includes('hot') || t.toLowerCase().includes('bán chạy'))));
     }
-
     if (activeFilter === 'discounts') {
       list = list.filter((p) => (p.discountPrice && p.discountPrice < p.price) || (p.tags && p.tags.some((t: string) => t.toLowerCase().includes('giảm giá'))));
     }
 
-    // Filter by Category
+    // 2. Filter by Category
     if (selectedCategory !== 'ALL') {
       const upperCat = selectedCategory.toUpperCase();
       list = list.filter((p) => {
@@ -216,20 +308,72 @@ function ProductsCatalogContent() {
           return pCats.some((c) => ['CORE_PARTS', 'CPU', 'VGA', 'MAINBOARD', 'RAM', 'PSU'].includes(c));
         }
 
+        if (upperCat === 'CASE_COOLING') {
+          return pCats.some((c) => ['CASE', 'PSU', 'COOLING', 'CASE_COOLING'].includes(c));
+        }
+
         return pCats.some((c) => c === upperCat);
       });
     }
 
-    // Filter by Platform
-    if (selectedPlatform !== 'ALL') {
-      list = list.filter((p) => p.platform === selectedPlatform);
+    // 3. Filter by Price Range
+    if (selectedPriceRange !== 'ALL') {
+      list = list.filter((p) => {
+        const price = p.discountPrice ?? p.price;
+        if (selectedPriceRange === 'UNDER_10M') return price < 10000000;
+        if (selectedPriceRange === '10M_20M') return price >= 10000000 && price <= 20000000;
+        if (selectedPriceRange === '20M_30M') return price >= 20000000 && price <= 30000000;
+        if (selectedPriceRange === 'ABOVE_30M') return price > 30000000;
+        return true;
+      });
     }
 
-    // Filter by Search Query
+    // 4. Filter by Brand
+    if (selectedBrand !== 'ALL') {
+      list = list.filter((p) => (p.brand || '').toLowerCase() === selectedBrand.toLowerCase());
+    }
+
+    // Helper text search in product metadata
+    const matchText = (p: ProductProps, query: string) => {
+      const q = query.toLowerCase();
+      const n = (p.name || '').toLowerCase();
+      const d = (p.description || '').toLowerCase();
+      const b = (p.brand || '').toLowerCase();
+      const s = p.specs ? Object.values(p.specs).join(' ').toLowerCase() : '';
+      return n.includes(q) || d.includes(q) || b.includes(q) || s.includes(q);
+    };
+
+    // 5. Filter by RAM
+    if (selectedRam !== 'ALL') {
+      list = list.filter((p) => matchText(p, selectedRam));
+    }
+
+    // 6. Filter by SSD
+    if (selectedSsd !== 'ALL') {
+      list = list.filter((p) => matchText(p, selectedSsd));
+    }
+
+    // 7. Filter by CPU Brand/Model
+    if (selectedCpuBrand !== 'ALL') {
+      list = list.filter((p) => matchText(p, selectedCpuBrand));
+    }
+
+    // 8. Filter by GPU Brand/Model
+    if (selectedGpuBrand !== 'ALL') {
+      list = list.filter((p) => matchText(p, selectedGpuBrand));
+    }
+
+    // 9. Filter by Refresh Rate
+    if (selectedRefreshRate !== 'ALL') {
+      list = list.filter((p) => matchText(p, selectedRefreshRate));
+    }
+
+    // 10. Filter by Search Query
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       list = list.filter((p) => 
         p.name.toLowerCase().includes(q) ||
+        (p.brand && p.brand.toLowerCase().includes(q)) ||
         (Array.isArray(p.category)
           ? p.category.some((c) => String(c).toLowerCase().includes(q))
           : typeof p.category === 'string'
@@ -247,213 +391,441 @@ function ProductsCatalogContent() {
       if (sortBy === 'PRICE_DESC') return bPrice - aPrice;
       return 0;
     });
-  }, [liveProducts, activeFilter, selectedCategory, selectedPlatform, searchQuery, sortBy, validRecentlyViewed]);
+  }, [
+    liveProducts, activeFilter, selectedCategory, selectedPriceRange, 
+    selectedBrand, selectedRam, selectedSsd, selectedCpuBrand, 
+    selectedGpuBrand, selectedRefreshRate, searchQuery, sortBy, validRecentlyViewed
+  ]);
 
-  const currentCategoryInfo = useMemo(() => {
-    const key = selectedCategory.toUpperCase();
-    return CATEGORY_CONFIG[key] || {
-      title: selectedCategory.replace(/_/g, ' '),
-      subtitle: `Danh mục sản phẩm ${selectedCategory} chính hãng tại DRX Hardware`,
-      iconName: 'Grid',
-    };
-  }, [selectedCategory]);
-
-  const handleCategorySelect = (catId: string) => {
-    setSelectedCategory(catId);
-    if (catId === 'ALL') {
-      router.push('/products');
-    } else {
-      router.push(`/products?category=${catId}`);
-    }
-  };
+  // Is Laptop or Gaming Laptop
+  const isLaptopCategory = selectedCategory === 'LAPTOP' || selectedCategory === 'LAPTOP_GAMING';
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#090d16] text-slate-900 dark:text-slate-100 flex flex-col antialiased tech-grid-pattern transition-colors duration-300">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#090d16] text-slate-900 dark:text-slate-100 flex flex-col antialiased transition-colors duration-300">
       <Header />
 
-      <main className="flex-1 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-        {/* BREADCRUMB */}
-        <div className="mb-6 flex items-center justify-between">
-          <Link href="/" className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-[#0284c7] transition-colors">
-            <ArrowLeft className="h-4 w-4 text-[#0284c7]" /> Trang Chủ DRX Hardware
-          </Link>
-          <span className="text-xs font-extrabold text-[#0284c7] bg-sky-50 dark:bg-slate-800 border border-sky-200 dark:border-slate-700 px-3.5 py-1.5 rounded-full shadow-2xs">
-            {filteredProducts.length} Linh Kiện Chính Hãng
-          </span>
-        </div>
-
-        {/* CATEGORY HERO BANNER CARD */}
-        <div className="relative overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white p-6 sm:p-8 mb-6 shadow-sm">
-          <div className="absolute inset-0 bg-gradient-to-r from-sky-50 via-white to-blue-50/50 dark:from-slate-900 dark:via-[#071930] dark:to-slate-950 pointer-events-none" />
-          <div className="absolute top-0 right-0 w-96 h-96 bg-[#0284c7]/5 dark:bg-[#0284c7]/20 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-            <div className="space-y-2 max-w-2xl">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-sky-100 dark:bg-sky-500/20 border border-sky-200 dark:border-sky-500/30 text-xs font-black text-[#0284c7] dark:text-sky-300 uppercase tracking-wider shadow-2xs">
-                <CategoryIcon name={currentCategoryInfo.iconName} className="h-3.5 w-3.5 text-[#0284c7] dark:text-sky-400" />
-                <span>DANH MỤC SẢN PHẨM DRX HARDWARE</span>
+      <main className="flex-1 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
+        
+        {/* ─── 1. SINGLE-ROW HEADER (ĐÚNG 1 HÀNG NHƯ YÊU CẦU CỦA BẠN) ─── */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200 dark:border-slate-800">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Link href="/" className="text-xs font-bold text-slate-400 hover:text-[#0284c7] transition-colors">
+              Trang Chủ
+            </Link>
+            <span className="text-slate-300 dark:text-slate-700 text-xs">/</span>
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-sky-100 dark:bg-sky-950 text-[#0284c7]">
+                <CategoryIcon name={currentCategoryInfo.iconName} className="w-4 h-4" />
               </div>
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black font-heading tracking-tight text-slate-900 dark:text-white uppercase">
+              <h1 className="text-base sm:text-lg font-heading font-black text-slate-900 dark:text-white uppercase tracking-wide">
                 {currentCategoryInfo.title}
               </h1>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 font-normal leading-relaxed">
-                {currentCategoryInfo.subtitle}
-              </p>
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                ({filteredProducts.length} sản phẩm)
+              </span>
             </div>
-
-            {selectedCategory !== 'ALL' && (
-              <button
-                type="button"
-                onClick={() => handleCategorySelect('ALL')}
-                className="px-4 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-400 text-slate-700 dark:text-slate-200 text-xs font-heading font-black uppercase tracking-wider transition-all border border-slate-200 dark:border-slate-700 shrink-0 cursor-pointer shadow-2xs"
-              >
-                ✕ Xóa Bộ Lọc Danh Mục
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* CATEGORY NAV PILLS STRIP - MODERN SEGMENTED CAPSULE BAR */}
-        <div className="mb-6 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 p-2 sm:p-2.5 shadow-sm backdrop-blur-xl">
-          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-0.5">
-            {CATEGORY_PILLS.map((pill) => {
-              const IconComp = pill.icon;
-              const isActive = selectedCategory.toUpperCase() === pill.id.toUpperCase();
-              return (
-                <button
-                  key={pill.id}
-                  type="button"
-                  onClick={() => handleCategorySelect(pill.id)}
-                  className={`group flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-heading font-black uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-                    isActive
-                      ? 'bg-[#0284c7] text-white shadow-md shadow-sky-500/25 scale-[1.02]'
-                      : 'bg-transparent text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  <div className={`p-1.5 rounded-xl transition-all ${
-                    isActive 
-                      ? 'bg-white/20 text-white' 
-                      : 'bg-slate-100 dark:bg-slate-800 text-[#0284c7] dark:text-sky-400 group-hover:scale-110'
-                  }`}>
-                    <IconComp className="h-3.5 w-3.5" />
-                  </div>
-                  <span>{pill.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* SEARCH & CONTROLS STRIP */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-3xl shadow-sm">
-          {/* QUICK FILTER BUTTONS */}
-          <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-            <button
-              onClick={() => setActiveFilter('ALL')}
-              className={`px-4 py-2.5 rounded-2xl text-xs font-heading font-black uppercase tracking-wider transition-all cursor-pointer ${
-                activeFilter === 'ALL'
-                  ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-xs'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-              }`}
-            >
-              Tất Cả Hàng
-            </button>
-
-            <button
-              onClick={() => setActiveFilter('recently_viewed')}
-              className={`flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-xs font-heading font-black uppercase tracking-wider transition-all cursor-pointer ${
-                activeFilter === 'recently_viewed'
-                  ? 'bg-[#0284c7] text-white shadow-xs'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-              }`}
-            >
-              <Clock className="h-3.5 w-3.5" />
-              <span>Vừa Xem ({validRecentlyViewed.length})</span>
-            </button>
-
-            <button
-              onClick={() => setActiveFilter('best_sellers')}
-              className={`flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-xs font-heading font-black uppercase tracking-wider transition-all cursor-pointer ${
-                activeFilter === 'best_sellers'
-                  ? 'bg-amber-500 text-slate-950 shadow-xs font-black'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-              }`}
-            >
-              <Flame className="h-3.5 w-3.5 fill-current" />
-              <span>Bán Chạy</span>
-            </button>
-
-            <button
-              onClick={() => setActiveFilter('discounts')}
-              className={`flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-xs font-heading font-black uppercase tracking-wider transition-all cursor-pointer ${
-                activeFilter === 'discounts'
-                  ? 'bg-rose-600 text-white shadow-xs'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-              }`}
-            >
-              <Tag className="h-3.5 w-3.5" />
-              <span>Khuyến Mãi Hè</span>
-            </button>
           </div>
 
-          {/* SEARCH INPUT & SORT DROPDOWN */}
-          <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
-            <div className="relative w-full sm:w-64">
-              <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
+          {/* Quick Search & Sort on Right */}
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            {/* Mobile Filter Trigger Button */}
+            <button
+              onClick={() => setShowMobileFilters(!showMobileFilters)}
+              className="lg:hidden flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#0284c7] text-white text-xs font-bold cursor-pointer"
+            >
+              <Filter className="w-3.5 h-3.5" />
+              <span>Bộ Lọc</span>
+              {hasActiveFilters && (
+                <span className="w-2 h-2 rounded-full bg-amber-300 animate-pulse" />
+              )}
+            </button>
+
+            {/* Search Box */}
+            <div className="relative flex-1 md:w-60">
+              <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
               <input
                 type="text"
-                placeholder="Tìm kiếm linh kiện, CPU, Laptop..."
+                placeholder="Tìm linh kiện, laptop..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-2.5 pl-10 pr-4 text-xs font-semibold text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-[#0284c7] focus:bg-white dark:focus:bg-slate-900 focus:outline-none transition-all"
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-2 pl-9 pr-7 text-xs font-medium text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-[#0284c7] focus:outline-none transition-all shadow-xs"
               />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs font-bold"
+                >
+                  ✕
+                </button>
+              )}
             </div>
 
-            <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
-              <SlidersHorizontal className="h-4 w-4 text-slate-400" />
+            {/* Sort Selector */}
+            <div className="flex items-center gap-1.5 shrink-0">
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="w-full sm:w-auto rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-2.5 px-3.5 text-xs font-bold text-slate-900 dark:text-slate-100 focus:border-[#0284c7] focus:bg-white dark:focus:bg-slate-900 focus:outline-none cursor-pointer"
+                className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-2 px-3 text-xs font-bold text-slate-700 dark:text-slate-300 focus:border-[#0284c7] focus:outline-none cursor-pointer shadow-xs"
               >
-                <option value="FEATURED">Nổi Bật Nhất</option>
-                <option value="PRICE_ASC">Giá Thấp ➔ Cao</option>
-                <option value="PRICE_DESC">Giá Cao ➔ Thấp</option>
+                <option value="FEATURED">Nổi Bật</option>
+                <option value="PRICE_ASC">Giá Tăng Dần</option>
+                <option value="PRICE_DESC">Giá Giảm Dần</option>
               </select>
             </div>
           </div>
         </div>
 
-        {/* PRODUCTS GRID */}
-        {isLoading ? (
-          <div className="py-24 text-center text-xs font-bold text-slate-400">
-            Đang tải kho sản phẩm DRX Hardware...
-          </div>
-        ) : filteredProducts.length === 0 ? (
-          <div className="py-20 text-center space-y-4 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 shadow-sm">
-            <div className="h-16 w-16 rounded-full bg-sky-50 dark:bg-slate-800 text-[#0284c7] flex items-center justify-center mx-auto">
-              <Layers className="h-8 w-8" />
+        {/* ─── 2. MAIN 2-COLUMN LAYOUT: LEFT SIDEBAR FILTERS + RIGHT PRODUCTS ─── */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          
+          {/* ──── LEFT COLUMN: SIDEBAR FILTERS (COL-SPAN-3) ──── */}
+          <aside className={`lg:col-span-3 space-y-5 ${showMobileFilters ? 'block' : 'hidden lg:block'}`}>
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm space-y-5">
+              
+              {/* Sidebar Header & Clear Filters Button */}
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                <span className="font-heading text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2">
+                  <SlidersHorizontal className="w-3.5 h-3.5 text-[#0284c7]" />
+                  <span>BỘ LỌC TÌM KIẾM</span>
+                </span>
+                {hasActiveFilters && (
+                  <button
+                    onClick={handleResetAllFilters}
+                    className="text-[11px] font-bold text-rose-600 hover:text-rose-700 dark:text-rose-400 flex items-center gap-1 cursor-pointer"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>Thiết lập lại</span>
+                  </button>
+                )}
+              </div>
+
+              {/* 1. DANH MỤC SẢN PHẨM (CATEGORY LIST) */}
+              <div className="space-y-2">
+                <span className="text-[11px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-wider block">
+                  Danh Mục Sản Phẩm
+                </span>
+                <div className="space-y-1 max-h-56 overflow-y-auto pr-1 no-scrollbar">
+                  {SIDEBAR_CATEGORIES.map((cat) => {
+                    const IconComp = cat.icon;
+                    const isSelected = selectedCategory.toUpperCase() === cat.id.toUpperCase();
+                    return (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => handleCategorySelect(cat.id)}
+                        className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-left transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-[#0284c7] text-white shadow-xs'
+                            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        <IconComp size={15} className={`shrink-0 ${isSelected ? 'text-white' : 'text-[#0284c7]'}`} />
+                        <span className="truncate">{cat.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 2. KHOẢNG GIÁ (PRICE RANGE) */}
+              <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <span className="text-[11px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-wider block">
+                  Khoảng Giá
+                </span>
+                <div className="space-y-1">
+                  {PRICE_RANGES.map((pr) => {
+                    const isSelected = selectedPriceRange === pr.id;
+                    return (
+                      <button
+                        key={pr.id}
+                        type="button"
+                        onClick={() => setSelectedPriceRange(pr.id)}
+                        className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-medium text-left transition-colors cursor-pointer ${
+                          isSelected
+                            ? 'bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] dark:text-sky-300 font-bold'
+                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        <span>{pr.label}</span>
+                        {isSelected && <Check className="w-3.5 h-3.5 text-[#0284c7]" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 3. THƯƠNG HIỆU / HÃNG (BRAND) */}
+              {availableBrands.length > 0 && (
+                <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                  <span className="text-[11px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-wider block">
+                    Thương Hiệu
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {availableBrands.map((b) => {
+                      const isSelected = selectedBrand.toLowerCase() === b.toLowerCase();
+                      return (
+                        <button
+                          key={b}
+                          type="button"
+                          onClick={() => setSelectedBrand(isSelected ? 'ALL' : b)}
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all border cursor-pointer ${
+                            isSelected
+                              ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                              : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
+                          }`}
+                        >
+                          {b}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* 4. CONTEXTUAL FILTER: DUNG LƯỢNG RAM (CHO LAPTOP & PC) */}
+              {(isLaptopCategory || selectedCategory === 'ALL' || selectedCategory === 'RAM') && (
+                <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                  <span className="text-[11px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-wider block">
+                    Dung Lượng RAM
+                  </span>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {['8GB', '16GB', '32GB'].map((ram) => {
+                      const isSelected = selectedRam === ram;
+                      return (
+                        <button
+                          key={ram}
+                          type="button"
+                          onClick={() => setSelectedRam(isSelected ? 'ALL' : ram)}
+                          className={`py-1.5 rounded-lg text-xs font-bold transition-all border text-center cursor-pointer ${
+                            isSelected
+                              ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                              : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
+                          }`}
+                        >
+                          {ram}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* 5. CONTEXTUAL FILTER: Ổ CỨNG SSD (CHO LAPTOP & STORAGE) */}
+              {(isLaptopCategory || selectedCategory === 'ALL' || selectedCategory === 'STORAGE') && (
+                <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                  <span className="text-[11px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-wider block">
+                    Ổ Cứng SSD
+                  </span>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {['256GB', '512GB', '1TB'].map((ssd) => {
+                      const isSelected = selectedSsd === ssd;
+                      return (
+                        <button
+                          key={ssd}
+                          type="button"
+                          onClick={() => setSelectedSsd(isSelected ? 'ALL' : ssd)}
+                          className={`py-1.5 rounded-lg text-xs font-bold transition-all border text-center cursor-pointer ${
+                            isSelected
+                              ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                              : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
+                          }`}
+                        >
+                          {ssd}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* 6. CONTEXTUAL FILTER: HÃNG CPU */}
+              {(isLaptopCategory || selectedCategory === 'ALL' || selectedCategory === 'CPU') && (
+                <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                  <span className="text-[11px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-wider block">
+                    Dòng Chip CPU
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {['Core i5', 'Core i7', 'Core i9', 'Ryzen 5', 'Ryzen 7'].map((cpu) => {
+                      const isSelected = selectedCpuBrand === cpu;
+                      return (
+                        <button
+                          key={cpu}
+                          type="button"
+                          onClick={() => setSelectedCpuBrand(isSelected ? 'ALL' : cpu)}
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all border cursor-pointer ${
+                            isSelected
+                              ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                              : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
+                          }`}
+                        >
+                          {cpu}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* 7. CONTEXTUAL FILTER: HÃNG GPU / CARD ĐỒ HỌA */}
+              {(isLaptopCategory || selectedCategory === 'ALL' || selectedCategory === 'VGA') && (
+                <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                  <span className="text-[11px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-wider block">
+                    Card Đồ Họa (GPU)
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {['RTX 4050', 'RTX 4060', 'RTX 4070', 'RTX 3050'].map((gpu) => {
+                      const isSelected = selectedGpuBrand === gpu;
+                      return (
+                        <button
+                          key={gpu}
+                          type="button"
+                          onClick={() => setSelectedGpuBrand(isSelected ? 'ALL' : gpu)}
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all border cursor-pointer ${
+                            isSelected
+                              ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                              : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
+                          }`}
+                        >
+                          {gpu}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* 8. CONTEXTUAL FILTER: TẦN SỐ QUÉT MÀN HÌNH (CHO LAPTOP & MONITOR) */}
+              {(isLaptopCategory || selectedCategory === 'ALL' || selectedCategory === 'MONITOR') && (
+                <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                  <span className="text-[11px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-wider block">
+                    Tần Số Quét
+                  </span>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {['60Hz', '144Hz', '165Hz', '240Hz'].map((hz) => {
+                      const isSelected = selectedRefreshRate === hz;
+                      return (
+                        <button
+                          key={hz}
+                          type="button"
+                          onClick={() => setSelectedRefreshRate(isSelected ? 'ALL' : hz)}
+                          className={`py-1.5 rounded-lg text-[11px] font-bold transition-all border text-center cursor-pointer ${
+                            isSelected
+                              ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                              : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
+                          }`}
+                        >
+                          {hz}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
             </div>
-            <div className="space-y-1">
-              <h4 className="text-base font-extrabold text-slate-900 dark:text-slate-100">Chưa có sản phẩm nào trong danh mục này</h4>
-              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
-                Hãy thử chọn danh mục khác hoặc xóa bộ lọc tìm kiếm để khám phá kho hàng DRX Hardware.
-              </p>
-            </div>
-            <button
-              onClick={() => { setActiveFilter('ALL'); setSelectedCategory('ALL'); setSelectedPlatform('ALL'); setSearchQuery(''); router.push('/products'); }}
-              className="px-5 py-2.5 rounded-2xl bg-[#0284c7] text-white text-xs font-heading font-black uppercase hover:bg-[#0369a1] transition-all shadow-sm cursor-pointer"
-            >
-              Xem Tất Cả Sản Phẩm
-            </button>
+          </aside>
+
+          {/* ──── RIGHT COLUMN: ACTIVE FILTER CHIPS & PRODUCT GRID (COL-SPAN-9) ──── */}
+          <div className="lg:col-span-9 space-y-4">
+            
+            {/* Active Filters Tag Pills (if any) */}
+            {hasActiveFilters && (
+              <div className="flex items-center gap-2 flex-wrap bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200 dark:border-slate-800">
+                <span className="text-xs font-bold text-slate-500">Đang lọc theo:</span>
+
+                {selectedPriceRange !== 'ALL' && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] text-xs font-bold border border-sky-200 dark:border-sky-800">
+                    <span>{PRICE_RANGES.find(p => p.id === selectedPriceRange)?.label}</span>
+                    <button onClick={() => setSelectedPriceRange('ALL')} className="hover:text-rose-500">✕</button>
+                  </span>
+                )}
+
+                {selectedBrand !== 'ALL' && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] text-xs font-bold border border-sky-200 dark:border-sky-800">
+                    <span>Hãng: {selectedBrand}</span>
+                    <button onClick={() => setSelectedBrand('ALL')} className="hover:text-rose-500">✕</button>
+                  </span>
+                )}
+
+                {selectedRam !== 'ALL' && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] text-xs font-bold border border-sky-200 dark:border-sky-800">
+                    <span>RAM: {selectedRam}</span>
+                    <button onClick={() => setSelectedRam('ALL')} className="hover:text-rose-500">✕</button>
+                  </span>
+                )}
+
+                {selectedSsd !== 'ALL' && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] text-xs font-bold border border-sky-200 dark:border-sky-800">
+                    <span>SSD: {selectedSsd}</span>
+                    <button onClick={() => setSelectedSsd('ALL')} className="hover:text-rose-500">✕</button>
+                  </span>
+                )}
+
+                {selectedCpuBrand !== 'ALL' && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] text-xs font-bold border border-sky-200 dark:border-sky-800">
+                    <span>CPU: {selectedCpuBrand}</span>
+                    <button onClick={() => setSelectedCpuBrand('ALL')} className="hover:text-rose-500">✕</button>
+                  </span>
+                )}
+
+                {selectedGpuBrand !== 'ALL' && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] text-xs font-bold border border-sky-200 dark:border-sky-800">
+                    <span>GPU: {selectedGpuBrand}</span>
+                    <button onClick={() => setSelectedGpuBrand('ALL')} className="hover:text-rose-500">✕</button>
+                  </span>
+                )}
+
+                {selectedRefreshRate !== 'ALL' && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] text-xs font-bold border border-sky-200 dark:border-sky-800">
+                    <span>Màn hình: {selectedRefreshRate}</span>
+                    <button onClick={() => setSelectedRefreshRate('ALL')} className="hover:text-rose-500">✕</button>
+                  </span>
+                )}
+
+                <button
+                  onClick={handleResetAllFilters}
+                  className="text-xs font-bold text-rose-600 hover:underline ml-auto"
+                >
+                  Xóa tất cả
+                </button>
+              </div>
+            )}
+
+            {/* PRODUCT GRID */}
+            {isLoading ? (
+              <div className="py-24 text-center text-xs font-bold text-slate-400">
+                Đang tải kho sản phẩm DRX Hardware...
+              </div>
+            ) : filteredProducts.length === 0 ? (
+              <div className="py-20 text-center space-y-4 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 shadow-sm">
+                <div className="h-16 w-16 rounded-full bg-sky-50 dark:bg-slate-800 text-[#0284c7] flex items-center justify-center mx-auto">
+                  <Grid className="h-8 w-8" />
+                </div>
+                <div className="space-y-1">
+                  <h4 className="text-base font-extrabold text-slate-900 dark:text-slate-100">
+                    Không tìm thấy sản phẩm phù hợp
+                  </h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                    Vui lòng thử điều chỉnh lại bộ lọc giá, RAM hoặc dung lượng ổ cứng để xem thêm sản phẩm.
+                  </p>
+                </div>
+                <button
+                  onClick={handleResetAllFilters}
+                  className="px-5 py-2.5 rounded-2xl bg-[#0284c7] text-white text-xs font-heading font-black uppercase hover:bg-[#0369a1] transition-all shadow-sm cursor-pointer"
+                >
+                  Xóa Bộ Lọc
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+                {filteredProducts.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {filteredProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        )}
+
+        </div>
       </main>
 
       <Footer />
