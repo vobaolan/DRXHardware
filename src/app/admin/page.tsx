@@ -1122,9 +1122,16 @@ export default function AdminDashboardPage() {
                               className="w-10 h-10 rounded-xl object-cover bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shrink-0" 
                             />
                             <div className="min-w-0 flex-1">
-                              <span className="font-bold text-slate-900 dark:text-white line-clamp-1 block" title={p.name}>
-                                {p.name}
-                              </span>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="font-bold text-slate-900 dark:text-white line-clamp-1" title={p.name}>
+                                  {p.name}
+                                </span>
+                                {p.createdAt && (new Date().getTime() - new Date(p.createdAt).getTime() < 48 * 60 * 60 * 1000) && (
+                                  <span className="px-1.5 py-0.2 rounded-md text-[8.5px] font-black uppercase bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-xs shrink-0">
+                                    MỚI
+                                  </span>
+                                )}
+                              </div>
                               <span className="text-[10px] text-slate-400 font-mono block mt-0.5">
                                 SKU: {p.modelCode || p.slug || p.id.slice(0, 8)}
                               </span>
@@ -1951,9 +1958,15 @@ export default function AdminDashboardPage() {
             setIsFormModalOpen(false);
             setEditingProduct(null);
           }}
-          onSaved={() => {
+          onSaved={(savedProd) => {
             setIsFormModalOpen(false);
             setEditingProduct(null);
+            if (savedProd) {
+              setProducts((prev) => {
+                const filtered = prev.filter(p => p.id !== savedProd.id && p.slug !== (savedProd as any).slug && p.name !== savedProd.name);
+                return [{ ...savedProd, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }, ...filtered];
+              });
+            }
             fetchAllData(true);
           }}
         />

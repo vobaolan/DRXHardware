@@ -39,29 +39,29 @@ export async function GET() {
       } catch (e) {}
     }
 
-    // Combine with INITIAL_PRODUCTS to guarantee full catalog
-    const combined = [...INITIAL_PRODUCTS];
-    if (dbProducts && Array.isArray(dbProducts) && dbProducts.length > 0) {
-      dbProducts.forEach((dp: any) => {
-        const idx = combined.findIndex(cp => 
-          cp.id === dp.id || 
-          cp.slug === dp.slug || 
-          cp.name.toLowerCase() === (dp.name || '').toLowerCase()
-        );
-        if (idx >= 0) {
-          combined[idx] = { 
-            ...combined[idx], 
-            ...dp,
-            id: dp.id || combined[idx].id,
-            coverImage: dp.coverImage || combined[idx].coverImage,
-            screenshots: (Array.isArray(dp.screenshots) && dp.screenshots.length > 0) ? dp.screenshots : (dp.coverImage ? [dp.coverImage] : combined[idx].screenshots),
-            specs: (dp.specs && Object.keys(dp.specs).length > 0) ? dp.specs : combined[idx].specs,
-          };
-        } else {
-          combined.unshift(dp);
-        }
-      });
-    }
+    // Real Database products (all created/edited by Admin & Staff in PostgreSQL)
+    const validDbProducts = Array.isArray(dbProducts) ? [...dbProducts] : [];
+
+    // Sort validDbProducts strictly newest first (by updatedAt or createdAt)
+    validDbProducts.sort((a, b) => {
+      const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+      const timeB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+      return timeB - timeA;
+    });
+
+    const dbProductIds = new Set(validDbProducts.map((p: any) => p.id));
+    const dbProductSlugs = new Set(validDbProducts.map((p: any) => p.slug));
+    const dbProductNames = new Set(validDbProducts.map((p: any) => (p.name || '').toLowerCase().trim()));
+
+    // Filter out initial seed items that have been customized or created in DB
+    const remainingInitial = INITIAL_PRODUCTS.filter((ip: any) => 
+      !dbProductIds.has(ip.id) &&
+      !dbProductSlugs.has(ip.slug) &&
+      !dbProductNames.has((ip.name || '').toLowerCase().trim())
+    );
+
+    // Database products ALWAYS come first at the very top of the list!
+    const combined = [...validDbProducts, ...remainingInitial];
 
     return NextResponse.json({ products: combined }, { status: 200, headers });
   } catch (error: any) {

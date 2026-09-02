@@ -40,8 +40,26 @@ export async function GET(request: Request) {
       } catch (e) {}
     }
 
-    // Merge database products over INITIAL_PRODUCTS catalog
-    const combined = INITIAL_PRODUCTS.map(p => ({
+    // Real Database products (all created/edited by Admin & Staff in PostgreSQL)
+    const validDbProducts = Array.isArray(dbProducts) ? [...dbProducts] : [];
+
+    // Sort validDbProducts strictly newest first (by updatedAt or createdAt)
+    validDbProducts.sort((a, b) => {
+      const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+      const timeB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+      return timeB - timeA;
+    });
+
+    const dbProductIds = new Set(validDbProducts.map((p: any) => p.id));
+    const dbProductSlugs = new Set(validDbProducts.map((p: any) => p.slug));
+    const dbProductNames = new Set(validDbProducts.map((p: any) => (p.name || '').toLowerCase().trim()));
+
+    // Filter out initial seed items that have been customized or created in DB
+    const remainingInitial = INITIAL_PRODUCTS.filter((ip: any) => 
+      !dbProductIds.has(ip.id) &&
+      !dbProductSlugs.has(ip.slug) &&
+      !dbProductNames.has((ip.name || '').toLowerCase().trim())
+    ).map(p => ({
       ...p,
       discountPrice: p.discountPrice || null,
       platform: p.brand,
@@ -50,25 +68,8 @@ export async function GET(request: Request) {
       screenshots: p.screenshots || [p.coverImage]
     }));
 
-    if (dbProducts && Array.isArray(dbProducts) && dbProducts.length > 0) {
-      dbProducts.forEach((sp: any) => {
-        const idx = combined.findIndex(
-          (cp) => cp.id === sp.id || cp.slug === sp.slug || cp.name.toLowerCase() === (sp.name || '').toLowerCase()
-        );
-        if (idx >= 0) {
-          combined[idx] = {
-            ...combined[idx],
-            ...sp,
-            id: sp.id || combined[idx].id,
-            coverImage: sp.coverImage || combined[idx].coverImage,
-            screenshots: (Array.isArray(sp.screenshots) && sp.screenshots.length > 0) ? sp.screenshots : (sp.coverImage ? [sp.coverImage] : combined[idx].screenshots),
-            specs: (sp.specs && Object.keys(sp.specs).length > 0) ? sp.specs : combined[idx].specs,
-          };
-        } else {
-          combined.unshift(sp);
-        }
-      });
-    }
+    // Database products ALWAYS come first at the very top of the list!
+    const combined = [...validDbProducts, ...remainingInitial];
 
     let formattedProducts = combined.map((p: any) => {
       const price = typeof p.price === 'string' ? parseFloat(p.price) : Number(p.price);
