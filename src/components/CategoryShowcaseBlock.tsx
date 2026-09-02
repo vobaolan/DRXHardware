@@ -242,7 +242,11 @@ export default function CategoryShowcaseBlock({
             {/* Scrollable Products Row */}
             <div
               ref={scrollContainerRef}
-              className="flex items-stretch gap-4 overflow-x-auto no-scrollbar scroll-smooth pb-2 pt-1"
+              className="flex items-stretch gap-4 overflow-x-auto no-scrollbar scroll-smooth pb-1 pt-1 select-none"
+              style={{
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none',
+              }}
             >
               {filteredProducts.length === 0 ? (
                 <div className="w-full py-16 text-center text-xs text-slate-400">
