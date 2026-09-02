@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { supabase } from '@/lib/supabase';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   try {
@@ -13,27 +16,49 @@ export async function GET(request: Request) {
       );
     }
 
-    const orders = await prisma.order.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-      include: {
-        gameKeys: {
-          select: {
-            id: true,
-            keyCode: true,
-            createdAt: true,
-            product: {
-              select: {
-                name: true,
-                platform: true,
-                type: true,
-                coverImage: true,
-              },
-            },
-          },
+    let orders: any[] = [];
+
+    // 1. Primary: Prisma
+    try {
+      orders = await prisma.order.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        include: {
+          orderItems: {
+            include: {
+              product: {
+                select: {
+                  id: true,
+                  name: true,
+                  coverImage: true,
+                  category: true,
+                  brand: true,
+                }
+              }
+            }
+          }
         },
-      },
-    });
+      });
+    } catch (e) {
+      console.warn('Prisma get orders warning:', e);
+    }
+
+    // 2. Fallback: Supabase
+    if (orders.length === 0) {
+      try {
+        const { data: supaOrders } = await supabase
+          .from('Order')
+          .select('*')
+          .eq('userId', userId)
+          .order('createdAt', { ascending: false });
+
+        if (supaOrders) {
+          orders = supaOrders;
+        }
+      } catch (e) {
+        console.warn('Supabase get orders warning:', e);
+      }
+    }
 
     return NextResponse.json({ orders }, { status: 200 });
   } catch (error: any) {
@@ -48,142 +73,192 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { userId, cartItems, netAmount, paymentMethod } = body;
+    const { 
+      userId, 
+      customerName, 
+      customerPhone, 
+      customerEmail, 
+      shippingAddress, 
+      deliveryType = 'DELIVERY', 
+      shippingMethod = 'STANDARD',
+      needInstallation = false,
+      isProxyRecipient = false,
+      proxyName = '',
+      proxyPhone = '',
+      technicalNotes = '',
+      cartItems, 
+      totalAmount,
+      discountAmount = 0,
+      netAmount, 
+      paymentMethod = 'COD' 
+    } = body;
 
-    if (!userId || !cartItems || cartItems.length === 0) {
-      return NextResponse.json({ message: 'Thiếu thông tin đơn hàng' }, { status: 400 });
+    if (!cartItems || cartItems.length === 0) {
+      return NextResponse.json({ message: 'Giỏ hàng đang trống!' }, { status: 400 });
     }
 
-    // Process in a transaction
-    const order = await prisma.$transaction(async (tx) => {
-      // 1. If paying with WALLET, check balance and deduct
-      if (paymentMethod === 'WALLET') {
-        const user = await tx.user.findUnique({ where: { id: userId } });
-        if (!user) {
-          throw new Error('Người dùng không tồn tại');
-        }
-        if (Number(user.balance) < netAmount) {
-          throw new Error('Số dư ví không đủ');
-        }
-        // Deduct balance
-        await tx.user.update({
-          where: { id: userId },
-          data: { balance: { decrement: netAmount } },
-        });
-        
-        // Log transaction
-        await tx.transaction.create({
-          data: {
-            userId,
-            amount: -netAmount,
-            type: 'PURCHASE',
-            status: 'SUCCESS',
-            paymentGateway: 'WALLET',
-            description: 'Thanh toán đơn hàng từ ví DRX',
-          }
-        });
-      }
+    if (!customerName?.trim() || !customerPhone?.trim()) {
+      return NextResponse.json({ message: 'Vui lòng cung cấp Họ tên và Số điện thoại nhận hàng!' }, { status: 400 });
+    }
 
-      // Generate Custom Order ID: DRX + 1 Digit + 5 Alphanumeric
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-      let randStr = '';
-      for (let i = 0; i < 5; i++) {
-        randStr += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
-      const firstDigit = Math.floor(Math.random() * 10);
-      const customOrderId = `DRX${firstDigit}${randStr}`;
+    if (deliveryType === 'DELIVERY' && !shippingAddress?.trim()) {
+      return NextResponse.json({ message: 'Vui lòng cung cấp Địa chỉ nhận hàng!' }, { status: 400 });
+    }
 
-      const productIds = cartItems.map((i: any) => i.productId || i.id);
-      const productsInCart = await tx.product.findMany({
-        where: { id: { in: productIds } },
-        select: { id: true, type: true, deliveryMethod: true }
-      });
-      const hasGift = productsInCart.some(p => p.type === 'STEAM_GIFT' || p.deliveryMethod === 'GIFT');
+    // Generate Order Code: DRX + 6 digits (VD: DRX718294)
+    const randomSuffix = Math.floor(100000 + Math.random() * 900000);
+    const orderCode = `DRX${randomSuffix}`;
+    const orderId = `ord-${Date.now()}-${randomSuffix}`;
 
-      // 2. Create the Order
-      const newOrder = await tx.order.create({
+    const resolvedTotal = Number(totalAmount || netAmount || 0);
+    const resolvedNet = Number(netAmount || totalAmount || 0);
+    const resolvedDiscount = Number(discountAmount || 0);
+
+    const fullAddress = deliveryType === 'STORE_PICKUP' 
+      ? 'Nhận trực tiếp tại Showroom DRX Hardware (TP. Hồ Chí Minh)'
+      : shippingAddress.trim();
+
+    // Compile Special Request Notes
+    const specialRequests: string[] = [];
+    if (needInstallation) {
+      specialRequests.push('🛠️ Yêu cầu hỗ trợ lắp đặt / cài ráp linh kiện & kiểm tra nhiệt độ');
+    }
+    if (isProxyRecipient && proxyName.trim()) {
+      specialRequests.push(`👥 Nhờ người khác nhận hàng: ${proxyName.trim()} - SĐT: ${proxyPhone.trim()}`);
+    }
+    if (technicalNotes.trim()) {
+      specialRequests.push(`💡 Ghi chú kỹ thuật: ${technicalNotes.trim()}`);
+    }
+
+    const combinedNotes = specialRequests.join('\n');
+
+    let createdOrder: any = null;
+
+    // 1. Try Prisma Transaction
+    try {
+      createdOrder = await prisma.order.create({
         data: {
-          id: customOrderId,
-          userId,
-          totalAmount: netAmount, // Simplification
-          netAmount: netAmount,
-          paymentMethod,
-          paymentStatus: paymentMethod === 'WALLET' ? 'PAID' : 'PENDING',
-          status: hasGift ? 'PENDING' : (paymentMethod === 'WALLET' ? 'COMPLETED' : 'PENDING'),
-        }
+          id: orderId,
+          orderCode: orderCode,
+          userId: userId || null,
+          customerName: customerName.trim(),
+          customerPhone: customerPhone.trim(),
+          customerEmail: customerEmail?.trim() || null,
+          shippingAddress: fullAddress,
+          deliveryType: deliveryType,
+          notes: combinedNotes || null,
+          totalAmount: resolvedTotal,
+          discountAmount: resolvedDiscount,
+          netAmount: resolvedNet,
+          status: 'PENDING',
+          paymentMethod: 'COD',
+          paymentStatus: 'PENDING',
+          paymentDetails: {
+            shippingMethod,
+            needInstallation,
+            isProxyRecipient,
+            proxyName: proxyName.trim(),
+            proxyPhone: proxyPhone.trim(),
+            technicalNotes: technicalNotes.trim(),
+            itemsCount: cartItems.length,
+            items: cartItems.map((i: any) => ({
+              id: i.productId || i.id,
+              name: i.name,
+              price: i.discountPrice ?? i.price,
+              quantity: i.quantity || 1,
+              coverImage: i.coverImage,
+            }))
+          },
+        },
       });
+    } catch (prismaErr) {
+      console.warn('Prisma create order warning, falling back to Supabase:', prismaErr);
+    }
 
-      // 3. Assign GameKeys to Order
-      for (const item of cartItems) {
-        // Fetch product to check delivery method
-        const actualProductId = item.productId || item.id;
-        const productInfo = await tx.product.findUnique({
-          where: { id: actualProductId },
-          select: { deliveryMethod: true, type: true }
-        });
+    // 2. Fallback to Supabase Database
+    if (!createdOrder) {
+      try {
+        const { data: supaNew, error: supaErr } = await supabase
+          .from('Order')
+          .insert([{
+            id: orderId,
+            orderCode: orderCode,
+            userId: userId || null,
+            customerName: customerName.trim(),
+            customerPhone: customerPhone.trim(),
+            customerEmail: customerEmail?.trim() || null,
+            shippingAddress: fullAddress,
+            deliveryType: deliveryType,
+            notes: combinedNotes || null,
+            totalAmount: resolvedTotal,
+            discountAmount: resolvedDiscount,
+            netAmount: resolvedNet,
+            status: 'PENDING',
+            paymentMethod: 'COD',
+            paymentStatus: 'PENDING',
+            paymentDetails: {
+              shippingMethod,
+              needInstallation,
+              isProxyRecipient,
+              proxyName: proxyName.trim(),
+              proxyPhone: proxyPhone.trim(),
+              technicalNotes: technicalNotes.trim(),
+              items: cartItems.map((i: any) => ({
+                id: i.productId || i.id,
+                name: i.name,
+                price: i.discountPrice ?? i.price,
+                quantity: i.quantity || 1,
+                coverImage: i.coverImage,
+              }))
+            },
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          }])
+          .select('*')
+          .single();
 
-        if (productInfo?.deliveryMethod === 'GIFT' || productInfo?.type === 'STEAM_GIFT') {
-          // Gifts do not require physical keys in stock
-          await tx.gameKey.create({
-            data: {
-              productId: actualProductId,
-              variantName: item.variantName || null,
-              keyCode: `Chờ DRX Liên Hệ & Giao Hàng`,
-              status: 'SOLD',
-              orderId: newOrder.id,
-              userId: userId,
-              soldAt: new Date()
-            }
-          });
-          continue; // Move to next item
-        }
-
-        // Try to find an available key for physical goods
-        const availableKey = await tx.gameKey.findFirst({
-          where: {
-            productId: actualProductId,
-            variantName: item.variantName || null,
-            status: 'AVAILABLE'
-          }
-        });
-
-        if (availableKey) {
-          await tx.gameKey.update({
-            where: { id: availableKey.id },
-            data: {
-              status: 'SOLD',
-              orderId: newOrder.id,
-              userId: userId,
-              soldAt: new Date()
-            }
-          });
-        } else {
-          throw new Error(`Sản phẩm ${item.name} hiện đang tạm hết hàng trong kho. Vui lòng thử lại sau!`);
-        }
+        if (supaErr) throw supaErr;
+        createdOrder = supaNew;
+      } catch (supaErr: any) {
+        console.error('Supabase create order error:', supaErr);
+        throw supaErr;
       }
+    }
 
-      return newOrder;
-    });
+    // 3. Create Admin Notification
+    try {
+      await supabase.from('Notification').insert([{
+        id: 'notif-' + Date.now(),
+        type: 'NEW_ORDER',
+        title: `Đơn Hàng Mới ${orderCode}`,
+        message: `Khách hàng ${customerName} vừa đặt đơn ${orderCode} (${resolvedNet.toLocaleString('vi-VN')} đ - COD).`,
+        data: { orderId: createdOrder.id, orderCode },
+        isRead: false,
+        createdAt: new Date().toISOString(),
+      }]);
+    } catch (e) {}
 
     return NextResponse.json({ 
-      message: 'Đặt hàng thành công',
-      order: order,
-      hasGift: order.status === 'PENDING'
+      success: true,
+      message: 'Đặt hàng thành công! Đội ngũ DRX Hardware sẽ liên hệ xác nhận sớm nhất.',
+      order: {
+        id: createdOrder.id,
+        orderCode: createdOrder.orderCode || orderCode,
+        customerName: createdOrder.customerName,
+        customerPhone: createdOrder.customerPhone,
+        shippingAddress: createdOrder.shippingAddress,
+        deliveryType: createdOrder.deliveryType,
+        totalAmount: resolvedNet,
+        paymentMethod: 'COD',
+        status: 'PENDING',
+        createdAt: createdOrder.createdAt || new Date().toISOString(),
+      },
     }, { status: 201 });
 
   } catch (error: any) {
     console.error('Lỗi khi xử lý đơn hàng:', error);
-    
-    // Nếu là lỗi do hết hàng mà chúng ta tự throw ở trên
-    if (error.message && error.message.includes('tạm hết hàng')) {
-      return NextResponse.json(
-        { message: error.message },
-        { status: 400 }
-      );
-    }
-    
     return NextResponse.json(
-      { message: error.message || 'Lỗi xử lý thanh toán' },
+      { message: error.message || 'Lỗi xử lý đơn hàng' },
       { status: 500 }
     );
   }

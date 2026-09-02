@@ -4,574 +4,979 @@ import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
-  ShoppingBag, ArrowLeft, ShieldCheck, CheckCircle2, 
-  Zap, Copy, Building2, CreditCard, Lock, Sparkles,
-  Calculator, Truck, BadgePercent, Check, PackageCheck
+  ShoppingBag, ArrowLeft, ArrowRight, ShieldCheck, CheckCircle2, 
+  Truck, Building2, Wrench, UserCheck, MessageSquare, 
+  Trash2, Plus, Minus, DollarSign, Check, Sparkles,
+  PackageCheck, User
 } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { showToast } from '@/components/Toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UiverseRadio } from '@/components/uiverse/UiverseRadio';
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { cartItems, cartTotal, coupon, getDiscountAmount, getNetAmount, clearCart } = useCart();
+  const { cartItems, updateQuantity, removeFromCart, coupon, getDiscountAmount, getNetAmount, clearCart } = useCart();
   const [currentUser, setCurrentUser] = useState<any>(null);
 
+  // 3-Step Checkout State: 1 = Check Giỏ Hàng, 2 = Thông Tin Giao Hàng, 3 = Xác Nhận Đơn Hàng
+  const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
+
+  // Form State for Step 2
+  const [shippingInfo, setShippingInfo] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    address: '',
+    fulfillmentMethod: 'DELIVERY' as 'DELIVERY' | 'STORE_PICKUP',
+    shippingMethod: 'STANDARD' as const,
+    // 3 Special Requests:
+    needInstallation: false,
+    isProxyRecipient: false,
+    proxyName: '',
+    proxyPhone: '',
+    technicalNotes: '',
+  });
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [createdOrder, setCreatedOrder] = useState<any>(null);
+
   const netAmount = getNetAmount();
+  const discountAmount = getDiscountAmount();
+  const subtotal = cartItems.reduce((sum, item) => sum + (item.discountPrice ?? item.price) * item.quantity, 0);
 
-  // Payment method state: COD, Direct Bank Transfer (No QR), or HD SAISON Installment
-  const [paymentMethod, setPaymentMethod] = useState<'COD' | 'BANK_TRANSFER' | 'HD_SAISON'>('COD');
-
-  // HD SAISON Installment States
-  const [downPaymentPercent, setDownPaymentPercent] = useState<number>(20); // 10, 20, 30, 50
-  const [installmentTerm, setInstallmentTerm] = useState<number>(12); // 6, 9, 12, 18
-  const [interestRateType, setInterestRateType] = useState<'ZERO' | 'STANDARD'>('ZERO'); // 0% vs 1.49%/month
-
-  // Real-time HD SAISON calculations
-  const downPaymentAmount = useMemo(() => Math.round(netAmount * (downPaymentPercent / 100)), [netAmount, downPaymentPercent]);
-  const remainingLoanAmount = useMemo(() => netAmount - downPaymentAmount, [netAmount, downPaymentAmount]);
-  const monthlyInterestFee = useMemo(() => interestRateType === 'ZERO' ? 0 : Math.round(remainingLoanAmount * 0.0149), [remainingLoanAmount, interestRateType]);
-  const monthlyPaymentAmount = useMemo(() => Math.round(remainingLoanAmount / installmentTerm) + monthlyInterestFee, [remainingLoanAmount, installmentTerm, monthlyInterestFee]);
-
-  const [isProcessing, setIsProcessing] = useState<boolean>(false);
-  const [isSuccess, setIsSuccess] = useState<boolean>(false);
-  const [copiedField, setCopiedField] = useState<string | null>(null);
-  const [orderCode, setOrderCode] = useState<string>('');
-
+  // Load Logged in User info if available (fill fields or keep empty if missing)
   useEffect(() => {
     import('@/lib/auth-client').then(({ getStoredSessionUser }) => {
       const u = getStoredSessionUser();
       if (u) {
         setCurrentUser(u);
+        setShippingInfo(prev => ({
+          ...prev,
+          name: prev.name || u.name || '',
+          phone: prev.phone || u.phone || '',
+          email: prev.email || u.email || '',
+          address: prev.address || u.address || '',
+        }));
       }
     });
-
-    const randomOrd = 'DRX' + Math.floor(100000 + Math.random() * 900000);
-    setOrderCode(randomOrd);
   }, []);
 
-  const transferMemo = useMemo(() => {
-    return `${orderCode}`;
-  }, [orderCode]);
-
-  const formatCurrency = (val: number) => val.toLocaleString('vi-VN') + ' đ';
-
-  const copyToClipboard = (text: string, fieldName: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedField(fieldName);
-    showToast(`Đã sao chép ${fieldName}!`, 'success');
-    setTimeout(() => setCopiedField(null), 2000);
+  const formatCurrency = (val: number) => {
+    return Number(val || 0).toLocaleString('vi-VN') + ' đ';
   };
 
-  // Handle Order Completion
-  const handleProcessPayment = async () => {
+  // Step 1 Validation & Proceed
+  const handleProceedToStep2 = () => {
     if (cartItems.length === 0) {
       showToast('Giỏ hàng của bạn đang trống!', 'error');
       return;
     }
+    setCurrentStep(2);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
-    setIsProcessing(true);
+  // Step 2 Validation & Proceed
+  const handleProceedToStep3 = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!shippingInfo.name.trim()) {
+      showToast('Vui lòng nhập Họ và tên người nhận!', 'error');
+      return;
+    }
+    if (!shippingInfo.phone.trim()) {
+      showToast('Vui lòng nhập Số điện thoại nhận hàng!', 'error');
+      return;
+    }
+    if (shippingInfo.fulfillmentMethod === 'DELIVERY' && !shippingInfo.address.trim()) {
+      showToast('Vui lòng nhập Địa chỉ nhận hàng!', 'error');
+      return;
+    }
+    if (shippingInfo.isProxyRecipient) {
+      if (!shippingInfo.proxyName.trim() || !shippingInfo.proxyPhone.trim()) {
+        showToast('Vui lòng nhập đầy đủ Tên và SĐT người nhận thay!', 'error');
+        return;
+      }
+    }
+
+    setCurrentStep(3);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Step 3 Confirm Order & Submit COD Order
+  const handleConfirmOrder = async () => {
+    if (cartItems.length === 0) {
+      showToast('Giỏ hàng đang trống!', 'error');
+      return;
+    }
+
+    setIsSubmitting(true);
 
     try {
-      // 1. Call Backend API to process order
       const res = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId: currentUser?.id,
+          userId: currentUser?.id || null,
+          customerName: shippingInfo.name,
+          customerPhone: shippingInfo.phone,
+          customerEmail: shippingInfo.email || currentUser?.email || null,
+          shippingAddress: shippingInfo.fulfillmentMethod === 'STORE_PICKUP'
+            ? 'Nhận tại Showroom DRX Hardware (Showroom Q.10, TP. Hồ Chí Minh)'
+            : shippingInfo.address,
+          deliveryType: shippingInfo.fulfillmentMethod,
+          shippingMethod: 'STANDARD',
+          needInstallation: shippingInfo.needInstallation,
+          isProxyRecipient: shippingInfo.isProxyRecipient,
+          proxyName: shippingInfo.proxyName,
+          proxyPhone: shippingInfo.proxyPhone,
+          technicalNotes: shippingInfo.technicalNotes,
           cartItems,
-          netAmount,
-          paymentMethod
+          totalAmount: subtotal,
+          discountAmount: discountAmount,
+          netAmount: netAmount,
+          paymentMethod: 'COD',
         }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.message || 'Lỗi xử lý đơn hàng từ server');
+        throw new Error(data.message || 'Lỗi khi tạo đơn hàng');
       }
 
-      // 2. Push Admin Notification via API
-      try {
-        await fetch('/api/notifications', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            orderId: data.order?.id,
-            customerId: currentUser?.id,
-            customerName: currentUser?.name || currentUser?.email || 'Khách hàng',
-            paymentMethod,
-            productNames: cartItems.map(i => i.name).join(', ')
-          })
-        });
-      } catch (e) {
-        console.error('Lỗi khi gửi thông báo cho Admin:', e);
-      }
-
-      // 3. Clear cart & trigger completion state
+      setCreatedOrder(data.order);
       clearCart();
-      setIsSuccess(true);
-      showToast(`🎉 Đặt hàng thành công! Mã đơn: ${data.order?.id?.slice(0, 8) || orderCode}`, 'success');
-      
-      // Auto redirect to orders tab after 3s
-      setTimeout(() => {
-        router.push('/profile?tab=orders');
-      }, 3000);
-      
+      showToast('Đặt hàng thành công! DRX Hardware đã ghi nhận đơn hàng.', 'success');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
     } catch (err: any) {
-      console.error('Lỗi khi tiến hành thanh toán:', err);
-      showToast(err.message || 'Có lỗi xảy ra khi xử lý đơn hàng!', 'error');
+      console.error('Lỗi đặt hàng:', err);
+      showToast(err.message || 'Lỗi khi xử lý đơn hàng. Vui lòng thử lại!', 'error');
     } finally {
-      setIsProcessing(false);
+      setIsSubmitting(false);
     }
   };
 
+  // SUCCESS SCREEN
+  if (createdOrder) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white flex flex-col antialiased">
+        <Header />
+        <main className="flex-1 max-w-3xl mx-auto px-4 sm:px-6 py-16 w-full">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-8 sm:p-10 shadow-xl space-y-8 text-center"
+          >
+            <div className="w-20 h-20 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-500 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center mx-auto shadow-sm">
+              <CheckCircle2 className="w-10 h-10" />
+            </div>
+
+            <div className="space-y-2">
+              <span className="text-xs font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-3 py-1 rounded-full border border-emerald-200 dark:border-emerald-800 inline-block">
+                ĐẶT HÀNG THÀNH CÔNG
+              </span>
+              <h1 className="font-heading text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
+                Cảm Ơn Quý Khách Đã Mua Sắm Tại DRX Hardware!
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-500 max-w-lg mx-auto">
+                Mã đơn hàng của bạn là <strong className="text-slate-900 dark:text-white font-mono">{createdOrder.orderCode}</strong>. Nhân viên kỹ thuật DRX sẽ gọi điện thoại xác nhận và chuẩn bị linh kiện ngay.
+              </p>
+            </div>
+
+            {/* ORDER DETAILS SUMMARY */}
+            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-5 text-left text-xs space-y-3 border border-slate-100 dark:border-slate-800">
+              <div className="flex justify-between border-b border-slate-200/60 dark:border-slate-700/60 pb-2">
+                <span className="text-slate-500 font-bold">Mã Đơn Hàng:</span>
+                <span className="font-mono font-black text-[#0284c7]">{createdOrder.orderCode}</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-200/60 dark:border-slate-700/60 pb-2">
+                <span className="text-slate-500 font-bold">Người Nhận:</span>
+                <span className="font-bold text-slate-900 dark:text-white">{createdOrder.customerName} ({createdOrder.customerPhone})</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-200/60 dark:border-slate-700/60 pb-2">
+                <span className="text-slate-500 font-bold">Hình thức nhận:</span>
+                <span className="font-bold text-slate-900 dark:text-white">
+                  {createdOrder.deliveryType === 'STORE_PICKUP' ? '🏬 Nhận tại Showroom DRX' : '🚚 Giao hàng tận nơi'}
+                </span>
+              </div>
+              <div className="flex justify-between border-b border-slate-200/60 dark:border-slate-700/60 pb-2">
+                <span className="text-slate-500 font-bold">Địa chỉ giao:</span>
+                <span className="font-medium text-slate-700 dark:text-slate-300 max-w-xs text-right truncate">{createdOrder.shippingAddress}</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-200/60 dark:border-slate-700/60 pb-2">
+                <span className="text-slate-500 font-bold">Hình thức thanh toán:</span>
+                <span className="font-extrabold text-amber-600">💵 COD - Thu tiền khi nhận hàng</span>
+              </div>
+              <div className="flex justify-between pt-1 text-sm font-black">
+                <span className="text-slate-900 dark:text-white">Tổng tiền cần thanh toán:</span>
+                <span className="text-rose-600 dark:text-rose-400 font-mono text-base">{formatCurrency(createdOrder.totalAmount)}</span>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+              <Link
+                href="/"
+                className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-gradient-to-r from-[#0284c7] to-[#38bdf8] hover:from-[#0369a1] hover:to-[#0284c7] text-white font-extrabold text-xs uppercase tracking-wider shadow-md transition-all cursor-pointer text-center"
+              >
+                Tiếp Tục Mua Sắm
+              </Link>
+              <Link
+                href="/profile"
+                className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs uppercase tracking-wider transition-all cursor-pointer text-center"
+              >
+                Xem Lịch Sử Đơn Hàng
+              </Link>
+            </div>
+          </motion.div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#090d16] text-slate-900 dark:text-slate-100 flex flex-col antialiased transition-colors duration-300">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white flex flex-col antialiased">
       <Header />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Navigation */}
-        <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-[#0284c7] transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span>Quay lại Cửa Hàng DRX Hardware</span>
+      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+        
+        {/* BACK BUTTON */}
+        <div className="mb-6">
+          <Link href="/" className="inline-flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-slate-900 dark:hover:text-white uppercase tracking-wider transition-colors">
+            <ArrowLeft className="h-4 w-4 text-[#0284c7]" /> Về Cửa Hàng DRX
           </Link>
-          <div className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 px-3.5 py-1.5 rounded-full border border-emerald-200 dark:border-emerald-800 text-xs font-bold shadow-2xs">
-            <Lock className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-            <span>Thanh Toán Bảo Mật SSL 256-Bit</span>
+        </div>
+
+        {/* ─────────────────────────────────────────────────────────────
+            3-STEP PROGRESS STEPPER HEADER
+           ───────────────────────────────────────────────────────────── */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-4 sm:p-6 mb-8 shadow-xs">
+          <div className="grid grid-cols-3 gap-2 sm:gap-4 relative">
+            
+            {/* Step 1: Check Giỏ Hàng */}
+            <button
+              onClick={() => setCurrentStep(1)}
+              className={`flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-2xl transition-all text-left ${
+                currentStep === 1
+                  ? 'bg-sky-50 dark:bg-sky-950/60 border border-sky-200 dark:border-sky-800'
+                  : currentStep > 1
+                  ? 'opacity-85 hover:opacity-100 cursor-pointer'
+                  : 'opacity-50'
+              }`}
+            >
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs shrink-0 ${
+                currentStep === 1
+                  ? 'bg-[#0284c7] text-white shadow-xs'
+                  : currentStep > 1
+                  ? 'bg-emerald-500 text-white'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
+              }`}>
+                {currentStep > 1 ? <Check className="w-4 h-4" /> : '1'}
+              </div>
+              <div className="min-w-0 text-center sm:text-left">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Bước 1</span>
+                <span className={`text-xs font-extrabold block truncate ${currentStep === 1 ? 'text-[#0284c7] dark:text-sky-300' : 'text-slate-800 dark:text-slate-200'}`}>
+                  Kiểm Tra Giỏ Hàng
+                </span>
+              </div>
+            </button>
+
+            {/* Step 2: Thông Tin Giao Hàng */}
+            <button
+              onClick={() => {
+                if (cartItems.length > 0) setCurrentStep(2);
+              }}
+              disabled={cartItems.length === 0}
+              className={`flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-2xl transition-all text-left ${
+                currentStep === 2
+                  ? 'bg-sky-50 dark:bg-sky-950/60 border border-sky-200 dark:border-sky-800'
+                  : currentStep > 2
+                  ? 'opacity-85 hover:opacity-100 cursor-pointer'
+                  : 'opacity-50'
+              }`}
+            >
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs shrink-0 ${
+                currentStep === 2
+                  ? 'bg-[#0284c7] text-white shadow-xs'
+                  : currentStep > 2
+                  ? 'bg-emerald-500 text-white'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
+              }`}>
+                {currentStep > 2 ? <Check className="w-4 h-4" /> : '2'}
+              </div>
+              <div className="min-w-0 text-center sm:text-left">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Bước 2</span>
+                <span className={`text-xs font-extrabold block truncate ${currentStep === 2 ? 'text-[#0284c7] dark:text-sky-300' : 'text-slate-800 dark:text-slate-200'}`}>
+                  Thông Tin Giao Hàng
+                </span>
+              </div>
+            </button>
+
+            {/* Step 3: Xác Nhận & COD */}
+            <div
+              className={`flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-2xl transition-all text-left ${
+                currentStep === 3
+                  ? 'bg-sky-50 dark:bg-sky-950/60 border border-sky-200 dark:border-sky-800'
+                  : 'opacity-50'
+              }`}
+            >
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs shrink-0 ${
+                currentStep === 3
+                  ? 'bg-[#0284c7] text-white shadow-xs'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
+              }`}>
+                3
+              </div>
+              <div className="min-w-0 text-center sm:text-left">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Bước 3</span>
+                <span className={`text-xs font-extrabold block truncate ${currentStep === 3 ? 'text-[#0284c7] dark:text-sky-300' : 'text-slate-800 dark:text-slate-200'}`}>
+                  Xác Nhận & Thanh Toán
+                </span>
+              </div>
+            </div>
+
           </div>
         </div>
 
+        {/* ─────────────────────────────────────────────────────────────
+            MAIN CONTENT AREA
+           ───────────────────────────────────────────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* LEFT COLUMN: Payment Methods & Order Items */}
-          <div className="lg:col-span-7 space-y-6">
-            
-            {/* PAYMENT METHOD SELECTOR */}
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-              <h2 className="font-heading text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
-                <CreditCard className="h-4 w-4 text-[#0284c7]" />
-                <span>Chọn Phương Thức Thanh Toán:</span>
-              </h2>
+          
+          {/* LEFT 8 COLS: ACTIVE STEP CONTENT */}
+          <div className="lg:col-span-8 space-y-6">
 
-              <div className="space-y-3">
-                
-                {/* Method 1: COD (Cash on Delivery) */}
-                <div
-                  onClick={() => setPaymentMethod('COD')}
-                  className={`w-full p-4 rounded-2xl border text-left transition-all flex items-center justify-between cursor-pointer ${
-                    paymentMethod === 'COD'
-                      ? 'border-2 border-[#0284c7] bg-sky-50/60 dark:bg-sky-950/40 shadow-sm'
-                      : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 hover:bg-white dark:hover:bg-slate-900'
-                  }`}
-                >
-                  <div className="flex items-center gap-3.5">
-                    <UiverseRadio checked={paymentMethod === 'COD'} onChange={() => setPaymentMethod('COD')} />
-                    <div className="p-2.5 rounded-xl bg-emerald-600 text-white shadow-sm">
-                      <Truck className="h-6 w-6" />
+            {/* ══════════════════════════════════════════════════════════
+                BƯỚC 1: CHECK LẠI GIỎ HÀNG
+               ══════════════════════════════════════════════════════════ */}
+            {currentStep === 1 && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6"
+              >
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] border border-sky-200 dark:border-sky-800">
+                      <ShoppingBag className="w-5 h-5" />
                     </div>
                     <div>
-                      <h4 className="text-xs font-black uppercase text-slate-900 dark:text-white flex items-center gap-2">
-                        <span>Thanh Toán Khi Nhận Hàng (COD)</span>
-                        <span className="text-[10px] bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 font-bold px-2 py-0.5 rounded-full">Phổ biến</span>
-                      </h4>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                        Kiểm tra tem niêm phong và linh kiện trước khi thanh toán tiền mặt hoặc chuyển khoản cho shipper.
-                      </p>
+                      <h2 className="font-heading text-lg font-black uppercase text-slate-900 dark:text-white">
+                        1. Kiểm Tra Lại Giỏ Hàng ({cartItems.length} Linh Kiện)
+                      </h2>
+                      <p className="text-xs text-slate-500">Xem lại số lượng, đơn giá và linh kiện trước khi nhập thông tin nhận hàng.</p>
                     </div>
                   </div>
-                  <span className="hidden sm:inline-block text-[10px] font-extrabold px-3 py-1 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800">
-                    🚚 Đồng Kiểm Tận Nơi
-                  </span>
                 </div>
 
-                {/* Method 2: Direct Bank Transfer (No QR image) */}
-                <div
-                  onClick={() => setPaymentMethod('BANK_TRANSFER')}
-                  className={`w-full p-4 rounded-2xl border text-left transition-all flex items-center justify-between cursor-pointer ${
-                    paymentMethod === 'BANK_TRANSFER'
-                      ? 'border-2 border-[#0284c7] bg-sky-50/60 dark:bg-sky-950/40 shadow-sm'
-                      : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 hover:bg-white dark:hover:bg-slate-900'
-                  }`}
-                >
-                  <div className="flex items-center gap-3.5">
-                    <UiverseRadio checked={paymentMethod === 'BANK_TRANSFER'} onChange={() => setPaymentMethod('BANK_TRANSFER')} />
-                    <div className="p-2.5 rounded-xl bg-[#0284c7] text-white shadow-sm">
-                      <Building2 className="h-6 w-6" />
+                {/* CART ITEMS LIST */}
+                {cartItems.length === 0 ? (
+                  <div className="py-12 text-center space-y-4">
+                    <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto text-2xl">
+                      🛒
+                    </div>
+                    <p className="text-xs font-bold text-slate-400">Giỏ hàng của bạn đang trống!</p>
+                    <Link
+                      href="/"
+                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#0284c7] text-white font-extrabold text-xs uppercase"
+                    >
+                      Duyệt Linh Kiện Ngay
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {cartItems.map((item) => {
+                      const itemPrice = item.discountPrice ?? item.price;
+                      return (
+                        <div key={item.id} className="py-4 flex items-center gap-4 flex-wrap sm:flex-nowrap">
+                          {/* Image */}
+                          <div className="w-16 h-16 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-1 shrink-0 flex items-center justify-center overflow-hidden">
+                            <img
+                              src={item.coverImage || 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=800&q=80'}
+                              alt={item.name}
+                              className="max-h-full max-w-full object-contain"
+                            />
+                          </div>
+
+                          {/* Info */}
+                          <div className="flex-1 min-w-[200px]">
+                            <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white leading-tight">
+                              {item.name}
+                            </h3>
+                            <span className="text-[11px] font-mono text-rose-600 dark:text-rose-400 font-bold block mt-0.5">
+                              {formatCurrency(itemPrice)}
+                            </span>
+                          </div>
+
+                          {/* Quantity Controls */}
+                          <div className="flex items-center gap-2 border border-slate-200 dark:border-slate-700 rounded-xl p-1 bg-slate-50 dark:bg-slate-800">
+                            <button
+                              type="button"
+                              onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
+                              className="p-1 rounded-lg hover:bg-white dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors"
+                            >
+                              <Minus className="w-3.5 h-3.5" />
+                            </button>
+                            <span className="text-xs font-black px-2 min-w-[24px] text-center font-mono text-slate-900 dark:text-white">
+                              {item.quantity}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                              className="p-1 rounded-lg hover:bg-white dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+
+                          {/* Subtotal */}
+                          <div className="text-right min-w-[100px]">
+                            <span className="text-xs sm:text-sm font-black font-mono text-slate-900 dark:text-white block">
+                              {formatCurrency(itemPrice * item.quantity)}
+                            </span>
+                          </div>
+
+                          {/* Remove button */}
+                          <button
+                            type="button"
+                            onClick={() => removeFromCart(item.id)}
+                            className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition-colors"
+                            title="Xóa linh kiện"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* STEP 1 ACTION BUTTON */}
+                {cartItems.length > 0 && (
+                  <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={handleProceedToStep2}
+                      className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-[#0284c7] to-[#38bdf8] hover:from-[#0369a1] hover:to-[#0284c7] text-white font-extrabold text-xs uppercase tracking-wider shadow-md shadow-sky-500/25 transition-all cursor-pointer"
+                    >
+                      <span>Tiếp Tục: Điền Thông Tin Giao Hàng</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {/* ══════════════════════════════════════════════════════════
+                BƯỚC 2: THÔNG TIN GIAO HÀNG & YÊU CẦU ĐẶC BIỆT
+               ══════════════════════════════════════════════════════════ */}
+            {currentStep === 2 && (
+              <motion.form
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                onSubmit={handleProceedToStep3}
+                className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xs space-y-8"
+              >
+                {/* SECTION 2.1: THÔNG TIN NGƯỜI NHẬN */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <div className="p-2 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] border border-sky-200 dark:border-sky-800">
+                      <User className="w-4 h-4" />
                     </div>
                     <div>
-                      <h4 className="text-xs font-black uppercase text-slate-900 dark:text-white">
-                        Chuyển Khoản Ngân Hàng Trực Tiếp
-                      </h4>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                        Chuyển khoản vào số tài khoản MB Bank chính thức của DRX Hardware qua ứng dụng ngân hàng.
-                      </p>
+                      <h2 className="font-heading text-sm sm:text-base font-black uppercase text-slate-900 dark:text-white">
+                        2.1 Thông Tin Người Nhận Hàng
+                      </h2>
+                      <p className="text-[11px] text-slate-400">Tự động điền theo tài khoản, bạn có thể chỉnh sửa trực tiếp bên dưới.</p>
                     </div>
                   </div>
-                  <span className="hidden sm:inline-block text-[10px] font-extrabold px-3 py-1 rounded-full border bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/50 dark:text-sky-300 dark:border-sky-800">
-                    🏦 MB Bank 24/7
-                  </span>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    {/* HỌ VÀ TÊN */}
+                    <div className="space-y-1.5">
+                      <label className="font-bold text-slate-700 dark:text-slate-300 uppercase text-[10.5px]">
+                        Họ và Tên Người Nhận: <span className="text-rose-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Ví dụ: Nguyễn Văn A"
+                        value={shippingInfo.name}
+                        onChange={(e) => setShippingInfo({ ...shippingInfo, name: e.target.value })}
+                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:border-[#0284c7]"
+                      />
+                    </div>
+
+                    {/* SỐ ĐIỆN THOẠI */}
+                    <div className="space-y-1.5">
+                      <label className="font-bold text-slate-700 dark:text-slate-300 uppercase text-[10.5px]">
+                        Số Điện Thoại Nhận Hàng: <span className="text-rose-500">*</span>
+                      </label>
+                      <input
+                        type="tel"
+                        required
+                        placeholder="Ví dụ: 0987654321"
+                        value={shippingInfo.phone}
+                        onChange={(e) => setShippingInfo({ ...shippingInfo, phone: e.target.value })}
+                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:border-[#0284c7]"
+                      />
+                    </div>
+
+                    {/* EMAIL (OPTIONAL) */}
+                    <div className="space-y-1.5 sm:col-span-2">
+                      <label className="font-bold text-slate-700 dark:text-slate-300 uppercase text-[10.5px]">
+                        Email Nhận Thông Báo Đơn Hàng (Tùy chọn):
+                      </label>
+                      <input
+                        type="email"
+                        placeholder="example@gmail.com"
+                        value={shippingInfo.email}
+                        onChange={(e) => setShippingInfo({ ...shippingInfo, email: e.target.value })}
+                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:border-[#0284c7]"
+                      />
+                    </div>
+                  </div>
                 </div>
 
-                {/* Method 3: HD SAISON Installment */}
-                <div className="space-y-3">
-                  <div
-                    onClick={() => setPaymentMethod('HD_SAISON')}
-                    className={`w-full p-4 rounded-2xl border text-left transition-all flex items-center justify-between cursor-pointer ${
-                      paymentMethod === 'HD_SAISON'
-                        ? 'border-2 border-[#0284c7] bg-sky-50/60 dark:bg-sky-950/40 shadow-sm'
-                        : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 hover:bg-white dark:hover:bg-slate-900'
-                    }`}
+                {/* SECTION 2.2: HÌNH THỨC NHẬN HÀNG */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <div className="p-2 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] border border-sky-200 dark:border-sky-800">
+                      <Truck className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h2 className="font-heading text-sm sm:text-base font-black uppercase text-slate-900 dark:text-white">
+                        2.2 Hình Thức Giao Nhận
+                      </h2>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    {/* GIAO HÀNG TẬN NƠI */}
+                    <button
+                      type="button"
+                      onClick={() => setShippingInfo({ ...shippingInfo, fulfillmentMethod: 'DELIVERY' })}
+                      className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
+                        shippingInfo.fulfillmentMethod === 'DELIVERY'
+                          ? 'border-[#0284c7] bg-sky-50/70 dark:bg-sky-950/50 ring-2 ring-[#0284c7]/40 shadow-xs'
+                          : 'border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40 hover:border-slate-300'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="font-heading text-xs font-black uppercase text-slate-900 dark:text-white flex items-center gap-2">
+                          <Truck className="w-4 h-4 text-[#0284c7]" />
+                          Giao Hàng Tận Nơi
+                        </span>
+                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                          shippingInfo.fulfillmentMethod === 'DELIVERY' ? 'border-[#0284c7] bg-[#0284c7]' : 'border-slate-300'
+                        }`}>
+                          {shippingInfo.fulfillmentMethod === 'DELIVERY' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                        </div>
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 font-normal">
+                        Giao hàng đóng gói bảo hiểm 100% nguyên seal đến tận cửa nhà bạn.
+                      </p>
+                    </button>
+
+                    {/* NHẬN TẠI SHOWROOM */}
+                    <button
+                      type="button"
+                      onClick={() => setShippingInfo({ ...shippingInfo, fulfillmentMethod: 'STORE_PICKUP' })}
+                      className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
+                        shippingInfo.fulfillmentMethod === 'STORE_PICKUP'
+                          ? 'border-[#0284c7] bg-sky-50/70 dark:bg-sky-950/50 ring-2 ring-[#0284c7]/40 shadow-xs'
+                          : 'border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40 hover:border-slate-300'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="font-heading text-xs font-black uppercase text-slate-900 dark:text-white flex items-center gap-2">
+                          <Building2 className="w-4 h-4 text-[#0284c7]" />
+                          Nhận Tại Cửa Hàng
+                        </span>
+                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                          shippingInfo.fulfillmentMethod === 'STORE_PICKUP' ? 'border-[#0284c7] bg-[#0284c7]' : 'border-slate-300'
+                        }`}>
+                          {shippingInfo.fulfillmentMethod === 'STORE_PICKUP' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                        </div>
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 font-normal">
+                        Showroom DRX Hardware (TP. Hồ Chí Minh). Hỗ trợ kiểm tra linh kiện và ráp PC tại chỗ.
+                      </p>
+                    </button>
+                  </div>
+
+                  {/* ĐỊA CHỈ NHẬN HÀNG NẾU CHỌN GIAO TẬN NƠI */}
+                  {shippingInfo.fulfillmentMethod === 'DELIVERY' && (
+                    <div className="space-y-1.5 pt-2">
+                      <label className="font-bold text-slate-700 dark:text-slate-300 uppercase text-[10.5px]">
+                        Địa Chỉ Nhận Hàng Cụ Thể: <span className="text-rose-500">*</span>
+                      </label>
+                      <textarea
+                        rows={2}
+                        required
+                        placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố..."
+                        value={shippingInfo.address}
+                        onChange={(e) => setShippingInfo({ ...shippingInfo, address: e.target.value })}
+                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:border-[#0284c7]"
+                      />
+                    </div>
+                  )}
+
+                  {/* PHƯƠNG THỨC VẬN CHUYỂN: DUY NHẤT 1 VẬN CHUYỂN TIÊU CHUẨN */}
+                  <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <PackageCheck className="w-4 h-4 text-[#0284c7]" />
+                      <div>
+                        <span className="text-xs font-extrabold text-slate-900 dark:text-white block">
+                          Phương thức: Vận Chuyển Tiêu Chuẩn (Standard Delivery)
+                        </span>
+                        <span className="text-[10.5px] text-slate-400">Thời gian giao: 1 - 3 ngày làm việc (Đóng gói thùng xốp chuyên dụng)</span>
+                      </div>
+                    </div>
+                    <span className="text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 rounded-full border border-emerald-200 dark:border-emerald-800">
+                      Miễn Phí
+                    </span>
+                  </div>
+                </div>
+
+                {/* SECTION 2.3: YÊU CẦU ĐẶC BIỆT (3 MỤC) */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <div className="p-2 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] border border-sky-200 dark:border-sky-800">
+                      <Sparkles className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h2 className="font-heading text-sm sm:text-base font-black uppercase text-slate-900 dark:text-white">
+                        2.3 Dịch Vụ & Yêu Cầu Đặc Biệt
+                      </h2>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    {/* YÊU CẦU 1: HỖ TRỢ LẮP ĐẶT / CÀI ĐẶT */}
+                    <label className="flex items-start gap-3 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 cursor-pointer hover:bg-sky-50/40 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={shippingInfo.needInstallation}
+                        onChange={(e) => setShippingInfo({ ...shippingInfo, needInstallation: e.target.checked })}
+                        className="mt-0.5 rounded border-slate-300 text-[#0284c7] focus:ring-[#0284c7] cursor-pointer"
+                      />
+                      <div>
+                        <span className="text-xs font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
+                          <Wrench className="w-3.5 h-3.5 text-[#0284c7]" />
+                          Tôi cần hỗ trợ lắp đặt / cài đặt
+                        </span>
+                        <p className="text-[11px] text-slate-500 font-normal mt-0.5">
+                          Kỹ thuật viên DRX sẽ hỗ trợ lắp ráp linh kiện vào thùng máy, cài sẵn Windows/Driver và test nhiệt độ Full-load trước khi giao.
+                        </p>
+                      </div>
+                    </label>
+
+                    {/* YÊU CẦU 2: NHỜ NGƯỜI KHÁC NHẬN HÀNG */}
+                    <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 space-y-3">
+                      <label className="flex items-center gap-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={shippingInfo.isProxyRecipient}
+                          onChange={(e) => setShippingInfo({ ...shippingInfo, isProxyRecipient: e.target.checked })}
+                          className="rounded border-slate-300 text-[#0284c7] focus:ring-[#0284c7] cursor-pointer"
+                        />
+                        <span className="text-xs font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
+                          <UserCheck className="w-3.5 h-3.5 text-[#0284c7]" />
+                          Nhờ người khác nhận hàng dùm
+                        </span>
+                      </label>
+
+                      {shippingInfo.isProxyRecipient && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 pl-6 border-t border-slate-200/60 dark:border-slate-700/60">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold uppercase text-slate-600 dark:text-slate-400">
+                              Họ và Tên Người Nhận Thay: <span className="text-rose-500">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              required={shippingInfo.isProxyRecipient}
+                              placeholder="Tên người nhận thay..."
+                              value={shippingInfo.proxyName}
+                              onChange={(e) => setShippingInfo({ ...shippingInfo, proxyName: e.target.value })}
+                              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:border-[#0284c7]"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold uppercase text-slate-600 dark:text-slate-400">
+                              Số Điện Thoại Người Nhận Thay: <span className="text-rose-500">*</span>
+                            </label>
+                            <input
+                              type="tel"
+                              required={shippingInfo.isProxyRecipient}
+                              placeholder="SĐT người nhận thay..."
+                              value={shippingInfo.proxyPhone}
+                              onChange={(e) => setShippingInfo({ ...shippingInfo, proxyPhone: e.target.value })}
+                              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:border-[#0284c7]"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* YÊU CẦU 3: GHI CHÚ ĐƠN HÀNG VÀ HỖ TRỢ KỸ THUẬT */}
+                    <div className="space-y-1.5">
+                      <label className="font-bold text-slate-700 dark:text-slate-300 uppercase text-[10.5px] flex items-center gap-1.5">
+                        <MessageSquare className="w-3.5 h-3.5 text-[#0284c7]" />
+                        Yêu Cầu Hỗ Trợ Kỹ Thuật & Ghi Chú Đơn Hàng:
+                      </label>
+                      <textarea
+                        rows={2}
+                        placeholder="Ghi chú thêm giờ giao hàng, yêu cầu đóng thùng gỗ, bọc chống sốc hoặc lưu ý kỹ thuật..."
+                        value={shippingInfo.technicalNotes}
+                        onChange={(e) => setShippingInfo({ ...shippingInfo, technicalNotes: e.target.value })}
+                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:border-[#0284c7]"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* NAVIGATION BUTTONS */}
+                <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentStep(1)}
+                    className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs uppercase cursor-pointer"
                   >
-                    <div className="flex items-center gap-3.5">
-                      <UiverseRadio checked={paymentMethod === 'HD_SAISON'} onChange={() => setPaymentMethod('HD_SAISON')} />
-                      <div className="p-2.5 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-sm">
-                        <Calculator className="h-6 w-6" />
+                    <ArrowLeft className="w-4 h-4" />
+                    <span>Quay Lại Giỏ Hàng</span>
+                  </button>
+
+                  <button
+                    type="submit"
+                    className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-[#0284c7] to-[#38bdf8] hover:from-[#0369a1] hover:to-[#0284c7] text-white font-extrabold text-xs uppercase tracking-wider shadow-md shadow-sky-500/25 transition-all cursor-pointer"
+                  >
+                    <span>Tiếp Tục: Xác Nhận Đơn Hàng</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </motion.form>
+            )}
+
+            {/* ══════════════════════════════════════════════════════════
+                BƯỚC 3: XÁC NHẬN ĐƠN HÀNG & PHƯƠNG THỨC THANH TOÁN (COD)
+               ══════════════════════════════════════════════════════════ */}
+            {currentStep === 3 && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xs space-y-8"
+              >
+                {/* 3.1 CHỌN PHƯƠNG THỨC THANH TOÁN (DUY NHẤT 1 LÀ COD) */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 border border-amber-200 dark:border-amber-800">
+                      <DollarSign className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h2 className="font-heading text-sm sm:text-base font-black uppercase text-slate-900 dark:text-white">
+                        3.1 Phương Thức Thanh Toán
+                      </h2>
+                      <p className="text-[11px] text-slate-400">Hình thức thanh toán an toàn, kiểm tra hàng trước khi trả tiền.</p>
+                    </div>
+                  </div>
+
+                  {/* COD OPTION CARD (DUY NHẤT 1) */}
+                  <div className="p-4 rounded-2xl bg-amber-50/70 dark:bg-amber-950/40 border-2 border-amber-500 ring-2 ring-amber-400/30 flex items-start justify-between gap-4">
+                    <div className="flex items-start gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center font-black text-sm shrink-0 shadow-xs">
+                        💵
                       </div>
                       <div>
-                        <h4 className="text-xs font-black uppercase text-slate-900 dark:text-white flex items-center gap-2">
-                          <span>Mua Trả Góp 0% Qua HD SAISON</span>
-                          <span className="text-[10px] font-black text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full uppercase">Lãi 0% - 1.49%</span>
-                        </h4>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                          Tự chọn % trả trước &amp; số tháng trả góp linh hoạt. Duyệt hồ sơ nhanh chóng qua CCCD.
+                        <span className="font-heading text-xs font-black uppercase text-slate-900 dark:text-white block">
+                          COD - Thu Tiền Khi Nhận Hàng (Cash On Delivery)
+                        </span>
+                        <p className="text-[11px] text-slate-600 dark:text-slate-300 font-normal mt-0.5 leading-relaxed">
+                          Thanh toán bằng tiền mặt hoặc chuyển khoản trực tiếp cho nhân viên giao hàng khi nhận và kiểm tra linh kiện máy tính.
                         </p>
                       </div>
                     </div>
-                    <span className="hidden sm:inline-block text-[10px] font-extrabold text-[#0284c7] bg-sky-100 dark:bg-sky-950 px-2.5 py-1 rounded-full border border-sky-200 dark:border-sky-800">
-                      Tự Tính Lãi Suất
+
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                      Khuyên Dùng
                     </span>
                   </div>
-
-                  {/* INTERACTIVE HD SAISON CALCULATOR WIDGET */}
-                  {paymentMethod === 'HD_SAISON' && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-sky-200 dark:border-sky-800 space-y-4 shadow-sm"
-                    >
-                      <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-                        <span className="text-xs font-black uppercase text-slate-900 dark:text-white flex items-center gap-1.5">
-                          <BadgePercent className="h-4 w-4 text-[#0284c7]" />
-                          <span>BẢNG TÍNH TRẢ GÓP HD SAISON</span>
-                        </span>
-                        <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
-                          Duyệt 100% Căn Cước / CMND
-                        </span>
-                      </div>
-
-                      {/* Down Payment Selector */}
-                      <div className="space-y-2">
-                        <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
-                          <span>1. CHỌN MỨC TRẢ TRƯỚC (%):</span>
-                          <strong className="text-[#0284c7] font-black">{downPaymentPercent}% ({formatCurrency(downPaymentAmount)})</strong>
-                        </label>
-                        <div className="grid grid-cols-4 gap-2">
-                          {[10, 20, 30, 50].map((pct) => (
-                            <button
-                              key={pct}
-                              type="button"
-                              onClick={() => setDownPaymentPercent(pct)}
-                              className={`py-2 rounded-xl text-xs font-extrabold transition-all border cursor-pointer ${
-                                downPaymentPercent === pct
-                                  ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-sm'
-                                  : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
-                              }`}
-                            >
-                              {pct}%
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Term Selector */}
-                      <div className="space-y-2">
-                        <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
-                          <span>2. CHỌN KỲ HẠN VAY (THÁNG):</span>
-                          <strong className="text-emerald-600 font-black">{installmentTerm} Tháng</strong>
-                        </label>
-                        <div className="grid grid-cols-4 gap-2">
-                          {[6, 9, 12, 18].map((term) => (
-                            <button
-                              key={term}
-                              type="button"
-                              onClick={() => setInstallmentTerm(term)}
-                              className={`py-2 rounded-xl text-xs font-extrabold transition-all border cursor-pointer ${
-                                installmentTerm === term
-                                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                                  : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-emerald-300'
-                              }`}
-                            >
-                              {term}T
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
                 </div>
 
-              </div>
-            </div>
+                {/* 3.2 TỔNG HỢP CHI TIẾT ĐƠN HÀNG */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <div className="p-2 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] border border-sky-200 dark:border-sky-800">
+                      <ShieldCheck className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h2 className="font-heading text-sm sm:text-base font-black uppercase text-slate-900 dark:text-white">
+                        3.2 Xác Nhận Thông Tin Đơn Hàng
+                      </h2>
+                    </div>
+                  </div>
 
-            {/* ORDER ITEMS LIST */}
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-              <h2 className="font-heading text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
-                <ShoppingBag className="h-4 w-4 text-[#0284c7]" />
-                <span>Sản Phẩm Trong Đơn Hàng ({cartItems.length}):</span>
-              </h2>
+                  {/* SUMMARY BOX */}
+                  <div className="bg-slate-50 dark:bg-slate-800/40 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 text-xs space-y-3">
+                    <div className="flex justify-between border-b border-slate-200/60 dark:border-slate-700/60 pb-2">
+                      <span className="text-slate-500 font-bold">Người nhận hàng:</span>
+                      <span className="font-extrabold text-slate-900 dark:text-white">{shippingInfo.name}</span>
+                    </div>
 
-              {cartItems.length === 0 ? (
-                <div className="py-8 text-center text-xs text-slate-400">
-                  Giỏ hàng đang trống! Vui lòng chọn linh kiện hoặc cấu hình PC trước khi thanh toán.
-                </div>
-              ) : (
-                <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {cartItems.map((item) => {
-                    const price = item.discountPrice ?? item.price;
-                    return (
-                      <div key={item.id} className="py-3 flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <img
-                            src={item.coverImage}
-                            alt={item.name}
-                            className="h-12 w-16 object-cover rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-900 shrink-0"
-                          />
-                          <div className="min-w-0">
-                            <h4 className="font-heading text-xs font-black uppercase text-slate-900 dark:text-white truncate">
-                              {item.name}
-                            </h4>
-                            <span className="text-[10px] text-slate-400 font-bold block">
-                              Số lượng: {item.quantity} x {formatCurrency(price)}
-                            </span>
-                          </div>
-                        </div>
-                        <span className="font-heading text-xs font-black text-slate-900 dark:text-white shrink-0">
-                          {formatCurrency(price * item.quantity)}
-                        </span>
+                    <div className="flex justify-between border-b border-slate-200/60 dark:border-slate-700/60 pb-2">
+                      <span className="text-slate-500 font-bold">Số điện thoại:</span>
+                      <span className="font-extrabold font-mono text-slate-900 dark:text-white">{shippingInfo.phone}</span>
+                    </div>
+
+                    <div className="flex justify-between border-b border-slate-200/60 dark:border-slate-700/60 pb-2">
+                      <span className="text-slate-500 font-bold">Hình thức nhận hàng:</span>
+                      <span className="font-extrabold text-slate-900 dark:text-white">
+                        {shippingInfo.fulfillmentMethod === 'STORE_PICKUP' ? '🏬 Nhận tại Showroom DRX' : '🚚 Giao hàng tận nơi'}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between border-b border-slate-200/60 dark:border-slate-700/60 pb-2">
+                      <span className="text-slate-500 font-bold">Địa chỉ giao:</span>
+                      <span className="font-medium text-slate-800 dark:text-slate-200 max-w-xs text-right truncate">
+                        {shippingInfo.fulfillmentMethod === 'STORE_PICKUP' ? 'Showroom DRX Hardware (TP. Hồ Chí Minh)' : shippingInfo.address}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between border-b border-slate-200/60 dark:border-slate-700/60 pb-2">
+                      <span className="text-slate-500 font-bold">Vận chuyển:</span>
+                      <span className="font-extrabold text-emerald-600">Vận chuyển tiêu chuẩn (Miễn phí)</span>
+                    </div>
+
+                    {shippingInfo.needInstallation && (
+                      <div className="flex justify-between border-b border-slate-200/60 dark:border-slate-700/60 pb-2 text-[#0284c7]">
+                        <span className="font-bold">Yêu cầu lắp ráp:</span>
+                        <span className="font-extrabold">Hỗ trợ lắp đặt & test máy</span>
                       </div>
-                    );
-                  })}
+                    )}
+
+                    {shippingInfo.isProxyRecipient && (
+                      <div className="flex justify-between border-b border-slate-200/60 dark:border-slate-700/60 pb-2 text-indigo-600 dark:text-indigo-400">
+                        <span className="font-bold">Người nhận thay:</span>
+                        <span className="font-extrabold">{shippingInfo.proxyName} ({shippingInfo.proxyPhone})</span>
+                      </div>
+                    )}
+
+                    {shippingInfo.technicalNotes && (
+                      <div className="border-b border-slate-200/60 dark:border-slate-700/60 pb-2">
+                        <span className="text-slate-500 font-bold block mb-1">Ghi chú đơn hàng:</span>
+                        <span className="font-medium text-slate-700 dark:text-slate-300 italic">{shippingInfo.technicalNotes}</span>
+                      </div>
+                    )}
+
+                    <div className="flex justify-between pt-1 text-sm font-black">
+                      <span className="text-slate-900 dark:text-white">Tổng tiền thu COD:</span>
+                      <span className="text-rose-600 dark:text-rose-400 font-mono text-base">{formatCurrency(netAmount)}</span>
+                    </div>
+                  </div>
                 </div>
-              )}
-            </div>
+
+                {/* NAVIGATION BUTTONS */}
+                <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentStep(2)}
+                    className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs uppercase cursor-pointer"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    <span>Sửa Lại Thông Tin</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={handleConfirmOrder}
+                    className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-emerald-600 text-white font-black text-xs sm:text-sm uppercase tracking-wider shadow-lg shadow-emerald-500/25 transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    {isSubmitting ? (
+                      <span>Đang Ghi Nhận Đơn Hàng...</span>
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4 stroke-[3]" />
+                        <span>Xác Nhận Đặt Hàng (COD)</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </motion.div>
+            )}
 
           </div>
 
-          {/* RIGHT COLUMN: Order Summary & Confirmation Box */}
-          <div className="lg:col-span-5 space-y-6">
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-xl relative overflow-hidden space-y-6">
-              
-              {/* Payment Summary Header */}
-              <div className="bg-slate-950 -mx-6 -mt-6 p-5 text-white">
-                <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
-                  <span>Mã Đơn Hàng:</span>
-                  <span className="font-mono font-bold text-sky-400">{orderCode}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm font-extrabold">
-                  <span>Tổng Cần Thanh Toán:</span>
-                  <span className="text-xl text-amber-400 font-black">{formatCurrency(netAmount)}</span>
-                </div>
+          {/* RIGHT 4 COLS: ORDER SUMMARY CARD (ALWAYS VISIBLE) */}
+          <div className="lg:col-span-4">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-6 shadow-xs sticky top-24 space-y-6">
+              <h3 className="font-heading text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center justify-between">
+                <span>Tóm Tắt Đơn Hàng</span>
+                <span className="text-xs font-mono font-bold text-[#0284c7]">{cartItems.length} Món</span>
+              </h3>
+
+              {/* MINI ITEMS LIST */}
+              <div className="max-h-60 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800 pr-1">
+                {cartItems.map((item) => (
+                  <div key={item.id} className="py-2.5 flex items-center justify-between gap-3 text-xs">
+                    <div className="min-w-0">
+                      <span className="font-bold text-slate-900 dark:text-white block truncate">{item.name}</span>
+                      <span className="text-[11px] text-slate-400">SL: {item.quantity}</span>
+                    </div>
+                    <span className="font-mono font-bold text-slate-700 dark:text-slate-300 shrink-0">
+                      {formatCurrency((item.discountPrice ?? item.price) * item.quantity)}
+                    </span>
+                  </div>
+                ))}
               </div>
 
-              {/* COD Mode Details */}
-              {paymentMethod === 'COD' && (
-                <div className="space-y-4">
-                  <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/80 text-xs space-y-2">
-                    <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-black uppercase tracking-wider">
-                      <Truck className="w-4 h-4 text-emerald-600" />
-                      <span>GIAO HÀNG TẬN NHÀ &amp; THU TIỀN TẬN NƠI</span>
-                    </div>
-                    <p className="text-[11.5px] text-slate-600 dark:text-slate-300 leading-relaxed">
-                      Linh kiện máy tính sẽ được đóng gói cẩn thận 3 lớp (hộp carton + xốp chống sốc nguyên seal).
-                    </p>
-                    <div className="pt-1 text-[11px] text-emerald-700 dark:text-emerald-400 font-bold flex items-center gap-1.5">
-                      <CheckCircle2 className="w-4 h-4" />
-                      <span>Miễn phí đồng kiểm linh kiện cùng shipper</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2 text-xs">
-                    <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
-                      <span className="text-slate-500">Hình thức thanh toán:</span>
-                      <span className="font-black text-slate-900 dark:text-white">Tiền mặt / Thẻ khi nhận hàng</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
-                      <span className="text-slate-500">Phí giao hàng:</span>
-                      <span className="font-bold text-emerald-600">MIỄN PHÍ TOÀN QUỐC</span>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleProcessPayment}
-                    disabled={isProcessing}
-                    className="w-full mt-4 py-4 rounded-2xl uiverse-btn-shimmer text-white font-heading font-black text-xs uppercase tracking-wider hover:shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
-                  >
-                    <PackageCheck className="h-4 w-4 text-amber-300" />
-                    <span>Xác Nhận Đặt Hàng (COD)</span>
-                  </button>
+              {/* PRICE BREAKDOWN */}
+              <div className="space-y-2.5 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs">
+                <div className="flex justify-between text-slate-500">
+                  <span>Tạm tính linh kiện:</span>
+                  <span className="font-mono font-bold text-slate-900 dark:text-white">{formatCurrency(subtotal)}</span>
                 </div>
-              )}
 
-              {/* BANK TRANSFER (NO QR CODE - DIRECT TEXT INFO ONLY) */}
-              {paymentMethod === 'BANK_TRANSFER' && (
-                <div className="space-y-4">
-                  <div className="p-4 rounded-2xl bg-sky-50 dark:bg-sky-950/50 border border-sky-200 dark:border-sky-800 text-xs space-y-1">
-                    <span className="font-black uppercase text-[#0284c7] block">
-                      THÔNG TIN TÀI KHOẢN NGÂN HÀNG DRX HARDWARE
-                    </span>
-                    <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
-                      Quý khách vui lòng chuyển khoản theo thông tin dưới đây bằng ứng dụng ngân hàng của bạn.
-                    </p>
+                {discountAmount > 0 && (
+                  <div className="flex justify-between text-emerald-600 font-bold">
+                    <span>Giảm giá khuyến mãi:</span>
+                    <span className="font-mono">-{formatCurrency(discountAmount)}</span>
                   </div>
-
-                  {/* Text Details with 1-Click Copy */}
-                  <div className="space-y-2.5 text-xs">
-                    <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
-                      <span className="text-slate-500">Ngân Hàng:</span>
-                      <span className="font-black text-slate-900 dark:text-white">MB BANK (Ngân Hàng Quân Đội)</span>
-                    </div>
-
-                    <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
-                      <span className="text-slate-500">Số Tài Khoản:</span>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono font-black text-[#0284c7] text-sm">0399224729</span>
-                        <button
-                          type="button"
-                          onClick={() => copyToClipboard('0399224729', 'Số tài khoản')}
-                          className="p-1.5 rounded-lg bg-white dark:bg-slate-800 hover:bg-sky-100 text-[#0284c7] border border-slate-200 dark:border-slate-700 cursor-pointer"
-                          title="Sao chép số tài khoản"
-                        >
-                          <Copy className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
-                      <span className="text-slate-500">Chủ Tài Khoản:</span>
-                      <span className="font-black text-slate-900 dark:text-white uppercase">VO BAO LAN</span>
-                    </div>
-
-                    <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
-                      <span className="text-slate-500">Số Tiền:</span>
-                      <div className="flex items-center gap-2">
-                        <span className="font-black text-amber-600 dark:text-amber-400">{formatCurrency(netAmount)}</span>
-                        <button
-                          type="button"
-                          onClick={() => copyToClipboard(String(netAmount), 'Số tiền')}
-                          className="p-1.5 rounded-lg bg-white dark:bg-slate-800 hover:bg-sky-100 text-[#0284c7] border border-slate-200 dark:border-slate-700 cursor-pointer"
-                          title="Sao chép số tiền"
-                        >
-                          <Copy className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="p-3.5 rounded-xl bg-gradient-to-r from-sky-50 to-blue-50 dark:from-sky-950/60 dark:to-slate-900 border border-sky-200 dark:border-sky-800 flex items-center justify-between gap-3">
-                      <div>
-                        <div className="flex items-center gap-1.5 mb-1">
-                          <span className="text-[10px] font-black text-[#0284c7] uppercase tracking-wider">Cú Pháp Chuyển Khoản</span>
-                        </div>
-                        <span className="text-sm font-black text-slate-900 dark:text-white font-mono tracking-wider">
-                          {transferMemo}
-                        </span>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => copyToClipboard(transferMemo, 'Nội dung chuyển khoản')}
-                        className="px-3.5 py-2 rounded-xl bg-[#0284c7] hover:bg-sky-700 text-white text-xs font-black transition-all shadow-xs flex items-center gap-1.5 cursor-pointer shrink-0 active:scale-95"
-                      >
-                        <Copy className="h-3.5 w-3.5" />
-                        <span>{copiedField === 'Nội dung chuyển khoản' ? 'Đã sao chép' : 'Sao chép'}</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleProcessPayment}
-                    disabled={isProcessing}
-                    className="w-full mt-4 py-4 rounded-2xl uiverse-btn-shimmer text-white font-heading font-black text-xs uppercase tracking-wider hover:shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
-                  >
-                    <Zap className="h-4 w-4 text-amber-300 fill-amber-300 animate-bounce" />
-                    <span>Tôi Đã Chuyển Khoản Xong</span>
-                  </button>
-                </div>
-              )}
-
-              {/* HD SAISON Mode Details */}
-              {paymentMethod === 'HD_SAISON' && (
-                <div className="space-y-4 py-2">
-                  <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 text-xs space-y-1.5">
-                    <span className="font-black uppercase text-amber-800 dark:text-amber-300 block">
-                      TÓM TẮT HỢP ĐỒNG TRẢ GÓP HD SAISON
-                    </span>
-                    <p className="text-[11px] text-slate-600 dark:text-slate-400">
-                      Tiền trả trước: <strong className="text-amber-600">{formatCurrency(downPaymentAmount)}</strong> ({downPaymentPercent}%)
-                    </p>
-                    <p className="text-[11px] text-slate-600 dark:text-slate-400">
-                      Số tiền trả góp mỗi tháng: <strong className="text-emerald-600">{formatCurrency(monthlyPaymentAmount)}/tháng</strong> (Kỳ hạn {installmentTerm}T)
-                    </p>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleProcessPayment}
-                    disabled={isProcessing}
-                    className="w-full py-4 rounded-2xl uiverse-btn-shimmer text-white font-heading font-black text-xs uppercase tracking-wider hover:shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
-                  >
-                    <Calculator className="h-4 w-4 text-amber-300" />
-                    <span>Xác Nhận Đăng Ký Trả Góp HD SAISON</span>
-                  </button>
-                </div>
-              )}
-
-              {/* Order Success Overlay */}
-              <AnimatePresence>
-                {isSuccess && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    className="absolute inset-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-6 flex flex-col items-center justify-center text-center z-30"
-                  >
-                    <div className="h-16 w-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-4 shadow-lg">
-                      <CheckCircle2 className="h-10 w-10" />
-                    </div>
-                    <h3 className="text-lg font-black text-slate-900 dark:text-white uppercase">ĐẶT HÀNG THÀNH CÔNG!</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xs leading-relaxed">
-                      Đơn hàng <strong className="text-[#0284c7]">{orderCode}</strong> đã được ghi nhận hoàn tất. Kỹ thuật viên DRX Hardware sẽ liên hệ đóng gói và bàn giao linh kiện sớm nhất!
-                    </p>
-
-                    <div className="mt-6 flex items-center gap-3 w-full max-w-xs">
-                      <Link
-                        href="/profile?tab=orders"
-                        className="flex-1 py-3 rounded-2xl bg-[#0284c7] text-white text-xs font-bold hover:bg-sky-700 transition-colors text-center shadow-sm"
-                      >
-                        Đơn Hàng Của Tôi
-                      </Link>
-                      <Link
-                        href="/"
-                        className="flex-1 py-3 rounded-2xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-center"
-                      >
-                        Về Trang Chủ
-                      </Link>
-                    </div>
-                  </motion.div>
                 )}
-              </AnimatePresence>
 
+                <div className="flex justify-between text-slate-500">
+                  <span>Phí vận chuyển:</span>
+                  <span className="text-emerald-600 font-bold">Miễn Phí</span>
+                </div>
+
+                <div className="flex justify-between text-slate-500">
+                  <span>Phương thức:</span>
+                  <span className="font-bold text-amber-600">COD (Thu tiền tận nơi)</span>
+                </div>
+
+                <div className="flex justify-between pt-3 border-t border-slate-200 dark:border-slate-700 text-sm sm:text-base font-black">
+                  <span className="text-slate-900 dark:text-white">Tổng cộng:</span>
+                  <span className="text-rose-600 dark:text-rose-400 font-mono">{formatCurrency(netAmount)}</span>
+                </div>
+              </div>
+
+              {/* TRUST BADGE */}
+              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 space-y-1 text-[11px] text-slate-500">
+                <div className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-300">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>Bảo hành 36 Tháng chính hãng</span>
+                </div>
+                <p className="text-[10px] text-slate-400">Được quyền kiểm tra hàng, đối chiếu mã Serial trước khi thanh toán tiền mặt.</p>
+              </div>
             </div>
           </div>
+
         </div>
+
       </main>
 
       <Footer />
