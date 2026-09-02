@@ -297,19 +297,21 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                   onChange={(e) => setCategory(e.target.value)}
                   className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs font-extrabold text-slate-900 dark:text-slate-100 focus:border-[#0284c7] outline-none"
                 >
-                  <option value="VGA">Card Màn Hình VGA</option>
-                  <option value="CPU">Bộ Vi Xử Lý CPU</option>
-                  <option value="MAINBOARD">Bo Mạch Chủ Mainboard</option>
-                  <option value="RAM">Bộ Nhớ RAM</option>
-                  <option value="STORAGE">Ổ Cứng SSD / HDD</option>
-                  <option value="PSU">Nguồn Máy Tính PSU</option>
+                  <option value="CPU">Bộ Vi Xử Lý (CPU)</option>
+                  <option value="VGA">Card Màn Hình (VGA)</option>
+                  <option value="MAINBOARD">Bo Mạch Chủ (Mainboard)</option>
+                  <option value="RAM">Bộ Nhớ Trong (RAM)</option>
+                  <option value="STORAGE">Ổ Cứng Lưu Trữ (SSD / HDD)</option>
+                  <option value="PSU">Nguồn Máy Tính (PSU)</option>
                   <option value="CASE">Vỏ Case Máy Tính</option>
-                  <option value="COOLING">Tản Nhiệt Nước / Khí CPU</option>
-                  <option value="MONITOR">Màn Hình Máy Tính</option>
-                  <option value="GEAR">Gaming Gear (Phím, Chuột, Tai Nghe)</option>
+                  <option value="COOLING">Tản Nhiệt Nước / Khí (Cooling)</option>
+                  <option value="MONITOR">Màn Hình Máy Tính (Monitor)</option>
+                  <option value="KEYBOARD">Bàn Phím Cơ & Chuột (Keyboard & Mouse)</option>
+                  <option value="HEADSET">Tai Nghe Gaming (Headset)</option>
+                  <option value="GEAR">Gaming Gear Tổng Hợp</option>
                   <option value="LAPTOP">Laptop Văn Phòng</option>
-                  <option value="LAPTOP_GAMING">Laptop Gaming</option>
-                  <option value="PREBUILT_PC">PC Gắn Sẵn Đạt Chuẩn DRX</option>
+                  <option value="LAPTOP_GAMING">Laptop Gaming & Đồ Họa</option>
+                  <option value="PREBUILT_PC">PC Gắn Sẵn / PC Đồng Bộ DRX</option>
                 </select>
               </div>
 

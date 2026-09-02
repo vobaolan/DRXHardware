@@ -25,7 +25,11 @@ enum ComponentCategory {
   CASE         // Vỏ máy tính
   COOLING      // Tản nhiệt
   MONITOR      // Màn hình
-  GEAR         // Bàn phím, Chuột, Tai nghe
+  GEAR         // Gaming gear tổng hợp
+  KEYBOARD     // Bàn phím cơ & Chuột
+  HEADSET      // Tai nghe gaming & Âm thanh
+  LAPTOP       // Laptop văn phòng & Mỏng nhẹ
+  LAPTOP_GAMING // Laptop gaming & Đồ họa
   PREBUILT_PC  // PC Gắn sẵn / PC Đồng bộ
 }
 

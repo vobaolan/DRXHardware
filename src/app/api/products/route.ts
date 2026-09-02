@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 import { supabase } from '@/lib/supabase';
 import { INITIAL_PRODUCTS } from '@/lib/hardware-data';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: Request) {
   const headers = {
     'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
     'Pragma': 'no-cache',
@@ -13,26 +14,30 @@ export async function GET() {
   };
 
   try {
-    const resolveDeliveryMethod = (p: any) => {
-      if (p.deliveryMethod && p.deliveryMethod !== 'AUTO_KEY') {
-        return p.deliveryMethod;
-      }
-      return 'GIFT';
-    };
+    const url = new URL(request.url);
+    const categoryFilter = url.searchParams.get('category')?.toUpperCase();
 
-    // Primary fetch from Supabase
-    let supabaseProducts: any[] | null = null;
+    // 1. Primary fetch from Prisma PostgreSQL
+    let dbProducts: any[] = [];
     try {
-      const { data, error } = await supabase
-        .from('Product')
-        .select('*')
-        .order('createdAt', { ascending: false });
-        
-      if (!error && data && data.length > 0) {
-        supabaseProducts = data;
-      }
+      dbProducts = await prisma.product.findMany({
+        orderBy: { createdAt: 'desc' },
+      });
     } catch (e) {
-      console.warn('Supabase fetch notice, falling back to hardware catalog data');
+      console.warn('Prisma fetch notice, trying Supabase fallback:', e);
+    }
+
+    // 2. Fallback to Supabase client if Prisma had no records
+    if (!dbProducts || dbProducts.length === 0) {
+      try {
+        const { data } = await supabase
+          .from('Product')
+          .select('*')
+          .order('createdAt', { ascending: false });
+        if (data && data.length > 0) {
+          dbProducts = data;
+        }
+      } catch (e) {}
     }
 
     // Merge database products over INITIAL_PRODUCTS catalog
@@ -45,8 +50,8 @@ export async function GET() {
       screenshots: p.screenshots || [p.coverImage]
     }));
 
-    if (supabaseProducts && Array.isArray(supabaseProducts)) {
-      supabaseProducts.forEach((sp: any) => {
+    if (dbProducts && Array.isArray(dbProducts) && dbProducts.length > 0) {
+      dbProducts.forEach((sp: any) => {
         const idx = combined.findIndex(
           (cp) => cp.id === sp.id || cp.slug === sp.slug || cp.name.toLowerCase() === (sp.name || '').toLowerCase()
         );
@@ -65,7 +70,7 @@ export async function GET() {
       });
     }
 
-    const formattedProducts = combined.map((p: any) => {
+    let formattedProducts = combined.map((p: any) => {
       const price = typeof p.price === 'string' ? parseFloat(p.price) : Number(p.price);
       const discountPrice = p.discountPrice
         ? (typeof p.discountPrice === 'string' ? parseFloat(p.discountPrice) : Number(p.discountPrice))
@@ -93,42 +98,44 @@ export async function GET() {
         brand,
         platform: p.platform || brand || 'PC',
         type: category,
-        deliveryMethod: resolveDeliveryMethod(p),
+        deliveryMethod: 'SHIP',
         mediaOrder: p.mediaOrder || 'image_first',
         status: p.status !== false,
         isFlashDeal: Boolean(p.isFlashDeal),
         flashSaleEnd: p.flashSaleEnd ? new Date(p.flashSaleEnd).toISOString() : null,
-        isFeaturedDeal: Boolean(p.isFeaturedDeal || p.isFeatured),
-        tags: p.tags || [],
-        screenshots,
+        stockQuantity: p.stockQuantity !== undefined ? Number(p.stockQuantity) : 15,
+        warrantyMonths: p.warrantyMonths ? Number(p.warrantyMonths) : 36,
         specs,
-        warrantyMonths: p.warrantyMonths || 36
+        screenshots,
+        socket: p.socket,
+        ramType: p.ramType,
+        wattage: p.wattage,
+        formFactor: p.formFactor,
+        createdAt: p.createdAt ? new Date(p.createdAt).toISOString() : new Date().toISOString(),
+        updatedAt: p.updatedAt ? new Date(p.updatedAt).toISOString() : new Date().toISOString(),
       };
     });
 
-    return NextResponse.json({ products: formattedProducts }, { status: 200, headers });
+    // Optional category filtering
+    if (categoryFilter && categoryFilter !== 'ALL') {
+      formattedProducts = formattedProducts.filter(p => {
+        const cats = Array.isArray(p.category) ? p.category.map(c => String(c).toUpperCase()) : [String(p.category).toUpperCase()];
+        if (categoryFilter === 'CORE_PARTS') {
+          return cats.some(c => ['CORE_PARTS', 'CPU', 'VGA', 'MAINBOARD', 'RAM'].includes(c));
+        }
+        if (categoryFilter === 'CASE_COOLING') {
+          return cats.some(c => ['CASE', 'PSU', 'COOLING', 'CASE_COOLING'].includes(c));
+        }
+        if (categoryFilter === 'GEAR') {
+          return cats.some(c => ['GEAR', 'KEYBOARD', 'HEADSET', 'MOUSE'].includes(c));
+        }
+        return cats.includes(categoryFilter);
+      });
+    }
 
+    return NextResponse.json({ products: formattedProducts }, { status: 200, headers });
   } catch (error: any) {
-    console.error('Lỗi khi tải danh sách sản phẩm:', error);
-    // Even on error, return INITIAL_PRODUCTS so products ALWAYS show!
-    const fallbackProducts = INITIAL_PRODUCTS.map(p => ({
-      id: p.id,
-      name: p.name,
-      slug: p.slug,
-      description: p.description,
-      price: p.price,
-      discountPrice: p.discountPrice || null,
-      coverImage: p.coverImage,
-      category: p.category,
-      brand: p.brand,
-      platform: p.brand,
-      type: p.category,
-      deliveryMethod: 'GIFT',
-      status: true,
-      screenshots: [p.coverImage],
-      specs: p.specs,
-      warrantyMonths: p.warrantyMonths
-    }));
-    return NextResponse.json({ products: fallbackProducts }, { status: 200, headers });
+    console.error('Lỗi khi lấy danh sách linh kiện sản phẩm:', error);
+    return NextResponse.json({ products: INITIAL_PRODUCTS }, { status: 200, headers });
   }
 }

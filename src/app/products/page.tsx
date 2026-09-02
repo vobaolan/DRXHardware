@@ -23,18 +23,6 @@ const CATEGORY_DEFINITIONS: Record<string, { title: string; iconName: string }> 
     title: 'Tất Cả Sản Phẩm & Linh Kiện',
     iconName: 'Grid',
   },
-  LAPTOP: {
-    title: 'Laptop - Học Tập và Làm Việc',
-    iconName: 'IconLaptop',
-  },
-  LAPTOP_GAMING: {
-    title: 'Laptop Gaming & Đồ Họa',
-    iconName: 'IconLaptopGaming',
-  },
-  CORE_PARTS: {
-    title: 'Linh Kiện Core - CPU, Main, VGA & RAM',
-    iconName: 'IconCpu',
-  },
   CPU: {
     title: 'Bộ Vi Xử Lý (CPU)',
     iconName: 'IconCpu',
@@ -55,8 +43,16 @@ const CATEGORY_DEFINITIONS: Record<string, { title: string; iconName: string }> 
     title: 'Ổ Cứng Lưu Trữ (SSD / HDD)',
     iconName: 'IconStorage',
   },
-  CASE_COOLING: {
-    title: 'Vỏ Case, Nguồn Máy Tính & Tản Nhiệt',
+  PSU: {
+    title: 'Nguồn Máy Tính (PSU)',
+    iconName: 'IconCase',
+  },
+  CASE: {
+    title: 'Vỏ Case Máy Tính',
+    iconName: 'IconCase',
+  },
+  COOLING: {
+    title: 'Tản Nhiệt Nước / Khí CPU',
     iconName: 'IconCase',
   },
   MONITOR: {
@@ -71,7 +67,50 @@ const CATEGORY_DEFINITIONS: Record<string, { title: string; iconName: string }> 
     title: 'Tai Nghe Gaming & Âm Thanh',
     iconName: 'IconHeadset',
   },
+  GEAR: {
+    title: 'Gaming Gear Tổng Hợp',
+    iconName: 'IconKeyboard',
+  },
+  LAPTOP: {
+    title: 'Laptop - Học Tập và Làm Việc',
+    iconName: 'IconLaptop',
+  },
+  LAPTOP_GAMING: {
+    title: 'Laptop Gaming & Đồ Họa',
+    iconName: 'IconLaptopGaming',
+  },
+  PREBUILT_PC: {
+    title: 'PC Gắn Sẵn / PC Đồng Bộ DRX',
+    iconName: 'IconCpu',
+  },
+  CORE_PARTS: {
+    title: 'Linh Kiện Core - CPU, Main, VGA & RAM',
+    iconName: 'IconCpu',
+  },
+  CASE_COOLING: {
+    title: 'Vỏ Case, Nguồn Máy Tính & Tản Nhiệt',
+    iconName: 'IconCase',
+  },
 };
+
+const ALL_CATEGORIES_NAV = [
+  { id: 'ALL', name: 'Tất Cả', icon: 'Grid' },
+  { id: 'CPU', name: 'CPU Vi Xử Lý', icon: 'IconCpu' },
+  { id: 'VGA', name: 'Card Màn Hình (VGA)', icon: 'IconVga' },
+  { id: 'MAINBOARD', name: 'Mainboard', icon: 'IconMainboard' },
+  { id: 'RAM', name: 'RAM', icon: 'IconRam' },
+  { id: 'STORAGE', name: 'Ổ Cứng SSD/HDD', icon: 'IconStorage' },
+  { id: 'PSU', name: 'Nguồn (PSU)', icon: 'IconCase' },
+  { id: 'CASE', name: 'Vỏ Case PC', icon: 'IconCase' },
+  { id: 'COOLING', name: 'Tản Nhiệt', icon: 'IconCase' },
+  { id: 'MONITOR', name: 'Màn Hình', icon: 'IconMonitor' },
+  { id: 'KEYBOARD', name: 'Bàn Phím', icon: 'IconKeyboard' },
+  { id: 'HEADSET', name: 'Tai Nghe', icon: 'IconHeadset' },
+  { id: 'GEAR', name: 'Gaming Gear', icon: 'IconKeyboard' },
+  { id: 'LAPTOP', name: 'Laptop', icon: 'IconLaptop' },
+  { id: 'LAPTOP_GAMING', name: 'Laptop Gaming', icon: 'IconLaptopGaming' },
+  { id: 'PREBUILT_PC', name: 'PC Lắp Sẵn', icon: 'IconCpu' },
+];
 
 const PRICE_PRESETS = [
   { id: 'ALL', label: 'Tất Cả Mức Giá' },
@@ -357,11 +396,15 @@ function ProductsCatalogContent() {
           : [String(p.category).toUpperCase()];
 
         if (upperCat === 'CORE_PARTS') {
-          return pCats.some((c) => ['CORE_PARTS', 'CPU', 'VGA', 'MAINBOARD', 'RAM', 'PSU'].includes(c));
+          return pCats.some((c) => ['CORE_PARTS', 'CPU', 'VGA', 'MAINBOARD', 'RAM'].includes(c));
         }
 
         if (upperCat === 'CASE_COOLING') {
           return pCats.some((c) => ['CASE', 'PSU', 'COOLING', 'CASE_COOLING'].includes(c));
+        }
+
+        if (upperCat === 'GEAR') {
+          return pCats.some((c) => ['GEAR', 'KEYBOARD', 'HEADSET', 'MOUSE'].includes(c));
         }
 
         return pCats.some((c) => c === upperCat);
@@ -571,6 +614,32 @@ function ProductsCatalogContent() {
                 <option value="PRICE_DESC">Giá Giảm Dần</option>
               </select>
             </div>
+          </div>
+        </div>
+
+        {/* ─── CATEGORY QUICK-SWITCH HORIZONTAL PILLS ─── */}
+        <div className="mb-6 overflow-x-auto no-scrollbar pb-1">
+          <div className="flex items-center gap-2 min-w-max">
+            {ALL_CATEGORIES_NAV.map((cat) => {
+              const isSelected = selectedCategory.toUpperCase() === cat.id.toUpperCase();
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => {
+                    setSelectedCategory(cat.id);
+                    router.push(cat.id === 'ALL' ? '/products' : `/products?category=${cat.id}`, { scroll: false });
+                  }}
+                  className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 border ${
+                    isSelected
+                      ? 'bg-gradient-to-r from-[#0284c7] to-[#38bdf8] text-white border-transparent shadow-sm shadow-sky-500/25 scale-[1.02]'
+                      : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-[#0284c7]/50 hover:bg-slate-50 dark:hover:bg-slate-800/80'
+                  }`}
+                >
+                  <CategoryIcon name={cat.icon} className={`w-3.5 h-3.5 ${isSelected ? 'text-white' : 'text-[#0284c7]'}`} />
+                  <span>{cat.name}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
 

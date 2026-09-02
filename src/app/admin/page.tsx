@@ -27,7 +27,11 @@ const CATEGORY_NAMES: Record<string, string> = {
   CASE: 'Vỏ Máy Tính (Case)',
   COOLING: 'Tản Nhiệt (Cooling)',
   MONITOR: 'Màn Hình (Monitor)',
-  GEAR: 'Gaming Gear',
+  KEYBOARD: 'Bàn Phím Cơ & Chuột',
+  HEADSET: 'Tai Nghe Gaming',
+  GEAR: 'Gaming Gear Tổng Hợp',
+  LAPTOP: 'Laptop Văn Phòng',
+  LAPTOP_GAMING: 'Laptop Gaming & Đồ Họa',
   PREBUILT_PC: 'PC Lắp Sẵn DRX',
 };
 

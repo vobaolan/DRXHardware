@@ -303,18 +303,34 @@ export default function Home() {
           matchesPlatform = (plat.includes('LAPTOP') || cat.includes('LAPTOP') || name.includes('LAPTOP')) && !name.includes('GAMING');
         } else if (selectedPlatform === 'LAPTOP_GAMING') {
           matchesPlatform = plat.includes('GAMING') || cat.includes('GAMING') || name.includes('GAMING') || name.includes('ROG') || name.includes('LEGION');
-        } else if (selectedPlatform === 'CORE_PARTS') {
-          matchesPlatform = ['CPU', 'VGA', 'MAINBOARD', 'RAM'].some(k => plat.includes(k) || cat.includes(k)) || ['CPU', 'VGA', 'RTX', 'RYZEN', 'MAINBOARD', 'DDR'].some(k => name.includes(k));
-        } else if (selectedPlatform === 'CASE_COOLING') {
-          matchesPlatform = ['CASE', 'PSU', 'COOLING', 'NGUỒN', 'TẢN'].some(k => plat.includes(k) || cat.includes(k) || name.includes(k));
-        } else if (selectedPlatform === 'HEADSET') {
-          matchesPlatform = ['HEADSET', 'AUDIO', 'HEADPHONE', 'TAI NGHE'].some(k => plat.includes(k) || cat.includes(k) || name.includes(k));
+        } else if (selectedPlatform === 'CPU') {
+          matchesPlatform = ['CPU', 'VI XỬ LÝ', 'INTEL CORE', 'RYZEN'].some(k => plat.includes(k) || cat.includes(k) || name.includes(k));
+        } else if (selectedPlatform === 'VGA') {
+          matchesPlatform = ['VGA', 'CARD MÀN HÌNH', 'GEFORCE', 'RTX', 'RADEON'].some(k => plat.includes(k) || cat.includes(k) || name.includes(k));
+        } else if (selectedPlatform === 'MAINBOARD') {
+          matchesPlatform = ['MAIN', 'BO MẠCH', 'MOTHERBOARD', 'B760', 'Z790', 'B650'].some(k => plat.includes(k) || cat.includes(k) || name.includes(k));
+        } else if (selectedPlatform === 'RAM') {
+          matchesPlatform = ['RAM', 'BỘ NHỚ', 'DDR4', 'DDR5'].some(k => plat.includes(k) || cat.includes(k) || name.includes(k));
+        } else if (selectedPlatform === 'STORAGE') {
+          matchesPlatform = ['STORAGE', 'SSD', 'HDD', 'CỨNG', 'NVME'].some(k => plat.includes(k) || cat.includes(k) || name.includes(k));
+        } else if (selectedPlatform === 'PSU') {
+          matchesPlatform = ['PSU', 'NGUỒN', 'POWER SUPPLY', '80 PLUS'].some(k => plat.includes(k) || cat.includes(k) || name.includes(k));
+        } else if (selectedPlatform === 'CASE') {
+          matchesPlatform = ['CASE', 'VỎ MÁY', 'VỎ CASE'].some(k => plat.includes(k) || cat.includes(k) || name.includes(k));
+        } else if (selectedPlatform === 'COOLING') {
+          matchesPlatform = ['COOLING', 'TẢN NHIỆT', 'AIO', 'FAN'].some(k => plat.includes(k) || cat.includes(k) || name.includes(k));
         } else if (selectedPlatform === 'MONITOR') {
           matchesPlatform = ['MONITOR', 'SCREEN', 'MÀN HÌNH'].some(k => plat.includes(k) || cat.includes(k) || name.includes(k));
         } else if (selectedPlatform === 'KEYBOARD') {
           matchesPlatform = ['KEYBOARD', 'BÀN PHÍM', 'KEYCAP'].some(k => plat.includes(k) || cat.includes(k) || name.includes(k));
-        } else if (selectedPlatform === 'STORAGE') {
-          matchesPlatform = ['STORAGE', 'SSD', 'HDD', 'CỨNG'].some(k => plat.includes(k) || cat.includes(k) || name.includes(k));
+        } else if (selectedPlatform === 'HEADSET') {
+          matchesPlatform = ['HEADSET', 'AUDIO', 'HEADPHONE', 'TAI NGHE'].some(k => plat.includes(k) || cat.includes(k) || name.includes(k));
+        } else if (selectedPlatform === 'PREBUILT_PC') {
+          matchesPlatform = ['PREBUILT', 'PC GẮN SẴN', 'ĐỒNG BỘ'].some(k => plat.includes(k) || cat.includes(k) || name.includes(k));
+        } else if (selectedPlatform === 'CORE_PARTS') {
+          matchesPlatform = ['CPU', 'VGA', 'MAINBOARD', 'RAM'].some(k => plat.includes(k) || cat.includes(k)) || ['CPU', 'VGA', 'RTX', 'RYZEN', 'MAINBOARD', 'DDR'].some(k => name.includes(k));
+        } else if (selectedPlatform === 'CASE_COOLING') {
+          matchesPlatform = ['CASE', 'PSU', 'COOLING', 'NGUỒN', 'TẢN'].some(k => plat.includes(k) || cat.includes(k) || name.includes(k));
         } else {
           matchesPlatform = product.platform === selectedPlatform || product.category === selectedPlatform;
         }
