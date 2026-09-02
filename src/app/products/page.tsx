@@ -189,18 +189,10 @@ function ProductsCatalogContent() {
     }
   }, [searchParams]);
 
-  // Load products from database & local admin cache
+  // Load products directly from Supabase PostgreSQL Database API
   useEffect(() => {
     const loadProducts = () => {
       setIsLoading(true);
-      let localProds: any[] = [];
-      try {
-        const storedCustom = localStorage.getItem('ods_custom_products');
-        if (storedCustom) {
-          const parsed = JSON.parse(storedCustom);
-          if (Array.isArray(parsed)) localProds.push(...parsed);
-        }
-      } catch (e) {}
 
       fetch(`/api/products?t=${Date.now()}`, { cache: 'no-store' })
         .then((res) => res.json())
@@ -208,7 +200,7 @@ function ProductsCatalogContent() {
           const apiProds = data.products && Array.isArray(data.products) ? data.products : [];
           setLiveProducts(apiProds);
         })
-        .catch((err) => console.error('Lỗi khi tải sản phẩm:', err))
+        .catch((err) => console.error('Lỗi khi tải sản phẩm từ database:', err))
         .finally(() => setIsLoading(false));
     };
 

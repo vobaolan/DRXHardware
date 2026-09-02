@@ -244,23 +244,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const applyCoupon = async (code: string): Promise<boolean> => {
     const cleanedCode = code.toUpperCase().trim();
 
-    // Read active coupons from localStorage (or fallback defaults on first run)
-    let couponsList: any[] = [];
-    try {
-      const stored = localStorage.getItem('ods_admin_coupons');
-      if (stored) {
-        couponsList = JSON.parse(stored);
-      } else {
-        couponsList = [
-          { id: 'cp-1', code: 'DRXHARDWARE', discountType: 'PERCENT', discountValue: 20, usageLimit: 999, usedCount: 12, status: 'ACTIVE' },
-          { id: 'cp-2', code: 'DRX100K', discountType: 'FIXED', discountValue: 100000, usageLimit: 500, usedCount: 8, status: 'ACTIVE' },
-          { id: 'cp-3', code: 'DRXSTORE', discountType: 'PERCENT', discountValue: 20, usageLimit: 999, usedCount: 12, status: 'ACTIVE' },
-        ];
-        localStorage.setItem('ods_admin_coupons', JSON.stringify(couponsList));
-      }
-    } catch (e) {
-      console.error('Failed to read admin coupons in CartContext:', e);
-    }
+    const couponsList = [
+      { id: 'cp-1', code: 'DRXHARDWARE', discountType: 'PERCENT', discountValue: 20, usageLimit: 999, usedCount: 12, status: 'ACTIVE' },
+      { id: 'cp-2', code: 'DRX100K', discountType: 'FIXED', discountValue: 100000, usageLimit: 500, usedCount: 8, status: 'ACTIVE' },
+      { id: 'cp-3', code: 'DRXSTORE', discountType: 'PERCENT', discountValue: 20, usageLimit: 999, usedCount: 12, status: 'ACTIVE' },
+    ];
 
     // Strictly match code against live admin coupons list
     const found = couponsList.find(

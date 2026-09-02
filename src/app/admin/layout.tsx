@@ -21,15 +21,6 @@ export default function AdminLayout({
       try {
         const { getStoredSessionUser, verifyCurrentSession } = await import('@/lib/auth-client');
         let user = getStoredSessionUser();
-        if (!user) {
-          const stored = localStorage.getItem('ods_user');
-          if (stored) {
-            try {
-              user = JSON.parse(stored);
-            } catch (e) {}
-          }
-        }
-
         if (user) {
           setCurrentUser(user);
         }

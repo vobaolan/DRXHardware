@@ -46,16 +46,6 @@ export const ProductCard: React.FC<{ product: ProductProps }> = ({ product }) =>
     e.preventDefault();
     e.stopPropagation();
 
-    let isLoggedIn = false;
-    try {
-      isLoggedIn = !!localStorage.getItem('ods_user');
-    } catch (err) {}
-
-    if (!isLoggedIn) {
-      router.push('/profile');
-      return;
-    }
-
     addToCart({
       id: product.id,
       productId: product.id,
@@ -66,6 +56,7 @@ export const ProductCard: React.FC<{ product: ProductProps }> = ({ product }) =>
       coverImage: product.coverImage,
       platform: product.platform,
     });
+    setCartOpen(true);
   };
 
   return (

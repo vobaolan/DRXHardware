@@ -53,95 +53,32 @@ export default function Home() {
     }));
   }, []);
 
-  // Fetch live products from database API & local admin cache
+  // Fetch live products directly from Supabase PostgreSQL Database API
   useEffect(() => {
     const fetchHomeProducts = () => {
       setIsLoading(true);
-      let localProds: any[] = [];
-      let deletedKeys: string[] = [];
-
-      try {
-        const storedDeleted = localStorage.getItem('ods_deleted_product_ids');
-        if (storedDeleted) deletedKeys = JSON.parse(storedDeleted);
-      } catch (e) {}
-
-      const isDeletedOrObsolete = (p: any) => {
-        if (!p) return true;
-        const pid = String(p.id || '').toLowerCase();
-        const pslug = String(p.slug || '').toLowerCase();
-        const pname = String(p.name || p.title || '').toLowerCase();
-
-        if (
-          pname.includes('netflix') ||
-          pslug.includes('netflix') ||
-          pname.includes('rust') ||
-          pslug.includes('rust') ||
-          pname.includes('stardew') ||
-          pslug.includes('stardew') ||
-          pname.includes('wukong') ||
-          pslug.includes('wukong')
-        ) {
-          return true;
-        }
-
-        return deletedKeys.some((dk) => {
-          const k = String(dk).toLowerCase();
-          return (
-            pid === k ||
-            pslug === k ||
-            pname === k ||
-            (pslug.length > 3 && k.includes(pslug)) ||
-            (k.length > 3 && pslug.includes(k))
-          );
-        });
-      };
-
-      try {
-        const storedCustom = localStorage.getItem('ods_custom_products');
-        if (storedCustom) {
-          const parsed = JSON.parse(storedCustom);
-          if (Array.isArray(parsed)) {
-            localProds.push(...parsed.filter((p) => !isDeletedOrObsolete(p)));
-          }
-        }
-
-        const storedAdmin = localStorage.getItem('ods_admin_products');
-        if (storedAdmin) {
-          const parsed = JSON.parse(storedAdmin);
-          if (Array.isArray(parsed)) {
-            parsed.filter((p) => !isDeletedOrObsolete(p)).forEach(ap => {
-              if (!localProds.some(lp => lp.id === ap.id)) {
-                localProds.push(ap);
-              }
-            });
-          }
-        }
-      } catch (e) {}
 
       fetch(`/api/products?t=${Date.now()}`, { cache: 'no-store' })
         .then((res) => res.json())
         .then((data) => {
           const apiProds = data.products && Array.isArray(data.products) 
-            ? data.products.filter((p: any) => !isDeletedOrObsolete(p)) 
+            ? data.products 
             : [];
           
           if (apiProds.length > 0) {
             setLiveProducts(apiProds);
           } else {
-            setLiveProducts(DEFAULT_HOME_PRODUCTS.filter((p) => !isDeletedOrObsolete(p)));
+            setLiveProducts(DEFAULT_HOME_PRODUCTS);
           }
         })
         .catch((err) => {
-          console.error('Lỗi khi tải sản phẩm:', err);
-          setLiveProducts(DEFAULT_HOME_PRODUCTS.filter((p) => !isDeletedOrObsolete(p)));
+          console.error('Lỗi khi tải sản phẩm từ database:', err);
+          setLiveProducts(DEFAULT_HOME_PRODUCTS);
         })
         .finally(() => setIsLoading(false));
     };
 
     fetchHomeProducts();
-
-    window.addEventListener('storage', fetchHomeProducts);
-    window.addEventListener('ods_products_updated', fetchHomeProducts);
 
     return () => {
       window.removeEventListener('storage', fetchHomeProducts);

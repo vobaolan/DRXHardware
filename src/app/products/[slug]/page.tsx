@@ -59,16 +59,21 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
   const [newComment, setNewComment] = useState('');
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
-  // Load Current Logged In User
+  // Load Current Logged In User from session
   useEffect(() => {
-    try {
-      const storedUser = localStorage.getItem('ods_user');
-      if (storedUser) {
-        setCurrentUser(JSON.parse(storedUser));
+    const checkUser = async () => {
+      try {
+        const { getStoredSessionUser, verifyCurrentSession } = await import('@/lib/auth-client');
+        let user = getStoredSessionUser();
+        if (!user) {
+          user = await verifyCurrentSession();
+        }
+        setCurrentUser(user);
+      } catch (e) {
+        setCurrentUser(null);
       }
-    } catch (e) {
-      setCurrentUser(null);
-    }
+    };
+    checkUser();
   }, []);
 
   // Fetch real product from database API
@@ -892,16 +897,6 @@ function AddToCartButton({ product, selectedVariant }: { product: any; selectedV
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
-
-        let isLoggedIn = false;
-        try {
-          isLoggedIn = !!localStorage.getItem('ods_user');
-        } catch (err) {}
-
-        if (!isLoggedIn) {
-          window.location.href = '/profile';
-          return;
-        }
 
         addToCart({
           id: finalId,

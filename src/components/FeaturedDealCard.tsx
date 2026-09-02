@@ -465,17 +465,6 @@ export const FeaturedDealCard: React.FC<FeaturedDealCardProps> = ({
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-
-                  let isLoggedIn = false;
-                  try {
-                    isLoggedIn = !!localStorage.getItem('ods_user');
-                  } catch (err) {}
-
-                  if (!isLoggedIn) {
-                    window.location.href = '/profile';
-                    return;
-                  }
-
                   if (onAddToCart) onAddToCart(activeProduct);
                 }}
                 className="relative group/btn inline-flex items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-[#00b2ff] via-[#00c8ff] to-blue-600 px-6 py-3.5 text-sm sm:text-base font-extrabold text-white shadow-[0_0_20px_rgba(0,178,255,0.4)] transition-all duration-300 hover:scale-105 hover:shadow-[0_0_35px_rgba(0,178,255,0.8)] active:scale-95 cursor-pointer border border-sky-300/40"
