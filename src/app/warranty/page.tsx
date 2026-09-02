@@ -191,40 +191,46 @@ export default function WarrantyPage() {
   const [searched, setSearched] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    const query = searchInput.trim().toUpperCase();
+    const query = searchInput.trim();
 
     if (!query) {
       showToast('Vui lòng nhập mã Serial Number (SN) linh kiện!', 'error');
       return;
     }
 
-    // Strictly prevent phone number lookup as requested
-    const isPhoneNumber = /^0\d{8,11}$/.test(query.replace(/\s+/g, ''));
-    if (isPhoneNumber) {
-      showToast('Hệ thống chỉ hỗ trợ tra cứu bằng Mã Serial Number (SN). Không dùng Số Điện Thoại.', 'error');
-      setSearchResults([]);
-      setSearched(true);
-      return;
-    }
-
     setSearched(true);
 
-    // 1. Direct match in local DB
-    if (VERIFIED_WARRANTY_DB[query]) {
-      setSearchResults([VERIFIED_WARRANTY_DB[query]]);
+    // 1. Fetch live warranty from backend API
+    try {
+      const res = await fetch(`/api/warranty?q=${encodeURIComponent(query)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.found && data.warranty) {
+          setSearchResults([data.warranty]);
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn('Lỗi kết nối API bảo hành:', err);
+    }
+
+    // 2. Direct match in local DB fallback
+    const upperQuery = query.toUpperCase();
+    if (VERIFIED_WARRANTY_DB[upperQuery]) {
+      setSearchResults([VERIFIED_WARRANTY_DB[upperQuery]]);
       return;
     }
 
-    // 2. Fuzzy match across all verified hardware serials
+    // 3. Fuzzy match across local verified hardware serials
     const matched: WarrantyItem[] = [];
     Object.keys(VERIFIED_WARRANTY_DB).forEach((key) => {
       const item = VERIFIED_WARRANTY_DB[key];
       if (
-        key.toUpperCase().includes(query) ||
-        item.serialNumber.toUpperCase().includes(query) ||
-        item.productName.toUpperCase().includes(query)
+        key.toUpperCase().includes(upperQuery) ||
+        item.serialNumber.toUpperCase().includes(upperQuery) ||
+        item.productName.toUpperCase().includes(upperQuery)
       ) {
         if (!matched.some(m => m.serialNumber === item.serialNumber)) {
           matched.push(item);

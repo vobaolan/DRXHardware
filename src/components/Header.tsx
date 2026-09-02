@@ -6,7 +6,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import { 
   ShoppingBag, User, Wallet, ShieldAlert, Package, Users, ChevronDown,
   Clock, Flame, Tag, Key, Bell, ClipboardList, MessageCircle, ShieldCheck,
-  Sun, Moon, Search, Grid, Receipt, Sparkles, Layers, Zap, Award, HelpCircle
+  Sun, Moon, Search, Grid, Receipt, Sparkles, Layers, Zap, Award, HelpCircle,
+  Wrench, LayoutDashboard
 } from 'lucide-react';
 import { 
   IconLaptop, IconLaptopGaming, IconCpu, IconCase, 
@@ -56,6 +57,7 @@ export const Header: React.FC = () => {
   const [customerChatOpen, setCustomerChatOpen] = useState(false);
 
   const isAdmin = currentUser?.email === 'admin@drx.vn' || currentUser?.email === 'admin@drxhardware.vn' || currentUser?.email === 'admin@odsstore.vn' || currentUser?.role === 'ADMIN';
+  const isStaff = isAdmin || currentUser?.role === 'STAFF' || currentUser?.role === 'WAREHOUSE' || currentUser?.role === 'MANAGER' || currentUser?.email?.includes('staff');
 
   // Load products for Header live search
   useEffect(() => {
@@ -420,6 +422,30 @@ export const Header: React.FC = () => {
               }
             />
           </div>
+
+          {/* STAFF QUICK ACCESS */}
+          {isStaff && (
+            <Link
+              href="/staff"
+              className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 text-[#0284c7] dark:text-sky-300 border border-sky-200 dark:border-sky-800 text-[11px] font-black uppercase tracking-wider transition-all shadow-xs"
+              title="Cổng Vận Hành Kho & Kỹ Thuật Staff"
+            >
+              <Wrench className="h-3.5 w-3.5" />
+              <span>Staff Kho</span>
+            </Link>
+          )}
+
+          {/* ADMIN CEO QUICK ACCESS */}
+          {isAdmin && (
+            <Link
+              href="/admin"
+              className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/60 hover:bg-purple-100 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-[11px] font-black uppercase tracking-wider transition-all shadow-xs"
+              title="DRX CEO Command Center"
+            >
+              <LayoutDashboard className="h-3.5 w-3.5" />
+              <span>CEO Admin</span>
+            </Link>
+          )}
 
           {/* STEP 5: ĐĂNG NHẬP / TÀI KHOẢN */}
           <Link

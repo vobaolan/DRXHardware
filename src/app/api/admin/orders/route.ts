@@ -27,6 +27,7 @@ export async function GET(request: Request) {
                 coverImage: true,
                 category: true,
                 brand: true,
+                warrantyMonths: true,
               }
             }
           }
@@ -37,7 +38,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ orders }, { status: 200 });
   } catch (error: any) {
-    console.error('Lỗi khi lấy lịch sử toàn bộ đơn hàng (Admin):', error);
+    console.error('Lỗi khi lấy lịch sử toàn bộ đơn hàng (Admin/Staff):', error);
     return NextResponse.json(
       { message: 'Lỗi máy chủ nội bộ. Vui lòng thử lại sau!', error: error.message },
       { status: 500 }
@@ -70,13 +71,68 @@ export async function PATCH(request: Request) {
       }
     });
 
+    // LOGICAL LIFECYCLE LINKING:
+    // If order is completed, activate serials for warranty
+    if (status === 'COMPLETED') {
+      const now = new Date();
+      
+      // Update any serials directly attached to this order
+      if (updatedOrder.serials && updatedOrder.serials.length > 0) {
+        for (const s of updatedOrder.serials) {
+          const months = s.warrantyEnd ? undefined : 36;
+          const warrantyEnd = months ? new Date(new Date().setMonth(now.getMonth() + months)) : undefined;
+
+          await prisma.productSerial.update({
+            where: { id: s.id },
+            data: {
+              status: 'SOLD',
+              soldDate: now,
+              ...(warrantyEnd ? { warrantyEnd } : {})
+            }
+          });
+        }
+      }
+
+      // If items have serial numbers in serialsList, mark or create them as SOLD
+      if (updatedOrder.orderItems && updatedOrder.orderItems.length > 0) {
+        for (const item of updatedOrder.orderItems) {
+          const months = item.product?.warrantyMonths || 36;
+          const warrantyEnd = new Date(new Date().setMonth(now.getMonth() + months));
+
+          if (item.serialsList && Array.isArray(item.serialsList)) {
+            for (const sn of item.serialsList) {
+              if (sn && typeof sn === 'string' && sn.trim().length > 3) {
+                await prisma.productSerial.upsert({
+                  where: { serialNumber: sn.trim() },
+                  update: {
+                    status: 'SOLD',
+                    soldDate: now,
+                    warrantyEnd,
+                    orderId: updatedOrder.id,
+                  },
+                  create: {
+                    serialNumber: sn.trim(),
+                    productId: item.productId,
+                    orderId: updatedOrder.id,
+                    status: 'SOLD',
+                    soldDate: now,
+                    warrantyEnd,
+                  }
+                });
+              }
+            }
+          }
+        }
+      }
+    }
+
     return NextResponse.json({ 
       success: true, 
-      message: `Đã cập nhật đơn hàng sang trạng thái ${status || paymentStatus}`,
+      message: `Đã cập nhật đơn hàng #${updatedOrder.orderCode || updatedOrder.id} sang trạng thái ${status || paymentStatus}`,
       order: updatedOrder 
     }, { status: 200 });
   } catch (error: any) {
-    console.error('Lỗi update đơn hàng (Admin):', error);
+    console.error('Lỗi update đơn hàng (Admin/Staff):', error);
     return NextResponse.json(
       { message: error.message || 'Lỗi xử lý cập nhật đơn hàng' },
       { status: 500 }
