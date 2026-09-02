@@ -88,7 +88,7 @@ export default function DiscountsPage() {
                 <span>SẢN PHẨM ĐANG KHUYẾN MÃI SÂU</span>
               </h1>
               <p className="text-xs text-ods-textMuted font-light mt-1">
-                Tổng hợp tất cả các deal game & gói tài khoản đang có chương trình giảm giá hot tại ODS Store.
+                Tổng hợp tất cả các deal linh kiện PC & thiết bị đang có chương trình giảm giá hot tại DRX Hardware.
               </p>
             </div>
 

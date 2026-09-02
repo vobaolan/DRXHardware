@@ -168,7 +168,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
     }
     setIsSubmittingReview(true);
 
-    const authorName = currentUser?.name || 'Khách hàng ODS';
+    const authorName = currentUser?.name || 'Khách Hàng DRX';
 
     const revObj = {
       id: `rev-${Date.now()}`,
@@ -750,7 +750,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
                       <div>
                         <span className="text-[10px] text-ods-textMuted uppercase font-bold tracking-wider block">Đánh giá dưới tên tài khoản:</span>
                         <span className="text-xs font-extrabold text-black flex items-center gap-1.5">
-                          {currentUser?.name || 'Khách hàng ODS'}
+                          {currentUser?.name || 'Khách Hàng DRX'}
                           <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
                             <Award className="h-2.5 w-2.5" /> Thành viên chính thức
                           </span>
@@ -834,7 +834,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
                                   <div className="flex items-center gap-2">
                                     <span className="font-bold text-xs text-black">{rev.author}</span>
                                     <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
-                                      <CheckCircle2 className="h-2.5 w-2.5" /> Đã mua hàng tại ODS
+                                      <CheckCircle2 className="h-2.5 w-2.5" /> Đã mua hàng tại DRX
                                     </span>
                                   </div>
                                   <span className="text-[10px] text-ods-textMuted font-light block">{rev.date}</span>

@@ -70,7 +70,7 @@ export const CartDrawer: React.FC = () => {
             {/* DRAWER HEADER */}
             <div className="flex items-center justify-between border-b border-ods-border pb-4">
               <div className="flex items-center space-x-2">
-                <span className="font-heading text-base font-bold tracking-wider uppercase text-black">Giỏ hàng ODS</span>
+                <span className="font-heading text-base font-bold tracking-wider uppercase text-black">Giỏ Hàng DRX</span>
                 <span className="rounded-full bg-black px-2.5 py-0.5 text-xs font-extrabold text-white">
                   {cartItems.length}
                 </span>
@@ -87,7 +87,7 @@ export const CartDrawer: React.FC = () => {
             <div className="flex-1 overflow-y-auto py-4 space-y-4">
               {cartItems.length === 0 ? (
                 <div className="flex h-64 flex-col items-center justify-center space-y-4 text-center">
-                  <span className="text-ods-textMuted text-xs font-light">Giỏ hàng đang trống. Hãy chọn thêm sản phẩm game.</span>
+                  <span className="text-ods-textMuted text-xs font-light">Giỏ hàng đang trống. Hãy chọn thêm linh kiện hoặc PC Gaming.</span>
                   <button
                     onClick={() => setCartOpen(false)}
                     className="rounded-ods border border-ods-primary bg-white px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-ods-primary hover:bg-ods-primary hover:text-white transition-all"
@@ -146,7 +146,7 @@ export const CartDrawer: React.FC = () => {
                       <button
                         onClick={() => removeFromCart(item.id)}
                         className="absolute top-2.5 right-2.5 p-1 text-zinc-400 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100"
-                        title="Xóa game khỏi giỏ"
+                        title="Xóa linh kiện khỏi giỏ"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>

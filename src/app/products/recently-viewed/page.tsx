@@ -108,7 +108,7 @@ export default function RecentlyViewedPage() {
                 <span>SẢN PHẨM BẠN VỪA XEM GẦN ĐÂY</span>
               </h1>
               <p className="text-xs text-ods-textMuted font-light mt-1">
-                Lịch sử lưu trữ các sản phẩm game & tài khoản dịch vụ bạn đã xem chi tiết trên ODS Store.
+                Lịch sử lưu trữ các sản phẩm linh kiện PC & thiết bị bạn đã xem chi tiết trên DRX Hardware.
               </p>
             </div>
 

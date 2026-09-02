@@ -3,14 +3,14 @@ import { prisma } from '@/lib/prisma';
 
 export class ProductSearchTool implements BaseTool {
   name = 'product_search';
-  description = 'Tìm kiếm thông tin sản phẩm (giá bán, tồn kho, v.v.) trong cửa hàng ODS Store dựa trên tên game hoặc từ khóa. Luôn luôn gọi công cụ này khi khách hỏi về game cụ thể, giá cả, hoặc hỏi cửa hàng có bán game nào đó không.';
+  description = 'Tìm kiếm thông tin sản phẩm (giá bán, tồn kho, v.v.) trong cửa hàng DRX Hardware dựa trên tên linh kiện, thiết bị hoặc từ khóa. Luôn luôn gọi công cụ này khi khách hỏi về linh kiện cụ thể, giá cả, hoặc hỏi cửa hàng có bán sản phẩm nào đó không.';
   
   parameters = {
     type: 'object',
     properties: {
       query: {
         type: 'string',
-        description: 'Tên game hoặc từ khóa sản phẩm cần tìm kiếm (ví dụ: "Hunt: Showdown", "GTA V", "Netflix")',
+        description: 'Tên linh kiện, thiết bị phần cứng hoặc từ khóa sản phẩm cần tìm kiếm (ví dụ: "RTX 4060", "Core i5 13400F", "RAM DDR5")',
       },
     },
     required: ['query'],

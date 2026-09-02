@@ -129,7 +129,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               className="w-full max-w-sm rounded-ods border border-ods-border bg-white p-6 shadow-2xl space-y-4"
             >
               <div className="space-y-1">
-                <span className="text-[10px] text-ods-primary font-bold uppercase tracking-widest block">ODS STORE THÔNG BÁO</span>
+                <span className="text-[10px] text-ods-primary font-bold uppercase tracking-widest block">DRX HARDWARE THÔNG BÁO</span>
                 <h3 className="font-heading text-sm font-extrabold uppercase text-black">{confirmConfig.title}</h3>
               </div>
 

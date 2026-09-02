@@ -18,7 +18,7 @@ export async function GET() {
       if (supaUsers && supaUsers.length > 0) {
         usersList = supaUsers.map((u: any) => ({
           id: u.id,
-          name: u.name || u.email?.split('@')[0] || 'Khách hàng ODS',
+          name: u.name || u.email?.split('@')[0] || 'Khách hàng DRX',
           email: u.email,
           role: u.role || 'USER',
           balance: Number(u.balance ?? 0),
@@ -30,7 +30,7 @@ export async function GET() {
         if (supaProfiles && supaProfiles.length > 0) {
           usersList = supaProfiles.map((u: any) => ({
             id: u.id,
-            name: u.name || u.full_name || u.email?.split('@')[0] || 'Khách hàng ODS',
+            name: u.name || u.full_name || u.email?.split('@')[0] || 'Khách hàng DRX',
             email: u.email,
             role: u.role || 'USER',
             balance: Number(u.balance ?? 0),

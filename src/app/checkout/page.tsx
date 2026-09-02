@@ -523,7 +523,7 @@ export default function CheckoutPage() {
 
               {cartItems.length === 0 ? (
                 <div className="py-8 text-center text-xs text-zinc-400">
-                  Giỏ hàng đang trống! Vui lòng chọn game trước khi thanh toán.
+                  Giỏ hàng đang trống! Vui lòng chọn linh kiện hoặc cấu hình PC trước khi thanh toán.
                 </div>
               ) : (
                 <div className="divide-y divide-zinc-150">

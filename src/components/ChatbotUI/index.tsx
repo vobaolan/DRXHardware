@@ -131,7 +131,7 @@ export default function ChatbotWidget() {
                     <CyberBotAvatar size="sm" isThinking={isLoading} state="active" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-[14px] bg-clip-text text-transparent bg-gradient-to-r from-white to-sky-100">ODS CyberBot AI</h3>
+                    <h3 className="font-bold text-[14px] bg-clip-text text-transparent bg-gradient-to-r from-white to-sky-100">DRX CyberBot AI</h3>
                     <div className="text-[9px] text-sky-100 uppercase tracking-widest font-semibold flex items-center gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
                       Online

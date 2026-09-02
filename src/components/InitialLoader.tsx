@@ -7,7 +7,7 @@ import { Sparkles, Gamepad2, ShieldCheck, Zap } from 'lucide-react';
 export const InitialLoader: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState(0);
-  const [statusText, setStatusText] = useState('ĐANG KHỞI ĐỘNG HỆ THỐNG ODS...');
+  const [statusText, setStatusText] = useState('ĐANG KHỞI ĐỘNG HỆ THỐNG DRX HARDWARE...');
 
   useEffect(() => {
     // Fast, responsive progress counter animation
@@ -78,7 +78,7 @@ export const InitialLoader: React.FC = () => {
                 <div className="h-full w-full rounded-[14px] bg-zinc-950/90 backdrop-blur-md flex flex-col items-center justify-center p-2 space-y-1">
                   <img
                     src="/images/logo.png"
-                    alt="ODS Logo"
+                    alt="DRX Logo"
                     className="h-7 w-auto object-contain drop-shadow-[0_0_12px_rgba(56,189,248,0.8)]"
                   />
                   <div className="flex items-center gap-1 text-[8px] font-black text-sky-400 uppercase tracking-widest">
