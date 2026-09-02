@@ -16,6 +16,13 @@ import { motion } from 'framer-motion';
 import { showToast } from '@/components/Toast';
 import { ProductFormModal, ProductFormData } from '@/components/admin/ProductFormModal';
 import { supabase } from '@/lib/supabase';
+import { ModernSelect, SelectOption } from '@/components/ui/ModernSelect';
+
+const USER_ROLE_SELECT_OPTIONS: SelectOption[] = [
+  { value: 'USER', label: '👤 Khách Hàng (User)', badge: 'USER' },
+  { value: 'STAFF', label: '🛠️ Nhân Viên (Staff)', badge: 'STAFF' },
+  { value: 'ADMIN', label: '👑 Quản Trị Viên (Admin)', badge: 'ADMIN' },
+];
 
 // Category map
 const CATEGORY_NAMES: Record<string, string> = {
@@ -1994,15 +2001,12 @@ export default function AdminDashboardPage() {
                   <label className="text-slate-700 dark:text-slate-300 font-bold uppercase text-[10.5px]">
                     Phân Quyền Vai Trò: <span className="text-rose-500">*</span>
                   </label>
-                  <select
+                  <ModernSelect
+                    options={USER_ROLE_SELECT_OPTIONS}
                     value={userFormData.role}
-                    onChange={(e) => setUserFormData({ ...userFormData, role: e.target.value })}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-[#0284c7] cursor-pointer"
-                  >
-                    <option value="USER">👤 Khách hàng (User)</option>
-                    <option value="STAFF">🛠️ Nhân viên (Staff)</option>
-                    <option value="ADMIN">👑 Quản trị viên (Admin)</option>
-                  </select>
+                    onChange={(val) => setUserFormData({ ...userFormData, role: String(val) })}
+                    placeholder="Chọn phân quyền..."
+                  />
                 </div>
               </div>
 

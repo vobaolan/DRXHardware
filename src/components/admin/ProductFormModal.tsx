@@ -8,6 +8,33 @@ import {
   Upload, CheckCircle2, FileImage, Star
 } from 'lucide-react';
 import { showToast } from '@/components/Toast';
+import { ModernSelect, SelectOption } from '@/components/ui/ModernSelect';
+
+const CATEGORY_OPTIONS: SelectOption[] = [
+  { value: 'CPU', label: 'Bộ Vi Xử Lý (CPU)', badge: 'CPU' },
+  { value: 'VGA', label: 'Card Màn Hình (VGA)', badge: 'GPU' },
+  { value: 'MAINBOARD', label: 'Bo Mạch Chủ (Mainboard)', badge: 'Main' },
+  { value: 'RAM', label: 'Bộ Nhớ Trong (RAM)', badge: 'RAM' },
+  { value: 'STORAGE', label: 'Ổ Cứng Lưu Trữ (SSD / HDD)', badge: 'Drive' },
+  { value: 'PSU', label: 'Nguồn Máy Tính (PSU)', badge: 'Power' },
+  { value: 'CASE', label: 'Vỏ Case Máy Tính', badge: 'Case' },
+  { value: 'COOLING', label: 'Tản Nhiệt Nước / Khí (Cooling)', badge: 'Cooler' },
+  { value: 'MONITOR', label: 'Màn Hình Máy Tính (Monitor)', badge: 'Màn Hình' },
+  { value: 'KEYBOARD', label: 'Bàn Phím Cơ & Chuột (Keyboard & Mouse)', badge: 'Phím Chuột' },
+  { value: 'HEADSET', label: 'Tai Nghe Gaming (Headset)', badge: 'Audio' },
+  { value: 'GEAR', label: 'Gaming Gear Tổng Hợp', badge: 'Gear' },
+  { value: 'LAPTOP', label: 'Laptop Văn Phòng', badge: 'Laptop' },
+  { value: 'LAPTOP_GAMING', label: 'Laptop Gaming & Đồ Họa', badge: 'Gaming' },
+  { value: 'PREBUILT_PC', label: 'PC Gắn Sẵn / PC Đồng Bộ DRX', badge: 'PC Đồng Bộ' },
+];
+
+const WARRANTY_OPTIONS: SelectOption[] = [
+  { value: 12, label: '12 Tháng (1 Năm)', badge: '1 Năm' },
+  { value: 24, label: '24 Tháng (2 Năm)', badge: '2 Năm' },
+  { value: 36, label: '36 Tháng (3 Năm)', badge: 'Chuẩn 3 Năm' },
+  { value: 60, label: '60 Tháng (5 Năm)', badge: 'VIP 5 Năm' },
+  { value: 72, label: '72 Tháng (6 Năm)', badge: '6 Năm' },
+];
 
 export interface ProductFormData {
   id?: string;
@@ -439,27 +466,12 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
                   Danh Mục Phần Cứng <span className="text-rose-500">*</span>
                 </label>
-                <select
+                <ModernSelect
+                  options={CATEGORY_OPTIONS}
                   value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs font-extrabold text-slate-900 dark:text-slate-100 focus:border-[#0284c7] outline-none"
-                >
-                  <option value="CPU">Bộ Vi Xử Lý (CPU)</option>
-                  <option value="VGA">Card Màn Hình (VGA)</option>
-                  <option value="MAINBOARD">Bo Mạch Chủ (Mainboard)</option>
-                  <option value="RAM">Bộ Nhớ Trong (RAM)</option>
-                  <option value="STORAGE">Ổ Cứng Lưu Trữ (SSD / HDD)</option>
-                  <option value="PSU">Nguồn Máy Tính (PSU)</option>
-                  <option value="CASE">Vỏ Case Máy Tính</option>
-                  <option value="COOLING">Tản Nhiệt Nước / Khí (Cooling)</option>
-                  <option value="MONITOR">Màn Hình Máy Tính (Monitor)</option>
-                  <option value="KEYBOARD">Bàn Phím Cơ & Chuột (Keyboard & Mouse)</option>
-                  <option value="HEADSET">Tai Nghe Gaming (Headset)</option>
-                  <option value="GEAR">Gaming Gear Tổng Hợp</option>
-                  <option value="LAPTOP">Laptop Văn Phòng</option>
-                  <option value="LAPTOP_GAMING">Laptop Gaming & Đồ Họa</option>
-                  <option value="PREBUILT_PC">PC Gắn Sẵn / PC Đồng Bộ DRX</option>
-                </select>
+                  onChange={(val) => setCategory(String(val))}
+                  placeholder="Chọn danh mục..."
+                />
               </div>
 
               <div className="sm:col-span-6 space-y-1.5">
@@ -561,17 +573,12 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
                   Bảo Hành Chính Hãng
                 </label>
-                <select
+                <ModernSelect
+                  options={WARRANTY_OPTIONS}
                   value={warrantyMonths}
-                  onChange={(e) => setWarrantyMonths(Number(e.target.value))}
-                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-900 dark:text-slate-100 focus:border-[#0284c7] outline-none"
-                >
-                  <option value={12}>12 Tháng (1 Năm)</option>
-                  <option value={24}>24 Tháng (2 Năm)</option>
-                  <option value={36}>36 Tháng (3 Năm)</option>
-                  <option value={60}>60 Tháng (5 Năm)</option>
-                  <option value={72}>72 Tháng (6 Năm)</option>
-                </select>
+                  onChange={(val) => setWarrantyMonths(Number(val))}
+                  placeholder="Chọn thời hạn bảo hành..."
+                />
                 <span className="text-[10px] text-slate-400 block">Tra cứu bằng mã SN</span>
               </div>
             </div>
