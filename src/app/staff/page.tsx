@@ -5,11 +5,12 @@ import Link from 'next/link';
 import { 
   Boxes, Package, ShoppingCart, Users, ShieldCheck, 
   TrendingUp, AlertTriangle, Plus, Search, CheckCircle2, 
-  Wrench, ArrowLeft, RefreshCw, Lock, ShieldAlert,
+  Wrench, ArrowLeft, RefreshCw, Lock, ShieldAlert, Home, UserCheck,
   ChevronRight, Truck, FileText, SearchCode, Database, Tag, Clock, HardDrive, Cpu,
   Edit2, Trash2, Eye, Phone, Mail, MapPin, Calendar, Check, X,
   ExternalLink, Layers, Sparkles, Award
 } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { showToast } from '@/components/Toast';
 import { ProductFormModal, ProductFormData } from '@/components/admin/ProductFormModal';
 import { supabase } from '@/lib/supabase';
@@ -426,38 +427,66 @@ export default function StaffWarehousePortalPage() {
 
   if (!isAuthorizedStaff) {
     return (
-      <div className="min-h-screen bg-[#f8fafc] dark:bg-[#090d16] text-slate-800 dark:text-slate-100 flex flex-col items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 text-center space-y-5 shadow-xl">
-          <div className="w-16 h-16 rounded-2xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 flex items-center justify-center mx-auto text-amber-600 dark:text-amber-400">
-            <Lock className="w-8 h-8" />
+      <div className="min-h-screen bg-slate-50 dark:bg-[#090d16] text-slate-900 dark:text-slate-100 flex flex-col items-center justify-center p-4 antialiased">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="max-w-md w-full rounded-3xl border border-rose-200 dark:border-rose-900/50 bg-white dark:bg-slate-900/95 p-8 text-center shadow-2xl backdrop-blur-xl relative overflow-hidden"
+        >
+          {/* Top Decorative Glow Banner */}
+          <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-48 h-48 bg-gradient-to-br from-rose-500/20 to-[#5B3DF5]/20 rounded-full blur-2xl pointer-events-none" />
+
+          {/* 403 Shield Icon */}
+          <div className="mx-auto w-20 h-20 rounded-3xl bg-rose-100 dark:bg-rose-950/80 border border-rose-300 dark:border-rose-800 flex items-center justify-center text-rose-600 dark:text-rose-400 mb-6 shadow-inner">
+            <ShieldAlert className="w-10 h-10 animate-pulse" />
           </div>
+
+          {/* Error Code Tag */}
+          <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 text-[11px] font-black tracking-widest uppercase mb-3">
+            <Lock className="w-3.5 h-3.5" />
+            <span>HTTP 403 FORBIDDEN</span>
+          </div>
+
+          <h1 className="font-heading text-2xl font-black uppercase text-slate-900 dark:text-slate-100 mb-2">
+            TRUY CẬP BỊ TỪ CHỐI
+          </h1>
           
-          <div className="space-y-2">
-            <h2 className="font-heading text-lg font-black uppercase text-slate-900 dark:text-white">
-              Cổng Vận Hành Dành Cho Staff & Admin
-            </h2>
-            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-              Trang này yêu cầu tài khoản <strong>NHÂN VIÊN (STAFF)</strong> hoặc <strong>QUẢN TRỊ VIÊN (ADMIN)</strong>. 
-              Tài khoản khách hàng thông thường không được cấp phép truy cập cổng kỹ thuật kho.
-            </p>
+          <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-6 font-light">
+            Bạn không có quyền truy cập vào bảng quản trị **DRX Staff Operations**. Khu vực này yêu cầu xác thực tài khoản Nhân Viên (STAFF) hoặc Quản Trị Viên (ADMIN) chính thức.
+          </p>
+
+          {/* User Status Card */}
+          <div className="bg-slate-100 dark:bg-slate-950 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 text-left text-xs mb-6 space-y-1">
+            <div className="flex justify-between items-center text-[11px]">
+              <span className="text-slate-500">Tài khoản hiện tại:</span>
+              <span className="font-bold text-slate-800 dark:text-slate-200">{currentUser ? currentUser.email : 'Chưa đăng nhập'}</span>
+            </div>
+            <div className="flex justify-between items-center text-[11px]">
+              <span className="text-slate-500">Quyền hạn hệ thống:</span>
+              <span className="font-extrabold text-rose-500 uppercase">{currentUser?.role ? `${currentUser.role} (CHƯA CÓ QUYỀN STAFF)` : 'KHÁCH (GUEST)'}</span>
+            </div>
           </div>
 
-          <div className="pt-2 flex flex-col gap-2.5">
-            <Link
-              href="/profile"
-              className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-[#0284c7] to-[#38bdf8] text-white font-bold text-xs uppercase tracking-wider hover:opacity-95 transition-all shadow-md shadow-sky-500/20"
-            >
-              Đăng Nhập Tài Khoản Staff / Admin
-            </Link>
-
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-3">
             <Link
               href="/"
-              className="w-full py-2.5 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+              className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 px-4 py-2.5 font-heading text-xs font-bold transition-all shadow-xs"
             >
-              Về Trang Chủ Cửa Hàng
+              <Home className="w-4 h-4" />
+              <span>VỀ TRANG CHỦ</span>
+            </Link>
+
+            <Link
+              href="/profile"
+              className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#5B3DF5] to-[#7257F7] hover:from-[#4A2CE0] hover:to-[#5B3DF5] text-white px-4 py-2.5 font-heading text-xs font-extrabold transition-all shadow-md shadow-[#5B3DF5]/30"
+            >
+              <UserCheck className="w-4 h-4" />
+              <span>ĐĂNG NHẬP STAFF</span>
             </Link>
           </div>
-        </div>
+        </motion.div>
       </div>
     );
   }
