@@ -82,11 +82,6 @@ export const PortalHeader: React.FC<PortalHeaderProps> = ({
                   🛠️ STAFF PORTAL
                 </span>
               )}
-
-              <span className="hidden xl:inline-flex px-2 py-0.5 rounded-full text-[8.5px] font-extrabold uppercase bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                Live Database
-              </span>
             </div>
 
             <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate hidden md:block">
@@ -103,19 +98,7 @@ export const PortalHeader: React.FC<PortalHeaderProps> = ({
            ───────────────────────────────────────────────────────────── */}
         <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap ml-auto">
           
-          {/* 1. BUTTON: REFRESH DATA */}
-          <button
-            type="button"
-            onClick={onRefresh}
-            disabled={isRefreshing}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs border border-slate-200 dark:border-slate-700 transition-all cursor-pointer shadow-xs disabled:opacity-60"
-            title="Đồng bộ dữ liệu thời gian thực từ PostgreSQL Supabase"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 text-[#0284c7] ${isRefreshing ? 'animate-spin' : ''}`} />
-            <span className="hidden sm:inline">{isRefreshing ? 'Đang Tải...' : 'Đồng Bộ Live'}</span>
-          </button>
-
-          {/* 2. BUTTON: IMPORT SERIAL SN */}
+          {/* 1. BUTTON: IMPORT SERIAL SN */}
           <button
             type="button"
             onClick={onOpenImportSerial}
