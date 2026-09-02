@@ -9,7 +9,8 @@ import {
   Boxes, Cpu, ShieldAlert, Lock, ArrowLeft, RefreshCw,
   Wrench, FileText, Sparkles, Filter, X, Award, ExternalLink,
   Edit2, Trash2, Phone, Mail, MapPin, Calendar, Clock, Check,
-  UserCheck, ArrowDownRight, BarChart3, Hash, Layers
+  UserCheck, ArrowDownRight, BarChart3, Hash, Layers, UserPlus,
+  KeyRound, Shield, ShieldQuestion
 } from 'lucide-react';
 import { showToast } from '@/components/Toast';
 import { ProductFormModal, ProductFormData } from '@/components/admin/ProductFormModal';
@@ -74,6 +75,7 @@ export default function AdminDashboardPage() {
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('ALL');
   const [orderStatusFilter, setOrderStatusFilter] = useState<string>('ALL');
   const [serialStatusFilter, setSerialStatusFilter] = useState<string>('ALL');
+  const [selectedUserRoleFilter, setSelectedUserRoleFilter] = useState<string>('ALL');
 
   // Modals
   const [viewingProduct, setViewingProduct] = useState<any | null>(null);
@@ -82,6 +84,21 @@ export default function AdminDashboardPage() {
   const [formModalMode, setFormModalMode] = useState<'create' | 'edit'>('create');
   const [editingProduct, setEditingProduct] = useState<ProductFormData | null>(null);
   
+  // User Management Modals
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [userModalMode, setUserModalMode] = useState<'create' | 'edit'>('create');
+  const [userFormData, setUserFormData] = useState({
+    id: '',
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    role: 'USER',
+    password: '',
+  });
+  const [viewingUserDetails, setViewingUserDetails] = useState<any | null>(null);
+  const [isSubmittingUser, setIsSubmittingUser] = useState(false);
+
   // Serial import modal
   const [isSnModalOpen, setIsSnModalOpen] = useState(false);
   const [selectedProductIdForSn, setSelectedProductIdForSn] = useState('');
@@ -240,12 +257,16 @@ export default function AdminDashboardPage() {
   const filteredUsers = useMemo(() => {
     return users.filter(u => {
       const q = searchQuery.toLowerCase().trim();
-      return !q ||
+      const matchesSearch = !q ||
         (u.name && u.name.toLowerCase().includes(q)) ||
         (u.email && u.email.toLowerCase().includes(q)) ||
-        (u.phone && u.phone.includes(q));
+        (u.phone && u.phone.includes(q)) ||
+        (u.address && u.address.toLowerCase().includes(q));
+      
+      const matchesRole = selectedUserRoleFilter === 'ALL' || u.role === selectedUserRoleFilter;
+      return matchesSearch && matchesRole;
     });
-  }, [users, searchQuery]);
+  }, [users, searchQuery, selectedUserRoleFilter]);
 
   // Handlers for Products
   const handleOpenCreate = () => {
@@ -374,7 +395,117 @@ export default function AdminDashboardPage() {
     }
   };
 
-  // Handlers for User Role Update (USER, STAFF, ADMIN)
+  // Handlers for User Account Management (CRUD & Permissions)
+  const handleOpenCreateUser = () => {
+    setUserFormData({
+      id: '',
+      name: '',
+      email: '',
+      phone: '',
+      address: '',
+      role: 'USER',
+      password: '',
+    });
+    setUserModalMode('create');
+    setIsUserModalOpen(true);
+  };
+
+  const handleOpenEditUser = (u: any) => {
+    setUserFormData({
+      id: u.id,
+      name: u.name || '',
+      email: u.email || '',
+      phone: u.phone || '',
+      address: u.address || '',
+      role: u.role || 'USER',
+      password: '',
+    });
+    setUserModalMode('edit');
+    setIsUserModalOpen(true);
+  };
+
+  const handleSaveUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userFormData.email) {
+      showToast('Vui lòng nhập Email tài khoản!', 'error');
+      return;
+    }
+    if (userModalMode === 'create' && (!userFormData.password || userFormData.password.length < 6)) {
+      showToast('Mật khẩu khởi tạo tối thiểu 6 ký tự!', 'error');
+      return;
+    }
+
+    setIsSubmittingUser(true);
+    try {
+      if (userModalMode === 'create') {
+        const res = await fetch('/api/admin/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(userFormData),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(data.message || 'Đã tạo tài khoản thành công!', 'success');
+          setIsUserModalOpen(false);
+          fetchAllData();
+        } else {
+          showToast(data.message || 'Lỗi khi tạo tài khoản.', 'error');
+        }
+      } else {
+        // Edit Mode
+        const res = await fetch('/api/admin/users', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: userFormData.id,
+            name: userFormData.name,
+            phone: userFormData.phone,
+            address: userFormData.address,
+            role: userFormData.role,
+            newPassword: userFormData.password ? userFormData.password : undefined,
+          }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast('Đã cập nhật thông tin tài khoản thành công!', 'success');
+          setIsUserModalOpen(false);
+          fetchAllData();
+        } else {
+          showToast(data.message || 'Lỗi khi cập nhật tài khoản.', 'error');
+        }
+      }
+    } catch (err: any) {
+      showToast('Lỗi kết nối máy chủ khi lưu tài khoản.', 'error');
+    } finally {
+      setIsSubmittingUser(false);
+    }
+  };
+
+  const handleDeleteUser = async (u: any) => {
+    if (u.email === 'admin@drx.vn') {
+      showToast('Không thể xóa tài khoản Quản trị Master (admin@drx.vn)!', 'error');
+      return;
+    }
+
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa tài khoản "${u.name || u.email}" (${u.email}) khỏi hệ thống? Thao tác không thể hoàn tác.`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/admin/users?userId=${u.id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (res.ok) {
+        setUsers(prev => prev.filter(x => x.id !== u.id));
+        showToast(data.message || 'Đã xóa tài khoản thành công!', 'success');
+      } else {
+        showToast(data.message || 'Không thể xóa tài khoản lúc này.', 'error');
+      }
+    } catch (e) {
+      showToast('Lỗi kết nối máy chủ.', 'error');
+    }
+  };
+
+  // Handlers for User Role Quick Switch
   const handleSetUserRole = async (userId: string, newRole: string) => {
     try {
       const res = await fetch('/api/admin/users', {
@@ -1233,25 +1364,112 @@ export default function AdminDashboardPage() {
           )}
 
           {/* ============================================================ */}
-          {/* TAB 5: USERS & PERMISSIONS                                   */}
+          {/* TAB 5: USERS & PERMISSIONS MANAGEMENT                         */}
           {/* ============================================================ */}
           {activeTab === 'users' && (
-            <div className="space-y-5">
+            <div className="space-y-6">
               
-              {/* TOOLBAR */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
-                <div className="relative flex-1 max-w-md">
-                  <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Tìm theo tên, email khách hàng, số điện thoại..."
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-2 pl-9 pr-4 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:border-[#0284c7]"
-                  />
+              {/* METRICS OVERVIEW */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+                <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Tổng Thành Viên</span>
+                    <div className="w-8 h-8 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] flex items-center justify-center">
+                      <Users className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <div className="text-2xl font-black font-heading text-slate-900 dark:text-white mt-2">
+                    {users.length}
+                  </div>
+                  <span className="text-[10px] text-slate-400 font-medium">Toàn bộ tài khoản trên hệ thống</span>
                 </div>
-                <div className="text-xs font-bold text-slate-500">
-                  Tổng số: <strong className="text-slate-900 dark:text-white">{users.length} tài khoản</strong>
+
+                <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Khách Hàng (User)</span>
+                    <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 flex items-center justify-center">
+                      <UserCheck className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <div className="text-2xl font-black font-heading text-slate-900 dark:text-white mt-2">
+                    {users.filter(u => u.role === 'USER' || !u.role).length}
+                  </div>
+                  <span className="text-[10px] text-emerald-600 font-medium">Mua sắm & tra cứu bảo hành</span>
+                </div>
+
+                <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Nhân Viên (Staff)</span>
+                    <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 flex items-center justify-center">
+                      <Wrench className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <div className="text-2xl font-black font-heading text-slate-900 dark:text-white mt-2">
+                    {users.filter(u => u.role === 'STAFF').length}
+                  </div>
+                  <span className="text-[10px] text-blue-600 font-medium">Vận hành kho & ráp máy</span>
+                </div>
+
+                <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Quản Trị (Admin)</span>
+                    <div className="w-8 h-8 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 flex items-center justify-center">
+                      <ShieldCheck className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <div className="text-2xl font-black font-heading text-slate-900 dark:text-white mt-2">
+                    {users.filter(u => u.role === 'ADMIN').length}
+                  </div>
+                  <span className="text-[10px] text-purple-600 font-medium">Toàn quyền kiểm soát CEO</span>
+                </div>
+              </div>
+
+              {/* TOOLBAR: SEARCH & FILTERS & ADD USER BUTTON */}
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+                
+                {/* ROLE FILTER PILLS */}
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {[
+                    { id: 'ALL', label: `Tất Cả (${users.length})` },
+                    { id: 'USER', label: `Khách Hàng (${users.filter(u => u.role === 'USER' || !u.role).length})` },
+                    { id: 'STAFF', label: `Nhân Viên (${users.filter(u => u.role === 'STAFF').length})` },
+                    { id: 'ADMIN', label: `Quản Trị (${users.filter(u => u.role === 'ADMIN').length})` },
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setSelectedUserRoleFilter(tab.id)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        selectedUserRoleFilter === tab.id
+                          ? 'bg-[#0284c7] text-white shadow-xs'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-2.5">
+                  {/* SEARCH INPUT */}
+                  <div className="relative flex-1 sm:w-64">
+                    <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Tìm tên, email, SĐT, địa chỉ..."
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-2 pl-9 pr-4 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:border-[#0284c7]"
+                    />
+                  </div>
+
+                  {/* ADD USER BUTTON */}
+                  <button
+                    onClick={handleOpenCreateUser}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#0284c7] hover:bg-[#0369a1] text-white text-xs font-extrabold shadow-md transition-all cursor-pointer shrink-0"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                    <span>+ Thêm Tài Khoản</span>
+                  </button>
                 </div>
               </div>
 
@@ -1262,62 +1480,138 @@ export default function AdminDashboardPage() {
                     <thead>
                       <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 font-black uppercase text-[10px] tracking-wider">
                         <th className="py-3 px-4">Tài Khoản Thành Viên</th>
-                        <th className="py-3 px-3">Quyền Hạn</th>
+                        <th className="py-3 px-3">Phân Quyền Hệ Thống</th>
                         <th className="py-3 px-3">Số Điện Thoại</th>
                         <th className="py-3 px-3">Địa Chỉ Giao Hàng</th>
-                        <th className="py-3 px-3">Ngày Đăng Ký</th>
-                        <th className="py-3 px-4 text-right">Phân Quyền Admin</th>
+                        <th className="py-3 px-3">Đơn Hàng & Chi Tiêu</th>
+                        <th className="py-3 px-3">Ngày Tham Gia</th>
+                        <th className="py-3 px-4 text-right">Thao Tác Quản Lý</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                      {filteredUsers.map((u) => (
-                        <tr key={u.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                          <td className="py-3.5 px-4 flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-full bg-sky-100 dark:bg-sky-950/80 text-[#0284c7] font-black flex items-center justify-center text-xs shrink-0 border border-sky-200 dark:border-sky-800">
-                              {(u.name || u.email || 'U')[0].toUpperCase()}
-                            </div>
-                            <div className="min-w-0">
-                              <span className="font-bold text-slate-900 dark:text-white block">
-                                {u.name || 'Khách hàng DRX'}
-                              </span>
-                              <span className="text-[11px] text-slate-400 font-mono block">
-                                {u.email}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="py-3.5 px-3 whitespace-nowrap">
-                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase border ${
-                              u.role === 'ADMIN' 
-                                ? 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800' 
-                                : u.role === 'STAFF'
-                                ? 'bg-sky-50 text-[#0284c7] border-sky-200 dark:bg-sky-950/60 dark:text-sky-300 dark:border-sky-800'
-                                : 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
-                            }`}>
-                              {u.role === 'ADMIN' ? '👑 ADMIN CEO' : u.role === 'STAFF' ? '🛠️ STAFF KHO' : '👤 KHÁCH HÀNG'}
-                            </span>
-                          </td>
-                          <td className="py-3.5 px-3 font-mono text-slate-600 dark:text-slate-300 whitespace-nowrap">
-                            {u.phone || 'Chưa cập nhật'}
-                          </td>
-                          <td className="py-3.5 px-3 max-w-[200px] truncate text-slate-600 dark:text-slate-300" title={u.address}>
-                            {u.address || 'Chưa cập nhật'}
-                          </td>
-                          <td className="py-3.5 px-3 text-slate-500 font-mono text-[11px] whitespace-nowrap">
-                            {new Date(u.createdAt).toLocaleDateString('vi-VN')}
-                          </td>
-                          <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                            <select
-                              value={u.role || 'USER'}
-                              onChange={(e) => handleSetUserRole(u.id, e.target.value)}
-                              className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus:border-[#0284c7] cursor-pointer"
-                            >
-                              <option value="USER">👤 Khách hàng (User)</option>
-                              <option value="STAFF">🛠️ Nhân viên (Staff)</option>
-                              <option value="ADMIN">👑 Quản trị viên (Admin)</option>
-                            </select>
+                      {filteredUsers.length === 0 ? (
+                        <tr>
+                          <td colSpan={7} className="py-8 text-center text-slate-400 text-xs font-medium">
+                            Không tìm thấy tài khoản người dùng nào phù hợp với bộ lọc.
                           </td>
                         </tr>
-                      ))}
+                      ) : (
+                        filteredUsers.map((u) => (
+                          <tr key={u.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                            {/* USER INFO */}
+                            <td className="py-3.5 px-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-full bg-sky-100 dark:bg-sky-950/80 text-[#0284c7] font-black flex items-center justify-center text-xs shrink-0 border border-sky-200 dark:border-sky-800">
+                                  {(u.name || u.email || 'U')[0].toUpperCase()}
+                                </div>
+                                <div className="min-w-0">
+                                  <span className="font-bold text-slate-900 dark:text-white block truncate max-w-[180px]">
+                                    {u.name || 'Khách hàng DRX'}
+                                  </span>
+                                  <span className="text-[11px] text-slate-400 font-mono block truncate max-w-[180px]">
+                                    {u.email}
+                                  </span>
+                                </div>
+                              </div>
+                            </td>
+
+                            {/* ROLE BADGE & QUICK SWITCH */}
+                            <td className="py-3.5 px-3 whitespace-nowrap">
+                              <div className="flex items-center gap-2">
+                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase border ${
+                                  u.role === 'ADMIN' 
+                                    ? 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800' 
+                                    : u.role === 'STAFF'
+                                    ? 'bg-sky-50 text-[#0284c7] border-sky-200 dark:bg-sky-950/60 dark:text-sky-300 dark:border-sky-800'
+                                    : 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
+                                }`}>
+                                  {u.role === 'ADMIN' ? '👑 ADMIN' : u.role === 'STAFF' ? '🛠️ STAFF' : '👤 USER'}
+                                </span>
+                                <select
+                                  value={u.role || 'USER'}
+                                  onChange={(e) => handleSetUserRole(u.id, e.target.value)}
+                                  className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-[11px] font-bold text-slate-700 dark:text-slate-300 focus:outline-none focus:border-[#0284c7] cursor-pointer"
+                                  title="Đổi phân quyền nhanh"
+                                >
+                                  <option value="USER">USER</option>
+                                  <option value="STAFF">STAFF</option>
+                                  <option value="ADMIN">ADMIN</option>
+                                </select>
+                              </div>
+                            </td>
+
+                            {/* PHONE */}
+                            <td className="py-3.5 px-3 font-mono text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                              {u.phone ? (
+                                <a href={`tel:${u.phone}`} className="hover:text-[#0284c7] flex items-center gap-1">
+                                  <Phone className="w-3 h-3 text-slate-400" />
+                                  <span>{u.phone}</span>
+                                </a>
+                              ) : (
+                                <span className="text-slate-400 italic">Chưa có SĐT</span>
+                              )}
+                            </td>
+
+                            {/* ADDRESS */}
+                            <td className="py-3.5 px-3 max-w-[180px] truncate text-slate-600 dark:text-slate-300" title={u.address}>
+                              {u.address || <span className="text-slate-400 italic">Chưa có địa chỉ</span>}
+                            </td>
+
+                            {/* ORDERS & SPEND */}
+                            <td className="py-3.5 px-3 whitespace-nowrap">
+                              <span className="font-bold text-slate-900 dark:text-white block">
+                                {u._count?.orders ?? 0} đơn hàng
+                              </span>
+                              {u.totalSpent ? (
+                                <span className="text-[11px] text-emerald-600 font-mono block">
+                                  {formatVND(u.totalSpent)}
+                                </span>
+                              ) : (
+                                <span className="text-[11px] text-slate-400 font-mono block">0 đ</span>
+                              )}
+                            </td>
+
+                            {/* JOIN DATE */}
+                            <td className="py-3.5 px-3 text-slate-500 font-mono text-[11px] whitespace-nowrap">
+                              {new Date(u.createdAt).toLocaleDateString('vi-VN')}
+                            </td>
+
+                            {/* ACTIONS */}
+                            <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                              <div className="flex items-center justify-end gap-1.5">
+                                {/* VIEW DETAILS BUTTON */}
+                                <button
+                                  onClick={() => setViewingUserDetails(u)}
+                                  className="p-1.5 rounded-lg bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 text-[#0284c7] border border-sky-200 dark:border-sky-800 transition-all cursor-pointer"
+                                  title="Xem Hồ Sơ Chi Tiết"
+                                >
+                                  <Eye className="w-3.5 h-3.5" />
+                                </button>
+
+                                {/* EDIT / RESET PASSWORD BUTTON */}
+                                <button
+                                  onClick={() => handleOpenEditUser(u)}
+                                  className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800 transition-all cursor-pointer"
+                                  title="Chỉnh Sửa & Đổi Mật Khẩu"
+                                >
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                </button>
+
+                                {/* DELETE BUTTON */}
+                                {u.email !== 'admin@drx.vn' && (
+                                  <button
+                                    onClick={() => handleDeleteUser(u)}
+                                    className="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 transition-all cursor-pointer"
+                                    title="Xóa Tài Khoản"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -1618,6 +1912,250 @@ export default function AdminDashboardPage() {
             fetchAllData(true);
           }}
         />
+      )}
+
+      {/* ============================================================ */}
+      {/* MODAL 5: USER CREATE / EDIT & RESET PASSWORD MODAL            */}
+      {/* ============================================================ */}
+      {isUserModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-lg w-full space-y-5 shadow-2xl text-slate-900 dark:text-slate-100">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3.5">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-[#0284c7]">
+                  {userModalMode === 'create' ? <UserPlus className="w-5 h-5" /> : <Edit2 className="w-5 h-5" />}
+                </div>
+                <div>
+                  <span className="text-[10px] font-black uppercase text-[#0284c7] tracking-wider block">
+                    {userModalMode === 'create' ? 'TẠO TÀI KHOẢN MỚI' : 'CHỈNH SỬA TÀI KHOẢN'}
+                  </span>
+                  <h3 className="font-heading text-sm font-black text-slate-900 dark:text-white">
+                    {userModalMode === 'create' ? 'Thêm Người Dùng / Nhân Viên Mới' : `Cập Nhật: ${userFormData.email}`}
+                  </h3>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsUserModalOpen(false)}
+                className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-500 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveUser} className="space-y-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                {/* EMAIL */}
+                <div className="space-y-1.5">
+                  <label className="text-slate-700 dark:text-slate-300 font-bold uppercase text-[10.5px]">
+                    Email Đăng Nhập: <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    disabled={userModalMode === 'edit'}
+                    placeholder="example@drx.vn"
+                    value={userFormData.email}
+                    onChange={(e) => setUserFormData({ ...userFormData, email: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:border-[#0284c7] disabled:opacity-60"
+                  />
+                </div>
+
+                {/* ROLE */}
+                <div className="space-y-1.5">
+                  <label className="text-slate-700 dark:text-slate-300 font-bold uppercase text-[10.5px]">
+                    Phân Quyền Vai Trò: <span className="text-rose-500">*</span>
+                  </label>
+                  <select
+                    value={userFormData.role}
+                    onChange={(e) => setUserFormData({ ...userFormData, role: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-[#0284c7] cursor-pointer"
+                  >
+                    <option value="USER">👤 Khách hàng (User)</option>
+                    <option value="STAFF">🛠️ Nhân viên (Staff)</option>
+                    <option value="ADMIN">👑 Quản trị viên (Admin)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* FULL NAME */}
+              <div className="space-y-1.5">
+                <label className="text-slate-700 dark:text-slate-300 font-bold uppercase text-[10.5px]">
+                  Họ và Tên:
+                </label>
+                <input
+                  type="text"
+                  placeholder="Nguyễn Văn A"
+                  value={userFormData.name}
+                  onChange={(e) => setUserFormData({ ...userFormData, name: e.target.value })}
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:border-[#0284c7]"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                {/* PHONE */}
+                <div className="space-y-1.5">
+                  <label className="text-slate-700 dark:text-slate-300 font-bold uppercase text-[10.5px]">
+                    Số Điện Thoại:
+                  </label>
+                  <input
+                    type="tel"
+                    placeholder="0987654321"
+                    value={userFormData.phone}
+                    onChange={(e) => setUserFormData({ ...userFormData, phone: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:border-[#0284c7]"
+                  />
+                </div>
+
+                {/* PASSWORD / RESET PASSWORD */}
+                <div className="space-y-1.5">
+                  <label className="text-slate-700 dark:text-slate-300 font-bold uppercase text-[10.5px] flex items-center justify-between">
+                    <span>{userModalMode === 'create' ? 'Mật Khẩu Khởi Tạo:' : 'Đổi Mật Khẩu Mới:'}</span>
+                    {userModalMode === 'edit' && <span className="text-[10px] text-slate-400 font-normal">Để trống nếu không đổi</span>}
+                  </label>
+                  <input
+                    type="text"
+                    required={userModalMode === 'create'}
+                    placeholder={userModalMode === 'create' ? "Tối thiểu 6 ký tự..." : "Nhập mật khẩu mới..."}
+                    value={userFormData.password}
+                    onChange={(e) => setUserFormData({ ...userFormData, password: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:border-[#0284c7]"
+                  />
+                </div>
+              </div>
+
+              {/* ADDRESS */}
+              <div className="space-y-1.5">
+                <label className="text-slate-700 dark:text-slate-300 font-bold uppercase text-[10.5px]">
+                  Địa Chỉ Nhận Hàng Mặc Định:
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố..."
+                  value={userFormData.address}
+                  onChange={(e) => setUserFormData({ ...userFormData, address: e.target.value })}
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:border-[#0284c7]"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsUserModalOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold"
+                >
+                  Hủy Bỏ
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingUser}
+                  className="px-5 py-2 rounded-xl bg-[#0284c7] hover:bg-[#0369a1] text-white font-extrabold shadow-md transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {isSubmittingUser ? 'Đang Lưu...' : userModalMode === 'create' ? 'Tạo Tài Khoản' : 'Lưu Thay Đổi'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================ */}
+      {/* MODAL 6: VIEW USER DETAILS & PURCHASE STATS                   */}
+      {/* ============================================================ */}
+      {viewingUserDetails && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-lg w-full space-y-5 shadow-2xl text-slate-900 dark:text-slate-100">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3.5">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-sky-100 dark:bg-sky-950/80 text-[#0284c7] font-black flex items-center justify-center text-base shrink-0 border border-sky-200 dark:border-sky-800">
+                  {(viewingUserDetails.name || viewingUserDetails.email || 'U')[0].toUpperCase()}
+                </div>
+                <div>
+                  <h3 className="font-heading text-base font-black text-slate-900 dark:text-white">
+                    {viewingUserDetails.name || 'Khách hàng DRX'}
+                  </h3>
+                  <span className="text-xs text-slate-400 font-mono block">
+                    {viewingUserDetails.email}
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setViewingUserDetails(null)}
+                className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-500 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* USER STATS GRID */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block">Vai Trò Hệ Thống</span>
+                <span className="text-xs font-black uppercase text-[#0284c7] mt-1 block">
+                  {viewingUserDetails.role === 'ADMIN' ? '👑 Quản Trị Viên (Admin)' : viewingUserDetails.role === 'STAFF' ? '🛠️ Nhân Viên (Staff)' : '👤 Khách Hàng (User)'}
+                </span>
+              </div>
+
+              <div className="bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block">Số Điện Thoại</span>
+                <span className="text-xs font-bold font-mono text-slate-800 dark:text-slate-200 mt-1 block">
+                  {viewingUserDetails.phone || 'Chưa cập nhật'}
+                </span>
+              </div>
+
+              <div className="bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block">Tổng Đơn Hàng</span>
+                <span className="text-xs font-black text-slate-800 dark:text-slate-200 mt-1 block">
+                  {viewingUserDetails._count?.orders ?? 0} đơn hàng
+                </span>
+              </div>
+
+              <div className="bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block">Tổng Tiền Đã Mua</span>
+                <span className="text-xs font-black font-mono text-emerald-600 mt-1 block">
+                  {formatVND(viewingUserDetails.totalSpent || 0)}
+                </span>
+              </div>
+            </div>
+
+            {/* ADDRESS & REGISTRATION */}
+            <div className="space-y-2.5 text-xs bg-slate-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+              <div>
+                <span className="text-[10.5px] uppercase font-bold text-slate-400 block">Địa Chỉ Giao Hàng:</span>
+                <span className="font-medium text-slate-800 dark:text-slate-200 mt-0.5 block">
+                  {viewingUserDetails.address || 'Chưa thiết lập địa chỉ giao hàng'}
+                </span>
+              </div>
+              <div className="pt-2 border-t border-slate-200/50 dark:border-slate-700/50 flex items-center justify-between text-[11px] text-slate-500 font-mono">
+                <span>Ngày Đăng Ký Tài Khoản:</span>
+                <span className="font-bold text-slate-700 dark:text-slate-300">
+                  {new Date(viewingUserDetails.createdAt).toLocaleDateString('vi-VN')}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                onClick={() => {
+                  const targetUser = viewingUserDetails;
+                  setViewingUserDetails(null);
+                  handleOpenEditUser(targetUser);
+                }}
+                className="px-4 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 text-amber-600 dark:text-amber-400 font-extrabold text-xs border border-amber-200 dark:border-amber-800 transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <Edit2 className="w-3.5 h-3.5" />
+                <span>Chỉnh Sửa / Đổi MK</span>
+              </button>
+              <button
+                onClick={() => setViewingUserDetails(null)}
+                className="px-5 py-2 rounded-xl bg-slate-900 dark:bg-slate-100 hover:bg-[#0284c7] text-white dark:text-slate-900 font-extrabold text-xs uppercase tracking-wider transition-all cursor-pointer"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
     </div>
