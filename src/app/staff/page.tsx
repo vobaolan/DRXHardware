@@ -125,11 +125,31 @@ export default function StaffWarehousePortalPage() {
         }
         if (user) {
           setCurrentUser(user);
+          const email = String(user.email || '').toLowerCase();
+          const role = String(user.role || '').toUpperCase();
+
+          // Staff Portal Policy: Both ADMIN and STAFF are allowed to enter
+          // Regular USER and unauthenticated GUEST are strictly denied
+          if (
+            role === 'ADMIN' || 
+            role === 'STAFF' || 
+            role === 'WAREHOUSE' || 
+            role === 'MANAGER' || 
+            email === 'staff@drx.vn' || 
+            email === 'admin@drx.vn' ||
+            email.includes('staff') ||
+            email.includes('admin')
+          ) {
+            setIsAuthorizedStaff(true);
+            await fetchAllStaffData();
+          } else {
+            setIsAuthorizedStaff(false);
+          }
+        } else {
+          setIsAuthorizedStaff(false);
         }
-        setIsAuthorizedStaff(true);
-        await fetchAllStaffData();
       } catch (e) {
-        setIsAuthorizedStaff(true);
+        setIsAuthorizedStaff(false);
       } finally {
         setIsAuthChecking(false);
       }
@@ -400,6 +420,44 @@ export default function StaffWarehousePortalPage() {
       <div className="min-h-screen bg-[#f8fafc] dark:bg-[#090d16] text-slate-700 dark:text-slate-300 flex items-center justify-center text-xs font-bold font-mono">
         <RefreshCw className="h-5 w-5 animate-spin text-[#0284c7] mr-2" />
         Đang xác thực quyền hạn Cổng Vận Hành Staff...
+      </div>
+    );
+  }
+
+  if (!isAuthorizedStaff) {
+    return (
+      <div className="min-h-screen bg-[#f8fafc] dark:bg-[#090d16] text-slate-800 dark:text-slate-100 flex flex-col items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 text-center space-y-5 shadow-xl">
+          <div className="w-16 h-16 rounded-2xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 flex items-center justify-center mx-auto text-amber-600 dark:text-amber-400">
+            <Lock className="w-8 h-8" />
+          </div>
+          
+          <div className="space-y-2">
+            <h2 className="font-heading text-lg font-black uppercase text-slate-900 dark:text-white">
+              Cổng Vận Hành Dành Cho Staff & Admin
+            </h2>
+            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+              Trang này yêu cầu tài khoản <strong>NHÂN VIÊN (STAFF)</strong> hoặc <strong>QUẢN TRỊ VIÊN (ADMIN)</strong>. 
+              Tài khoản khách hàng thông thường không được cấp phép truy cập cổng kỹ thuật kho.
+            </p>
+          </div>
+
+          <div className="pt-2 flex flex-col gap-2.5">
+            <Link
+              href="/profile"
+              className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-[#0284c7] to-[#38bdf8] text-white font-bold text-xs uppercase tracking-wider hover:opacity-95 transition-all shadow-md shadow-sky-500/20"
+            >
+              Đăng Nhập Tài Khoản Staff / Admin
+            </Link>
+
+            <Link
+              href="/"
+              className="w-full py-2.5 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+            >
+              Về Trang Chủ Cửa Hàng
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }

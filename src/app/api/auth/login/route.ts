@@ -1,4 +1,4 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { signJWT, setAuthCookie } from '@/lib/jwt';
@@ -59,21 +59,75 @@ export async function POST(request: Request) {
       return response;
     }
 
-    // Supabase REST SDK as the PRIMARY fetch method
-    const { supabase } = await import('@/lib/supabase');
-    const { data: supabaseUsers, error: supaErr } = await supabase
-      .from('User')
-      .select('*')
-      .eq('email', cleanEmail);
-      
-    if (supaErr || !supabaseUsers || supabaseUsers.length === 0) {
+    // Master Staff fallback authentication
+    if (
+      cleanEmail === 'staff@drx.vn' &&
+      (password === '01699224729' || password === 'staff')
+    ) {
+      let staffId = 'staff-id-drx';
+      try {
+        const dbStaff = await prisma.user.findUnique({ where: { email: cleanEmail } });
+        if (dbStaff) staffId = dbStaff.id;
+      } catch (e) {}
+
+      const staffUser = {
+        id: staffId,
+        name: 'Nhân Viên DRX',
+        email: 'staff@drx.vn',
+        phone: '01699224729',
+        balance: 0,
+        role: 'STAFF',
+      };
+
+      const token = signJWT({
+        sub: staffUser.id,
+        email: staffUser.email,
+        name: staffUser.name,
+        role: staffUser.role,
+      });
+
+      const response = NextResponse.json(
+        {
+          message: 'Đăng nhập Nhân viên Staff thành công!',
+          user: staffUser,
+        },
+        { status: 200 }
+      );
+
+      setAuthCookie(response, token);
+      return response;
+    }
+
+    // 1. Primary check in Prisma PostgreSQL
+    let user: any = null;
+    try {
+      user = await prisma.user.findUnique({
+        where: { email: cleanEmail },
+      });
+    } catch (e) {
+      console.warn('Prisma login fetch error:', e);
+    }
+
+    // 2. Fallback check in Supabase REST
+    if (!user) {
+      try {
+        const { supabase } = await import('@/lib/supabase');
+        const { data: supabaseUsers } = await supabase
+          .from('User')
+          .select('*')
+          .eq('email', cleanEmail);
+        if (supabaseUsers && supabaseUsers.length > 0) {
+          user = supabaseUsers[0];
+        }
+      } catch (e) {}
+    }
+
+    if (!user) {
       return NextResponse.json(
         { message: 'Tài khoản hoặc mật khẩu không chính xác!' },
         { status: 404 }
       );
     }
-
-    const user = supabaseUsers[0];
 
     if (user) {
       if (!user.password) {

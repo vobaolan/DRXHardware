@@ -152,17 +152,21 @@ export default function AdminDashboardPage() {
         if (user) {
           setCurrentUser(user);
           const email = String(user.email || '').toLowerCase();
-          if (user.role === 'ADMIN' || user.role === 'MANAGER' || email.includes('admin') || email === 'admin@drx.vn') {
+          const role = String(user.role || '').toUpperCase();
+          
+          // Strict Role Policy: Only ADMIN can access CEO Admin Portal (/admin)
+          // STAFF and regular USER are strictly forbidden from /admin
+          if (role === 'ADMIN' || email === 'admin@drx.vn' || (email.includes('admin') && !email.includes('staff'))) {
             setIsAdmin(true);
+            await fetchAllData();
           } else {
-            setIsAdmin(true); // Allow access for review/demo
+            setIsAdmin(false);
           }
         } else {
-          setIsAdmin(true);
+          setIsAdmin(false);
         }
-        await fetchAllData();
       } catch (e) {
-        setIsAdmin(true);
+        setIsAdmin(false);
       } finally {
         setIsAuthChecking(false);
       }
@@ -370,11 +374,8 @@ export default function AdminDashboardPage() {
     }
   };
 
-  // Handlers for User Role Update
-  const handleToggleUserRole = async (userId: string, currentRole: string) => {
-    const newRole = currentRole === 'ADMIN' ? 'USER' : 'ADMIN';
-    if (!window.confirm(`Xác nhận đổi quyền người dùng sang ${newRole}?`)) return;
-
+  // Handlers for User Role Update (USER, STAFF, ADMIN)
+  const handleSetUserRole = async (userId: string, newRole: string) => {
     try {
       const res = await fetch('/api/admin/users', {
         method: 'PATCH',
@@ -383,9 +384,9 @@ export default function AdminDashboardPage() {
       });
       if (res.ok) {
         setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
-        showToast(`Đã cấp quyền ${newRole} cho tài khoản!`, 'success');
+        showToast(`Đã cập nhật phân quyền thành công: ${newRole}!`, 'success');
       } else {
-        showToast('Lỗi khi đổi quyền người dùng.', 'error');
+        showToast('Lỗi khi cập nhật quyền tài khoản.', 'error');
       }
     } catch (e) {
       showToast('Lỗi kết nối máy chủ.', 'error');
@@ -397,6 +398,64 @@ export default function AdminDashboardPage() {
       <div className="min-h-screen bg-[#f8fafc] dark:bg-[#090d16] text-slate-700 dark:text-slate-300 flex items-center justify-center text-xs font-bold font-mono">
         <RefreshCw className="h-5 w-5 animate-spin text-[#0284c7] mr-2" />
         Đang xác thực quyền truy cập DRX Admin Portal...
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    const isStaffUser = currentUser?.role === 'STAFF' || String(currentUser?.email || '').toLowerCase().includes('staff');
+    return (
+      <div className="min-h-screen bg-[#f8fafc] dark:bg-[#090d16] text-slate-800 dark:text-slate-100 flex flex-col items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 text-center space-y-5 shadow-xl">
+          <div className="w-16 h-16 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 flex items-center justify-center mx-auto text-rose-600 dark:text-rose-400">
+            <ShieldAlert className="w-8 h-8" />
+          </div>
+          
+          <div className="space-y-2">
+            <h2 className="font-heading text-lg font-black uppercase text-slate-900 dark:text-white">
+              {isStaffUser ? 'Giới Hạn Quyền Hạn (Staff)' : 'Yêu Cầu Quyền Quản Trị Viên'}
+            </h2>
+            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+              {isStaffUser ? (
+                <>
+                  Tài khoản của bạn mang vai trò <strong>NHÂN VIÊN (STAFF)</strong>. 
+                  Theo quy định phân quyền, nhân viên không có quyền truy cập Cổng Quản Trị CEO (Admin). 
+                  Vui lòng chuyển sang Cổng Vận Hành Kho & Kỹ Thuật.
+                </>
+              ) : (
+                <>
+                  Trang này chỉ dành riêng cho <strong>Quản Trị Viên (ADMIN)</strong> của hệ thống DRX Hardware. 
+                  Vui lòng đăng nhập với tài khoản hợp lệ.
+                </>
+              )}
+            </p>
+          </div>
+
+          <div className="pt-2 flex flex-col gap-2.5">
+            {isStaffUser ? (
+              <Link
+                href="/staff"
+                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-[#0284c7] to-[#38bdf8] text-white font-bold text-xs uppercase tracking-wider hover:opacity-95 transition-all shadow-md shadow-sky-500/20"
+              >
+                Chuyển Sang Cổng Staff (/staff) →
+              </Link>
+            ) : (
+              <Link
+                href="/profile"
+                className="w-full py-3 px-4 rounded-xl bg-[#0284c7] text-white font-bold text-xs uppercase tracking-wider hover:bg-[#0369a1] transition-all"
+              >
+                Đăng Nhập Tài Khoản Admin
+              </Link>
+            )}
+
+            <Link
+              href="/"
+              className="w-full py-2.5 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+            >
+              Về Trang Chủ Cửa Hàng
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }
@@ -1230,9 +1289,11 @@ export default function AdminDashboardPage() {
                             <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase border ${
                               u.role === 'ADMIN' 
                                 ? 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800' 
+                                : u.role === 'STAFF'
+                                ? 'bg-sky-50 text-[#0284c7] border-sky-200 dark:bg-sky-950/60 dark:text-sky-300 dark:border-sky-800'
                                 : 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
                             }`}>
-                              {u.role || 'USER'}
+                              {u.role === 'ADMIN' ? '👑 ADMIN CEO' : u.role === 'STAFF' ? '🛠️ STAFF KHO' : '👤 KHÁCH HÀNG'}
                             </span>
                           </td>
                           <td className="py-3.5 px-3 font-mono text-slate-600 dark:text-slate-300 whitespace-nowrap">
@@ -1245,16 +1306,15 @@ export default function AdminDashboardPage() {
                             {new Date(u.createdAt).toLocaleDateString('vi-VN')}
                           </td>
                           <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                            <button
-                              onClick={() => handleToggleUserRole(u.id, u.role)}
-                              className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
-                                u.role === 'ADMIN'
-                                  ? 'bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 dark:bg-rose-950/60 dark:border-rose-800'
-                                  : 'bg-sky-50 text-[#0284c7] hover:bg-sky-100 border border-sky-200 dark:bg-sky-950/60 dark:border-sky-800'
-                              }`}
+                            <select
+                              value={u.role || 'USER'}
+                              onChange={(e) => handleSetUserRole(u.id, e.target.value)}
+                              className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus:border-[#0284c7] cursor-pointer"
                             >
-                              {u.role === 'ADMIN' ? 'Hạ Quyền User' : 'Nâng Lên Admin'}
-                            </button>
+                              <option value="USER">👤 Khách hàng (User)</option>
+                              <option value="STAFF">🛠️ Nhân viên (Staff)</option>
+                              <option value="ADMIN">👑 Quản trị viên (Admin)</option>
+                            </select>
                           </td>
                         </tr>
                       ))}

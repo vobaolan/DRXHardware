@@ -738,10 +738,33 @@ function ProfileContent() {
                       </div>
                       <p className="text-xs text-slate-500 dark:text-sky-200/80 font-mono truncate">{sanitizedEmail}</p>
                       
-                      <div className="flex items-center gap-2 pt-1">
-                        <span className="inline-flex items-center gap-1 bg-amber-50 dark:bg-amber-400/20 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-400/40 text-[9.5px] font-black uppercase px-2.5 py-0.5 rounded-full shadow-xs">
-                          <Award className="h-3 w-3" /> DRX ELITE BUILDER
-                        </span>
+                      <div className="flex items-center gap-2 pt-1 flex-wrap">
+                        {currentUser?.role === 'ADMIN' ? (
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="inline-flex items-center gap-1 bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-[9.5px] font-black uppercase px-2.5 py-0.5 rounded-full shadow-xs">
+                              👑 Quản Trị Viên (ADMIN)
+                            </span>
+                            <Link href="/admin" className="text-[10px] font-bold text-purple-600 dark:text-purple-400 hover:underline">
+                              Vào Cổng Admin →
+                            </Link>
+                            <Link href="/staff" className="text-[10px] font-bold text-[#0284c7] hover:underline">
+                              Vào Cổng Staff →
+                            </Link>
+                          </div>
+                        ) : currentUser?.role === 'STAFF' ? (
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="inline-flex items-center gap-1 bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] dark:text-sky-300 border border-sky-200 dark:border-sky-800 text-[9.5px] font-black uppercase px-2.5 py-0.5 rounded-full shadow-xs">
+                              🛠️ Nhân Viên Vận Hành (STAFF)
+                            </span>
+                            <Link href="/staff" className="text-[10px] font-bold text-[#0284c7] hover:underline">
+                              Vào Cổng Staff Kho →
+                            </Link>
+                          </div>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 bg-amber-50 dark:bg-amber-400/20 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-400/40 text-[9.5px] font-black uppercase px-2.5 py-0.5 rounded-full shadow-xs">
+                            <Award className="h-3 w-3" /> Thành Viên DRX (USER)
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>

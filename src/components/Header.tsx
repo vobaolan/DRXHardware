@@ -56,8 +56,17 @@ export const Header: React.FC = () => {
   const [isUserNotifOpen, setIsUserNotifOpen] = useState(false);
   const [customerChatOpen, setCustomerChatOpen] = useState(false);
 
-  const isAdmin = currentUser?.email === 'admin@drx.vn' || currentUser?.email === 'admin@drxhardware.vn' || currentUser?.email === 'admin@odsstore.vn' || currentUser?.role === 'ADMIN';
-  const isStaff = isAdmin || currentUser?.role === 'STAFF' || currentUser?.role === 'WAREHOUSE' || currentUser?.role === 'MANAGER' || currentUser?.email?.includes('staff');
+  const userRole = String(currentUser?.role || '').toUpperCase();
+  const userEmail = String(currentUser?.email || '').toLowerCase();
+
+  // Role 1: ADMIN (Access to both /admin and /staff)
+  const isAdmin = userRole === 'ADMIN' || userEmail === 'admin@drx.vn' || userEmail === 'admin@drxhardware.vn' || userEmail === 'admin@odsstore.vn' || (userEmail.includes('admin') && !userEmail.includes('staff'));
+
+  // Role 2: STAFF (Access ONLY to /staff, NOT /admin)
+  const isStaff = !isAdmin && (userRole === 'STAFF' || userRole === 'WAREHOUSE' || userRole === 'MANAGER' || userEmail === 'staff@drx.vn' || userEmail.includes('staff'));
+
+  // Staff Portal Access (allowed for Admin or Staff)
+  const canAccessStaffPortal = isAdmin || isStaff;
 
   // Load products for Header live search
   useEffect(() => {
@@ -424,7 +433,7 @@ export const Header: React.FC = () => {
           </div>
 
           {/* STAFF QUICK ACCESS */}
-          {isStaff && (
+          {canAccessStaffPortal && (
             <Link
               href="/staff"
               className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 text-[#0284c7] dark:text-sky-300 border border-sky-200 dark:border-sky-800 text-[11px] font-black uppercase tracking-wider transition-all shadow-xs"
