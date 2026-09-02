@@ -742,9 +742,6 @@ function ProfileContent() {
                         <span className="inline-flex items-center gap-1 bg-amber-50 dark:bg-amber-400/20 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-400/40 text-[9.5px] font-black uppercase px-2.5 py-0.5 rounded-full shadow-xs">
                           <Award className="h-3 w-3" /> DRX ELITE BUILDER
                         </span>
-                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">
-                          ● Bảo hành 1 đổi 1 36T
-                        </span>
                       </div>
                     </div>
                   </div>
