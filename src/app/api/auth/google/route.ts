@@ -91,6 +91,7 @@ export async function POST(request: Request) {
       image: foundUser?.image || userAvatar,
       balance: Number(foundUser?.balance || 0),
       role: foundUser?.role || userRole,
+      provider: 'google',
     };
 
     // 5. Issue JWT Token & Set HttpOnly Cookie
@@ -99,6 +100,7 @@ export async function POST(request: Request) {
       email: authUser.email,
       name: authUser.name,
       role: authUser.role,
+      provider: 'google',
     });
 
     const response = NextResponse.json(

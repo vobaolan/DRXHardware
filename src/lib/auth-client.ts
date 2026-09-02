@@ -5,6 +5,7 @@ export interface AuthUser {
   balance: number;
   role: string;
   phone?: string;
+  provider?: string;
 }
 
 const SESSION_KEY = 'drx_user';

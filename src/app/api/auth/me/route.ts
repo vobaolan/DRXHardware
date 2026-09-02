@@ -58,6 +58,7 @@ export async function GET(request: Request) {
             email: authUser.email,
             role: 'ADMIN',
             balance: userBalance,
+            provider: authUser.provider,
           },
         },
         { status: 200 }
@@ -72,6 +73,7 @@ export async function GET(request: Request) {
           email: authUser.email,
           role: userRole,
           balance: userBalance,
+          provider: authUser.provider,
         },
       },
       { status: 200 }

@@ -104,6 +104,7 @@ function ProfileContent() {
     name: string;
     email: string;
     role: string;
+    provider?: string;
   } | null>(null);
 
   // Live order list
@@ -127,24 +128,32 @@ function ProfileContent() {
       const { getStoredSessionUser, verifyCurrentSession } = await import('@/lib/auth-client');
       const sessionUser = getStoredSessionUser();
       if (sessionUser) {
+        const storedProvider = typeof window !== 'undefined' ? sessionStorage.getItem('drx_auth_provider') : null;
+        const resolvedSessionUser = storedProvider === 'google' || sessionUser.provider === 'google' || sessionUser.id?.startsWith('google-')
+          ? { ...sessionUser, provider: 'google' }
+          : sessionUser;
+
         setCurrentUser(prev => {
-          if (prev && prev.id === sessionUser.id && prev.email === sessionUser.email) {
+          if (prev && prev.id === resolvedSessionUser.id && prev.email === resolvedSessionUser.email) {
             return prev;
           }
-          return sessionUser;
+          return resolvedSessionUser;
         });
-        setProfileName(sessionUser.name || '');
+        setProfileName(resolvedSessionUser.name || '');
         setIsLoggedIn(true);
 
         verifyCurrentSession().then((verified) => {
           if (verified) {
+            const resolvedVerified = storedProvider === 'google' || verified.provider === 'google' || verified.id?.startsWith('google-')
+              ? { ...verified, provider: 'google' }
+              : verified;
             setCurrentUser(prev => {
-              if (prev && prev.id === verified.id && prev.email === verified.email) {
+              if (prev && prev.id === resolvedVerified.id && prev.email === resolvedVerified.email) {
                 return prev;
               }
-              return verified;
+              return resolvedVerified;
             });
-            setProfileName(verified.name || '');
+            setProfileName(resolvedVerified.name || '');
             setIsLoggedIn(true);
           } else {
             setCurrentUser(null);
@@ -221,6 +230,9 @@ function ProfileContent() {
       const { loginUser } = await import('@/lib/auth-client');
       const user = await loginUser(loginEmail, loginPassword);
       if (user) {
+        if (typeof window !== 'undefined') {
+          sessionStorage.removeItem('drx_auth_provider');
+        }
         if (rememberMe) {
           localStorage.setItem('drx_remember_email', loginEmail);
         } else {
@@ -254,6 +266,9 @@ function ProfileContent() {
       const { registerUser } = await import('@/lib/auth-client');
       const user = await registerUser(regEmail, regPassword, regName);
       if (user) {
+        if (typeof window !== 'undefined') {
+          sessionStorage.removeItem('drx_auth_provider');
+        }
         setCurrentUser(user);
         setProfileName(user.name || regName);
         setIsLoggedIn(true);
@@ -281,7 +296,10 @@ function ProfileContent() {
       const { loginWithGoogle } = await import('@/lib/auth-client');
       const user = await loginWithGoogle({ email, name, avatar });
       if (user) {
-        setCurrentUser(user);
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('drx_auth_provider', 'google');
+        }
+        setCurrentUser({ ...user, provider: 'google' });
         setProfileName(user.name || name);
         setIsLoggedIn(true);
         setShowGoogleModal(false);
@@ -299,6 +317,9 @@ function ProfileContent() {
 
   const handleLogout = async () => {
     const { clearSessionUser } = await import('@/lib/auth-client');
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('drx_auth_provider');
+    }
     await clearSessionUser();
     setCurrentUser(null);
     setOrders([]);
@@ -347,6 +368,10 @@ function ProfileContent() {
   const rawEmail = currentUser?.email || '';
   const sanitizedEmail = rawEmail === 'admin@odsstore.vn' || rawEmail === 'admin@drxhardware.vn' ? 'admin@drx.vn' : rawEmail;
   const sanitizedInitial = sanitizedName.charAt(0).toUpperCase();
+  const isGoogleUser =
+    currentUser?.provider === 'google' ||
+    currentUser?.id?.startsWith('google-') ||
+    (typeof window !== 'undefined' && sessionStorage.getItem('drx_auth_provider') === 'google');
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#090d16] text-slate-900 dark:text-slate-100 flex flex-col antialiased tech-grid-pattern transition-colors duration-300">
@@ -1345,14 +1370,26 @@ function ProfileContent() {
                           </div>
 
                           <div className="space-y-1.5">
-                            <label className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block">Địa chỉ Email</label>
+                            <div className="flex items-center justify-between">
+                              <label className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block">Địa chỉ Email</label>
+                              {isGoogleUser && (
+                                <span className="inline-flex items-center gap-1.5 text-[9.5px] font-bold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/60 px-2 py-0.5 rounded-full border border-sky-200 dark:border-sky-800">
+                                  <GoogleIcon className="w-3 h-3" />
+                                  Tài khoản Google
+                                </span>
+                              )}
+                            </div>
                             <input
                               type="email"
                               disabled
                               value={sanitizedEmail}
                               className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900/60 py-3 px-4 text-xs font-semibold text-slate-500 cursor-not-allowed"
                             />
-                            <span className="text-[10px] text-slate-400">Email được liên kết cố định với tài khoản.</span>
+                            <span className="text-[10px] text-slate-400">
+                              {isGoogleUser
+                                ? 'Được xác thực an toàn qua tài khoản Google của bạn.'
+                                : 'Email được liên kết cố định với tài khoản.'}
+                            </span>
                           </div>
 
                           <div className="space-y-1.5">
@@ -1387,64 +1424,66 @@ function ProfileContent() {
                         </form>
                       </div>
 
-                      {/* CARD 2: ĐỔI MẬT KHẨU (INTEGRATED INSIDE PERSONAL INFO) */}
-                      <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-6 sm:p-8 space-y-5 shadow-sm">
-                        <div className="border-b border-slate-200 dark:border-slate-800 pb-4">
-                          <h3 className="font-heading text-sm font-black uppercase tracking-wider text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                            <Lock className="h-4 w-4 text-[#0284c7]" />
-                            <span>ĐỔI MẬT KHẨU TÀI KHOẢN</span>
-                          </h3>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 font-light mt-0.5">
-                            Nên đặt mật khẩu mạnh (tối thiểu 6 ký tự) để bảo vệ tài khoản và lịch sử bảo hành linh kiện.
-                          </p>
+                      {/* CARD 2: ĐỔI MẬT KHẨU (CHỈ HIỂN THỊ KHI ĐĂNG NHẬP BẰNG TÀI KHOẢN EMAIL, ẨN KHI ĐĂNG NHẬP GOOGLE) */}
+                      {!isGoogleUser && (
+                        <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-6 sm:p-8 space-y-5 shadow-sm">
+                          <div className="border-b border-slate-200 dark:border-slate-800 pb-4">
+                            <h3 className="font-heading text-sm font-black uppercase tracking-wider text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                              <Lock className="h-4 w-4 text-[#0284c7]" />
+                              <span>ĐỔI MẬT KHẨU TÀI KHOẢN</span>
+                            </h3>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 font-light mt-0.5">
+                              Nên đặt mật khẩu mạnh (tối thiểu 6 ký tự) để bảo vệ tài khoản và lịch sử bảo hành linh kiện.
+                            </p>
+                          </div>
+
+                          <form onSubmit={handleChangePassword} className="space-y-4 max-w-lg">
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block">Mật khẩu hiện tại</label>
+                              <input
+                                type="password"
+                                required
+                                value={currentPassword}
+                                onChange={(e) => setCurrentPassword(e.target.value)}
+                                placeholder="••••••••"
+                                className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-3 px-4 text-xs font-semibold text-slate-900 dark:text-slate-100 focus:border-[#0284c7] focus:outline-none"
+                              />
+                            </div>
+
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block">Mật khẩu mới</label>
+                              <input
+                                type="password"
+                                required
+                                value={newPassword}
+                                onChange={(e) => setNewPassword(e.target.value)}
+                                placeholder="Tối thiểu 6 ký tự"
+                                className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-3 px-4 text-xs font-semibold text-slate-900 dark:text-slate-100 focus:border-[#0284c7] focus:outline-none"
+                              />
+                            </div>
+
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block">Xác nhận mật khẩu mới</label>
+                              <input
+                                type="password"
+                                required
+                                value={confirmNewPassword}
+                                onChange={(e) => setConfirmNewPassword(e.target.value)}
+                                placeholder="Nhập lại mật khẩu mới"
+                                className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-3 px-4 text-xs font-semibold text-slate-900 dark:text-slate-100 focus:border-[#0284c7] focus:outline-none"
+                              />
+                            </div>
+
+                            <button
+                              type="submit"
+                              className="uiverse-btn-shimmer inline-flex items-center gap-2 rounded-2xl text-white px-6 py-3 text-xs font-heading font-black uppercase tracking-wider shadow-lg cursor-pointer"
+                            >
+                              <Lock className="h-4 w-4" />
+                              <span>Cập Nhật Mật Khẩu</span>
+                            </button>
+                          </form>
                         </div>
-
-                        <form onSubmit={handleChangePassword} className="space-y-4 max-w-lg">
-                          <div className="space-y-1.5">
-                            <label className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block">Mật khẩu hiện tại</label>
-                            <input
-                              type="password"
-                              required
-                              value={currentPassword}
-                              onChange={(e) => setCurrentPassword(e.target.value)}
-                              placeholder="••••••••"
-                              className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-3 px-4 text-xs font-semibold text-slate-900 dark:text-slate-100 focus:border-[#0284c7] focus:outline-none"
-                            />
-                          </div>
-
-                          <div className="space-y-1.5">
-                            <label className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block">Mật khẩu mới</label>
-                            <input
-                              type="password"
-                              required
-                              value={newPassword}
-                              onChange={(e) => setNewPassword(e.target.value)}
-                              placeholder="Tối thiểu 6 ký tự"
-                              className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-3 px-4 text-xs font-semibold text-slate-900 dark:text-slate-100 focus:border-[#0284c7] focus:outline-none"
-                            />
-                          </div>
-
-                          <div className="space-y-1.5">
-                            <label className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block">Xác nhận mật khẩu mới</label>
-                            <input
-                              type="password"
-                              required
-                              value={confirmNewPassword}
-                              onChange={(e) => setConfirmNewPassword(e.target.value)}
-                              placeholder="Nhập lại mật khẩu mới"
-                              className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-3 px-4 text-xs font-semibold text-slate-900 dark:text-slate-100 focus:border-[#0284c7] focus:outline-none"
-                            />
-                          </div>
-
-                          <button
-                            type="submit"
-                            className="uiverse-btn-shimmer inline-flex items-center gap-2 rounded-2xl text-white px-6 py-3 text-xs font-heading font-black uppercase tracking-wider shadow-lg cursor-pointer"
-                          >
-                            <Lock className="h-4 w-4" />
-                            <span>Cập Nhật Mật Khẩu</span>
-                          </button>
-                        </form>
-                      </div>
+                      )}
 
                     </div>
                   )}
