@@ -121,59 +121,19 @@ export default function Home() {
       fetch(`/api/products?t=${Date.now()}`, { cache: 'no-store' })
         .then((res) => res.json())
         .then((data) => {
-          const apiProds = data.products && Array.isArray(data.products) ? data.products.filter((p: any) => !isDeletedOrObsolete(p)) : [];
-          const combined = [...DEFAULT_HOME_PRODUCTS];
-
-          // 1. Merge API products
-          apiProds.forEach((ap: any) => {
-            const idx = combined.findIndex((p) => p.id === ap.id || p.slug === ap.slug || p.name.toLowerCase() === ap.name.toLowerCase());
-            if (idx >= 0) {
-              combined[idx] = { 
-                ...combined[idx], 
-                ...ap, 
-                coverImage: ap.coverImage || combined[idx].coverImage,
-                category: Array.isArray(ap.category) ? ap.category : [ap.category || combined[idx].category[0]],
-              };
-            } else {
-              combined.push(ap);
-            }
-          });
-
-          // 2. Merge local admin edited products (highest live client priority)
-          localProds.forEach((lp: any) => {
-            const idx = combined.findIndex((p) => p.id === lp.id || p.slug === lp.slug || p.name.toLowerCase() === lp.name.toLowerCase());
-            if (idx >= 0) {
-              combined[idx] = { 
-                ...combined[idx], 
-                ...lp,
-                coverImage: lp.coverImage || combined[idx].coverImage,
-                category: Array.isArray(lp.category) ? lp.category : [lp.category || combined[idx].category[0]],
-              };
-            } else {
-              combined.push(lp);
-            }
-          });
-
-          const finalLive = combined.filter((p) => !isDeletedOrObsolete(p));
-          setLiveProducts(finalLive);
+          const apiProds = data.products && Array.isArray(data.products) 
+            ? data.products.filter((p: any) => !isDeletedOrObsolete(p)) 
+            : [];
+          
+          if (apiProds.length > 0) {
+            setLiveProducts(apiProds);
+          } else {
+            setLiveProducts(DEFAULT_HOME_PRODUCTS.filter((p) => !isDeletedOrObsolete(p)));
+          }
         })
         .catch((err) => {
           console.error('Lỗi khi tải sản phẩm:', err);
-          const combined = [...DEFAULT_HOME_PRODUCTS];
-          localProds.forEach((lp: any) => {
-            const idx = combined.findIndex((p) => p.id === lp.id || p.slug === lp.slug || p.name.toLowerCase() === lp.name.toLowerCase());
-            if (idx >= 0) {
-              combined[idx] = { 
-                ...combined[idx], 
-                ...lp,
-                coverImage: lp.coverImage || combined[idx].coverImage,
-              };
-            } else {
-              combined.push(lp);
-            }
-          });
-          const finalLive = combined.filter((p) => !isDeletedOrObsolete(p));
-          setLiveProducts(finalLive);
+          setLiveProducts(DEFAULT_HOME_PRODUCTS.filter((p) => !isDeletedOrObsolete(p)));
         })
         .finally(() => setIsLoading(false));
     };

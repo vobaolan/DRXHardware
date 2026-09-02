@@ -206,18 +206,7 @@ function ProductsCatalogContent() {
         .then((res) => res.json())
         .then((data) => {
           const apiProds = data.products && Array.isArray(data.products) ? data.products : [];
-          const combined = [...apiProds];
-
-          localProds.forEach((lp) => {
-            const idx = combined.findIndex((cp) => cp.id === lp.id || cp.slug === lp.slug || cp.name.toLowerCase() === lp.name.toLowerCase());
-            if (idx >= 0) {
-              combined[idx] = { ...combined[idx], ...lp, coverImage: lp.coverImage || combined[idx].coverImage };
-            } else {
-              combined.unshift(lp);
-            }
-          });
-
-          setLiveProducts(combined);
+          setLiveProducts(apiProds);
         })
         .catch((err) => console.error('Lỗi khi tải sản phẩm:', err))
         .finally(() => setIsLoading(false));

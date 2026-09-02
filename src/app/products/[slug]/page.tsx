@@ -85,38 +85,10 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
       .finally(() => setIsLoading(false));
   }, [params.slug]);
 
-  // Determine active product (Merge Local Admin store over DB Product to keep Admin edits instant!)
+  // Determine active product directly from Database API
   const product = useMemo(() => {
-    const baseSlug = params.slug.split('-')[0].toLowerCase();
-    let localMatch: any = null;
-
-    if (typeof window !== 'undefined') {
-      try {
-        const stored = localStorage.getItem('ods_admin_products');
-        if (stored) {
-          const list = JSON.parse(stored);
-          localMatch = list.find((p: any) => 
-            p.slug === params.slug || 
-            p.id === params.slug || 
-            (p.slug && params.slug.startsWith(p.slug)) || 
-            (p.slug && p.slug.startsWith(baseSlug)) ||
-            (p.name && p.name.toLowerCase().includes(baseSlug))
-          );
-        }
-      } catch (e) {}
-    }
-
-    let active: any = null;
-    if (realProduct && localMatch) {
-      active = { ...realProduct, ...localMatch };
-    } else if (localMatch) {
-      active = localMatch;
-    } else if (realProduct) {
-      active = realProduct;
-    }
-
-    return active;
-  }, [realProduct, params.slug]);
+    return realProduct;
+  }, [realProduct]);
 
   // Save recently viewed product to localStorage for Header menu
   useEffect(() => {

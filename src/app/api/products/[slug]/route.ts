@@ -25,20 +25,21 @@ export async function GET(
 
     const baseSlug = slug.split('-')[0].toLowerCase();
 
-    // 1. Primary: Supabase
+    // 1. Primary: Supabase PostgreSQL
     let supaProduct: any = null;
     try {
       const { data: supabaseProducts } = await supabase
         .from('Product')
         .select('*');
       if (supabaseProducts && supabaseProducts.length > 0) {
-        supaProduct = supabaseProducts.find((p: any) => 
-          p.slug === slug || 
-          p.id === slug || 
-          slug.startsWith(p.slug) || 
-          p.slug.startsWith(baseSlug) ||
-          p.name.toLowerCase().includes(baseSlug)
-        );
+        // Exact match first
+        supaProduct = supabaseProducts.find((p: any) => p.slug === slug || p.id === slug);
+        if (!supaProduct) {
+          supaProduct = supabaseProducts.find((p: any) => 
+            (p.slug && slug.includes(p.slug)) || 
+            (p.slug && p.slug.includes(slug))
+          );
+        }
       }
     } catch (e) {}
 
@@ -50,21 +51,18 @@ export async function GET(
           where: { slug },
         });
         if (!prismaProduct) {
-          const allPrisma = await prisma.product.findMany();
-          prismaProduct = allPrisma.find((p) => 
-            p.slug === slug || 
-            slug.startsWith(p.slug) || 
-            p.slug.startsWith(baseSlug) ||
-            p.name.toLowerCase().includes(baseSlug)
-          ) || null;
+          prismaProduct = await prisma.product.findUnique({
+            where: { id: slug },
+          });
         }
       } catch (e) {}
     }
 
     // 3. INITIAL_PRODUCTS hardware catalog fallback
-    const initMatch = INITIAL_PRODUCTS.find(
-      (p) => p.slug === slug || p.id === slug || slug.startsWith(p.slug) || p.slug.startsWith(baseSlug)
-    );
+    let initMatch = INITIAL_PRODUCTS.find((p) => p.slug === slug || p.id === slug);
+    if (!initMatch) {
+      initMatch = INITIAL_PRODUCTS.find((p) => (p.slug && slug.includes(p.slug)) || (p.slug && p.slug.includes(slug)));
+    }
 
     const product = supaProduct || prismaProduct || (initMatch ? {
       ...initMatch,

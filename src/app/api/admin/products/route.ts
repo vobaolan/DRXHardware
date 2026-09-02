@@ -253,19 +253,31 @@ export async function PUT(request: Request) {
     if (wattage) updatedData.wattage = Number(wattage);
     if (formFactor) updatedData.formFactor = formFactor;
 
-    // Update in Prisma
+    // Upsert in Prisma / Supabase so default seed products get saved directly into DB
     let updatedProduct: any = null;
     try {
-      updatedProduct = await prisma.product.update({
+      updatedProduct = await prisma.product.upsert({
         where: { id },
-        data: updatedData,
+        create: {
+          id,
+          platform: brand || 'PC',
+          type: singleCategory,
+          status: true,
+          ...updatedData,
+        },
+        update: updatedData,
       });
     } catch (e) {
       try {
         const { data } = await supabase
           .from('Product')
-          .update(updatedData)
-          .eq('id', id)
+          .upsert({
+            id,
+            platform: brand || 'PC',
+            type: singleCategory,
+            status: true,
+            ...updatedData,
+          })
           .select()
           .single();
         if (data) updatedProduct = data;
