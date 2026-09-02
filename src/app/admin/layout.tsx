@@ -135,45 +135,6 @@ export default function AdminLayout({
   // 🟢 AUTHORIZED ADMIN WRAPPER
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#090d16] text-slate-900 dark:text-slate-100 flex flex-col antialiased">
-      {/* ADMIN SUB-HEADER NAVIGATION BAR */}
-      <div className="border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-950/90 backdrop-blur-md sticky top-0 z-30 px-4 sm:px-6 lg:px-8 py-3">
-        <div className="mx-auto max-w-7xl flex flex-col sm:flex-row items-center justify-between gap-3">
-          
-          <div className="flex items-center gap-3">
-            <Link href="/" className="flex items-center gap-2 group">
-              <div className="h-8 w-8 rounded-xl bg-gradient-to-tr from-[#0284c7] to-[#38bdf8] flex items-center justify-center text-white font-black text-xs font-heading shadow-md shadow-sky-500/30">
-                DRX
-              </div>
-              <span className="font-heading font-black text-sm tracking-wider text-slate-900 dark:text-slate-100">
-                ADMIN PANEL
-              </span>
-            </Link>
-
-            <span className="hidden sm:inline bg-[#5B3DF5]/10 text-[#5B3DF5] dark:text-[#D6C7FF] text-[10px] font-black px-2.5 py-0.5 rounded-full border border-[#5B3DF5]/30">
-              SYSTEM v2.5
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto text-xs no-scrollbar">
-            <Link
-              href="/admin"
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl font-heading font-extrabold bg-[#0284c7] text-white hover:bg-[#0369a1] transition-all shadow-sm"
-            >
-              <LayoutDashboard className="w-3.5 h-3.5" />
-              <span>Báo Cáo CEO & Bảng Điều Hành</span>
-            </Link>
-
-            <Link
-              href="/staff"
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl font-heading font-extrabold bg-emerald-600 text-white hover:bg-emerald-700 transition-all shadow-sm"
-            >
-              <Wrench className="w-3.5 h-3.5" />
-              <span>Cổng Vận Hành Staff & Quản Lý Kho 4-in-1</span>
-            </Link>
-          </div>
-        </div>
-      </div>
-
       <main className="flex-1">
         {children}
       </main>
