@@ -44,37 +44,167 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isCartOpen, setCartOpen] = useState(false);
   const [coupon, setCoupon] = useState<Coupon | null>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
-  // Load cart from localStorage on mount
-  useEffect(() => {
-    const savedCart = localStorage.getItem('kami_steam_cart');
-    if (savedCart) {
-      try {
-        setCartItems(JSON.parse(savedCart));
-      } catch (e) {
-        console.error('Failed to parse cart data', e);
+  // Helper to generate user storage key
+  const getUserCartKey = (user: any) => {
+    if (!user) return null;
+    return `drx_user_cart_${user.id || user.email}`;
+  };
+
+  // Helper to load cart based on current session
+  const loadActiveCart = (user: any): CartItem[] => {
+    if (typeof window === 'undefined') return [];
+
+    // Clean up any legacy cart keys
+    try {
+      localStorage.removeItem('kami_steam_cart');
+      localStorage.removeItem('ods_cart');
+    } catch (e) {}
+
+    if (user && (user.id || user.email)) {
+      // 1. LOGGED-IN USERS: Cart is connected directly to user account
+      const userKey = getUserCartKey(user);
+      if (userKey) {
+        try {
+          const savedUserCart = localStorage.getItem(userKey);
+          if (savedUserCart) {
+            return JSON.parse(savedUserCart);
+          }
+        } catch (e) {
+          console.error('Failed to parse user cart data', e);
+        }
       }
+      return [];
+    } else {
+      // 2. GUESTS (Khách): Stored in sessionStorage
+      // - F5 (Page Refresh): Preserved within current tab session!
+      // - Close tab / Open new tab: Automatically wiped/reset by the browser!
+      try {
+        const guestCart = sessionStorage.getItem('drx_guest_cart');
+        if (guestCart) {
+          return JSON.parse(guestCart);
+        }
+      } catch (e) {
+        console.error('Failed to parse guest cart data', e);
+      }
+      return [];
     }
+  };
+
+  // Helper to persist cart changes
+  const persistCart = (items: CartItem[], user: any) => {
+    if (typeof window === 'undefined') return;
+
+    if (user && (user.id || user.email)) {
+      // Save directly to user's persistent cart
+      const userKey = getUserCartKey(user);
+      if (userKey) {
+        try {
+          localStorage.setItem(userKey, JSON.stringify(items));
+        } catch (e) {}
+      }
+    } else {
+      // Save to guest session storage (persists on F5, cleared on tab close)
+      try {
+        sessionStorage.setItem('drx_guest_cart', JSON.stringify(items));
+      } catch (e) {}
+    }
+  };
+
+  // Initialize cart on mount & listen for Auth state changes
+  useEffect(() => {
+    let activeUser: any = null;
+
+    const initAuthAndCart = async () => {
+      try {
+        const { getStoredSessionUser } = await import('@/lib/auth-client');
+        activeUser = getStoredSessionUser();
+        setCurrentUser(activeUser);
+        const initialCart = loadActiveCart(activeUser);
+        setCartItems(initialCart);
+      } catch (e) {
+        setCartItems([]);
+      }
+    };
+
+    initAuthAndCart();
+
+    // Listen for authentication changes (login, logout, switch user)
+    const handleAuthChange = async () => {
+      try {
+        const { getStoredSessionUser } = await import('@/lib/auth-client');
+        const newUser = getStoredSessionUser();
+
+        // If guest had items in sessionStorage and just logged in, merge items into user cart!
+        if (newUser && !activeUser) {
+          let guestItems: CartItem[] = [];
+          try {
+            const guestRaw = sessionStorage.getItem('drx_guest_cart');
+            if (guestRaw) guestItems = JSON.parse(guestRaw);
+          } catch (e) {}
+
+          const userKey = getUserCartKey(newUser);
+          let userItems: CartItem[] = [];
+          if (userKey) {
+            try {
+              const userRaw = localStorage.getItem(userKey);
+              if (userRaw) userItems = JSON.parse(userRaw);
+            } catch (e) {}
+          }
+
+          if (guestItems.length > 0) {
+            const merged = [...userItems];
+            for (const gItem of guestItems) {
+              const existIdx = merged.findIndex((i) => i.id === gItem.id);
+              if (existIdx >= 0) {
+                merged[existIdx].quantity += gItem.quantity;
+              } else {
+                merged.push(gItem);
+              }
+            }
+            if (userKey) {
+              localStorage.setItem(userKey, JSON.stringify(merged));
+            }
+            sessionStorage.removeItem('drx_guest_cart');
+            setCartItems(merged);
+            activeUser = newUser;
+            setCurrentUser(newUser);
+            return;
+          }
+        }
+
+        activeUser = newUser;
+        setCurrentUser(newUser);
+        const loaded = loadActiveCart(newUser);
+        setCartItems(loaded);
+      } catch (e) {}
+    };
+
+    window.addEventListener('ods_user_update', handleAuthChange);
+    return () => {
+      window.removeEventListener('ods_user_update', handleAuthChange);
+    };
   }, []);
 
-  // Save cart to localStorage on changes
+  // Save cart state
   const saveCart = (items: CartItem[]) => {
     setCartItems(items);
-    localStorage.setItem('kami_steam_cart', JSON.stringify(items));
+    persistCart(items, currentUser);
   };
 
   const addToCart = (product: Omit<CartItem, 'quantity'>) => {
     const existingItem = cartItems.find((item) => item.id === product.id);
+    let updatedItems: CartItem[];
     if (existingItem) {
-      // For digital keys/accounts, limit quantity to inventory, but we default to incrementing
-      const updatedItems = cartItems.map((item) =>
+      updatedItems = cartItems.map((item) =>
         item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
       );
-      saveCart(updatedItems);
     } else {
-      saveCart([...cartItems, { ...product, quantity: 1 }]);
+      updatedItems = [...cartItems, { ...product, quantity: 1 }];
     }
-    setCartOpen(true); // Open cart drawer on add
+    saveCart(updatedItems);
+    setCartOpen(true);
   };
 
   const removeFromCart = (id: string) => {
@@ -94,8 +224,14 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const clearCart = () => {
-    saveCart([]);
+    setCartItems([]);
     setCoupon(null);
+    persistCart([], currentUser);
+    if (!currentUser) {
+      try {
+        sessionStorage.removeItem('drx_guest_cart');
+      } catch (e) {}
+    }
   };
 
   const cartCount = cartItems.reduce((total, item) => total + item.quantity, 0);
