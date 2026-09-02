@@ -267,11 +267,15 @@ function ProfileContent() {
     }
   };
 
-  const handleGoogleAuth = async (emailOverride?: string, nameOverride?: string) => {
+  const handleGoogleAuth = async (googleEmail?: string) => {
+    const email = (googleEmail || customGoogleEmail).trim();
+    if (!email || !email.includes('@')) {
+      showToast('Vui lòng nhập địa chỉ Gmail hợp lệ!', 'error');
+      return;
+    }
     setIsGoogleLoading(true);
     try {
-      const email = emailOverride || customGoogleEmail.trim() || 'khachhang.drx@gmail.com';
-      const name = nameOverride || customGoogleName.trim() || (email.split('@')[0].replace(/[._]/g, ' ').toUpperCase());
+      const name = email.split('@')[0].replace(/[._]/g, ' ').toUpperCase();
       const avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(email)}`;
 
       const { loginWithGoogle } = await import('@/lib/auth-client');
@@ -496,18 +500,6 @@ function ProfileContent() {
                         />
                         <span>Ghi nhớ đăng nhập</span>
                       </label>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setLoginEmail('admin@drx.vn');
-                          setLoginPassword('admin');
-                          showToast('Đã điền tài khoản mẫu Admin: admin@drx.vn', 'info');
-                        }}
-                        className="text-[10px] font-bold text-sky-600 hover:underline cursor-pointer"
-                      >
-                        Tài khoản mẫu
-                      </button>
                     </div>
 
                     <button
@@ -645,56 +637,44 @@ function ProfileContent() {
                         </button>
                       </div>
 
-                      <div className="space-y-3">
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                          Chọn tài khoản Google của bạn để tiếp tục đến <strong className="text-slate-900 dark:text-white">DRX Hardware</strong>:
+                      <div className="space-y-4">
+                        <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                          Nhập địa chỉ tài khoản Google / Gmail của bạn để tiếp tục đến <strong className="text-slate-900 dark:text-white">DRX Hardware</strong>:
                         </p>
 
-                        {/* Quick One-Click Google Account Option */}
-                        <button
-                          type="button"
-                          onClick={() => handleGoogleAuth('khachhang.drx@gmail.com', 'Khách Hàng DRX')}
-                          disabled={isGoogleLoading}
-                          className="w-full flex items-center gap-3 p-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/80 hover:bg-sky-50 dark:hover:bg-slate-700 hover:border-sky-300 transition-all text-left cursor-pointer group"
-                        >
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-xs shrink-0">
-                            G
+                        <div className="space-y-3">
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+                              Địa chỉ Gmail
+                            </label>
+                            <input
+                              type="email"
+                              required
+                              placeholder="tenban@gmail.com"
+                              value={customGoogleEmail}
+                              onChange={(e) => setCustomGoogleEmail(e.target.value)}
+                              className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-3 px-4 text-xs font-semibold text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-[#0284c7] focus:outline-none focus:ring-2 focus:ring-sky-400/20 transition-all"
+                            />
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="text-xs font-bold text-slate-900 dark:text-white truncate group-hover:text-[#0284c7]">
-                              Khách Hàng DRX
-                            </div>
-                            <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                              khachhang.drx@gmail.com
-                            </div>
-                          </div>
-                          <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
-                        </button>
 
-                        {/* Or Enter Custom Google Email */}
-                        <div className="pt-2 space-y-2 border-t border-slate-100 dark:border-slate-800">
-                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                            Hoặc nhập địa chỉ Gmail của bạn:
-                          </label>
-                          <input
-                            type="email"
-                            placeholder="tenban@gmail.com"
-                            value={customGoogleEmail}
-                            onChange={(e) => setCustomGoogleEmail(e.target.value)}
-                            className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-2.5 px-3.5 text-xs font-semibold text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-[#0284c7] focus:outline-none"
-                          />
                           <button
                             type="button"
-                            onClick={() => handleGoogleAuth(customGoogleEmail || undefined, customGoogleName || undefined)}
+                            onClick={() => {
+                              if (!customGoogleEmail || !customGoogleEmail.includes('@')) {
+                                showToast('Vui lòng nhập địa chỉ Gmail hợp lệ!', 'error');
+                                return;
+                              }
+                              handleGoogleAuth(customGoogleEmail);
+                            }}
                             disabled={isGoogleLoading}
-                            className="w-full py-2.5 rounded-2xl bg-[#0284c7] hover:bg-[#0369a1] text-white font-heading text-xs font-black uppercase tracking-wider shadow-md shadow-sky-500/25 transition-all cursor-pointer flex items-center justify-center gap-2"
+                            className="w-full py-3.5 rounded-2xl bg-[#0284c7] hover:bg-[#0369a1] text-white font-heading text-xs font-black uppercase tracking-wider shadow-md shadow-sky-500/25 transition-all cursor-pointer flex items-center justify-center gap-2"
                           >
                             {isGoogleLoading ? (
                               <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
                             ) : (
-                              <GoogleIcon className="w-3.5 h-3.5" />
+                              <GoogleIcon className="w-4 h-4" />
                             )}
-                            <span>Xác Nhận & Tiếp Tục</span>
+                            <span>Tiếp Tục Với Google</span>
                           </button>
                         </div>
                       </div>
