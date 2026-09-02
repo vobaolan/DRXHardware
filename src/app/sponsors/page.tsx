@@ -190,11 +190,11 @@ export default function SponsorsPage() {
               <span>ĐỐI TÁC PHÂN PHỐI ỦY QUYỀN</span>
             </div>
 
-            <h1 className="font-heading text-2xl sm:text-3xl lg:text-4xl font-black uppercase text-slate-900 dark:text-white tracking-normal max-w-4xl mx-auto">
-              <span className="block leading-normal pb-1.5 sm:pb-2.5 tracking-normal">
+            <h1 className="font-heading text-2xl sm:text-3xl lg:text-4xl font-black uppercase text-slate-900 dark:text-white tracking-normal max-w-4xl mx-auto leading-[1.22]">
+              <span className="block text-slate-900 dark:text-white">
                 Các Thương Hiệu Phần Cứng Hàng Đầu
               </span>
-              <span className="block text-[#0284c7] dark:text-[#38bdf8] leading-normal pt-1.5 sm:pt-2.5 mt-1.5 sm:mt-2.5 tracking-normal">
+              <span className="block text-[#0284c7] dark:text-[#38bdf8] mt-1 sm:mt-1.5">
                 Tại DRX Hardware
               </span>
             </h1>
