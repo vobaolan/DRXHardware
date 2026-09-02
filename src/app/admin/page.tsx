@@ -18,6 +18,7 @@ import { ProductFormModal, ProductFormData } from '@/components/admin/ProductFor
 import { supabase } from '@/lib/supabase';
 import { ModernSelect, SelectOption } from '@/components/ui/ModernSelect';
 import { PortalHeader } from '@/components/admin/PortalHeader';
+import { OrderVerificationModal } from '@/components/admin/OrderVerificationModal';
 
 const USER_ROLE_SELECT_OPTIONS: SelectOption[] = [
   { value: 'USER', label: '👤 Khách Hàng (User)', badge: 'USER' },
@@ -1186,69 +1187,104 @@ export default function AdminDashboardPage() {
                       <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 font-black uppercase text-[10px] tracking-wider">
                         <th className="py-3 px-4">Mã Đơn Hàng</th>
                         <th className="py-3 px-3">Khách Hàng</th>
-                        <th className="py-3 px-3">Địa Chỉ Giao</th>
-                        <th className="py-3 px-3">Linh Kiện Trong Đơn</th>
+                        <th className="py-3 px-3">Giao Nhận & Yêu Cầu</th>
+                        <th className="py-3 px-3">Tiến Độ Check</th>
                         <th className="py-3 px-3">Thanh Toán</th>
                         <th className="py-3 px-3">Tổng Tiền</th>
                         <th className="py-3 px-3">Trạng Thái</th>
-                        <th className="py-3 px-4 text-right">Xử Lý Đơn</th>
+                        <th className="py-3 px-4 text-right">Xử Lý &amp; Xác Thực</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                      {filteredOrders.map((o) => (
-                        <tr key={o.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                          <td className="py-3.5 px-4 font-mono font-bold text-[#0284c7] whitespace-nowrap">
-                            #{o.orderCode || o.id.slice(0, 8)}
-                          </td>
-                          <td className="py-3.5 px-3 whitespace-nowrap">
-                            <span className="font-bold text-slate-900 dark:text-white block">{o.customerName}</span>
-                            <span className="text-[10px] text-slate-400 font-mono block">{o.customerPhone}</span>
-                          </td>
-                          <td className="py-3.5 px-3 max-w-[200px] truncate text-slate-600 dark:text-slate-300" title={o.shippingAddress}>
-                            {o.shippingAddress || 'Nhận tại cửa hàng'}
-                          </td>
-                          <td className="py-3.5 px-3 max-w-xs truncate text-slate-600 dark:text-slate-300">
-                            {o.orderItems && o.orderItems.length > 0
-                              ? o.orderItems.map((oi: any) => `${oi.product?.name || 'Sản phẩm'} (x${oi.quantity})`).join(', ')
-                              : 'Chi tiết linh kiện'}
-                          </td>
-                          <td className="py-3.5 px-3 whitespace-nowrap">
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                              {o.paymentMethod}
-                            </span>
-                          </td>
-                          <td className="py-3.5 px-3 font-black text-slate-900 dark:text-white whitespace-nowrap">
-                            {formatVND(o.netAmount || o.totalAmount)}
-                          </td>
-                          <td className="py-3.5 px-3 whitespace-nowrap">
-                            <select
-                              value={o.status}
-                              onChange={(e) => handleUpdateOrderStatus(o.id, e.target.value)}
-                              className={`text-[10.5px] font-black uppercase px-2.5 py-1 rounded-full border focus:outline-none cursor-pointer ${
-                                o.status === 'COMPLETED' ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800' :
-                                o.status === 'SHIPPING' ? 'bg-purple-50 text-purple-700 border-purple-300 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800' :
-                                o.status === 'CONFIRMED' ? 'bg-blue-50 text-blue-700 border-blue-300 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800' :
-                                o.status === 'CANCELLED' ? 'bg-rose-50 text-rose-700 border-rose-300 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800' :
-                                'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800'
-                              }`}
-                            >
-                              <option value="PENDING">PENDING</option>
-                              <option value="CONFIRMED">CONFIRMED</option>
-                              <option value="SHIPPING">SHIPPING</option>
-                              <option value="COMPLETED">COMPLETED</option>
-                              <option value="CANCELLED">CANCELLED</option>
-                            </select>
-                          </td>
-                          <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                            <button
-                              onClick={() => setViewingOrder(o)}
-                              className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-[#0284c7] hover:text-white text-slate-700 dark:text-slate-200 text-xs font-bold transition-all cursor-pointer"
-                            >
-                              Xem Chi Tiết
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
+                      {filteredOrders.map((o) => {
+                        const pDetails = o.paymentDetails && typeof o.paymentDetails === 'object' ? o.paymentDetails : {};
+                        const needInst = Boolean(pDetails.needInstallation);
+                        const isProxy = Boolean(pDetails.isProxyRecipient);
+                        const isPickup = o.deliveryType === 'STORE_PICKUP';
+                        const checksDone = [
+                          pDetails.check_called,
+                          pDetails.check_assembled,
+                          pDetails.check_packed,
+                          pDetails.check_handed_over,
+                          pDetails.check_collected_cod || o.paymentStatus === 'PAID'
+                        ].filter(Boolean).length;
+
+                        return (
+                          <tr key={o.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                            <td className="py-3.5 px-4 font-mono font-bold text-[#0284c7] whitespace-nowrap">
+                              #{o.orderCode || o.id.slice(0, 8)}
+                            </td>
+                            <td className="py-3.5 px-3 whitespace-nowrap">
+                              <span className="font-bold text-slate-900 dark:text-white block">{o.customerName}</span>
+                              <span className="text-[10px] text-slate-400 font-mono block">{o.customerPhone}</span>
+                            </td>
+                            <td className="py-3.5 px-3 max-w-[220px]">
+                              <div className="flex flex-wrap gap-1 mb-1">
+                                {needInst && (
+                                  <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-sky-100 text-[#0284c7] border border-sky-200">
+                                    🛠️ Ráp PC
+                                  </span>
+                                )}
+                                {isProxy && (
+                                  <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-purple-100 text-purple-700 border border-purple-200">
+                                    👥 Nhận Thay
+                                  </span>
+                                )}
+                                <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                                  {isPickup ? '🏬 Showroom' : '🚚 Tận Nơi'}
+                                </span>
+                              </div>
+                              <span className="text-[11px] text-slate-600 dark:text-slate-300 line-clamp-1" title={o.shippingAddress}>
+                                {o.shippingAddress || 'Nhận tại Showroom DRX'}
+                              </span>
+                            </td>
+                            <td className="py-3.5 px-3 whitespace-nowrap">
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border ${
+                                checksDone === 5 
+                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300' 
+                                  : 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300'
+                              }`}>
+                                {checksDone}/5 Bước
+                              </span>
+                            </td>
+                            <td className="py-3.5 px-3 whitespace-nowrap">
+                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                                💵 {o.paymentMethod || 'COD'}
+                              </span>
+                            </td>
+                            <td className="py-3.5 px-3 font-black text-slate-900 dark:text-white whitespace-nowrap">
+                              {formatVND(o.netAmount || o.totalAmount)}
+                            </td>
+                            <td className="py-3.5 px-3 whitespace-nowrap">
+                              <select
+                                value={o.status}
+                                onChange={(e) => handleUpdateOrderStatus(o.id, e.target.value)}
+                                className={`text-[10.5px] font-black uppercase px-2.5 py-1 rounded-full border focus:outline-none cursor-pointer ${
+                                  o.status === 'COMPLETED' ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800' :
+                                  o.status === 'SHIPPING' ? 'bg-purple-50 text-purple-700 border-purple-300 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800' :
+                                  o.status === 'CONFIRMED' ? 'bg-blue-50 text-blue-700 border-blue-300 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800' :
+                                  o.status === 'CANCELLED' ? 'bg-rose-50 text-rose-700 border-rose-300 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800' :
+                                  'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800'
+                                }`}
+                              >
+                                <option value="PENDING">PENDING</option>
+                                <option value="CONFIRMED">CONFIRMED</option>
+                                <option value="SHIPPING">SHIPPING</option>
+                                <option value="COMPLETED">COMPLETED</option>
+                                <option value="CANCELLED">CANCELLED</option>
+                              </select>
+                            </td>
+                            <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                              <button
+                                onClick={() => setViewingOrder(o)}
+                                className="px-3 py-1.5 rounded-xl bg-[#0284c7] hover:bg-[#0369a1] text-white text-xs font-bold transition-all cursor-pointer shadow-xs"
+                              >
+                                Check &amp; Chi Tiết
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -2201,6 +2237,20 @@ export default function AdminDashboardPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ============================================================ */}
+      {/* MODAL 7: ORDER VERIFICATION & CHECKLIST MODAL                 */}
+      {/* ============================================================ */}
+      {viewingOrder && (
+        <OrderVerificationModal
+          order={viewingOrder}
+          onClose={() => setViewingOrder(null)}
+          onOrderUpdated={(updated) => {
+            setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
+            fetchAllData(false);
+          }}
+        />
       )}
 
     </div>
