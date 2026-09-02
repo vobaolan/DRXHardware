@@ -285,7 +285,10 @@ export default function AdminDashboardPage() {
         (u.phone && u.phone.includes(q)) ||
         (u.address && u.address.toLowerCase().includes(q));
       
-      const matchesRole = selectedUserRoleFilter === 'ALL' || u.role === selectedUserRoleFilter;
+      const isGoogle = u.provider === 'GOOGLE' || Boolean(u.image && u.image.includes('googleusercontent'));
+      const matchesRole = 
+        selectedUserRoleFilter === 'ALL' || 
+        (selectedUserRoleFilter === 'GOOGLE' ? isGoogle : u.role === selectedUserRoleFilter);
       return matchesSearch && matchesRole;
     });
   }, [users, searchQuery, selectedUserRoleFilter]);
@@ -1437,6 +1440,7 @@ export default function AdminDashboardPage() {
                     { id: 'USER', label: `Khách Hàng (${users.filter(u => u.role === 'USER' || !u.role).length})` },
                     { id: 'STAFF', label: `Nhân Viên (${users.filter(u => u.role === 'STAFF').length})` },
                     { id: 'ADMIN', label: `Quản Trị (${users.filter(u => u.role === 'ADMIN').length})` },
+                    { id: 'GOOGLE', label: `🔵 Google OAuth (${users.filter(u => u.provider === 'GOOGLE' || Boolean(u.image && u.image.includes('googleusercontent'))).length})` },
                   ].map((tab) => (
                     <button
                       key={tab.id}
@@ -1499,19 +1503,40 @@ export default function AdminDashboardPage() {
                           </td>
                         </tr>
                       ) : (
-                        filteredUsers.map((u) => (
+                        filteredUsers.map((u) => {
+                          const isGoogleAuth = u.provider === 'GOOGLE' || Boolean(u.image && u.image.includes('googleusercontent'));
+                          return (
                           <tr key={u.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                             {/* USER INFO */}
                             <td className="py-3.5 px-4">
                               <div className="flex items-center gap-3">
-                                <div className="w-9 h-9 rounded-full bg-sky-100 dark:bg-sky-950/80 text-[#0284c7] font-black flex items-center justify-center text-xs shrink-0 border border-sky-200 dark:border-sky-800">
-                                  {(u.name || u.email || 'U')[0].toUpperCase()}
-                                </div>
+                                {u.image ? (
+                                  <img 
+                                    src={u.image} 
+                                    alt={u.name} 
+                                    className="w-9 h-9 rounded-full object-cover shrink-0 border border-sky-200 dark:border-sky-800 shadow-xs" 
+                                  />
+                                ) : (
+                                  <div className="w-9 h-9 rounded-full bg-sky-100 dark:bg-sky-950/80 text-[#0284c7] font-black flex items-center justify-center text-xs shrink-0 border border-sky-200 dark:border-sky-800">
+                                    {(u.name || u.email || 'U')[0].toUpperCase()}
+                                  </div>
+                                )}
                                 <div className="min-w-0">
-                                  <span className="font-bold text-slate-900 dark:text-white block truncate max-w-[180px]">
-                                    {u.name || 'Khách hàng DRX'}
-                                  </span>
-                                  <span className="text-[11px] text-slate-400 font-mono block truncate max-w-[180px]">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="font-bold text-slate-900 dark:text-white block truncate max-w-[170px]">
+                                      {u.name || 'Khách hàng DRX'}
+                                    </span>
+                                    {isGoogleAuth ? (
+                                      <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9.5px] font-extrabold bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60">
+                                        🔵 Google
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9.5px] font-bold bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                                        ✉️ Mật khẩu
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span className="text-[11px] text-slate-400 font-mono block truncate max-w-[180px] mt-0.5">
                                     {u.email}
                                   </span>
                                 </div>
@@ -1613,7 +1638,8 @@ export default function AdminDashboardPage() {
                               </div>
                             </td>
                           </tr>
-                        ))
+                        );
+                      })
                       )}
                     </tbody>
                   </table>
@@ -1953,6 +1979,19 @@ export default function AdminDashboardPage() {
             </div>
 
             <form onSubmit={handleSaveUser} className="space-y-4 text-xs">
+              {/* GOOGLE USER NOTICE */}
+              {userModalMode === 'edit' && (userFormData.provider === 'GOOGLE' || (userFormData.image && String(userFormData.image).includes('googleusercontent'))) && (
+                <div className="p-3 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 flex items-start gap-2.5 text-xs text-blue-800 dark:text-blue-200">
+                  <span className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center font-black text-[10px] shrink-0 mt-0.5">G</span>
+                  <div>
+                    <span className="font-extrabold block">Tài Khoản Đăng Nhập Qua Google OAuth</span>
+                    <span className="text-[11px] text-blue-600 dark:text-blue-300 font-normal">
+                      Khách hàng xác thực bằng Google. Bạn có thể cập nhật thông tin cá nhân, phân quyền, hoặc đặt mật khẩu mới nếu muốn tài khoản này có thể đăng nhập bằng cả 2 cách.
+                    </span>
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 {/* EMAIL */}
                 <div className="space-y-1.5">

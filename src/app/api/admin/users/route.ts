@@ -6,10 +6,17 @@ import bcrypt from 'bcryptjs';
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
+  const headers = {
+    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0',
+    'Surrogate-Control': 'no-store'
+  };
+
   try {
     let usersList: any[] = [];
 
-    // 1. Query Prisma directly from PostgreSQL
+    // 1. Primary Query: Prisma PostgreSQL
     try {
       const prismaUsers = await prisma.user.findMany({
         orderBy: { createdAt: 'desc' },
@@ -34,11 +41,18 @@ export async function GET() {
             ? u.orders.filter(o => o.status === 'COMPLETED').reduce((sum, o) => sum + Number(o.totalAmount || 0), 0)
             : 0;
 
+          const isGoogleUser = Boolean(
+            (u.image && u.image.includes('googleusercontent')) ||
+            (!u.password && u.image)
+          );
+
           return {
             id: u.id,
             name: u.name || u.email.split('@')[0],
             email: u.email,
             role: u.role,
+            image: u.image || null,
+            provider: isGoogleUser ? 'GOOGLE' : 'CREDENTIALS',
             balance: Number(u.balance || 0),
             phone: u.phone,
             address: u.address,
@@ -48,34 +62,43 @@ export async function GET() {
           };
         });
       }
-    } catch (e) {
-      console.warn('Prisma users fetch error:', e);
+    } catch (prismaErr) {
+      console.warn('Prisma users fetch warning, attempting Supabase fallback:', prismaErr);
     }
 
-    // 2. Fallback to Supabase client if Prisma had no records
+    // 2. Fallback to Supabase REST Client
     if (usersList.length === 0) {
       try {
-        const { data: supaUsers } = await supabase
+        const { data: supaUsers, error: supaErr } = await supabase
           .from('User')
-          .select('id, name, email, role, balance, phone, address, createdAt')
+          .select('id, name, email, role, image, balance, phone, address, createdAt')
           .order('createdAt', { ascending: false });
 
         if (supaUsers && supaUsers.length > 0) {
-          usersList = supaUsers.map((u: any) => ({
-            id: u.id,
-            name: u.name || u.email?.split('@')[0] || 'Khách hàng DRX',
-            email: u.email,
-            role: u.role || 'USER',
-            balance: Number(u.balance ?? 0),
-            phone: u.phone,
-            address: u.address,
-            createdAt: u.createdAt || new Date().toISOString(),
-            _count: { orders: 0, transactions: 0 },
-            totalSpent: 0,
-          }));
+          usersList = supaUsers.map((u: any) => {
+            const isGoogleUser = Boolean(
+              (u.image && String(u.image).includes('googleusercontent')) ||
+              (!u.password && u.image)
+            );
+
+            return {
+              id: u.id,
+              name: u.name || u.email?.split('@')[0] || 'Khách hàng DRX',
+              email: u.email,
+              role: u.role || 'USER',
+              image: u.image || null,
+              provider: isGoogleUser ? 'GOOGLE' : 'CREDENTIALS',
+              balance: Number(u.balance ?? 0),
+              phone: u.phone,
+              address: u.address,
+              createdAt: u.createdAt || new Date().toISOString(),
+              _count: { orders: 0, transactions: 0 },
+              totalSpent: 0,
+            };
+          });
         }
-      } catch (e) {
-        console.warn('Supabase users fetch error:', e);
+      } catch (supaErr) {
+        console.warn('Supabase users fetch error:', supaErr);
       }
     }
 
@@ -83,6 +106,7 @@ export async function GET() {
     const adminCount = usersList.filter(u => u.role === 'ADMIN').length;
     const staffCount = usersList.filter(u => u.role === 'STAFF').length;
     const customerCount = usersList.filter(u => u.role === 'USER' || !u.role).length;
+    const googleCount = usersList.filter(u => u.provider === 'GOOGLE').length;
     const totalBalance = usersList.reduce((sum, u) => sum + Number(u.balance || 0), 0);
 
     return NextResponse.json({
@@ -92,13 +116,18 @@ export async function GET() {
         adminCount,
         staffCount,
         customerCount,
+        googleCount,
         totalBalance,
       }
-    }, { status: 200 });
+    }, { status: 200, headers });
 
   } catch (error: any) {
     console.error('Lỗi khi lấy danh sách người dùng:', error);
-    return NextResponse.json({ message: 'Lỗi máy chủ', users: [], stats: { totalUsers: 0, adminCount: 0, staffCount: 0, customerCount: 0, totalBalance: 0 } }, { status: 500 });
+    return NextResponse.json({ 
+      message: 'Lỗi máy chủ', 
+      users: [], 
+      stats: { totalUsers: 0, adminCount: 0, staffCount: 0, customerCount: 0, googleCount: 0, totalBalance: 0 } 
+    }, { status: 500, headers });
   }
 }
 
@@ -113,39 +142,85 @@ export async function POST(request: Request) {
     }
 
     const cleanEmail = email.trim().toLowerCase();
-
-    // Check if user already exists
-    const existing = await prisma.user.findUnique({ where: { email: cleanEmail } });
-    if (existing) {
-      return NextResponse.json({ message: 'Email này đã tồn tại trong hệ thống!' }, { status: 400 });
-    }
-
     const hashedPassword = bcrypt.hashSync(password, 10);
     const validRole = role === 'ADMIN' ? 'ADMIN' : role === 'STAFF' ? 'STAFF' : 'USER';
+    const userName = name || cleanEmail.split('@')[0];
 
-    const newUser = await prisma.user.create({
-      data: {
-        email: cleanEmail,
-        name: name || cleanEmail.split('@')[0],
-        password: hashedPassword,
-        role: validRole,
-        phone: phone || null,
-        address: address || null,
-        balance: 0,
+    let createdUser: any = null;
+
+    // 1. Try Prisma
+    try {
+      const existing = await prisma.user.findUnique({ where: { email: cleanEmail } });
+      if (existing) {
+        return NextResponse.json({ message: 'Email này đã tồn tại trong hệ thống!' }, { status: 400 });
       }
-    });
+
+      createdUser = await prisma.user.create({
+        data: {
+          email: cleanEmail,
+          name: userName,
+          password: hashedPassword,
+          role: validRole as any,
+          phone: phone || null,
+          address: address || null,
+          balance: 0,
+        }
+      });
+    } catch (prismaErr) {
+      console.warn('Prisma create user warning, falling back to Supabase:', prismaErr);
+    }
+
+    // 2. Fallback to Supabase
+    if (!createdUser) {
+      try {
+        const { data: existingSupa } = await supabase
+          .from('User')
+          .select('id')
+          .eq('email', cleanEmail)
+          .maybeSingle();
+
+        if (existingSupa) {
+          return NextResponse.json({ message: 'Email này đã tồn tại trong hệ thống!' }, { status: 400 });
+        }
+
+        const { data: supaNew, error: insertErr } = await supabase
+          .from('User')
+          .insert([{
+            id: 'user-' + Date.now(),
+            email: cleanEmail,
+            name: userName,
+            password: hashedPassword,
+            role: validRole,
+            phone: phone || null,
+            address: address || null,
+            balance: 0,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          }])
+          .select('*')
+          .single();
+
+        if (insertErr) {
+          throw insertErr;
+        }
+        createdUser = supaNew;
+      } catch (supaErr: any) {
+        console.error('Supabase create user error:', supaErr);
+        throw supaErr;
+      }
+    }
 
     return NextResponse.json({
       success: true,
       message: `Đã tạo tài khoản ${validRole} (${cleanEmail}) thành công!`,
       user: {
-        id: newUser.id,
-        name: newUser.name,
-        email: newUser.email,
-        role: newUser.role,
-        phone: newUser.phone,
-        address: newUser.address,
-        createdAt: newUser.createdAt.toISOString(),
+        id: createdUser.id,
+        name: createdUser.name,
+        email: createdUser.email,
+        role: createdUser.role,
+        phone: createdUser.phone,
+        address: createdUser.address,
+        createdAt: createdUser.createdAt ? new Date(createdUser.createdAt).toISOString() : new Date().toISOString(),
       }
     }, { status: 201 });
 
@@ -174,37 +249,66 @@ export async function PATCH(request: Request) {
     if (newPassword && typeof newPassword === 'string' && newPassword.length >= 6) {
       updateData.password = bcrypt.hashSync(newPassword, 10);
     }
+    updateData.updatedAt = new Date().toISOString();
 
     let updatedUser: any = null;
 
-    if (userId) {
-      updatedUser = await prisma.user.update({
-        where: { id: userId },
-        data: updateData,
-      });
-    } else if (email) {
-      updatedUser = await prisma.user.update({
-        where: { email },
-        data: updateData,
-      });
+    // 1. Try Prisma update
+    try {
+      if (userId) {
+        updatedUser = await prisma.user.update({
+          where: { id: userId },
+          data: updateData,
+        });
+      } else if (email) {
+        updatedUser = await prisma.user.update({
+          where: { email },
+          data: updateData,
+        });
+      }
+    } catch (prismaErr) {
+      console.warn('Prisma user update error, falling back to Supabase:', prismaErr);
+    }
+
+    // 2. Fallback to Supabase REST client
+    if (!updatedUser) {
+      try {
+        const query = supabase.from('User');
+        let supaBuilder;
+        if (userId) {
+          supaBuilder = query.update(updateData).eq('id', userId);
+        } else {
+          supaBuilder = query.update(updateData).eq('email', email);
+        }
+
+        const { data: supaUpdated, error: supaErr } = await supaBuilder.select('*').maybeSingle();
+        if (supaErr) {
+          console.error('Supabase user update error:', supaErr);
+          throw supaErr;
+        }
+        updatedUser = supaUpdated;
+      } catch (supaErr: any) {
+        console.error('Supabase update execution error:', supaErr);
+        throw supaErr;
+      }
     }
 
     return NextResponse.json({
       success: true,
       message: 'Đã cập nhật thông tin tài khoản người dùng thành công!',
       user: {
-        id: updatedUser.id,
-        name: updatedUser.name,
-        email: updatedUser.email,
-        role: updatedUser.role,
-        phone: updatedUser.phone,
-        address: updatedUser.address,
+        id: updatedUser?.id || userId,
+        name: updatedUser?.name || name,
+        email: updatedUser?.email || email,
+        role: updatedUser?.role || role,
+        phone: updatedUser?.phone || phone,
+        address: updatedUser?.address || address,
       },
     }, { status: 200 });
 
   } catch (error: any) {
     console.error('Lỗi cập nhật user (Admin):', error);
-    return NextResponse.json({ message: error.message || 'Lỗi cập nhật' }, { status: 500 });
+    return NextResponse.json({ message: error.message || 'Lỗi cập nhật tài khoản' }, { status: 500 });
   }
 }
 
@@ -219,18 +323,56 @@ export async function DELETE(request: Request) {
     }
 
     // Safety check: protect master admin
-    const targetUser = await prisma.user.findUnique({ where: { id: userId } });
-    if (targetUser && targetUser.email === 'admin@drx.vn') {
+    if (userId.includes('admin@drx.vn')) {
       return NextResponse.json({ message: 'Không thể xóa tài khoản Quản trị viên Master (admin@drx.vn)!' }, { status: 403 });
     }
 
-    await prisma.user.delete({
-      where: { id: userId },
-    });
+    let deleted = false;
+
+    // 1. Try Prisma
+    try {
+      const targetUser = await prisma.user.findUnique({ where: { id: userId } });
+      if (targetUser && targetUser.email === 'admin@drx.vn') {
+        return NextResponse.json({ message: 'Không thể xóa tài khoản Quản trị viên Master (admin@drx.vn)!' }, { status: 403 });
+      }
+
+      await prisma.user.delete({
+        where: { id: userId },
+      });
+      deleted = true;
+    } catch (prismaErr) {
+      console.warn('Prisma delete user warning, falling back to Supabase:', prismaErr);
+    }
+
+    // 2. Fallback to Supabase
+    if (!deleted) {
+      try {
+        const { data: targetSupa } = await supabase
+          .from('User')
+          .select('email')
+          .eq('id', userId)
+          .maybeSingle();
+
+        if (targetSupa && targetSupa.email === 'admin@drx.vn') {
+          return NextResponse.json({ message: 'Không thể xóa tài khoản Quản trị viên Master (admin@drx.vn)!' }, { status: 403 });
+        }
+
+        const { error: supaDelErr } = await supabase
+          .from('User')
+          .delete()
+          .eq('id', userId);
+
+        if (supaDelErr) throw supaDelErr;
+        deleted = true;
+      } catch (supaErr: any) {
+        console.error('Supabase delete user error:', supaErr);
+        throw supaErr;
+      }
+    }
 
     return NextResponse.json({
       success: true,
-      message: 'Đã xóa tài khoản thành công khỏi hệ thống!',
+      message: 'Đã xóa tài khoản thành công khỏi hệ thống Database!',
     }, { status: 200 });
 
   } catch (error: any) {
