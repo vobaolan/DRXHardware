@@ -370,12 +370,19 @@ function ProfileContent() {
                 
                 {/* Brand Header */}
                 <div className="text-center space-y-2">
-                  <div className="inline-flex p-3 rounded-2xl bg-gradient-to-tr from-sky-500/10 via-sky-50 to-blue-50 dark:from-sky-950/40 dark:to-slate-800 text-[#0284c7] border border-sky-200/80 dark:border-sky-500/30 shadow-2xs mb-1">
-                    <Cpu className="h-7 w-7 text-[#0284c7]" />
-                  </div>
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-sky-50 dark:bg-sky-950/60 border border-sky-200 dark:border-sky-800 text-[10px] font-black uppercase tracking-wider text-[#0284c7] dark:text-sky-300">
-                    <ShieldCheck className="w-3 h-3 text-[#0284c7]" />
-                    <span>CỔNG BẢO MẬT DRX HARDWARE</span>
+                  <div className="flex justify-center pb-1">
+                    <Link href="/" className="inline-block group" title="DRX Hardware">
+                      <img
+                        src="/logo/logo-header.png"
+                        alt="DRX HARDWARE Logo"
+                        className="h-8 sm:h-9 w-auto object-contain dark:hidden group-hover:scale-105 transition-transform"
+                      />
+                      <img
+                        src="/logo/logo-white.png"
+                        alt="DRX HARDWARE Logo"
+                        className="h-8 sm:h-9 w-auto object-contain hidden dark:block group-hover:scale-105 transition-transform"
+                      />
+                    </Link>
                   </div>
                   <h2 className="font-heading text-xl sm:text-2xl font-black uppercase tracking-tight text-slate-900 dark:text-white">
                     TÀI KHOẢN THÀNH VIÊN
