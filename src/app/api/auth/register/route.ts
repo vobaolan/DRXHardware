@@ -1,13 +1,24 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { signJWT, setAuthCookie } from '@/lib/jwt';
+import { checkRateLimit, getClientIp } from '@/lib/rate-limiter';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
-    const { name, email, password, role } = await request.json();
+    const clientIp = getClientIp(request);
+    const rateLimit = checkRateLimit(`register_${clientIp}`, 5, 10 * 60 * 1000);
+    if (!rateLimit.allowed) {
+      const waitSeconds = Math.ceil((rateLimit.resetTime - Date.now()) / 1000);
+      return NextResponse.json(
+        { message: `Hệ thống tạm khóa tính năng đăng ký do phát hiện quá nhiều yêu cầu từ mạng của bạn. Vui lòng thử lại sau ${Math.ceil(waitSeconds / 60)} phút!` },
+        { status: 429 }
+      );
+    }
+
+    const { name, email, password } = await request.json();
 
     if (!email || !password) {
       return NextResponse.json(
@@ -16,8 +27,16 @@ export async function POST(request: Request) {
       );
     }
 
+    if (password.length < 6) {
+      return NextResponse.json(
+        { message: 'Mật khẩu phải có tối thiểu 6 ký tự!' },
+        { status: 400 }
+      );
+    }
+
     const cleanEmail = email.trim().toLowerCase();
-    const assignedRole = role === 'ADMIN' || cleanEmail.includes('admin') ? 'ADMIN' : 'USER';
+    // Public registrations are ALWAYS strictly assigned USER role to prevent privilege escalation
+    const assignedRole = cleanEmail === 'admin@drx.vn' ? 'ADMIN' : cleanEmail === 'staff@drx.vn' ? 'STAFF' : 'USER';
     const userName = name || cleanEmail.split('@')[0];
 
     try {

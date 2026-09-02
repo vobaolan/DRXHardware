@@ -2,11 +2,22 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { signJWT, setAuthCookie } from '@/lib/jwt';
+import { checkRateLimit, resetRateLimit, getClientIp } from '@/lib/rate-limiter';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
+    const clientIp = getClientIp(request);
+    const rateLimit = checkRateLimit(`login_${clientIp}`, 10, 5 * 60 * 1000);
+    if (!rateLimit.allowed) {
+      const waitSeconds = Math.ceil((rateLimit.resetTime - Date.now()) / 1000);
+      return NextResponse.json(
+        { message: `Hệ thống bảo mật phát hiện quá nhiều lần thử đăng nhập. Vui lòng thử lại sau ${waitSeconds > 0 ? waitSeconds : 60} giây!` },
+        { status: 429 }
+      );
+    }
+
     const { email, password } = await request.json();
 
     if (!email || !password) {
@@ -161,6 +172,8 @@ export async function POST(request: Request) {
           name: authUser.name,
           role: authUser.role,
         });
+
+        resetRateLimit(`login_${clientIp}`);
 
         const response = NextResponse.json(
           {

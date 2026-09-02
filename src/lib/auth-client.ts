@@ -52,6 +52,7 @@ export function setSessionUser(user: AuthUser): void {
     
     // Clean up persistent localStorage so sensitive data is NEVER stored in F12 Local Storage
     localStorage.removeItem('ods_user');
+    localStorage.removeItem('drx_user');
 
     // Notify other components
     window.dispatchEvent(new Event('ods_user_update'));

@@ -34,6 +34,7 @@ export const metadata: Metadata = {
 };
 
 import ChatbotWidget from '@/components/ChatbotUI';
+import SecurityShield from '@/components/SecurityShield';
 
 export default function RootLayout({
   children,
@@ -64,6 +65,7 @@ export default function RootLayout({
       <body
         className={`${beVietnamPro.variable} ${outfit.variable} font-sans bg-ods-bg text-ods-textMain antialiased`}
       >
+        <SecurityShield />
         <Providers>
           <LoaderOverlay />
           {children}

@@ -1,4 +1,4 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { supabase } from '@/lib/supabase';
 
@@ -41,7 +41,7 @@ export async function GET() {
       try {
         const { data: supaUsers } = await supabase
           .from('User')
-          .select('*')
+          .select('id, name, email, role, balance, phone, address, createdAt')
           .order('createdAt', { ascending: false });
 
         if (supaUsers && supaUsers.length > 0) {
