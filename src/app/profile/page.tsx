@@ -8,7 +8,8 @@ import {
   User, Mail, Lock, LogIn, UserPlus, Shield, 
   ShoppingBag, Settings, LogOut, CheckCircle2, Copy, Check, ArrowRight, 
   ShieldCheck, Cpu, Box, Zap, PackageCheck, Wrench, ChevronRight,
-  Award, CheckCircle, LayoutDashboard, Phone, MapPin
+  Award, CheckCircle, LayoutDashboard, Phone, MapPin,
+  Eye, EyeOff, Sparkles, X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
@@ -35,6 +36,29 @@ interface Order {
   gameKeys: HardwareKey[];
 }
 
+function GoogleIcon({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24">
+      <path
+        fill="#4285F4"
+        d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
+      />
+      <path
+        fill="#34A853"
+        d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z"
+      />
+      <path
+        fill="#EA4335"
+        d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+      />
+    </svg>
+  );
+}
+
 function ProfileContent() {
   const { showToast } = useToast();
   const searchParams = useSearchParams();
@@ -54,6 +78,15 @@ function ProfileContent() {
   const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [regConfirmPassword, setRegConfirmPassword] = useState('');
+
+  // Password visibility & Google auth states
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showRegPassword, setShowRegPassword] = useState(false);
+  const [showRegConfirmPassword, setShowRegConfirmPassword] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [showGoogleModal, setShowGoogleModal] = useState(false);
+  const [customGoogleEmail, setCustomGoogleEmail] = useState('');
+  const [customGoogleName, setCustomGoogleName] = useState('');
 
   // User info form states
   const [profileName, setProfileName] = useState('');
@@ -234,6 +267,32 @@ function ProfileContent() {
     }
   };
 
+  const handleGoogleAuth = async (emailOverride?: string, nameOverride?: string) => {
+    setIsGoogleLoading(true);
+    try {
+      const email = emailOverride || customGoogleEmail.trim() || 'khachhang.drx@gmail.com';
+      const name = nameOverride || customGoogleName.trim() || (email.split('@')[0].replace(/[._]/g, ' ').toUpperCase());
+      const avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(email)}`;
+
+      const { loginWithGoogle } = await import('@/lib/auth-client');
+      const user = await loginWithGoogle({ email, name, avatar });
+      if (user) {
+        setCurrentUser(user);
+        setProfileName(user.name || name);
+        setIsLoggedIn(true);
+        setShowGoogleModal(false);
+        showToast(`Đăng nhập Google thành công! Chào mừng ${user.name || 'bạn'}.`, 'success');
+      } else {
+        showToast('Không thể kết nối Google lúc này. Vui lòng thử lại!', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Đã xảy ra lỗi khi kết nối tài khoản Google.', 'error');
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  };
+
   const handleLogout = async () => {
     const { clearSessionUser } = await import('@/lib/auth-client');
     await clearSessionUser();
@@ -292,58 +351,96 @@ function ProfileContent() {
       <main className="flex-1 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         <AnimatePresence mode="wait">
           {!isLoggedIn ? (
-            /* ================== AUTHENTICATION FORM (LOGIN / REGISTER) ================== */
+            /* ================== REDESIGNED LUXURY AUTHENTICATION CARD ================== */
             <motion.div
               key="auth"
-              initial={{ opacity: 0, scale: 0.98, y: 10 }}
+              initial={{ opacity: 0, scale: 0.98, y: 12 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.98, y: -10 }}
-              className="mx-auto max-w-md my-10"
+              exit={{ opacity: 0, scale: 0.98, y: -12 }}
+              className="relative mx-auto max-w-md my-8 sm:my-12 px-2"
             >
-              <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 p-8 shadow-xl backdrop-blur-xl space-y-6">
+              {/* Subtle ambient lighting backdrop */}
+              <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-80 h-80 bg-gradient-to-br from-sky-500/20 to-blue-600/10 dark:from-sky-500/15 dark:to-blue-600/5 rounded-full blur-3xl pointer-events-none" />
+
+              <div className="relative rounded-3xl border border-slate-200/90 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 p-7 sm:p-9 shadow-2xl backdrop-blur-2xl space-y-6">
                 
                 {/* Brand Header */}
-                <div className="text-center space-y-2 pb-2">
-                  <div className="inline-flex p-3 rounded-2xl bg-sky-50 dark:bg-slate-800 text-[#0284c7] border border-sky-200 dark:border-sky-500/30 mb-2">
-                    <Cpu className="h-7 w-7 animate-pulse" />
+                <div className="text-center space-y-2">
+                  <div className="inline-flex p-3 rounded-2xl bg-gradient-to-tr from-sky-500/10 via-sky-50 to-blue-50 dark:from-sky-950/40 dark:to-slate-800 text-[#0284c7] border border-sky-200/80 dark:border-sky-500/30 shadow-2xs mb-1">
+                    <Cpu className="h-7 w-7 text-[#0284c7]" />
                   </div>
-                  <h2 className="font-heading text-xl font-black uppercase tracking-wider text-slate-900 dark:text-slate-100">
-                    DRX HARDWARE ACCOUNT
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-sky-50 dark:bg-sky-950/60 border border-sky-200 dark:border-sky-800 text-[10px] font-black uppercase tracking-wider text-[#0284c7] dark:text-sky-300">
+                    <ShieldCheck className="w-3 h-3 text-[#0284c7]" />
+                    <span>CỔNG BẢO MẬT DRX HARDWARE</span>
+                  </div>
+                  <h2 className="font-heading text-xl sm:text-2xl font-black uppercase tracking-tight text-slate-900 dark:text-white">
+                    TÀI KHOẢN THÀNH VIÊN
                   </h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 font-light">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-normal leading-relaxed">
                     Quản lý đơn hàng linh kiện, bảo hành chính hãng và cấu hình PC
                   </p>
                 </div>
 
-                {/* Tabs selection */}
-                <div className="flex border-b border-slate-200 dark:border-slate-800 space-x-4 mb-6">
+                {/* Google Sign-in / Sign-up Button */}
+                <div className="space-y-3">
                   <button
+                    type="button"
+                    onClick={() => setShowGoogleModal(true)}
+                    disabled={isGoogleLoading}
+                    className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 font-bold text-xs text-slate-800 dark:text-slate-100 shadow-xs transition-all hover:scale-[1.01] active:scale-[0.98] cursor-pointer group"
+                  >
+                    {isGoogleLoading ? (
+                      <div className="w-4 h-4 border-2 border-slate-400 border-t-[#0284c7] rounded-full animate-spin" />
+                    ) : (
+                      <GoogleIcon className="w-4 h-4" />
+                    )}
+                    <span>
+                      {authTab === 'login' ? 'Đăng nhập nhanh bằng Google' : 'Đăng ký tài khoản bằng Google'}
+                    </span>
+                  </button>
+
+                  <div className="relative flex py-1 items-center">
+                    <div className="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
+                    <span className="flex-shrink mx-3 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                      Hoặc với Email
+                    </span>
+                    <div className="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
+                  </div>
+                </div>
+
+                {/* Segmented Pill Tabs Switcher */}
+                <div className="grid grid-cols-2 p-1 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800">
+                  <button
+                    type="button"
                     onClick={() => setAuthTab('login')}
-                    className={`flex-1 text-center font-heading text-xs font-black uppercase tracking-wider pb-3 border-b-2 transition-all cursor-pointer ${
+                    className={`py-2 text-center font-heading text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
                       authTab === 'login'
-                        ? 'border-[#0284c7] text-[#0284c7]'
-                        : 'border-transparent text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                        ? 'bg-white dark:bg-slate-800 text-[#0284c7] shadow-xs'
+                        : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
                     }`}
                   >
                     Đăng Nhập
                   </button>
                   <button
+                    type="button"
                     onClick={() => setAuthTab('register')}
-                    className={`flex-1 text-center font-heading text-xs font-black uppercase tracking-wider pb-3 border-b-2 transition-all cursor-pointer ${
+                    className={`py-2 text-center font-heading text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
                       authTab === 'register'
-                        ? 'border-[#0284c7] text-[#0284c7]'
-                        : 'border-transparent text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                        ? 'bg-white dark:bg-slate-800 text-[#0284c7] shadow-xs'
+                        : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
                     }`}
                   >
                     Tạo Tài Khoản
                   </button>
                 </div>
 
-                {/* Tab Contents */}
+                {/* Form Tabs */}
                 {authTab === 'login' ? (
                   <form onSubmit={handleLoginSubmit} className="space-y-4">
                     <div className="space-y-1.5">
-                      <label className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider block">Địa chỉ Email</label>
+                      <label className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider block">
+                        Địa chỉ Email
+                      </label>
                       <div className="relative">
                         <Mail className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
                         <input
@@ -359,19 +456,33 @@ function ProfileContent() {
 
                     <div className="space-y-1.5">
                       <div className="flex justify-between items-center">
-                        <label className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider block">Mật khẩu</label>
-                        <span className="text-[9.5px] text-[#0284c7] hover:underline cursor-pointer font-bold">Quên mật khẩu?</span>
+                        <label className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider block">
+                          Mật khẩu
+                        </label>
+                        <span 
+                          onClick={() => showToast('Vui lòng liên hệ Hotline 1900.8888 hoặc hỗ trợ trực tuyến để đặt lại mật khẩu!', 'info')}
+                          className="text-[9.5px] text-[#0284c7] hover:underline cursor-pointer font-bold"
+                        >
+                          Quên mật khẩu?
+                        </span>
                       </div>
                       <div className="relative">
                         <Lock className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
                         <input
-                          type="password"
+                          type={showLoginPassword ? 'text' : 'password'}
                           required
                           placeholder="••••••••"
                           value={loginPassword}
                           onChange={(e) => setLoginPassword(e.target.value)}
-                          className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-3 pl-11 pr-4 text-xs font-semibold text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-[#0284c7] focus:outline-none focus:ring-2 focus:ring-sky-400/20 transition-all"
+                          className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-3 pl-11 pr-11 text-xs font-semibold text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-[#0284c7] focus:outline-none focus:ring-2 focus:ring-sky-400/20 transition-all"
                         />
+                        <button
+                          type="button"
+                          onClick={() => setShowLoginPassword(!showLoginPassword)}
+                          className="absolute right-3.5 top-3.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                        >
+                          {showLoginPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
                       </div>
                     </div>
 
@@ -383,13 +494,25 @@ function ProfileContent() {
                           onChange={(e) => setRememberMe(e.target.checked)}
                           className="h-4 w-4 rounded border-slate-300 text-[#0284c7] focus:ring-[#0284c7] accent-[#0284c7]"
                         />
-                        <span>Ghi nhớ tài khoản trên thiết bị này</span>
+                        <span>Ghi nhớ đăng nhập</span>
                       </label>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLoginEmail('admin@drx.vn');
+                          setLoginPassword('admin');
+                          showToast('Đã điền tài khoản mẫu Admin: admin@drx.vn', 'info');
+                        }}
+                        className="text-[10px] font-bold text-sky-600 hover:underline cursor-pointer"
+                      >
+                        Tài khoản mẫu
+                      </button>
                     </div>
 
                     <button
                       type="submit"
-                      className="uiverse-btn-shimmer w-full mt-4 flex items-center justify-center gap-2 rounded-2xl text-white py-3.5 text-xs font-heading font-black uppercase tracking-wider transition-all shadow-lg active:scale-95 cursor-pointer"
+                      className="uiverse-btn-shimmer w-full mt-3 flex items-center justify-center gap-2 rounded-2xl text-white py-3.5 text-xs font-heading font-black uppercase tracking-wider transition-all shadow-md active:scale-95 cursor-pointer"
                     >
                       <LogIn className="h-4 w-4" />
                       <span>Đăng Nhập Tài Khoản</span>
@@ -398,7 +521,9 @@ function ProfileContent() {
                 ) : (
                   <form onSubmit={handleRegisterSubmit} className="space-y-4">
                     <div className="space-y-1.5">
-                      <label className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider block">Họ và Tên</label>
+                      <label className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider block">
+                        Họ và Tên
+                      </label>
                       <div className="relative">
                         <User className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
                         <input
@@ -413,7 +538,9 @@ function ProfileContent() {
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider block">Địa chỉ Email</label>
+                      <label className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider block">
+                        Địa chỉ Email
+                      </label>
                       <div className="relative">
                         <Mail className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
                         <input
@@ -428,38 +555,56 @@ function ProfileContent() {
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider block">Mật khẩu</label>
+                      <label className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider block">
+                        Mật khẩu
+                      </label>
                       <div className="relative">
                         <Lock className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
                         <input
-                          type="password"
+                          type={showRegPassword ? 'text' : 'password'}
                           required
                           placeholder="Tối thiểu 6 ký tự"
                           value={regPassword}
                           onChange={(e) => setRegPassword(e.target.value)}
-                          className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-3 pl-11 pr-4 text-xs font-semibold text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-[#0284c7] focus:outline-none focus:ring-2 focus:ring-sky-400/20 transition-all"
+                          className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-3 pl-11 pr-11 text-xs font-semibold text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-[#0284c7] focus:outline-none focus:ring-2 focus:ring-sky-400/20 transition-all"
                         />
+                        <button
+                          type="button"
+                          onClick={() => setShowRegPassword(!showRegPassword)}
+                          className="absolute right-3.5 top-3.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                        >
+                          {showRegPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
                       </div>
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider block">Nhập lại mật khẩu</label>
+                      <label className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider block">
+                        Nhập lại mật khẩu
+                      </label>
                       <div className="relative">
                         <Lock className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
                         <input
-                          type="password"
+                          type={showRegConfirmPassword ? 'text' : 'password'}
                           required
                           placeholder="Trùng khớp mật khẩu trên"
                           value={regConfirmPassword}
                           onChange={(e) => setRegConfirmPassword(e.target.value)}
-                          className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-3 pl-11 pr-4 text-xs font-semibold text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-[#0284c7] focus:outline-none focus:ring-2 focus:ring-sky-400/20 transition-all"
+                          className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-3 pl-11 pr-11 text-xs font-semibold text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-[#0284c7] focus:outline-none focus:ring-2 focus:ring-sky-400/20 transition-all"
                         />
+                        <button
+                          type="button"
+                          onClick={() => setShowRegConfirmPassword(!showRegConfirmPassword)}
+                          className="absolute right-3.5 top-3.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                        >
+                          {showRegConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
                       </div>
                     </div>
 
                     <button
                       type="submit"
-                      className="uiverse-btn-shimmer w-full mt-4 flex items-center justify-center gap-2 rounded-2xl text-white py-3.5 text-xs font-heading font-black uppercase tracking-wider transition-all shadow-lg active:scale-95 cursor-pointer"
+                      className="uiverse-btn-shimmer w-full mt-3 flex items-center justify-center gap-2 rounded-2xl text-white py-3.5 text-xs font-heading font-black uppercase tracking-wider transition-all shadow-md active:scale-95 cursor-pointer"
                     >
                       <UserPlus className="h-4 w-4" />
                       <span>Đăng Ký Thành Viên DRX</span>
@@ -467,11 +612,96 @@ function ProfileContent() {
                   </form>
                 )}
 
-                <div className="mt-6 border-t border-slate-200 dark:border-slate-800 pt-4 text-center flex items-center justify-center gap-2 text-[9.5px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider">
+                {/* Footer Security Badge */}
+                <div className="mt-5 border-t border-slate-200/80 dark:border-slate-800 pt-4 text-center flex items-center justify-center gap-2 text-[10px] text-slate-500 dark:text-slate-400 font-bold tracking-wider">
                   <Shield className="h-3.5 w-3.5 text-emerald-500" />
-                  <span>Bảo mật dữ liệu 256-bit chuẩn thương mại điện tử DRX</span>
+                  <span>Bảo mật 256-bit SSL chuẩn thương mại điện tử DRX</span>
                 </div>
               </div>
+
+              {/* GOOGLE ACCOUNT SELECTOR MODAL */}
+              <AnimatePresence>
+                {showGoogleModal && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                      className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden p-6 space-y-5"
+                    >
+                      <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                        <div className="flex items-center gap-2">
+                          <GoogleIcon className="w-5 h-5" />
+                          <span className="font-heading text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                            Đăng nhập bằng Google
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowGoogleModal(false)}
+                          className="p-1 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      <div className="space-y-3">
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          Chọn tài khoản Google của bạn để tiếp tục đến <strong className="text-slate-900 dark:text-white">DRX Hardware</strong>:
+                        </p>
+
+                        {/* Quick One-Click Google Account Option */}
+                        <button
+                          type="button"
+                          onClick={() => handleGoogleAuth('khachhang.drx@gmail.com', 'Khách Hàng DRX')}
+                          disabled={isGoogleLoading}
+                          className="w-full flex items-center gap-3 p-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/80 hover:bg-sky-50 dark:hover:bg-slate-700 hover:border-sky-300 transition-all text-left cursor-pointer group"
+                        >
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-xs shrink-0">
+                            G
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs font-bold text-slate-900 dark:text-white truncate group-hover:text-[#0284c7]">
+                              Khách Hàng DRX
+                            </div>
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                              khachhang.drx@gmail.com
+                            </div>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+                        </button>
+
+                        {/* Or Enter Custom Google Email */}
+                        <div className="pt-2 space-y-2 border-t border-slate-100 dark:border-slate-800">
+                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                            Hoặc nhập địa chỉ Gmail của bạn:
+                          </label>
+                          <input
+                            type="email"
+                            placeholder="tenban@gmail.com"
+                            value={customGoogleEmail}
+                            onChange={(e) => setCustomGoogleEmail(e.target.value)}
+                            className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-2.5 px-3.5 text-xs font-semibold text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-[#0284c7] focus:outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleGoogleAuth(customGoogleEmail || undefined, customGoogleName || undefined)}
+                            disabled={isGoogleLoading}
+                            className="w-full py-2.5 rounded-2xl bg-[#0284c7] hover:bg-[#0369a1] text-white font-heading text-xs font-black uppercase tracking-wider shadow-md shadow-sky-500/25 transition-all cursor-pointer flex items-center justify-center gap-2"
+                          >
+                            {isGoogleLoading ? (
+                              <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                            ) : (
+                              <GoogleIcon className="w-3.5 h-3.5" />
+                            )}
+                            <span>Xác Nhận & Tiếp Tục</span>
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  </div>
+                )}
+              </AnimatePresence>
             </motion.div>
           ) : (
             /* ================== USER DASHBOARD (NO WALLET, 5 CLEAN TABS) ================== */

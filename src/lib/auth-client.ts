@@ -1,4 +1,4 @@
-﻿export interface AuthUser {
+export interface AuthUser {
   id: string;
   name: string;
   email: string;
@@ -106,4 +106,76 @@ export async function verifyCurrentSession(): Promise<AuthUser | null> {
   } catch (e) {}
 
   return currentLocal;
+}
+
+/**
+ * Log in with email and password
+ */
+export async function loginUser(email: string, password: string): Promise<AuthUser | null> {
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.user) {
+        setSessionUser(data.user);
+        return data.user;
+      }
+    }
+    return null;
+  } catch (e) {
+    console.error('Login error:', e);
+    return null;
+  }
+}
+
+/**
+ * Register with email, password, and full name
+ */
+export async function registerUser(email: string, password: string, name?: string): Promise<AuthUser | null> {
+  try {
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, name }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.user) {
+        setSessionUser(data.user);
+        return data.user;
+      }
+    }
+    return null;
+  } catch (e) {
+    console.error('Register error:', e);
+    return null;
+  }
+}
+
+/**
+ * Authenticate with Google account
+ */
+export async function loginWithGoogle(userInfo?: { email: string; name: string; avatar?: string }): Promise<AuthUser | null> {
+  try {
+    const res = await fetch('/api/auth/google', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userInfo || {}),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.user) {
+        setSessionUser(data.user);
+        return data.user;
+      }
+    }
+    return null;
+  } catch (e) {
+    console.error('Google login error:', e);
+    return null;
+  }
 }
