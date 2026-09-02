@@ -280,8 +280,9 @@ export default function WarrantyPage() {
             <span>CỔNG TRA CỨU BẢO HÀNH ĐIỆN TỬ CHÍNH HÃNG</span>
           </div>
 
-          <h1 className="text-2xl sm:text-4xl md:text-5xl font-heading font-black text-slate-900 dark:text-white tracking-tight leading-[1.3] uppercase max-w-4xl mx-auto pb-1">
-            Tra Cứu Hạn Bảo Hành &amp; Lịch Sử Sửa Chữa
+          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-[42px] font-heading font-black text-slate-900 dark:text-white tracking-normal leading-[1.4] sm:leading-[1.45] uppercase max-w-4xl mx-auto">
+            <span className="block">Tra Cứu Hạn Bảo Hành</span>
+            <span className="block text-[#0284c7] dark:text-[#38bdf8]">&amp; Lịch Sử Sửa Chữa</span>
           </h1>
 
           <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-normal max-w-2xl mx-auto leading-relaxed">
