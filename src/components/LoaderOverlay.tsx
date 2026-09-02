@@ -36,28 +36,34 @@ export default function LoaderOverlay() {
   return (
     <div 
       id="fullPageLoading" 
-      className="fixed inset-0 z-[999999] pointer-events-none flex items-center justify-center overflow-hidden"
+      className="fixed inset-0 z-[999999] pointer-events-none overflow-hidden"
       style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
         width: '100vw',
-        height: '100vh',
+        height: '150vh',
+        minHeight: '150vh',
       }}
     >
-      {/* 1. Left Door (50vw width, slides to -100%) */}
+      {/* 1. Left Door (covers left half + 1px seam, 150vh tall to prevent bottom leak) */}
       <div 
         id="doorLeft"
-        className="absolute top-0 left-0 w-1/2 h-full bg-white dark:bg-[#070a13] shadow-2xl pointer-events-auto border-r border-slate-100/50 dark:border-slate-800/30"
+        className="absolute top-0 left-0 w-[50.5%] min-h-[150vh] h-[150vh] bg-white dark:bg-[#070a13] shadow-2xl pointer-events-auto border-r border-slate-100/50 dark:border-slate-800/30"
         style={{
-          transform: isOpen ? 'translateX(-100%)' : 'translateX(0)',
+          transform: isOpen ? 'translateX(-102%)' : 'translateX(0)',
           transition: 'transform 0.8s cubic-bezier(0.77, 0, 0.175, 1)',
         }}
       />
 
-      {/* 2. Right Door (50vw width, slides to 100%) */}
+      {/* 2. Right Door (covers right half + 1px seam, 150vh tall to prevent bottom leak) */}
       <div 
         id="doorRight"
-        className="absolute top-0 right-0 w-1/2 h-full bg-white dark:bg-[#070a13] shadow-2xl pointer-events-auto border-l border-slate-100/50 dark:border-slate-800/30"
+        className="absolute top-0 right-0 w-[50.5%] min-h-[150vh] h-[150vh] bg-white dark:bg-[#070a13] shadow-2xl pointer-events-auto border-l border-slate-100/50 dark:border-slate-800/30"
         style={{
-          transform: isOpen ? 'translateX(100%)' : 'translateX(0)',
+          transform: isOpen ? 'translateX(102%)' : 'translateX(0)',
           transition: 'transform 0.8s cubic-bezier(0.77, 0, 0.175, 1)',
         }}
       />
