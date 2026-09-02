@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { 
   ShieldCheck, Award, ArrowRight, Zap, ExternalLink,
-  Sparkles, CheckCircle2, ChevronRight, Cpu, HardDrive, Box
+  CheckCircle2, ChevronRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -170,21 +170,8 @@ const BRAND_LIST: BrandItem[] = [
   },
 ];
 
-const CATEGORY_TABS = [
-  { id: 'ALL', label: 'Tất Cả (12)', icon: Sparkles },
-  { id: 'CORE', label: 'CPU • Bo Mạch • VGA (6)', icon: Cpu },
-  { id: 'STORAGE', label: 'RAM • Ổ Cứng SSD (3)', icon: HardDrive },
-  { id: 'COOLING', label: 'Vỏ Case • Tản Nhiệt (3)', icon: Box },
-];
-
 export default function SponsorsPage() {
-  const [activeTab, setActiveTab] = useState<'ALL' | 'CORE' | 'STORAGE' | 'COOLING'>('ALL');
   const [selectedBrand, setSelectedBrand] = useState<BrandItem | null>(null);
-
-  const filteredBrands = useMemo(() => {
-    if (activeTab === 'ALL') return BRAND_LIST;
-    return BRAND_LIST.filter((b) => b.category === activeTab);
-  }, [activeTab]);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#070a13] text-slate-900 dark:text-slate-100 flex flex-col antialiased transition-colors duration-300">
@@ -232,33 +219,11 @@ export default function SponsorsPage() {
           </div>
         </section>
 
-        {/* ─── 2. CATEGORY FILTER TABS ─── */}
-        <div className="flex items-center justify-center gap-2 overflow-x-auto no-scrollbar p-1.5 max-w-2xl mx-auto">
-          {CATEGORY_TABS.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-2xl text-xs font-heading font-black uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap ${
-                  isActive
-                    ? 'bg-[#0284c7] text-white shadow-md shadow-sky-500/25 scale-[1.02]'
-                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-800 hover:border-slate-300'
-                }`}
-              >
-                <Icon className="h-3.5 w-3.5" />
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* ─── 3. 12 BRAND CARDS GRID (CHUẨN FORM NHƯ HÌNH 1) ─── */}
+        {/* ─── 2. 12 BRAND CARDS GRID (CHUẨN FORM NHƯ HÌNH 1) ─── */}
         <section className="space-y-4">
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5 sm:gap-4">
             <AnimatePresence mode="popLayout">
-              {filteredBrands.map((brand) => {
+              {BRAND_LIST.map((brand) => {
                 const isSelected = selectedBrand?.id === brand.id;
                 return (
                   <motion.div
