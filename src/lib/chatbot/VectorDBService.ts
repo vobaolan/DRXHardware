@@ -6,8 +6,8 @@ export class VectorDBService {
   private isConfigured: boolean = false;
 
   constructor() {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://fubqiwdrwgbhyxokqnuh.supabase.co';
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_nMTUTKOqBKoQnf3Xer51uw_KhaRKvLw';
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://xrnrveehpyxurmkfgquc.supabase.co';
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_4jDpCA9GMSJaxxWOJv_b4g_LkN1q40E';
     
     this.isConfigured = true;
     this.supabase = createClient(supabaseUrl, supabaseAnonKey);
