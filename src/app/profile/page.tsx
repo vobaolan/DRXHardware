@@ -84,9 +84,6 @@ function ProfileContent() {
   const [showRegPassword, setShowRegPassword] = useState(false);
   const [showRegConfirmPassword, setShowRegConfirmPassword] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [showGoogleModal, setShowGoogleModal] = useState(false);
-  const [customGoogleEmail, setCustomGoogleEmail] = useState('');
-  const [customGoogleName, setCustomGoogleName] = useState('');
 
   // User info form states
   const [profileName, setProfileName] = useState('');
@@ -177,6 +174,17 @@ function ProfileContent() {
     } catch (e) {
       console.warn('Failed to read remember email:', e);
     }
+
+    // Preload Google Identity Services SDK for instant account popup
+    try {
+      if (typeof window !== 'undefined' && !(window as any).google?.accounts) {
+        const script = document.createElement('script');
+        script.src = 'https://accounts.google.com/gsi/client';
+        script.async = true;
+        script.defer = true;
+        document.head.appendChild(script);
+      }
+    } catch (e) {}
   }, []);
 
   // Fetch orders when user is authenticated
@@ -282,36 +290,91 @@ function ProfileContent() {
     }
   };
 
-  const handleGoogleAuth = async (googleEmail?: string) => {
-    const email = (googleEmail || customGoogleEmail).trim();
-    if (!email || !email.includes('@')) {
-      showToast('Vui lòng nhập địa chỉ Gmail hợp lệ!', 'error');
-      return;
-    }
+  const handleGoogleAuth = async () => {
     setIsGoogleLoading(true);
-    try {
-      const name = email.split('@')[0].replace(/[._]/g, ' ').toUpperCase();
-      const avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(email)}`;
 
-      const { loginWithGoogle } = await import('@/lib/auth-client');
-      const user = await loginWithGoogle({ email, name, avatar });
-      if (user) {
-        if (typeof window !== 'undefined') {
-          sessionStorage.setItem('drx_auth_provider', 'google');
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '545197389164-tudqa7vaa2l158lbg9par4pok81cfrrt.apps.googleusercontent.com';
+
+    const triggerPopup = () => {
+      try {
+        const googleAuth = (window as any).google?.accounts?.oauth2;
+        if (!googleAuth) {
+          setIsGoogleLoading(false);
+          showToast('Đang tải tiện ích Google, vui lòng thử lại sau vài giây!', 'info');
+          return;
         }
-        setCurrentUser({ ...user, provider: 'google' });
-        setProfileName(user.name || name);
-        setIsLoggedIn(true);
-        setShowGoogleModal(false);
-        showToast(`Đăng nhập Google thành công! Chào mừng ${user.name || 'bạn'}.`, 'success');
-      } else {
-        showToast('Không thể kết nối Google lúc này. Vui lòng thử lại!', 'error');
+
+        const client = googleAuth.initTokenClient({
+          client_id: clientId,
+          scope: 'email profile openid',
+          callback: async (tokenResponse: any) => {
+            if (tokenResponse?.error) {
+              setIsGoogleLoading(false);
+              if (tokenResponse.error !== 'popup_closed_by_user') {
+                showToast(`Lỗi đăng nhập Google: ${tokenResponse.error}`, 'error');
+              }
+              return;
+            }
+
+            if (tokenResponse?.access_token) {
+              try {
+                const { loginWithGoogle } = await import('@/lib/auth-client');
+                const user = await loginWithGoogle({ accessToken: tokenResponse.access_token });
+                if (user) {
+                  if (typeof window !== 'undefined') {
+                    sessionStorage.setItem('drx_auth_provider', 'google');
+                  }
+                  setCurrentUser({ ...user, provider: 'google' });
+                  setProfileName(user.name || '');
+                  setIsLoggedIn(true);
+                  showToast(`Đăng nhập Google thành công! Chào mừng ${user.name || 'bạn'}.`, 'success');
+                } else {
+                  showToast('Không thể tạo phiên đăng nhập Google. Vui lòng thử lại!', 'error');
+                }
+              } catch (err) {
+                console.error(err);
+                showToast('Đã xảy ra lỗi khi hoàn tất đăng nhập Google.', 'error');
+              } finally {
+                setIsGoogleLoading(false);
+              }
+            } else {
+              setIsGoogleLoading(false);
+            }
+          },
+          error_callback: (err: any) => {
+            setIsGoogleLoading(false);
+            if (err?.type === 'popup_failed_to_open') {
+              showToast('Trình duyệt đã chặn cửa sổ bật lên. Vui lòng bật Pop-up để tiếp tục!', 'error');
+            }
+          },
+        });
+
+        if (client) {
+          client.requestAccessToken({ prompt: 'select_account' });
+        } else {
+          setIsGoogleLoading(false);
+          showToast('Không thể khởi tạo phiên Google.', 'error');
+        }
+      } catch (err) {
+        console.error('Google OAuth Trigger Error:', err);
+        setIsGoogleLoading(false);
+        showToast('Lỗi khi mở cửa sổ Google.', 'error');
       }
-    } catch (err) {
-      console.error(err);
-      showToast('Đã xảy ra lỗi khi kết nối tài khoản Google.', 'error');
-    } finally {
-      setIsGoogleLoading(false);
+    };
+
+    if (!(window as any).google?.accounts?.oauth2) {
+      const script = document.createElement('script');
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      script.onload = () => triggerPopup();
+      script.onerror = () => {
+        setIsGoogleLoading(false);
+        showToast('Không thể kết nối đến Google. Vui lòng kiểm tra mạng!', 'error');
+      };
+      document.head.appendChild(script);
+    } else {
+      triggerPopup();
     }
   };
 
@@ -421,7 +484,7 @@ function ProfileContent() {
                 <div className="space-y-3">
                   <button
                     type="button"
-                    onClick={() => setShowGoogleModal(true)}
+                    onClick={handleGoogleAuth}
                     disabled={isGoogleLoading}
                     className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 font-bold text-xs text-slate-800 dark:text-slate-100 shadow-xs transition-all hover:scale-[1.01] active:scale-[0.98] cursor-pointer group"
                   >
@@ -642,78 +705,6 @@ function ProfileContent() {
                   <span>Bảo mật 256-bit SSL chuẩn thương mại điện tử DRX</span>
                 </div>
               </div>
-
-              {/* GOOGLE ACCOUNT SELECTOR MODAL */}
-              <AnimatePresence>
-                {showGoogleModal && (
-                  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                      className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden p-6 space-y-5"
-                    >
-                      <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-                        <div className="flex items-center gap-2">
-                          <GoogleIcon className="w-5 h-5" />
-                          <span className="font-heading text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">
-                            Đăng nhập bằng Google
-                          </span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setShowGoogleModal(false)}
-                          className="p-1 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-
-                      <div className="space-y-4">
-                        <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                          Nhập địa chỉ tài khoản Google / Gmail của bạn để tiếp tục đến <strong className="text-slate-900 dark:text-white">DRX Hardware</strong>:
-                        </p>
-
-                        <div className="space-y-3">
-                          <div className="space-y-1.5">
-                            <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
-                              Địa chỉ Gmail
-                            </label>
-                            <input
-                              type="email"
-                              required
-                              placeholder="tenban@gmail.com"
-                              value={customGoogleEmail}
-                              onChange={(e) => setCustomGoogleEmail(e.target.value)}
-                              className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-3 px-4 text-xs font-semibold text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-[#0284c7] focus:outline-none focus:ring-2 focus:ring-sky-400/20 transition-all"
-                            />
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (!customGoogleEmail || !customGoogleEmail.includes('@')) {
-                                showToast('Vui lòng nhập địa chỉ Gmail hợp lệ!', 'error');
-                                return;
-                              }
-                              handleGoogleAuth(customGoogleEmail);
-                            }}
-                            disabled={isGoogleLoading}
-                            className="w-full py-3.5 rounded-2xl bg-[#0284c7] hover:bg-[#0369a1] text-white font-heading text-xs font-black uppercase tracking-wider shadow-md shadow-sky-500/25 transition-all cursor-pointer flex items-center justify-center gap-2"
-                          >
-                            {isGoogleLoading ? (
-                              <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                            ) : (
-                              <GoogleIcon className="w-4 h-4" />
-                            )}
-                            <span>Tiếp Tục Với Google</span>
-                          </button>
-                        </div>
-                      </div>
-                    </motion.div>
-                  </div>
-                )}
-              </AnimatePresence>
             </motion.div>
           ) : (
             /* ================== USER DASHBOARD (NO WALLET, 5 CLEAN TABS) ================== */

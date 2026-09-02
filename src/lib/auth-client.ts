@@ -160,12 +160,18 @@ export async function registerUser(email: string, password: string, name?: strin
 /**
  * Authenticate with Google account
  */
-export async function loginWithGoogle(userInfo?: { email: string; name: string; avatar?: string }): Promise<AuthUser | null> {
+export async function loginWithGoogle(payload?: {
+  email?: string;
+  name?: string;
+  avatar?: string;
+  credential?: string;
+  accessToken?: string;
+}): Promise<AuthUser | null> {
   try {
     const res = await fetch('/api/auth/google', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(userInfo || {}),
+      body: JSON.stringify(payload || {}),
     });
     if (res.ok) {
       const data = await res.json();

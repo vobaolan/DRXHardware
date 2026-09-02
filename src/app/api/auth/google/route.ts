@@ -7,7 +7,46 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
-    const { email, name, avatar, googleId } = await request.json();
+    const body = await request.json();
+    let email = body.email;
+    let name = body.name;
+    let avatar = body.avatar;
+    let googleId = body.googleId;
+
+    // 1. If accessToken provided, fetch Google Userinfo
+    if (body.accessToken) {
+      try {
+        const gRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: `Bearer ${body.accessToken}` },
+        });
+        if (gRes.ok) {
+          const gData = await gRes.json();
+          email = gData.email || email;
+          name = gData.name || name;
+          avatar = gData.picture || avatar;
+          googleId = gData.sub || googleId;
+        }
+      } catch (e) {
+        console.warn('Google userinfo fetch error:', e);
+      }
+    }
+
+    // 2. If credential (JWT) provided, decode base64 payload
+    if (body.credential && !email) {
+      try {
+        const parts = body.credential.split('.');
+        if (parts.length === 3) {
+          const payloadStr = Buffer.from(parts[1], 'base64').toString('utf8');
+          const payload = JSON.parse(payloadStr);
+          email = payload.email || email;
+          name = payload.name || name;
+          avatar = payload.picture || avatar;
+          googleId = payload.sub || googleId;
+        }
+      } catch (e) {
+        console.warn('Google credential decode error:', e);
+      }
+    }
 
     if (!email) {
       return NextResponse.json(
