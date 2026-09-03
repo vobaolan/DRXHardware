@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { supabase } from '@/lib/supabase';
 import bcrypt from 'bcryptjs';
 import { signJWT, setAuthCookie } from '@/lib/jwt';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limiter';
@@ -9,7 +10,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: Request) {
   try {
     const clientIp = getClientIp(request);
-    const rateLimit = checkRateLimit(`register_${clientIp}`, 5, 10 * 60 * 1000);
+    const rateLimit = checkRateLimit(`register_${clientIp}`, 10, 10 * 60 * 1000);
     if (!rateLimit.allowed) {
       const waitSeconds = Math.ceil((rateLimit.resetTime - Date.now()) / 1000);
       return NextResponse.json(
@@ -37,90 +38,116 @@ export async function POST(request: Request) {
     const cleanEmail = email.trim().toLowerCase();
     // Public registrations are ALWAYS strictly assigned USER role to prevent privilege escalation
     const assignedRole = cleanEmail === 'admin@drx.vn' ? 'ADMIN' : cleanEmail === 'staff@drx.vn' ? 'STAFF' : 'USER';
-    const userName = name || cleanEmail.split('@')[0];
+    const userName = (name && String(name).trim()) || cleanEmail.split('@')[0];
+
+    // 1. Check if user already exists in Supabase or Prisma
+    let existingUser: any = null;
 
     try {
-      // Check if user already exists in database
-      const existingUser = await prisma.user.findUnique({
-        where: { email: cleanEmail },
-      });
+      const { data: supaExisting } = await supabase
+        .from('User')
+        .select('id, email')
+        .eq('email', cleanEmail)
+        .maybeSingle();
 
-      if (existingUser) {
-        return NextResponse.json(
-          { message: 'Email này đã được đăng ký trước đó!' },
-          { status: 400 }
-        );
+      if (supaExisting) {
+        existingUser = supaExisting;
       }
+    } catch (e) {}
 
-      // Hash the password
-      const hashedPassword = bcrypt.hashSync(password, 10);
+    if (!existingUser) {
+      try {
+        const pExisting = await prisma.user.findUnique({
+          where: { email: cleanEmail },
+        });
+        if (pExisting) existingUser = pExisting;
+      } catch (e) {}
+    }
 
-      // Create user in the database
-      const user = await prisma.user.create({
-        data: {
+    if (existingUser) {
+      return NextResponse.json(
+        { message: 'Email này đã được đăng ký trước đó!' },
+        { status: 400 }
+      );
+    }
+
+    // 2. Hash the password
+    const hashedPassword = bcrypt.hashSync(password, 10);
+    const newUserId = 'user-' + Date.now();
+    let savedUser: any = null;
+
+    // 3. Insert into Supabase User table (Primary Cloud DB)
+    try {
+      const { data: supaCreated, error: supaErr } = await supabase
+        .from('User')
+        .insert([{
+          id: newUserId,
           name: userName,
           email: cleanEmail,
           password: hashedPassword,
           balance: 0.0,
           role: assignedRole,
-        },
-      });
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }])
+        .select('*')
+        .maybeSingle();
 
-      const authUser = {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        balance: Number(user.balance),
-        role: user.role,
-      };
-
-      const token = signJWT({
-        sub: authUser.id,
-        email: authUser.email,
-        name: authUser.name,
-        role: authUser.role,
-      });
-
-      const response = NextResponse.json(
-        {
-          message: 'Đăng ký tài khoản thành công!',
-          user: authUser,
-        },
-        { status: 201 }
-      );
-
-      setAuthCookie(response, token);
-      return response;
-    } catch (dbErr: any) {
-      console.warn('Prisma DB connection issue during registration:', dbErr.message);
+      if (supaErr) {
+        console.warn('Supabase registration insert warning:', supaErr);
+      } else if (supaCreated) {
+        savedUser = supaCreated;
+      }
+    } catch (supaErr) {
+      console.warn('Supabase registration error:', supaErr);
     }
 
-    // Fallback response if DB is offline
-    const fallbackUser = {
-      id: `user-${Date.now()}`,
-      name: userName,
+    // 4. Also insert into Prisma PostgreSQL if connected
+    try {
+      const prismaUser = await prisma.user.create({
+        data: {
+          id: savedUser?.id || newUserId,
+          name: userName,
+          email: cleanEmail,
+          password: hashedPassword,
+          balance: 0.0,
+          role: assignedRole as any,
+        },
+      });
+      if (!savedUser) {
+        savedUser = prismaUser;
+      }
+    } catch (prismaErr: any) {
+      console.warn('Prisma registration sync notice:', prismaErr.message);
+    }
+
+    // 5. Construct authenticated user object
+    const authUser = {
+      id: savedUser?.id || newUserId,
+      name: savedUser?.name || userName,
       email: cleanEmail,
-      balance: 0,
-      role: assignedRole,
+      balance: Number(savedUser?.balance || 0),
+      role: savedUser?.role || assignedRole,
     };
 
     const token = signJWT({
-      sub: fallbackUser.id,
-      email: fallbackUser.email,
-      name: fallbackUser.name,
-      role: fallbackUser.role,
+      sub: authUser.id,
+      email: authUser.email,
+      name: authUser.name,
+      role: authUser.role,
     });
 
     const response = NextResponse.json(
       {
         message: 'Đăng ký tài khoản thành công!',
-        user: fallbackUser,
+        user: authUser,
       },
       { status: 201 }
     );
 
     setAuthCookie(response, token);
     return response;
+
   } catch (error: any) {
     console.error('Lỗi khi đăng ký tài khoản:', error);
     return NextResponse.json(

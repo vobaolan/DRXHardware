@@ -14,9 +14,45 @@ export async function GET() {
   };
 
   try {
-    let usersList: any[] = [];
+    const userMap = new Map<string, any>();
 
-    // 1. Primary Query: Prisma PostgreSQL
+    // 1. Fetch from Supabase User table (Real-time Cloud Database)
+    try {
+      const { data: supaUsers, error: supaErr } = await supabase
+        .from('User')
+        .select('id, name, email, role, image, balance, phone, address, createdAt')
+        .order('createdAt', { ascending: false });
+
+      if (supaUsers && supaUsers.length > 0) {
+        for (const u of supaUsers) {
+          if (!u.email) continue;
+          const cleanEmail = u.email.trim().toLowerCase();
+          const isGoogleUser = Boolean(
+            (u.image && String(u.image).includes('googleusercontent')) ||
+            (!u.password && u.image)
+          );
+
+          userMap.set(cleanEmail, {
+            id: u.id,
+            name: u.name || u.email?.split('@')[0] || 'Khách hàng DRX',
+            email: cleanEmail,
+            role: u.role || 'USER',
+            image: u.image || null,
+            provider: isGoogleUser ? 'GOOGLE' : 'CREDENTIALS',
+            balance: Number(u.balance ?? 0),
+            phone: u.phone || '',
+            address: u.address || '',
+            createdAt: u.createdAt || new Date().toISOString(),
+            _count: { orders: 0, transactions: 0 },
+            totalSpent: 0,
+          });
+        }
+      }
+    } catch (supaErr) {
+      console.warn('Supabase users fetch error:', supaErr);
+    }
+
+    // 2. Query Prisma PostgreSQL and merge/enrich with order statistics
     try {
       const prismaUsers = await prisma.user.findMany({
         orderBy: { createdAt: 'desc' },
@@ -36,7 +72,9 @@ export async function GET() {
       });
 
       if (prismaUsers && prismaUsers.length > 0) {
-        usersList = prismaUsers.map((u) => {
+        for (const u of prismaUsers) {
+          if (!u.email) continue;
+          const cleanEmail = u.email.trim().toLowerCase();
           const totalSpent = u.orders
             ? u.orders.filter(o => o.status === 'COMPLETED').reduce((sum, o) => sum + Number(o.totalAmount || 0), 0)
             : 0;
@@ -46,61 +84,30 @@ export async function GET() {
             (!u.password && u.image)
           );
 
-          return {
-            id: u.id,
-            name: u.name || u.email.split('@')[0],
-            email: u.email,
-            role: u.role,
-            image: u.image || null,
+          const existing = userMap.get(cleanEmail);
+          userMap.set(cleanEmail, {
+            id: existing?.id || u.id,
+            name: existing?.name || u.name || cleanEmail.split('@')[0],
+            email: cleanEmail,
+            role: existing?.role || u.role || 'USER',
+            image: existing?.image || u.image || null,
             provider: isGoogleUser ? 'GOOGLE' : 'CREDENTIALS',
-            balance: Number(u.balance || 0),
-            phone: u.phone,
-            address: u.address,
-            createdAt: u.createdAt.toISOString(),
-            _count: u._count,
-            totalSpent,
-          };
-        });
-      }
-    } catch (prismaErr) {
-      console.warn('Prisma users fetch warning, attempting Supabase fallback:', prismaErr);
-    }
-
-    // 2. Fallback to Supabase REST Client
-    if (usersList.length === 0) {
-      try {
-        const { data: supaUsers, error: supaErr } = await supabase
-          .from('User')
-          .select('id, name, email, role, image, balance, phone, address, createdAt')
-          .order('createdAt', { ascending: false });
-
-        if (supaUsers && supaUsers.length > 0) {
-          usersList = supaUsers.map((u: any) => {
-            const isGoogleUser = Boolean(
-              (u.image && String(u.image).includes('googleusercontent')) ||
-              (!u.password && u.image)
-            );
-
-            return {
-              id: u.id,
-              name: u.name || u.email?.split('@')[0] || 'Khách hàng DRX',
-              email: u.email,
-              role: u.role || 'USER',
-              image: u.image || null,
-              provider: isGoogleUser ? 'GOOGLE' : 'CREDENTIALS',
-              balance: Number(u.balance ?? 0),
-              phone: u.phone,
-              address: u.address,
-              createdAt: u.createdAt || new Date().toISOString(),
-              _count: { orders: 0, transactions: 0 },
-              totalSpent: 0,
-            };
+            balance: Number(existing?.balance ?? u.balance ?? 0),
+            phone: existing?.phone || u.phone || '',
+            address: existing?.address || u.address || '',
+            createdAt: existing?.createdAt || u.createdAt?.toISOString() || new Date().toISOString(),
+            _count: u._count || existing?._count || { orders: 0, transactions: 0 },
+            totalSpent: totalSpent || existing?.totalSpent || 0,
           });
         }
-      } catch (supaErr) {
-        console.warn('Supabase users fetch error:', supaErr);
       }
+    } catch (prismaErr) {
+      console.warn('Prisma users fetch warning:', prismaErr);
     }
+
+    const usersList: any[] = Array.from(userMap.values()).sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
 
     const totalUsers = usersList.length;
     const adminCount = usersList.filter(u => u.role === 'ADMIN').length;
@@ -253,44 +260,41 @@ export async function PATCH(request: Request) {
 
     let updatedUser: any = null;
 
-    // 1. Try Prisma update
+    // 1. Update in Supabase User table (Primary Cloud DB)
+    try {
+      const query = supabase.from('User');
+      let supaBuilder;
+      if (userId) {
+        supaBuilder = query.update(updateData).eq('id', userId);
+      } else {
+        supaBuilder = query.update(updateData).eq('email', email);
+      }
+
+      const { data: supaUpdated, error: supaErr } = await supaBuilder.select('*').maybeSingle();
+      if (!supaErr && supaUpdated) {
+        updatedUser = supaUpdated;
+      }
+    } catch (supaErr: any) {
+      console.warn('Supabase update execution error:', supaErr);
+    }
+
+    // 2. Also update in Prisma PostgreSQL if available
     try {
       if (userId) {
-        updatedUser = await prisma.user.update({
+        const pUpdated = await prisma.user.update({
           where: { id: userId },
           data: updateData,
         });
+        if (!updatedUser) updatedUser = pUpdated;
       } else if (email) {
-        updatedUser = await prisma.user.update({
+        const pUpdated = await prisma.user.update({
           where: { email },
           data: updateData,
         });
+        if (!updatedUser) updatedUser = pUpdated;
       }
     } catch (prismaErr) {
-      console.warn('Prisma user update error, falling back to Supabase:', prismaErr);
-    }
-
-    // 2. Fallback to Supabase REST client
-    if (!updatedUser) {
-      try {
-        const query = supabase.from('User');
-        let supaBuilder;
-        if (userId) {
-          supaBuilder = query.update(updateData).eq('id', userId);
-        } else {
-          supaBuilder = query.update(updateData).eq('email', email);
-        }
-
-        const { data: supaUpdated, error: supaErr } = await supaBuilder.select('*').maybeSingle();
-        if (supaErr) {
-          console.error('Supabase user update error:', supaErr);
-          throw supaErr;
-        }
-        updatedUser = supaUpdated;
-      } catch (supaErr: any) {
-        console.error('Supabase update execution error:', supaErr);
-        throw supaErr;
-      }
+      console.warn('Prisma user update error notice:', prismaErr);
     }
 
     return NextResponse.json({
@@ -329,7 +333,29 @@ export async function DELETE(request: Request) {
 
     let deleted = false;
 
-    // 1. Try Prisma
+    // 1. Delete from Supabase User table
+    try {
+      const { data: targetSupa } = await supabase
+        .from('User')
+        .select('email')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (targetSupa && targetSupa.email === 'admin@drx.vn') {
+        return NextResponse.json({ message: 'Không thể xóa tài khoản Quản trị viên Master (admin@drx.vn)!' }, { status: 403 });
+      }
+
+      const { error: supaDelErr } = await supabase
+        .from('User')
+        .delete()
+        .eq('id', userId);
+
+      if (!supaDelErr) deleted = true;
+    } catch (supaErr: any) {
+      console.warn('Supabase delete user error:', supaErr);
+    }
+
+    // 2. Also delete from Prisma
     try {
       const targetUser = await prisma.user.findUnique({ where: { id: userId } });
       if (targetUser && targetUser.email === 'admin@drx.vn') {
@@ -341,33 +367,7 @@ export async function DELETE(request: Request) {
       });
       deleted = true;
     } catch (prismaErr) {
-      console.warn('Prisma delete user warning, falling back to Supabase:', prismaErr);
-    }
-
-    // 2. Fallback to Supabase
-    if (!deleted) {
-      try {
-        const { data: targetSupa } = await supabase
-          .from('User')
-          .select('email')
-          .eq('id', userId)
-          .maybeSingle();
-
-        if (targetSupa && targetSupa.email === 'admin@drx.vn') {
-          return NextResponse.json({ message: 'Không thể xóa tài khoản Quản trị viên Master (admin@drx.vn)!' }, { status: 403 });
-        }
-
-        const { error: supaDelErr } = await supabase
-          .from('User')
-          .delete()
-          .eq('id', userId);
-
-        if (supaDelErr) throw supaDelErr;
-        deleted = true;
-      } catch (supaErr: any) {
-        console.error('Supabase delete user error:', supaErr);
-        throw supaErr;
-      }
+      console.warn('Prisma delete user notice:', prismaErr);
     }
 
     return NextResponse.json({

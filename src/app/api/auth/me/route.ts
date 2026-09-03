@@ -36,6 +36,28 @@ export async function GET(request: Request) {
         if (data[0].role) userRole = data[0].role;
         if (data[0].phone) userPhone = data[0].phone;
         if (data[0].address) userAddress = data[0].address;
+      } else if (authUser.email && authUser.email !== 'admin@drx.vn' && authUser.email !== 'staff@drx.vn') {
+        // Auto-heal: ensure user is persisted in Supabase User table
+        try {
+          const autoId = (authUser.sub && authUser.sub.startsWith('user-')) ? authUser.sub : ('user-' + Date.now());
+          const { data: supaNew } = await supabase
+            .from('User')
+            .insert([{
+              id: autoId,
+              name: authUser.name || authUser.email.split('@')[0],
+              email: authUser.email.toLowerCase().trim(),
+              role: authUser.role || 'USER',
+              balance: 0.0,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            }])
+            .select('*')
+            .maybeSingle();
+
+          if (supaNew) {
+            userId = supaNew.id;
+          }
+        } catch (healErr) {}
       }
     } catch (e) {}
 
