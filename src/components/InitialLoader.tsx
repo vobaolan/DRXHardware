@@ -25,7 +25,7 @@ export const InitialLoader: React.FC = () => {
         if (current < 30) {
           setStatusText('⚡ ĐANG KHỞI ĐỘNG HỆ THỐNG DRX HARDWARE...');
         } else if (current < 65) {
-          setStatusText('🔒 KẾT NỐI MÁY CHỦ BẢO MẬT SUPABASE...');
+          setStatusText('🔒 THIẾT LẬP KẾT NỐI BẢO MẬT SSL / TLS...');
         } else if (current < 95) {
           setStatusText('📦 ĐỒNG BỘ KHO LINH KIỆN & PC GAMING...');
         } else {

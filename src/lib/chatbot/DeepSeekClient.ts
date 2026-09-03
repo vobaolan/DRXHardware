@@ -37,7 +37,7 @@ export class DeepSeekClient {
       const allLive = await liveDatabaseKnowledge.getAllLiveProducts().catch(() => []);
       return {
         role: 'assistant',
-        content: `Xin chào! DRX CyberBot AI đang kết nối với cơ sở dữ liệu Supabase (${allLive.length} sản phẩm). Bạn cần tìm linh kiện hoặc tư vấn cấu hình PC nào hãy gõ tên sản phẩm nhé!`,
+        content: `Xin chào! DRX CyberBot AI sẵn sàng hỗ trợ bạn (${allLive.length} sản phẩm chính hãng sẵn hàng). Bạn cần tìm linh kiện hoặc tư vấn cấu hình PC nào hãy gõ tên sản phẩm nhé!`,
         matchedProducts: allLive.slice(0, 3),
       };
     }

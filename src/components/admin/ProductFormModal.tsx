@@ -592,7 +592,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
               </h3>
               <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
                 <ShieldCheck className="w-3.5 h-3.5" />
-                <span>Lưu trữ hệ thống DRX Supabase (Tránh lỗi bản quyền link ngoài)</span>
+                <span>Lưu trữ đám mây DRX Cloud (Tránh lỗi bản quyền link ngoài)</span>
               </span>
             </div>
 
@@ -615,7 +615,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                     <div className="flex items-center gap-2">
                       <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-wider flex items-center gap-1 border border-emerald-500/20">
                         <CheckCircle2 className="w-3 h-3" />
-                        <span>Đã Tải Lên Supabase Storage Thành Công</span>
+                        <span>Đã Tải Lên Máy Chủ Ảnh Thành Công</span>
                       </span>
                     </div>
 
@@ -657,7 +657,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                   </div>
                   <div>
                     <span className="text-xs font-extrabold text-[#0284c7] block">
-                      {isUploadingCover ? 'Đang Tải Ảnh Lên Supabase...' : '📁 Nhấp Để Tải Ảnh Bìa Từ Máy Tính'}
+                      {isUploadingCover ? 'Đang Tải Ảnh Lên Máy Chủ...' : '📁 Nhấp Để Tải Ảnh Bìa Từ Máy Tính'}
                     </span>
                     <span className="text-[10px] text-slate-400 block mt-0.5">
                       Định dạng hỗ trợ: JPG, PNG, WebP, AVIF (Tự động lưu vào hệ thống an toàn)

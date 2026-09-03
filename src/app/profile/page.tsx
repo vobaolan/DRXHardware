@@ -1826,7 +1826,7 @@ function ProfileContent() {
                             className="uiverse-btn-shimmer inline-flex items-center gap-2 rounded-2xl text-white px-6 py-3 text-xs font-heading font-black uppercase tracking-wider shadow-lg cursor-pointer disabled:opacity-50"
                           >
                             <Check className="h-4 w-4" />
-                            <span>{isUpdatingProfile ? 'Đang lưu vào Supabase...' : 'Lưu Thông Tin Cá Nhân'}</span>
+                            <span>{isUpdatingProfile ? 'Đang lưu thông tin...' : 'Lưu Thông Tin Cá Nhân'}</span>
                           </button>
                         </form>
                       </div>

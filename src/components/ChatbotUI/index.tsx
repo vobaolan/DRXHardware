@@ -167,7 +167,7 @@ export default function ChatbotWidget() {
                     </div>
                     <div className="text-[9.5px] text-sky-100 uppercase tracking-wider font-semibold flex items-center gap-1 mt-0.5">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      Trực Tuyến • Supabase DB
+                      Trực Tuyến 24/7
                     </div>
                   </div>
                 </div>
@@ -346,7 +346,7 @@ export default function ChatbotWidget() {
                   </button>
                 </div>
                 <div className="text-center mt-2 text-[9px] text-slate-400 font-bold tracking-wider uppercase">
-                  DRX CYBERBOT AI • SUPABASE REALTIME
+                  DRX CYBERBOT AI • TRỢ LÝ PHẦN CỨNG 24/7
                 </div>
               </div>
             </motion.div>

@@ -196,6 +196,7 @@ export default function CheckoutPage() {
           proxyPhone: shippingInfo.proxyPhone,
           technicalNotes: shippingInfo.technicalNotes,
           cartItems,
+          couponCode: coupon?.code || null,
           totalAmount: subtotal,
           discountAmount: discountAmount,
           netAmount: netAmount,

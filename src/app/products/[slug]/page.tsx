@@ -267,7 +267,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
         <main className="flex-1 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-16 flex flex-col items-center justify-center space-y-4">
           <div className="w-12 h-12 border-4 border-[#0284c7] border-t-transparent rounded-full animate-spin" />
           <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-            Đang tải thông số kỹ thuật linh kiện từ Database...
+            Đang tải thông số kỹ thuật sản phẩm...
           </p>
         </main>
         <Footer />

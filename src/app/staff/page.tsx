@@ -121,7 +121,7 @@ export default function StaffWarehousePortalPage() {
       }
 
       if (showNotification) {
-        showToast('Đã đồng bộ dữ liệu thời gian thực từ Database!', 'success');
+        showToast('Đã làm mới dữ liệu hệ thống thành công!', 'success');
       }
     } catch (err) {
       console.error('Lỗi khi tải dữ liệu Staff:', err);

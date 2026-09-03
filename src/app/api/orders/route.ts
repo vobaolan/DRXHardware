@@ -99,6 +99,7 @@ export async function POST(request: Request) {
       proxyPhone = '',
       technicalNotes = '',
       cartItems, 
+      couponCode = null,
       totalAmount,
       discountAmount = 0,
       netAmount, 
@@ -237,7 +238,32 @@ export async function POST(request: Request) {
       }
     }
 
-    // 3. Create Admin Notification
+    // 3. Increment coupon usedCount in real database if couponCode applied
+    if (couponCode && typeof couponCode === 'string') {
+      const cleanCoupon = couponCode.trim().toUpperCase();
+      try {
+        await prisma.coupon.update({
+          where: { code: cleanCoupon },
+          data: { usedCount: { increment: 1 } },
+        });
+      } catch (couponPrismaErr) {}
+
+      try {
+        const { data: supaC } = await supabase
+          .from('Coupon')
+          .select('usedCount')
+          .eq('code', cleanCoupon)
+          .single();
+        if (supaC) {
+          await supabase
+            .from('Coupon')
+            .update({ usedCount: (Number(supaC.usedCount) || 0) + 1 })
+            .eq('code', cleanCoupon);
+        }
+      } catch (e) {}
+    }
+
+    // 4. Create Admin Notification
     try {
       await supabase.from('Notification').insert([{
         id: 'notif-' + Date.now(),

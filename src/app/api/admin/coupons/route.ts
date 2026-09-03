@@ -13,7 +13,7 @@ const DEFAULT_COUPONS = [
     maxDiscount: 2000000,
     expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
     maxUses: 999,
-    usedCount: 14,
+    usedCount: 0,
     status: 'ACTIVE'
   },
   {
@@ -24,7 +24,7 @@ const DEFAULT_COUPONS = [
     maxDiscount: 500000,
     expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
     maxUses: 100,
-    usedCount: 28,
+    usedCount: 0,
     status: 'ACTIVE'
   },
   {
@@ -35,7 +35,7 @@ const DEFAULT_COUPONS = [
     maxDiscount: 100000,
     expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
     maxUses: 500,
-    usedCount: 42,
+    usedCount: 0,
     status: 'ACTIVE'
   },
   {
@@ -46,7 +46,7 @@ const DEFAULT_COUPONS = [
     maxDiscount: 1500000,
     expiresAt: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString(),
     maxUses: 200,
-    usedCount: 35,
+    usedCount: 0,
     status: 'ACTIVE'
   }
 ];
