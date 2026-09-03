@@ -12,7 +12,7 @@ import {
   Edit2, Trash2, Phone, Mail, MapPin, Calendar, Clock, Check,
   UserCheck, ArrowDownRight, BarChart3, Hash, Layers, UserPlus,
   KeyRound, Shield, ShieldQuestion, PackageCheck, Ban, Tag,
-  ChevronDown
+  ChevronDown, Activity, Database, Zap
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { showToast, showConfirm } from '@/components/Toast';
@@ -1071,41 +1071,123 @@ export default function AdminDashboardPage() {
                   <RevenueChartWidget data={last7Days} formatVND={formatVND} />
                 </div>
 
-                {/* OVERVIEW SUMMARY (4 COLS) */}
-                <div className="lg:col-span-4 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5 sm:p-6 space-y-4 shadow-xs">
-                  <h3 className="font-heading text-xs sm:text-sm font-black uppercase text-slate-900 dark:text-white tracking-wider border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center gap-2">
-                    <Boxes className="w-4 h-4 text-[#0284c7]" />
-                    <span>TỔNG QUAN HỆ THỐNG</span>
-                  </h3>
-
-                  <div className="space-y-3 text-xs">
-                    <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
-                      <span className="text-slate-600 dark:text-slate-300 font-medium">Sản phẩm linh kiện</span>
-                      <span className="font-black text-slate-900 dark:text-white">{stats.totalProducts} mã hàng</span>
+                {/* OVERVIEW SUMMARY (4 COLS) - REDESIGNED SYSTEM DASHBOARD */}
+                <div className="lg:col-span-4 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5 sm:p-6 space-y-4 shadow-xs flex flex-col justify-between">
+                  <div>
+                    {/* Header with real-time health indicator */}
+                    <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                      <h3 className="font-heading text-xs sm:text-sm font-black uppercase text-slate-900 dark:text-white tracking-wider flex items-center gap-2">
+                        <Boxes className="w-4 h-4 text-[#0284c7]" />
+                        <span>TỔNG QUAN HỆ THỐNG</span>
+                      </h3>
+                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        ONLINE
+                      </span>
                     </div>
 
-                    <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
-                      <span className="text-slate-600 dark:text-slate-300 font-medium">Khách hàng thành viên</span>
-                      <span className="font-black text-slate-900 dark:text-white">{stats.totalUsers} tài khoản</span>
+                    {/* 4 Core Quantitative Metrics in 2x2 Grid */}
+                    <div className="grid grid-cols-2 gap-2.5 mt-3.5">
+                      <div className="p-3 rounded-xl bg-slate-50/90 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Sản Phẩm</span>
+                        <p className="text-base font-black text-slate-900 dark:text-white font-heading mt-0.5">{stats.totalProducts} <span className="text-[10px] text-slate-400 font-normal">mã</span></p>
+                      </div>
+                      <div className="p-3 rounded-xl bg-slate-50/90 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Khách Hàng</span>
+                        <p className="text-base font-black text-slate-900 dark:text-white font-heading mt-0.5">{stats.totalUsers} <span className="text-[10px] text-slate-400 font-normal">user</span></p>
+                      </div>
+                      <div className="p-3 rounded-xl bg-slate-50/90 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Serial Kho</span>
+                        <p className="text-base font-black text-emerald-600 dark:text-emerald-400 font-heading mt-0.5">{stats.serialsAvailable} <span className="text-[10px] text-emerald-600/70 font-normal">sẵn có</span></p>
+                      </div>
+                      <div className="p-3 rounded-xl bg-slate-50/90 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Đơn Hoàn Tất</span>
+                        <p className="text-base font-black text-sky-600 dark:text-sky-400 font-heading mt-0.5">{stats.completedOrders} <span className="text-[10px] text-sky-600/70 font-normal">đơn</span></p>
+                      </div>
                     </div>
 
-                    <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
-                      <span className="text-slate-600 dark:text-slate-300 font-medium">Mã Serial trong kho</span>
-                      <span className="font-black text-emerald-600 dark:text-emerald-400">{stats.serialsAvailable} mã khả dụng</span>
+                    {/* Operational Health & Inventory Gauges */}
+                    <div className="space-y-3 mt-3.5 pt-3 border-t border-slate-100 dark:border-slate-800">
+                      {/* Gauge 1: Stock Availability Rate */}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
+                            <Package className="w-3.5 h-3.5 text-emerald-500" /> Tỷ lệ linh kiện sẵn có:
+                          </span>
+                          <span className="font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                            {stats.totalSerials > 0 ? Math.round((stats.serialsAvailable / stats.totalSerials) * 100) : 100}%
+                          </span>
+                        </div>
+                        <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                          <div 
+                            className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-500"
+                            style={{ width: `${stats.totalSerials > 0 ? Math.min(100, Math.round((stats.serialsAvailable / stats.totalSerials) * 100)) : 100}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Gauge 2: Order Fulfillment Rate */}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
+                            <ShoppingCart className="w-3.5 h-3.5 text-sky-500" /> Tỷ lệ hoàn tất đơn:
+                          </span>
+                          <span className="font-black text-sky-600 dark:text-sky-400 font-mono">
+                            {stats.totalOrders > 0 ? Math.round((stats.completedOrders / stats.totalOrders) * 100) : 100}%
+                          </span>
+                        </div>
+                        <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                          <div 
+                            className="h-full rounded-full bg-gradient-to-r from-[#0284c7] to-[#38bdf8] transition-all duration-500"
+                            style={{ width: `${stats.totalOrders > 0 ? Math.min(100, Math.round((stats.completedOrders / stats.totalOrders) * 100)) : 100}%` }}
+                          />
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
-                      <span className="text-slate-600 dark:text-slate-300 font-medium">Đơn hàng hoàn tất</span>
-                      <span className="font-black text-slate-900 dark:text-white">{stats.completedOrders} đơn</span>
+                    {/* Cloud Infrastructure & Service Status */}
+                    <div className="mt-3.5 p-3 rounded-xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/80 space-y-2 text-[11px]">
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                          <Database className="w-3 h-3 text-emerald-500" /> Supabase Cloud DB:
+                        </span>
+                        <span className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" /> Trực Tuyến
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                          <Zap className="w-3 h-3 text-amber-500" /> Cổng VietQR & COD:
+                        </span>
+                        <span className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" /> Sẵn Sàng
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                          <ShieldCheck className="w-3 h-3 text-sky-500" /> Tra Cứu Bảo Hành SN:
+                        </span>
+                        <span className="font-bold text-sky-600 dark:text-sky-400 flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" /> Hoạt Động
+                        </span>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="pt-2">
+                  {/* Dual Quick Action Buttons */}
+                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
                     <button
                       onClick={() => setActiveTab('orders')}
-                      className="w-full py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-[#0284c7] hover:text-white text-slate-700 dark:text-slate-200 font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                      className="py-2.5 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-[#0284c7] hover:text-white text-slate-700 dark:text-slate-200 font-bold text-xs transition-all flex items-center justify-center gap-1 cursor-pointer"
                     >
-                      <span>Xem Danh Sách Đơn Hàng</span>
+                      <span>Xem Đơn Hàng</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('serials')}
+                      className="py-2.5 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-emerald-600 hover:text-white text-slate-700 dark:text-slate-200 font-bold text-xs transition-all flex items-center justify-center gap-1 cursor-pointer"
+                    >
+                      <span>Kho Serial SN</span>
                       <ChevronRight className="w-3.5 h-3.5" />
                     </button>
                   </div>

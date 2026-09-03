@@ -265,16 +265,16 @@ export const RevenueChartWidget: React.FC<RevenueChartWidgetProps> = ({ data = [
           </div>
         </div>
 
-        {/* Dynamic Average Line Marker - Positioned safely on the LEFT side with high z-index */}
+        {/* Dynamic Average Line Marker - Positioned cleanly on the RIGHT side to avoid overlapping chart bars/tooltips */}
         {avgRevenue > 0 && maxRevenue > 0 && (
           <div 
             style={{ bottom: `calc(44px + ${(avgRevenue / maxRevenue) * 165}px)` }}
             className="absolute left-28 sm:left-32 right-2 flex items-center pointer-events-none z-20"
           >
-            <div className="w-full border-b-2 border-dotted border-emerald-500/70 dark:border-emerald-400/60 relative">
-              <span className="absolute left-2 -top-5 text-[9.5px] font-black text-emerald-700 dark:text-emerald-300 bg-white/95 dark:bg-slate-900/95 px-2 py-0.5 rounded-full border border-emerald-300 dark:border-emerald-700 shadow-sm backdrop-blur-xs flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                Mức TB: {formatVND(avgRevenue)}
+            <div className="w-full border-b border-dashed border-emerald-500/60 dark:border-emerald-400/50 relative">
+              <span className="absolute right-0 -top-3 text-[9.5px] font-bold text-emerald-700 dark:text-emerald-300 bg-white/95 dark:bg-slate-900/95 px-2.5 py-0.5 rounded-full border border-emerald-300/80 dark:border-emerald-700/80 shadow-xs backdrop-blur-xs flex items-center gap-1.5 select-none">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Mức TB: <span className="font-black font-mono">{formatVND(avgRevenue)}</span>
               </span>
             </div>
           </div>
@@ -300,15 +300,15 @@ export const RevenueChartWidget: React.FC<RevenueChartWidgetProps> = ({ data = [
                     onMouseLeave={() => setHoveredIndex(null)}
                     className="flex-1 h-full flex flex-col items-center justify-end group cursor-pointer relative"
                   >
-                    {/* Floating Rich Tooltip */}
+                    {/* Floating Rich Tooltip with high z-index and safe positioning */}
                     <AnimatePresence>
                       {isHovered && (
                         <motion.div
-                          initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                          initial={{ opacity: 0, y: 6, scale: 0.95 }}
                           animate={{ opacity: 1, y: 0, scale: 1 }}
-                          exit={{ opacity: 0, y: 5, scale: 0.95 }}
-                          transition={{ duration: 0.15 }}
-                          className="absolute -top-18 z-40 bg-slate-900/95 dark:bg-slate-950/95 text-white p-3 rounded-2xl border border-slate-700/80 shadow-2xl backdrop-blur-md pointer-events-none whitespace-nowrap text-left min-w-[150px]"
+                          exit={{ opacity: 0, y: 4, scale: 0.95 }}
+                          transition={{ duration: 0.12 }}
+                          className="absolute -top-20 z-50 bg-slate-900/95 dark:bg-slate-950/95 text-white p-3 rounded-2xl border border-slate-700/80 shadow-2xl backdrop-blur-md pointer-events-none whitespace-nowrap text-left min-w-[155px]"
                         >
                           <div className="flex items-center justify-between gap-2 text-[10.5px] text-slate-400 border-b border-slate-800 pb-1.5 mb-1.5">
                             <span className="font-bold flex items-center gap-1.5">
