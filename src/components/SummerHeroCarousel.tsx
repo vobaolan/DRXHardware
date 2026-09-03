@@ -180,14 +180,16 @@ export const SummerHeroCarousel: React.FC = () => {
             
             {/* Multi-layer Gradient Masks for seamless blend in Light & Dark Mode */}
             {/* Light Mode Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 to-transparent md:via-white/40 dark:hidden" />
+            <div className="absolute inset-0 bg-gradient-to-r from-white via-white/80 to-transparent md:via-white/35 dark:hidden" />
             <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent dark:hidden" />
-            <div className="absolute top-0 inset-x-0 h-16 bg-gradient-to-b from-white/70 to-transparent dark:hidden" />
+            <div className="absolute top-0 inset-x-0 h-16 bg-gradient-to-b from-white/80 to-transparent dark:hidden" />
+            <div className="absolute top-0 right-0 bottom-0 w-16 bg-gradient-to-l from-white/20 to-transparent dark:hidden" />
 
             {/* Dark Mode Gradient Overlay */}
             <div className="hidden dark:block absolute inset-0 bg-gradient-to-r from-[#090d16] via-[#090d16]/90 to-transparent md:via-[#090d16]/40" />
             <div className="hidden dark:block absolute inset-0 bg-gradient-to-t from-[#090d16] via-transparent to-transparent" />
             <div className="hidden dark:block absolute top-0 inset-x-0 h-16 bg-gradient-to-b from-[#090d16]/80 to-transparent" />
+            <div className="hidden dark:block absolute top-0 right-0 bottom-0 w-16 bg-gradient-to-l from-[#090d16]/40 to-transparent" />
           </motion.div>
         </AnimatePresence>
 
@@ -205,14 +207,19 @@ export const SummerHeroCarousel: React.FC = () => {
             {/* Brand Logo Tag */}
             <Link 
               href="/" 
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-2xl bg-white/80 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 backdrop-blur-md border border-slate-200/90 dark:border-white/10 transition-all group/logo shadow-2xs"
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100/90 dark:bg-white/5 hover:bg-slate-200/90 dark:hover:bg-white/10 backdrop-blur-md border border-slate-200 dark:border-white/10 transition-all group/logo shadow-2xs shrink-0"
             >
+              <img 
+                src="/logo/symbol-black.png" 
+                alt="DRX Hardware Logo" 
+                className="w-4 h-4 object-contain dark:hidden group-hover/logo:rotate-12 transition-transform duration-300" 
+              />
               <img 
                 src="/logo/symbol-white.png" 
                 alt="DRX Hardware Logo" 
-                className="h-4.5 w-auto object-contain dark:invert-0 invert group-hover/logo:rotate-12 transition-transform duration-300" 
+                className="w-4 h-4 object-contain hidden dark:block group-hover/logo:rotate-12 transition-transform duration-300" 
               />
-              <span className="font-heading text-xs font-black tracking-widest text-slate-900 dark:text-white uppercase">
+              <span className="font-heading text-[11px] font-black tracking-widest text-slate-900 dark:text-white uppercase">
                 DRX HARDWARE
               </span>
             </Link>
@@ -222,14 +229,14 @@ export const SummerHeroCarousel: React.FC = () => {
               <button 
                 onClick={handlePrev} 
                 aria-label="Previous slide"
-                className="p-2 sm:p-2.5 rounded-xl bg-white/90 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/15 text-slate-700 dark:text-white/80 hover:text-slate-900 dark:hover:text-white backdrop-blur-md border border-slate-200/90 dark:border-white/10 hover:border-[#0284c7]/40 transition-all shadow-xs active:scale-95 cursor-pointer"
+                className="p-2 sm:p-2.5 rounded-xl bg-slate-100/90 dark:bg-white/5 hover:bg-slate-200/90 dark:hover:bg-white/15 text-slate-700 dark:text-white/80 hover:text-slate-900 dark:hover:text-white backdrop-blur-md border border-slate-200 dark:border-white/10 hover:border-[#0284c7]/40 transition-all shadow-xs active:scale-95 cursor-pointer"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <button 
                 onClick={handleNext} 
                 aria-label="Next slide"
-                className="p-2 sm:p-2.5 rounded-xl bg-white/90 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/15 text-slate-700 dark:text-white/80 hover:text-slate-900 dark:hover:text-white backdrop-blur-md border border-slate-200/90 dark:border-white/10 hover:border-[#0284c7]/40 transition-all shadow-xs active:scale-95 cursor-pointer"
+                className="p-2 sm:p-2.5 rounded-xl bg-slate-100/90 dark:bg-white/5 hover:bg-slate-200/90 dark:hover:bg-white/15 text-slate-700 dark:text-white/80 hover:text-slate-900 dark:hover:text-white backdrop-blur-md border border-slate-200 dark:border-white/10 hover:border-[#0284c7]/40 transition-all shadow-xs active:scale-95 cursor-pointer"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
