@@ -175,7 +175,7 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          orderId: order.id,
+          orderId: order.id || order.orderCode || orderDisplayCode,
           status: 'CANCELLED',
           paymentStatus: 'CANCELLED',
           paymentDetails: mergedDetails,
@@ -211,7 +211,7 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          orderId: order.id,
+          orderId: order.id || order.orderCode || orderDisplayCode,
           status: statusToSave,
           paymentStatus: paymentStatusToSave,
           paymentDetails: mergedDetails,
@@ -262,12 +262,12 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
     <div className="fixed inset-0 z-[9999] bg-slate-950/80 backdrop-blur-md flex items-start justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-200 py-6 sm:py-10">
       <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-6 sm:p-8 max-w-3xl w-full space-y-6 shadow-2xl text-slate-900 dark:text-slate-100 my-auto relative">
         {/* ─────────────────────────────────────────────────────────────
-            HEADER: ORDER CODE & STATUS SELECTOR
+            HEADER: ORDER CODE, STATUS, PAYMENT & LOGICAL ACTIONS
            ───────────────────────────────────────────────────────────── */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800/80 pb-5">
-          <div className="space-y-1.5">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800/80 pb-5">
+          <div className="space-y-2">
             <div className="flex items-center gap-2.5 flex-wrap">
-              <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
+              <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/90 px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs">
                 <span className="font-mono font-black text-sm sm:text-base text-[#0284c7]">
                   #{orderDisplayCode}
                 </span>
@@ -289,41 +289,72 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
                 placement="bottom"
               />
 
-              <span className={`px-3 py-1.5 rounded-xl text-[11px] font-black uppercase border ${
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-wide border ${
                 currentPaymentStatus === 'PAID'
                   ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-400/30'
                   : currentPaymentStatus === 'CANCELLED'
                   ? 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-400/30'
                   : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-400/30'
               }`}>
-                💵 COD ({currentPaymentStatus === 'PAID' ? 'Đã Thu Tiền' : currentPaymentStatus === 'CANCELLED' ? 'Đã Hủy COD' : 'Chưa Thu Tiền'})
+                <span>{order.paymentMethod === 'BANKING' ? '💳 Banking' : '💵 COD'}</span>
+                <span>•</span>
+                <span>{currentPaymentStatus === 'PAID' ? 'Đã Thu Tiền' : currentPaymentStatus === 'CANCELLED' ? 'Đã Hủy' : 'Chưa Thu Tiền'}</span>
               </span>
             </div>
 
-            {formattedDate && (
-              <span className="text-xs text-slate-400 font-mono block pt-0.5">
-                Thời gian đặt: <strong className="text-slate-600 dark:text-slate-300 font-bold">{formattedDate}</strong>
+            <div className="flex items-center gap-3 text-xs text-slate-400 font-mono flex-wrap">
+              {formattedDate && (
+                <span>
+                  Thời gian đặt: <strong className="text-slate-700 dark:text-slate-300 font-bold">{formattedDate}</strong>
+                </span>
+              )}
+              <span>•</span>
+              <span className="flex items-center gap-1">
+                {isStorePickup ? <Building2 className="w-3 h-3 text-[#0284c7]" /> : <Truck className="w-3 h-3 text-[#0284c7]" />}
+                <strong className="text-slate-700 dark:text-slate-300 font-bold">{isStorePickup ? 'Showroom DRX' : 'Giao tận nơi'}</strong>
               </span>
-            )}
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 self-start sm:self-center">
-            {currentStatus !== 'CANCELLED' && (
+          {/* Right Controls: Logical contextual actions + Close button */}
+          <div className="flex items-center gap-2.5 self-end md:self-center">
+            {currentStatus === 'COMPLETED' ? (
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-xs font-bold shadow-2xs">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>Đã Hoàn Tất</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsCancelModalOpen(true)}
+                  className="text-[11px] text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors underline cursor-pointer px-1"
+                  title="Xử lý hoàn trả hoặc hủy phát sinh"
+                >
+                  Hủy / Hoàn
+                </button>
+              </div>
+            ) : currentStatus !== 'CANCELLED' ? (
               <button
                 type="button"
                 onClick={() => setIsCancelModalOpen(true)}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-rose-300 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 text-rose-700 dark:text-rose-400 text-xs font-bold transition-all cursor-pointer shadow-xs"
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-rose-200 dark:border-rose-900/50 bg-rose-50/80 dark:bg-rose-950/40 hover:bg-rose-100 text-rose-700 dark:text-rose-400 text-xs font-bold transition-all cursor-pointer shadow-2xs"
                 title="Hủy đơn hàng nếu khách từ chối nhận hoặc spam"
               >
-                <Ban className="w-4 h-4" />
-                <span>Hủy Đơn (Spam)</span>
+                <Ban className="w-3.5 h-3.5 text-rose-500" />
+                <span>Hủy Đơn</span>
               </button>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800 text-xs font-bold">
+                <Ban className="w-3.5 h-3.5 text-rose-500" />
+                <span>Đơn Đã Hủy</span>
+              </span>
             )}
 
             <button
               type="button"
               onClick={onClose}
-              className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 cursor-pointer transition-colors"
+              className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 cursor-pointer transition-colors border border-slate-200/60 dark:border-slate-700/60"
+              title="Đóng cửa sổ"
             >
               <X className="w-4 h-4" />
             </button>
@@ -561,14 +592,16 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
               {order.customerPhone && (
                 <a 
                   href={`tel:${order.customerPhone}`}
-                  className="inline-flex items-center gap-1.5 font-mono font-bold text-xs text-[#0284c7] hover:underline bg-sky-50 dark:bg-sky-950/60 px-2.5 py-1 rounded-lg border border-sky-200 dark:border-sky-800"
+                  className="inline-flex items-center gap-1.5 font-mono font-bold text-xs text-[#0284c7] hover:underline bg-sky-50 dark:bg-sky-950/60 px-2.5 py-1 rounded-lg border border-sky-200 dark:border-sky-800 shrink-0"
                 >
                   <PhoneCall className="w-3 h-3" />
                   <span>{order.customerPhone}</span>
                 </a>
               )}
               {order.customerEmail && (
-                <span className="text-slate-500 font-mono text-[11px] truncate max-w-[150px]">({order.customerEmail})</span>
+                <span className="text-slate-500 dark:text-slate-400 font-mono text-[11px] break-all">
+                  ({order.customerEmail})
+                </span>
               )}
             </div>
           </div>
@@ -582,9 +615,9 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
               {isStorePickup ? <Building2 className="w-4 h-4 text-[#0284c7]" /> : <Truck className="w-4 h-4 text-[#0284c7]" />}
               <span>{isStorePickup ? 'Nhận tại Showroom DRX' : 'Giao hàng tận nơi'}</span>
             </div>
-            <p className="text-[11.5px] text-slate-600 dark:text-slate-300 line-clamp-2 leading-relaxed" title={order.shippingAddress}>
-              <MapPin className="w-3 h-3 inline mr-1 text-slate-400" />
-              {order.shippingAddress || 'Showroom DRX Hardware (Q.10, TP. Hồ Chí Minh)'}
+            <p className="text-[11.5px] text-slate-600 dark:text-slate-300 leading-relaxed break-words" title={order.shippingAddress}>
+              <MapPin className="w-3 h-3 inline mr-1 text-slate-400 shrink-0" />
+              <span>{order.shippingAddress || 'Showroom DRX Hardware (Q.10, TP. Hồ Chí Minh)'}</span>
             </p>
           </div>
         </div>

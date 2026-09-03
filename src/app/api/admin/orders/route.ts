@@ -47,10 +47,39 @@ export async function PATCH(request: Request) {
       updatedAt: new Date().toISOString(),
     };
 
+    // 1. Locate target order by ID or orderCode
+    let targetOrderId = orderId;
+    const { data: directMatch } = await supabase
+      .from('Order')
+      .select('id')
+      .eq('id', orderId)
+      .maybeSingle();
+
+    if (directMatch) {
+      targetOrderId = directMatch.id;
+    } else {
+      const cleanCode = String(orderId).replace(/^#/, '').trim();
+      const strippedCode = cleanCode.replace(/-/g, '');
+      const digitsOnly = cleanCode.replace(/\D/g, '');
+
+      const { data: altMatch } = await supabase
+        .from('Order')
+        .select('id')
+        .or(`orderCode.eq.${cleanCode},orderCode.eq.${strippedCode},orderCode.ilike.%${digitsOnly}%,id.ilike.%${cleanCode}%`)
+        .limit(1)
+        .maybeSingle();
+
+      if (altMatch) {
+        targetOrderId = altMatch.id;
+      } else {
+        return NextResponse.json({ message: 'Không tìm thấy đơn hàng để cập nhật' }, { status: 404 });
+      }
+    }
+
     const { data: updatedOrder, error: supaErr } = await supabase
       .from('Order')
       .update(updatePayload)
-      .eq('id', orderId)
+      .eq('id', targetOrderId)
       .select('*')
       .single();
 

@@ -16,7 +16,16 @@ export async function GET() {
         .order('createdAt', { ascending: false });
 
       if (!error && data && Array.isArray(data)) {
-        coupons = data;
+        coupons = data.map(c => {
+          const isExplicitlyDisabled = new Date(c.expiresAt).getFullYear() <= 1970;
+          const isExpired = new Date(c.expiresAt).getTime() <= Date.now();
+          const isDepleted = Number(c.usedCount || 0) >= Number(c.maxUses || 0);
+
+          return {
+            ...c,
+            status: isExplicitlyDisabled ? 'INACTIVE' : (isExpired || isDepleted) ? 'INACTIVE' : 'ACTIVE',
+          };
+        });
       }
     } catch (e) {
       console.warn('Supabase get coupons warning:', e);
@@ -56,7 +65,14 @@ export async function POST(request: Request) {
     }
 
     const cleanCode = code.trim().toUpperCase();
-    const expiryDate = expiresAt ? new Date(expiresAt).toISOString() : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    let expiryDate = expiresAt 
+      ? new Date(expiresAt).toISOString() 
+      : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+    // If marked inactive, set past timestamp (1970) to deactivate
+    if (status?.toUpperCase() === 'INACTIVE') {
+      expiryDate = new Date(0).toISOString();
+    }
 
     const couponData = {
       code: cleanCode,
@@ -67,7 +83,6 @@ export async function POST(request: Request) {
       expiresAt: expiryDate,
       maxUses: Number(maxUses || 100),
       usedCount: 0,
-      status: status?.toUpperCase() === 'INACTIVE' ? 'INACTIVE' : 'ACTIVE',
       createdAt: new Date().toISOString(),
     };
 
@@ -83,7 +98,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       message: `Tạo mã giảm giá ${cleanCode} thành công!`,
-      coupon: created || couponData,
+      coupon: {
+        ...(created || couponData),
+        status: status?.toUpperCase() === 'INACTIVE' ? 'INACTIVE' : 'ACTIVE',
+      },
     }, { status: 201 });
   } catch (error: any) {
     console.error('Lỗi khi tạo mã giảm giá:', error);
@@ -105,7 +123,7 @@ export async function PUT(request: Request) {
       minOrderValue, 
       maxDiscount, 
       expiresAt, 
-      maxUses,
+      maxUses, 
       usedCount,
       status 
     } = body;
@@ -114,15 +132,21 @@ export async function PUT(request: Request) {
       return NextResponse.json({ message: 'Thiếu mã giảm giá cần cập nhật!' }, { status: 400 });
     }
 
-    const updateData: any = { updatedAt: new Date().toISOString() };
+    const updateData: any = {};
     if (discountType) updateData.discountType = discountType.toUpperCase();
     if (discountValue !== undefined) updateData.discountValue = Number(discountValue);
     if (minOrderValue !== undefined) updateData.minOrderValue = Number(minOrderValue);
     if (maxDiscount !== undefined) updateData.maxDiscount = maxDiscount ? Number(maxDiscount) : null;
-    if (expiresAt) updateData.expiresAt = new Date(expiresAt).toISOString();
     if (maxUses !== undefined) updateData.maxUses = Number(maxUses);
     if (usedCount !== undefined) updateData.usedCount = Number(usedCount);
-    if (status !== undefined) updateData.status = status?.toUpperCase() === 'INACTIVE' ? 'INACTIVE' : 'ACTIVE';
+
+    if (status === 'INACTIVE') {
+      updateData.expiresAt = new Date(0).toISOString();
+    } else if (status === 'ACTIVE' && (!expiresAt || new Date(expiresAt).getTime() <= Date.now())) {
+      updateData.expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    } else if (expiresAt) {
+      updateData.expiresAt = new Date(expiresAt).toISOString();
+    }
 
     const { data: updated, error } = await supabase
       .from('Coupon')
@@ -137,7 +161,10 @@ export async function PUT(request: Request) {
 
     return NextResponse.json({
       message: `Đã cập nhật mã giảm giá ${code}!`,
-      coupon: updated || { code, ...updateData },
+      coupon: {
+        ...(updated || { code, ...updateData }),
+        status: status || 'ACTIVE',
+      },
     }, { status: 200 });
   } catch (error: any) {
     console.error('Lỗi khi cập nhật mã giảm giá:', error);
