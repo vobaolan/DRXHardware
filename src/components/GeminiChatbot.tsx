@@ -311,14 +311,16 @@ export const GeminiChatbot: React.FC = () => {
                                 onClick={() => setIsOpen(false)}
                                 className="group flex items-center gap-3 p-2 rounded-xl bg-white border border-zinc-200 hover:border-sky-500 shadow-sm hover:shadow transition-all"
                               >
-                                <img
-                                  src={p.coverImage || p.image || p.thumbnailUrl || 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400&auto=format&fit=crop&q=80'}
-                                  alt={p.name}
-                                  onError={(e) => {
-                                    (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400&auto=format&fit=crop&q=80';
-                                  }}
-                                  className="h-12 w-12 rounded-lg object-cover shrink-0 border border-zinc-100 bg-zinc-100"
-                                />
+                                <div className="w-14 h-14 min-w-[56px] max-w-[56px] min-h-[56px] max-h-[56px] rounded-lg bg-zinc-100 p-1 border border-zinc-200 shrink-0 flex items-center justify-center overflow-hidden">
+                                  <img
+                                    src={p.coverImage || p.image || p.thumbnailUrl || 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400&auto=format&fit=crop&q=80'}
+                                    alt={p.name}
+                                    onError={(e) => {
+                                      (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400&auto=format&fit=crop&q=80';
+                                    }}
+                                    className="w-full h-full max-w-full max-h-full object-contain"
+                                  />
+                                </div>
                                 <div className="flex-1 min-w-0">
                                   <div className="font-bold text-zinc-900 text-[11px] truncate group-hover:text-sky-600">
                                     {p.name}

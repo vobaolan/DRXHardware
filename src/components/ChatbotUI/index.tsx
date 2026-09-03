@@ -220,10 +220,10 @@ export default function ChatbotWidget() {
                                     onClick={() => {
                                       router.push(href);
                                     }}
-                                    className="text-sky-600 dark:text-sky-400 font-bold hover:underline inline-flex items-center gap-0.5 cursor-pointer ml-1"
+                                    className="text-sky-600 dark:text-sky-400 font-bold hover:underline inline-flex items-center gap-0.5 cursor-pointer ml-1 bg-sky-50 dark:bg-sky-950/60 px-2 py-0.5 rounded-lg border border-sky-200/60 dark:border-sky-800/60 transition-colors hover:bg-sky-100 dark:hover:bg-sky-900/60"
                                   >
                                     <span>{children}</span>
-                                    <ExternalLink size={10} className="inline" />
+                                    <ExternalLink size={11} className="inline ml-0.5" />
                                   </button>
                                 );
                               }
@@ -232,7 +232,16 @@ export default function ChatbotWidget() {
                                   {children}
                                 </a>
                               );
-                            }
+                            },
+                            img: ({ src, alt }) => (
+                              <div className="my-2 max-w-[220px] rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-1.5 shadow-2xs">
+                                <img
+                                  src={src}
+                                  alt={alt || 'Sản phẩm DRX'}
+                                  className="max-h-24 w-auto object-contain mx-auto rounded-lg"
+                                />
+                              </div>
+                            )
                           }}
                         >
                           {msg.content}
@@ -242,11 +251,12 @@ export default function ChatbotWidget() {
 
                     {/* Interactive Product Mini-Cards */}
                     {msg.products && msg.products.length > 0 && (
-                      <div className="w-full space-y-2 mt-1">
+                      <div className="w-full space-y-2 mt-2">
                         {msg.products.map((prod: any, pIdx: number) => {
                           const hasDiscount = prod.discountPrice && prod.discountPrice < prod.price;
                           const currentPrice = prod.discountPrice || prod.price;
                           const discountPct = hasDiscount ? Math.round(((prod.price - prod.discountPrice) / prod.price) * 100) : 0;
+                          const isInStock = prod.inStock !== false && (prod.stockQuantity === undefined || prod.stockQuantity > 0);
 
                           return (
                             <div
@@ -254,30 +264,33 @@ export default function ChatbotWidget() {
                               onClick={() => {
                                 router.push(`/products/${prod.slug}`);
                               }}
-                              className="group bg-white dark:bg-slate-900 hover:bg-sky-50/70 dark:hover:bg-slate-800/80 border border-slate-200 dark:border-slate-800 hover:border-sky-400 dark:hover:border-sky-500 rounded-2xl p-2.5 flex items-center gap-3 shadow-xs hover:shadow-md transition-all cursor-pointer text-left"
+                              className="group bg-white dark:bg-slate-900 hover:bg-sky-50/70 dark:hover:bg-slate-800/80 border border-slate-200/90 dark:border-slate-800 hover:border-sky-400 dark:hover:border-sky-500 rounded-2xl p-2.5 flex items-center gap-3 shadow-xs hover:shadow-md transition-all cursor-pointer text-left overflow-hidden relative"
                             >
-                              {/* Thumbnail */}
-                              <div className="w-13 h-13 rounded-xl bg-slate-50 dark:bg-slate-950 p-1 border border-slate-100 dark:border-slate-800 shrink-0 flex items-center justify-center overflow-hidden">
+                              {/* Strict Fixed Thumbnail Container */}
+                              <div className="w-16 h-16 min-w-[64px] max-w-[64px] min-h-[64px] max-h-[64px] rounded-xl bg-slate-50 dark:bg-slate-950 p-1.5 border border-slate-200/80 dark:border-slate-800 shrink-0 flex items-center justify-center overflow-hidden">
                                 <img
-                                  src={prod.coverImage || '/placeholder-hardware.png'}
+                                  src={prod.coverImage || prod.image || prod.thumbnailUrl || '/placeholder-hardware.png'}
                                   alt={prod.name}
-                                  className="w-full h-full object-contain group-hover:scale-108 transition-transform"
+                                  onError={(e) => {
+                                    (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=300&auto=format&fit=crop&q=80';
+                                  }}
+                                  className="w-full h-full max-w-full max-h-full object-contain group-hover:scale-105 transition-transform"
                                 />
                               </div>
 
                               {/* Info */}
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-1.5 mb-0.5">
-                                  <span className="text-[9px] font-black uppercase tracking-wider text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/80 border border-sky-200 dark:border-sky-800/60 px-1.5 py-0.2 rounded-md">
-                                    {prod.category}
+                                <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                                  <span className="text-[9px] font-black uppercase tracking-wider text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/80 border border-sky-200 dark:border-sky-800/60 px-1.5 py-0.5 rounded-md">
+                                    {prod.category || 'LINH KIỆN'}
                                   </span>
                                   {prod.warrantyMonths && (
                                     <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400">
                                       • BH {prod.warrantyMonths}T
                                     </span>
                                   )}
-                                  <span className={`text-[9px] font-bold ${prod.inStock ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`}>
-                                    • {prod.inStock ? 'Còn hàng' : 'Hết hàng'}
+                                  <span className={`text-[9px] font-bold ${isInStock ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}`}>
+                                    • {isInStock ? 'Còn hàng' : 'Hết hàng'}
                                   </span>
                                 </div>
 
@@ -285,26 +298,28 @@ export default function ChatbotWidget() {
                                   {prod.name}
                                 </h4>
 
-                                <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                                  <span className="font-heading text-[12.5px] font-black text-rose-600 dark:text-rose-400">
-                                    {formatVND(currentPrice)}
-                                  </span>
-                                  {hasDiscount && (
-                                    <>
-                                      <span className="text-[10px] text-slate-400 line-through">
-                                        {formatVND(prod.price)}
-                                      </span>
-                                      <span className="text-[9px] font-black text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/80 border border-rose-200 dark:border-rose-800 px-1 rounded">
-                                        -{discountPct}%
-                                      </span>
-                                    </>
-                                  )}
-                                </div>
-                              </div>
+                                <div className="flex items-center justify-between gap-1 mt-1">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="font-heading text-[12.5px] font-black text-rose-600 dark:text-rose-400">
+                                      {formatVND(currentPrice)}
+                                    </span>
+                                    {hasDiscount && (
+                                      <>
+                                        <span className="text-[10px] text-slate-400 line-through">
+                                          {formatVND(prod.price)}
+                                        </span>
+                                        <span className="text-[9px] font-black text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/80 border border-rose-200 dark:border-rose-800 px-1 rounded">
+                                          -{discountPct}%
+                                        </span>
+                                      </>
+                                    )}
+                                  </div>
 
-                              {/* Action Button */}
-                              <div className="p-1.5 rounded-xl bg-sky-500 group-hover:bg-[#0284c7] text-white shrink-0 shadow-2xs group-hover:translate-x-0.5 transition-all">
-                                <ArrowRight size={13} className="stroke-[2.5]" />
+                                  {/* Action Link Pill */}
+                                  <span className="text-[10px] font-extrabold text-sky-600 dark:text-sky-400 group-hover:text-sky-700 dark:group-hover:text-sky-300 flex items-center gap-0.5 shrink-0 bg-sky-50 dark:bg-sky-950/80 px-2 py-1 rounded-lg border border-sky-200/60 dark:border-sky-800/60 group-hover:bg-sky-100 transition-colors">
+                                    Xem ngay <ArrowRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
+                                  </span>
+                                </div>
                               </div>
                             </div>
                           );
