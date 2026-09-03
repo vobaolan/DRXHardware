@@ -261,14 +261,10 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
   return createPortal(
     <div className="fixed inset-0 z-[9999] bg-slate-950/80 backdrop-blur-md flex items-start justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-200 py-6 sm:py-10">
       <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-6 sm:p-8 max-w-3xl w-full space-y-6 shadow-2xl text-slate-900 dark:text-slate-100 my-auto relative">
-        
-        {/* TOP AMBIENT ACCENT */}
-        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#0284c7] via-cyan-400 to-blue-600 rounded-t-3xl" />
-
         {/* ─────────────────────────────────────────────────────────────
             HEADER: ORDER CODE & STATUS SELECTOR
            ───────────────────────────────────────────────────────────── */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800/80 pb-5 pt-1">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800/80 pb-5">
           <div className="space-y-1.5">
             <div className="flex items-center gap-2.5 flex-wrap">
               <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700">

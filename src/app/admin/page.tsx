@@ -23,6 +23,122 @@ import { PortalHeader } from '@/components/admin/PortalHeader';
 import { OrderVerificationModal } from '@/components/admin/OrderVerificationModal';
 import { OrderStatusSelector } from '@/components/admin/OrderStatusSelector';
 import { CouponManagementView } from '@/components/admin/CouponManagementView';
+import { PortalDropdown } from '@/components/ui/PortalDropdown';
+
+function UserRoleButton({
+  user,
+  onSetRole,
+}: {
+  user: any;
+  onSetRole: (userId: string, newRole: string) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const btnRef = useRef<HTMLButtonElement>(null);
+
+  return (
+    <>
+      <button
+        ref={btnRef}
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10.5px] font-black uppercase transition-all cursor-pointer shadow-xs active:scale-95 border ${
+          user.role === 'ADMIN'
+            ? 'bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800 hover:bg-purple-100 dark:hover:bg-purple-900/60'
+            : user.role === 'STAFF'
+            ? 'bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] dark:text-sky-300 border-sky-200 dark:border-sky-800 hover:bg-sky-100 dark:hover:bg-sky-900/60'
+            : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
+        }`}
+        title="Click để phân quyền vai trò"
+      >
+        <span className="text-xs">
+          {user.role === 'ADMIN' ? '👑' : user.role === 'STAFF' ? '🛠️' : '👤'}
+        </span>
+        <span>{user.role || 'USER'}</span>
+        <ChevronDown className={`w-3 h-3 ml-0.5 opacity-60 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      <PortalDropdown
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+        triggerRef={btnRef}
+        width={260}
+      >
+        <div className="px-2.5 py-1.5 text-[10px] font-black uppercase text-slate-400 tracking-wider border-b border-slate-100 dark:border-slate-800 mb-1">
+          Phân Quyền Tài Khoản
+        </div>
+
+        {/* Option USER */}
+        <button
+          type="button"
+          onClick={() => {
+            onSetRole(user.id, 'USER');
+            setIsOpen(false);
+          }}
+          className={`w-full flex items-center justify-between p-2 rounded-xl transition-all text-left cursor-pointer ${
+            (user.role || 'USER') === 'USER'
+              ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-extrabold'
+              : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300 font-bold'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-sm">👤</span>
+            <div>
+              <span className="block text-xs">Khách Hàng (USER)</span>
+              <span className="block text-[10px] text-slate-400 font-normal">Tài khoản mua sắm thông thường</span>
+            </div>
+          </div>
+          {(user.role || 'USER') === 'USER' && <Check className="w-4 h-4 text-[#0284c7] shrink-0" />}
+        </button>
+
+        {/* Option STAFF */}
+        <button
+          type="button"
+          onClick={() => {
+            onSetRole(user.id, 'STAFF');
+            setIsOpen(false);
+          }}
+          className={`w-full flex items-center justify-between p-2 rounded-xl transition-all text-left cursor-pointer ${
+            user.role === 'STAFF'
+              ? 'bg-sky-50 dark:bg-sky-950/50 text-[#0284c7] dark:text-sky-300 font-extrabold'
+              : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300 font-bold'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-sm">🛠️</span>
+            <div>
+              <span className="block text-xs">Nhân Viên (STAFF)</span>
+              <span className="block text-[10px] text-slate-400 font-normal">Quyền truy cập Cổng Staff Kho</span>
+            </div>
+          </div>
+          {user.role === 'STAFF' && <Check className="w-4 h-4 text-[#0284c7] shrink-0" />}
+        </button>
+
+        {/* Option ADMIN */}
+        <button
+          type="button"
+          onClick={() => {
+            onSetRole(user.id, 'ADMIN');
+            setIsOpen(false);
+          }}
+          className={`w-full flex items-center justify-between p-2 rounded-xl transition-all text-left cursor-pointer ${
+            user.role === 'ADMIN'
+              ? 'bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 font-extrabold'
+              : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300 font-bold'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-sm">👑</span>
+            <div>
+              <span className="block text-xs">Quản Trị Viên (ADMIN)</span>
+              <span className="block text-[10px] text-slate-400 font-normal">Toàn quyền hệ thống & tài chính</span>
+            </div>
+          </div>
+          {user.role === 'ADMIN' && <Check className="w-4 h-4 text-purple-600 shrink-0" />}
+        </button>
+      </PortalDropdown>
+    </>
+  );
+}
 
 const USER_ROLE_SELECT_OPTIONS: SelectOption[] = [
   { value: 'USER', label: '👤 Khách Hàng (User)', badge: 'USER' },
@@ -1688,110 +1804,7 @@ export default function AdminDashboardPage() {
 
                             {/* ROLE BADGE & QUICK SWITCH */}
                             <td className="py-3.5 px-3 whitespace-nowrap">
-                              <div className="relative inline-block text-left">
-                                <button
-                                  type="button"
-                                  onClick={() => setActiveRoleDropdownUserId(activeRoleDropdownUserId === u.id ? null : u.id)}
-                                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10.5px] font-black uppercase transition-all cursor-pointer shadow-xs active:scale-95 border ${
-                                    u.role === 'ADMIN'
-                                      ? 'bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800 hover:bg-purple-100 dark:hover:bg-purple-900/60'
-                                      : u.role === 'STAFF'
-                                      ? 'bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] dark:text-sky-300 border-sky-200 dark:border-sky-800 hover:bg-sky-100 dark:hover:bg-sky-900/60'
-                                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
-                                  }`}
-                                  title="Click để phân quyền vai trò"
-                                >
-                                  <span className="text-xs">
-                                    {u.role === 'ADMIN' ? '👑' : u.role === 'STAFF' ? '🛠️' : '👤'}
-                                  </span>
-                                  <span>{u.role || 'USER'}</span>
-                                  <ChevronDown className="w-3 h-3 ml-0.5 opacity-60" />
-                                </button>
-
-                                {/* Custom Dropdown Menu */}
-                                {activeRoleDropdownUserId === u.id && (
-                                  <>
-                                    <div 
-                                      className="fixed inset-0 z-40" 
-                                      onClick={() => setActiveRoleDropdownUserId(null)} 
-                                    />
-                                    <div className="absolute left-0 mt-1.5 w-64 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-1.5 z-50 animate-in fade-in zoom-in-95 duration-150 text-xs">
-                                      <div className="px-2.5 py-1.5 text-[10px] font-black uppercase text-slate-400 tracking-wider border-b border-slate-100 dark:border-slate-800 mb-1">
-                                        Phân Quyền Tài Khoản
-                                      </div>
-
-                                      {/* Option USER */}
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          handleSetUserRole(u.id, 'USER');
-                                          setActiveRoleDropdownUserId(null);
-                                        }}
-                                        className={`w-full flex items-center justify-between p-2 rounded-xl transition-all text-left cursor-pointer ${
-                                          (u.role || 'USER') === 'USER'
-                                            ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-extrabold'
-                                            : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300 font-bold'
-                                        }`}
-                                      >
-                                        <div className="flex items-center gap-2">
-                                          <span className="text-sm">👤</span>
-                                          <div>
-                                            <span className="block text-xs">Khách Hàng (USER)</span>
-                                            <span className="block text-[10px] text-slate-400 font-normal">Tài khoản mua sắm thông thường</span>
-                                          </div>
-                                        </div>
-                                        {(u.role || 'USER') === 'USER' && <Check className="w-4 h-4 text-[#0284c7] shrink-0" />}
-                                      </button>
-
-                                      {/* Option STAFF */}
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          handleSetUserRole(u.id, 'STAFF');
-                                          setActiveRoleDropdownUserId(null);
-                                        }}
-                                        className={`w-full flex items-center justify-between p-2 rounded-xl transition-all text-left cursor-pointer ${
-                                          u.role === 'STAFF'
-                                            ? 'bg-sky-50 dark:bg-sky-950/50 text-[#0284c7] dark:text-sky-300 font-extrabold'
-                                            : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300 font-bold'
-                                        }`}
-                                      >
-                                        <div className="flex items-center gap-2">
-                                          <span className="text-sm">🛠️</span>
-                                          <div>
-                                            <span className="block text-xs">Nhân Viên (STAFF)</span>
-                                            <span className="block text-[10px] text-slate-400 font-normal">Quyền truy cập Cổng Staff Kho</span>
-                                          </div>
-                                        </div>
-                                        {u.role === 'STAFF' && <Check className="w-4 h-4 text-[#0284c7] shrink-0" />}
-                                      </button>
-
-                                      {/* Option ADMIN */}
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          handleSetUserRole(u.id, 'ADMIN');
-                                          setActiveRoleDropdownUserId(null);
-                                        }}
-                                        className={`w-full flex items-center justify-between p-2 rounded-xl transition-all text-left cursor-pointer ${
-                                          u.role === 'ADMIN'
-                                            ? 'bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 font-extrabold'
-                                            : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300 font-bold'
-                                        }`}
-                                      >
-                                        <div className="flex items-center gap-2">
-                                          <span className="text-sm">👑</span>
-                                          <div>
-                                            <span className="block text-xs">Quản Trị Viên (ADMIN)</span>
-                                            <span className="block text-[10px] text-slate-400 font-normal">Toàn quyền hệ thống & tài chính</span>
-                                          </div>
-                                        </div>
-                                        {u.role === 'ADMIN' && <Check className="w-4 h-4 text-purple-600 shrink-0" />}
-                                      </button>
-                                    </div>
-                                  </>
-                                )}
-                              </div>
+                              <UserRoleButton user={u} onSetRole={handleSetUserRole} />
                             </td>
 
                             {/* PHONE */}
