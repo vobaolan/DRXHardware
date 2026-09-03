@@ -24,6 +24,7 @@ import { OrderVerificationModal } from '@/components/admin/OrderVerificationModa
 import { OrderStatusSelector } from '@/components/admin/OrderStatusSelector';
 import { CouponManagementView } from '@/components/admin/CouponManagementView';
 import { PortalDropdown } from '@/components/ui/PortalDropdown';
+import { RevenueChartWidget } from '@/components/admin/RevenueChartWidget';
 
 function UserRoleButton({
   user,
@@ -1044,48 +1045,9 @@ export default function AdminDashboardPage() {
               {/* CHARTS & RECENT ACTIVITY */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 
-                {/* 7-DAY REVENUE BAR CHART (8 COLS) */}
-                <div className="lg:col-span-8 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5 sm:p-6 space-y-5 shadow-xs">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3.5">
-                    <div>
-                      <h3 className="font-heading text-xs sm:text-sm font-black uppercase text-slate-900 dark:text-white tracking-wider flex items-center gap-2">
-                        <TrendingUp className="w-4 h-4 text-[#0284c7]" />
-                        <span>DOANH THU 7 NGÀY GẦN NHẤT (THỜI GIAN THỰC)</span>
-                      </h3>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                        Thống kê tổng tiền từ các đơn hàng phần cứng thực tế theo ngày.
-                      </p>
-                    </div>
-                    <span className="text-[11px] font-bold text-slate-400">
-                      Đỉnh: {formatVND(maxRevenue)}
-                    </span>
-                  </div>
-
-                  <div className="h-56 flex items-end justify-between gap-2.5 pt-4 px-1">
-                    {last7Days.map((item, idx) => {
-                      const heightPercent = maxRevenue > 0 ? Math.round(((item.revenue || 0) / maxRevenue) * 100) : 0;
-                      return (
-                        <div key={idx} className="flex-1 flex flex-col items-center gap-2 group h-full justify-end">
-                          <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-[10px] font-bold py-1 px-2 rounded border border-slate-800 dark:border-slate-200 whitespace-nowrap shadow-xl pointer-events-none mb-1">
-                            {formatVND(item.revenue)} ({item.orders} đơn)
-                          </div>
-                          <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-t-lg overflow-hidden h-full flex items-end">
-                            <div 
-                              style={{ height: `${Math.max(heightPercent, 6)}%` }}
-                              className={`w-full transition-all rounded-t-lg shadow-sm ${
-                                item.revenue > 0 
-                                  ? 'bg-gradient-to-t from-[#0284c7] to-[#38bdf8]' 
-                                  : 'bg-slate-200 dark:bg-slate-700'
-                              }`}
-                            />
-                          </div>
-                          <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 group-hover:text-[#0284c7] transition-colors truncate max-w-[45px] sm:max-w-none text-center">
-                            {item.day}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
+                {/* 7-DAY REVENUE KPI CHART (8 COLS) */}
+                <div className="lg:col-span-8">
+                  <RevenueChartWidget data={last7Days} formatVND={formatVND} />
                 </div>
 
                 {/* OVERVIEW SUMMARY (4 COLS) */}

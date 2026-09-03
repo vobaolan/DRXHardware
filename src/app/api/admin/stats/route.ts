@@ -67,22 +67,32 @@ export async function GET() {
       if (o.status === 'CANCELLED') cancelledOrders++;
     });
 
-    // 7-day revenue array from real data
+    // 7-day revenue array from real data with Asia/Ho_Chi_Minh timezone accuracy
     const days = ['Chủ Nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
     const now = new Date();
-    const last7Days: { day: string; date: string; revenue: number; orders: number }[] = [];
+    const getVnDateStr = (date: Date | string) => {
+      try {
+        const d = typeof date === 'string' ? new Date(date) : date;
+        return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(d);
+      } catch (e) {
+        return new Date(date).toISOString().split('T')[0];
+      }
+    };
+
+    const last7Days: { day: string; date: string; fullDate: string; revenue: number; orders: number }[] = [];
 
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(now.getDate() - i);
-      const dateStr = d.toISOString().split('T')[0];
+      const dateStr = getVnDateStr(d);
       const dayName = days[d.getDay()];
 
       let dayRevenue = 0;
       let dayOrderCount = 0;
 
       orders.forEach((o) => {
-        const orderDateStr = new Date(o.createdAt).toISOString().split('T')[0];
+        if (!o.createdAt) return;
+        const orderDateStr = getVnDateStr(o.createdAt);
         if (orderDateStr === dateStr && o.status !== 'CANCELLED') {
           dayRevenue += Number(o.netAmount || o.totalAmount || 0);
           dayOrderCount++;
@@ -92,6 +102,7 @@ export async function GET() {
       last7Days.push({
         day: dayName,
         date: dateStr,
+        fullDate: d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }),
         revenue: dayRevenue,
         orders: dayOrderCount,
       });
