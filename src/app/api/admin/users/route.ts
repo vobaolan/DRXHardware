@@ -230,9 +230,9 @@ export async function PATCH(request: Request) {
     }
 
     const updateData: any = {};
-    if (name !== undefined) updateData.name = name;
-    if (phone !== undefined) updateData.phone = phone;
-    if (address !== undefined) updateData.address = address;
+    if (name !== undefined) updateData.name = (typeof name === 'string' && name.trim()) ? name.trim() : targetUser?.name || 'Khách hàng DRX';
+    if (phone !== undefined) updateData.phone = (typeof phone === 'string' && phone.trim()) ? phone.trim() : '';
+    if (address !== undefined) updateData.address = (typeof address === 'string' && address.trim()) ? address.trim() : '';
     if (balance !== undefined) updateData.balance = Number(balance);
     if (role !== undefined) updateData.role = role;
     if (newPassword && typeof newPassword === 'string' && newPassword.length >= 6) {

@@ -1838,18 +1838,19 @@ export default function AdminDashboardPage() {
                           const uPhone = (u.phone || '').trim();
                           const uEmail = (u.email || '').trim().toLowerCase();
 
-                          const userMatchingOrders = orders.filter(o => {
-                            const oUid = o.userId;
-                            const oEmail = (o.customerEmail || '').trim().toLowerCase();
-                            const oPhone = (o.customerPhone || '').trim();
-                            const oName = (o.customerName || '').trim().toLowerCase();
+                          const uCleanPhone = (u.phone || '').trim().replace(/\D/g, '');
+                          const userMatchingOrders = (u.orders && u.orders.length > 0)
+                            ? u.orders
+                            : orders.filter(o => {
+                                const oUid = o.userId;
+                                const oEmail = (o.customerEmail || '').trim().toLowerCase();
+                                const oPhone = (o.customerPhone || '').trim().replace(/\D/g, '');
 
-                            if (oUid && (oUid === u.id || oUid === uEmail)) return true;
-                            if (oEmail && oEmail === uEmail) return true;
-                            if (uPhone && oPhone && (oPhone === uPhone || oPhone.endsWith(uPhone.slice(-7)))) return true;
-                            if (uName && oName && (oName === uName || oName.includes(uName) || uName.includes(oName))) return true;
-                            return false;
-                          });
+                                if (oUid && (oUid === u.id || oUid === uEmail)) return true;
+                                if (oEmail && oEmail === uEmail) return true;
+                                if (uCleanPhone.length >= 9 && oPhone.length >= 9 && uCleanPhone === oPhone) return true;
+                                return false;
+                              });
 
                           const orderCount = Math.max(u._count?.orders ?? 0, userMatchingOrders.length);
                           const totalSpent = (u.totalSpent && u.totalSpent > 0)
@@ -1858,8 +1859,8 @@ export default function AdminDashboardPage() {
                                 .filter(o => String(o.status || '').toUpperCase() !== 'CANCELLED' && String(o.status || '').toUpperCase() !== 'REJECTED')
                                 .reduce((sum, o) => sum + Number(o.netAmount || o.totalAmount || 0), 0);
 
-                          const displayPhone = u.phone || userMatchingOrders[0]?.customerPhone || '';
-                          const displayAddress = u.address || userMatchingOrders[0]?.shippingAddress || '';
+                          const displayPhone = u.phone || '';
+                          const displayAddress = u.address || '';
                           const enrichedUser = { ...u, phone: displayPhone, address: displayAddress, totalSpent, _count: { ...u._count, orders: orderCount }, orders: userMatchingOrders };
 
                           return (
@@ -1918,8 +1919,14 @@ export default function AdminDashboardPage() {
                             </td>
 
                             {/* ADDRESS */}
-                            <td className="py-3.5 px-3 max-w-[180px] truncate text-slate-600 dark:text-slate-300" title={displayAddress}>
-                              {displayAddress || <span className="text-slate-400 italic">Chưa có địa chỉ</span>}
+                            <td className="py-3.5 px-3 max-w-[180px] truncate text-slate-600 dark:text-slate-300" title={displayAddress || 'Chưa có địa chỉ'}>
+                              {displayAddress ? (
+                                <span>{displayAddress}</span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-[10.5px] text-amber-600 dark:text-amber-400 italic">
+                                  Chưa có địa chỉ
+                                </span>
+                              )}
                             </td>
 
                             {/* ORDERS & SPEND */}
@@ -2408,12 +2415,15 @@ export default function AdminDashboardPage() {
 
               {/* ADDRESS */}
               <div className="space-y-1.5">
-                <label className="text-slate-700 dark:text-slate-300 font-bold uppercase text-[10.5px]">
-                  Địa Chỉ Nhận Hàng Mặc Định:
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-slate-700 dark:text-slate-300 font-bold uppercase text-[10.5px]">
+                    Địa Chỉ Nhận Hàng Mặc Định:
+                  </label>
+                  <span className="text-[10px] text-slate-400 italic">Để trống = Chưa có địa chỉ</span>
+                </div>
                 <textarea
                   rows={2}
-                  placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố..."
+                  placeholder="Để trống nếu chưa thiết lập địa chỉ... (ví dụ: Số nhà, tên đường, phường/xã, TP...)"
                   value={userFormData.address}
                   onChange={(e) => setUserFormData({ ...userFormData, address: e.target.value })}
                   className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:border-[#0284c7]"
@@ -2506,9 +2516,18 @@ export default function AdminDashboardPage() {
             <div className="space-y-2.5 text-xs bg-slate-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
               <div>
                 <span className="text-[10.5px] uppercase font-bold text-slate-400 block">Địa Chỉ Giao Hàng:</span>
-                <span className="font-medium text-slate-800 dark:text-slate-200 mt-0.5 block">
-                  {viewingUserDetails.address || 'Chưa thiết lập địa chỉ giao hàng'}
-                </span>
+                <div className="mt-1">
+                  {viewingUserDetails.address && viewingUserDetails.address.trim() ? (
+                    <span className="font-medium text-slate-800 dark:text-slate-200 block">
+                      {viewingUserDetails.address}
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800/80">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                      Chưa thiết lập địa chỉ (Đang để trống)
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="pt-2 border-t border-slate-200/50 dark:border-slate-700/50 flex items-center justify-between text-[11px] text-slate-500 font-mono">
                 <span>Ngày Đăng Ký Tài Khoản:</span>
