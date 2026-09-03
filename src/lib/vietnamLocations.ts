@@ -591,3 +591,74 @@ export const VIETNAM_PROVINCES: ProvinceItem[] = [
     ]
   }
 ];
+
+/**
+ * Parse a full address string back into structured Administrative locations
+ */
+export function parseFullAddress(rawAddress: string) {
+  if (!rawAddress || typeof rawAddress !== 'string') {
+    return {
+      provinceId: 'hcm',
+      districtId: 'hcm_thu_duc',
+      wardName: 'Phường Thảo Điền',
+      street: '',
+    };
+  }
+
+  const trimmed = rawAddress.trim();
+  let matchedProvince = VIETNAM_PROVINCES[0];
+  let matchedDistrict = matchedProvince.districts[0];
+  let matchedWard = matchedDistrict?.wards[0] || '';
+  let remaining = trimmed;
+
+  // 1. Find matching province
+  for (const prov of VIETNAM_PROVINCES) {
+    if (trimmed.toLowerCase().includes(prov.name.toLowerCase())) {
+      matchedProvince = prov;
+      matchedDistrict = prov.districts[0];
+      matchedWard = matchedDistrict?.wards[0] || '';
+      break;
+    }
+  }
+
+  // 2. Find matching district
+  if (matchedProvince) {
+    for (const dist of matchedProvince.districts) {
+      if (trimmed.toLowerCase().includes(dist.name.toLowerCase())) {
+        matchedDistrict = dist;
+        matchedWard = dist.wards[0] || '';
+        break;
+      }
+    }
+  }
+
+  // 3. Find matching ward
+  if (matchedDistrict) {
+    for (const ward of matchedDistrict.wards) {
+      if (trimmed.toLowerCase().includes(ward.toLowerCase())) {
+        matchedWard = ward;
+        break;
+      }
+    }
+  }
+
+  // 4. Extract street address (part before ward, district, province)
+  if (matchedWard && trimmed.includes(matchedWard)) {
+    const parts = trimmed.split(matchedWard);
+    remaining = parts[0].replace(/,\s*$/, '').trim();
+  } else if (matchedDistrict && trimmed.includes(matchedDistrict.name)) {
+    const parts = trimmed.split(matchedDistrict.name);
+    remaining = parts[0].replace(/,\s*$/, '').trim();
+  } else if (matchedProvince && trimmed.includes(matchedProvince.name)) {
+    const parts = trimmed.split(matchedProvince.name);
+    remaining = parts[0].replace(/,\s*$/, '').trim();
+  }
+
+  return {
+    provinceId: matchedProvince.id,
+    districtId: matchedDistrict?.id || '',
+    wardName: matchedWard || '',
+    street: remaining,
+  };
+}
+

@@ -16,6 +16,7 @@ import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useToast } from '@/components/Toast';
 import { useCart } from '@/context/CartContext';
+import { VIETNAM_PROVINCES, parseFullAddress } from '@/lib/vietnamLocations';
 
 interface HardwareKey {
   id: string;
@@ -92,6 +93,61 @@ function ProfileContent() {
   const [profileName, setProfileName] = useState('');
   const [profilePhone, setProfilePhone] = useState('');
   const [profileAddress, setProfileAddress] = useState('');
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+
+  // Vietnam Administrative Locations State for Profile Default Address
+  const [selectedProvinceId, setSelectedProvinceId] = useState<string>('hcm');
+  const [selectedDistrictId, setSelectedDistrictId] = useState<string>('hcm_thu_duc');
+  const [selectedWardName, setSelectedWardName] = useState<string>('Phường Thảo Điền');
+  const [streetAddress, setStreetAddress] = useState<string>('');
+
+  const currentProvince = React.useMemo(() => {
+    return VIETNAM_PROVINCES.find(p => p.id === selectedProvinceId) || VIETNAM_PROVINCES[0];
+  }, [selectedProvinceId]);
+
+  const currentDistrict = React.useMemo(() => {
+    return currentProvince.districts.find(d => d.id === selectedDistrictId) || currentProvince.districts[0];
+  }, [currentProvince, selectedDistrictId]);
+
+  const wardsList = React.useMemo(() => {
+    return currentDistrict?.wards || [];
+  }, [currentDistrict]);
+
+  const handleProvinceChange = (provId: string) => {
+    setSelectedProvinceId(provId);
+    const prov = VIETNAM_PROVINCES.find(p => p.id === provId) || VIETNAM_PROVINCES[0];
+    const firstDist = prov.districts[0];
+    setSelectedDistrictId(firstDist?.id || '');
+    setSelectedWardName(firstDist?.wards[0] || '');
+  };
+
+  const handleDistrictChange = (distId: string) => {
+    setSelectedDistrictId(distId);
+    const dist = currentProvince.districts.find(d => d.id === distId) || currentProvince.districts[0];
+    setSelectedWardName(dist?.wards[0] || '');
+  };
+
+  // Sync profileAddress whenever location changes
+  useEffect(() => {
+    const parts: string[] = [];
+    if (streetAddress.trim()) parts.push(streetAddress.trim());
+    if (selectedWardName) parts.push(selectedWardName);
+    if (currentDistrict?.name) parts.push(currentDistrict.name);
+    if (currentProvince?.name) parts.push(currentProvince.name);
+
+    setProfileAddress(parts.join(', '));
+  }, [streetAddress, selectedWardName, currentDistrict, currentProvince]);
+
+  const applyAddressToForm = (addrStr?: string) => {
+    if (addrStr && typeof addrStr === 'string' && addrStr.trim()) {
+      const parsed = parseFullAddress(addrStr);
+      setSelectedProvinceId(parsed.provinceId);
+      setSelectedDistrictId(parsed.districtId);
+      setSelectedWardName(parsed.wardName);
+      setStreetAddress(parsed.street);
+      setProfileAddress(addrStr);
+    }
+  };
 
   // Password change form states
   const [currentPassword, setCurrentPassword] = useState('');
@@ -104,6 +160,8 @@ function ProfileContent() {
     name: string;
     email: string;
     role: string;
+    phone?: string;
+    address?: string;
     provider?: string;
   } | null>(null);
 
@@ -134,12 +192,14 @@ function ProfileContent() {
           : sessionUser;
 
         setCurrentUser(prev => {
-          if (prev && prev.id === resolvedSessionUser.id && prev.email === resolvedSessionUser.email) {
+          if (prev && prev.id === resolvedSessionUser.id && prev.email === resolvedSessionUser.email && prev.name === resolvedSessionUser.name) {
             return prev;
           }
           return resolvedSessionUser;
         });
         setProfileName(resolvedSessionUser.name || '');
+        setProfilePhone(resolvedSessionUser.phone || '');
+        applyAddressToForm(resolvedSessionUser.address);
         setIsLoggedIn(true);
 
         verifyCurrentSession().then((verified) => {
@@ -147,13 +207,10 @@ function ProfileContent() {
             const resolvedVerified = storedProvider === 'google' || verified.provider === 'google' || verified.id?.startsWith('google-')
               ? { ...verified, provider: 'google' }
               : verified;
-            setCurrentUser(prev => {
-              if (prev && prev.id === resolvedVerified.id && prev.email === resolvedVerified.email) {
-                return prev;
-              }
-              return resolvedVerified;
-            });
+            setCurrentUser(resolvedVerified);
             setProfileName(resolvedVerified.name || '');
+            setProfilePhone(resolvedVerified.phone || '');
+            applyAddressToForm(resolvedVerified.address);
             setIsLoggedIn(true);
           } else {
             setCurrentUser(null);
@@ -402,14 +459,40 @@ function ProfileContent() {
     setTimeout(() => setCopiedKeyId(null), 2000);
   };
 
-  const handleUpdateProfile = (e: React.FormEvent) => {
+  const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (currentUser) {
-      const updated = { ...currentUser, name: profileName.trim() || currentUser.name };
-      setCurrentUser(updated);
-      localStorage.setItem('ods_session_user', JSON.stringify(updated));
+    if (!currentUser) return;
+
+    const trimmedName = profileName.trim();
+    if (!trimmedName) {
+      showToast('Vui lòng nhập họ và tên!', 'error');
+      return;
     }
-    showToast('Cập nhật thông tin cá nhân thành công!', 'success');
+
+    setIsUpdatingProfile(true);
+    try {
+      const { updateUserProfile } = await import('@/lib/auth-client');
+      const updated = await updateUserProfile({
+        name: trimmedName,
+        phone: profilePhone.trim(),
+        address: profileAddress.trim(),
+      });
+
+      if (updated) {
+        setCurrentUser(updated);
+        setProfileName(updated.name || '');
+        setProfilePhone(updated.phone || '');
+        setProfileAddress(updated.address || '');
+        showToast('Cập nhật thông tin cá nhân lên hệ thống thành công!', 'success');
+      } else {
+        showToast('Không thể lưu thông tin vào cơ sở dữ liệu. Vui lòng thử lại!', 'error');
+      }
+    } catch (err) {
+      console.error('Lỗi cập nhật profile:', err);
+      showToast('Đã xảy ra lỗi khi lưu thông tin.', 'error');
+    } finally {
+      setIsUpdatingProfile(false);
+    }
   };
 
   const handleChangePassword = (e: React.FormEvent) => {
@@ -1647,23 +1730,103 @@ function ProfileContent() {
                             />
                           </div>
 
-                          <div className="space-y-1.5">
-                            <label className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block">Địa chỉ giao hàng mặc định</label>
-                            <textarea
-                              rows={2}
-                              value={profileAddress}
-                              onChange={(e) => setProfileAddress(e.target.value)}
-                              placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố"
-                              className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-3 px-4 text-xs font-semibold text-slate-900 dark:text-slate-100 focus:border-[#0284c7] focus:outline-none"
-                            />
+                          {/* ĐỊA CHỈ GIAO HÀNG MẶC ĐỊNH (SAU SÁP NHẬP) */}
+                          <div className="space-y-3 pt-2 bg-slate-50/70 dark:bg-slate-800/40 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-700">
+                            <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-700/60 pb-2.5">
+                              <label className="font-bold text-slate-800 dark:text-slate-200 uppercase text-[11px] flex items-center gap-1.5">
+                                <MapPin className="w-4 h-4 text-[#0284c7]" />
+                                <span>Địa Chỉ Nhận Hàng Cụ Thể (Sau Sáp Nhập):</span>
+                              </label>
+                              <span className="text-[10.5px] text-[#0284c7] font-semibold">Tỉnh &rarr; Quận/Huyện &rarr; Phường/Xã</span>
+                            </div>
+
+                            {/* 3 CỘT CHỌN ĐỊA GIỚI HÀNH CHÍNH */}
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                              {/* 1. TỈNH / THÀNH PHỐ */}
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">
+                                  Tỉnh / Thành Phố: <span className="text-rose-500">*</span>
+                                </label>
+                                <select
+                                  value={selectedProvinceId}
+                                  onChange={(e) => handleProvinceChange(e.target.value)}
+                                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-[#0284c7] cursor-pointer"
+                                >
+                                  {VIETNAM_PROVINCES.map((prov) => (
+                                    <option key={prov.id} value={prov.id}>
+                                      {prov.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              {/* 2. QUẬN / HUYỆN / TP */}
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">
+                                  Quận / Huyện / TP: <span className="text-rose-500">*</span>
+                                </label>
+                                <select
+                                  value={selectedDistrictId}
+                                  onChange={(e) => handleDistrictChange(e.target.value)}
+                                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-[#0284c7] cursor-pointer"
+                                >
+                                  {currentProvince.districts.map((dist) => (
+                                    <option key={dist.id} value={dist.id}>
+                                      {dist.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              {/* 3. PHƯỜNG / XÃ */}
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">
+                                  Phường / Xã (Sau Sáp Nhập): <span className="text-rose-500">*</span>
+                                </label>
+                                <select
+                                  value={selectedWardName}
+                                  onChange={(e) => setSelectedWardName(e.target.value)}
+                                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-[#0284c7] cursor-pointer"
+                                >
+                                  {wardsList.map((ward, idx) => (
+                                    <option key={idx} value={ward}>
+                                      {ward}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+
+                            {/* 4. SỐ NHÀ, TÊN ĐƯỜNG CỤ THỂ */}
+                            <div className="space-y-1 text-xs">
+                              <label className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">
+                                Số Nhà, Tên Tòa Nhà / Tên Đường Cụ Thể:
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="Ví dụ: Số 123 Đường Nguyễn Huệ, Tòa nhà Landmark 81..."
+                                value={streetAddress}
+                                onChange={(e) => setStreetAddress(e.target.value)}
+                                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:border-[#0284c7]"
+                              />
+                            </div>
+
+                            {/* PREVIEW ĐỊA CHỈ HOÀN CHỈNH */}
+                            <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-sky-100 dark:border-slate-700 text-xs flex items-start gap-2">
+                              <span className="text-[#0284c7] font-bold shrink-0 mt-0.5">📍 Địa chỉ giao hàng:</span>
+                              <span className="font-extrabold text-slate-800 dark:text-slate-200">
+                                {profileAddress || 'Vui lòng chọn thông tin để hoàn tất địa chỉ'}
+                              </span>
+                            </div>
                           </div>
 
                           <button
                             type="submit"
-                            className="uiverse-btn-shimmer inline-flex items-center gap-2 rounded-2xl text-white px-6 py-3 text-xs font-heading font-black uppercase tracking-wider shadow-lg cursor-pointer"
+                            disabled={isUpdatingProfile}
+                            className="uiverse-btn-shimmer inline-flex items-center gap-2 rounded-2xl text-white px-6 py-3 text-xs font-heading font-black uppercase tracking-wider shadow-lg cursor-pointer disabled:opacity-50"
                           >
                             <Check className="h-4 w-4" />
-                            <span>Lưu Thông Tin Cá Nhân</span>
+                            <span>{isUpdatingProfile ? 'Đang lưu vào Supabase...' : 'Lưu Thông Tin Cá Nhân'}</span>
                           </button>
                         </form>
                       </div>

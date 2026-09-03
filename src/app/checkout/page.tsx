@@ -14,7 +14,7 @@ import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { showToast } from '@/components/Toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { VIETNAM_PROVINCES } from '@/lib/vietnamLocations';
+import { VIETNAM_PROVINCES, parseFullAddress } from '@/lib/vietnamLocations';
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -93,11 +93,11 @@ export default function CheckoutPage() {
   const discountAmount = getDiscountAmount();
   const subtotal = cartItems.reduce((sum, item) => sum + (item.discountPrice ?? item.price) * item.quantity, 0);
 
-  // Load Logged in User info if available (fill fields or keep empty if missing)
+  // Load Logged in User info if available (auto-fill from profile default address)
   useEffect(() => {
-    import('@/lib/auth-client').then(({ getStoredSessionUser }) => {
-      const u = getStoredSessionUser();
-      if (u) {
+    import('@/lib/auth-client').then(({ getStoredSessionUser, verifyCurrentSession }) => {
+      const applyUser = (u: any) => {
+        if (!u) return;
         setCurrentUser(u);
         setShippingInfo(prev => ({
           ...prev,
@@ -105,10 +105,24 @@ export default function CheckoutPage() {
           phone: prev.phone || u.phone || '',
           email: prev.email || u.email || '',
         }));
-        if (u.address && !streetAddress) {
-          setStreetAddress(u.address);
+        if (u.address) {
+          const parsed = parseFullAddress(u.address);
+          setSelectedProvinceId(parsed.provinceId);
+          setSelectedDistrictId(parsed.districtId);
+          setSelectedWardName(parsed.wardName);
+          setStreetAddress(parsed.street);
         }
+      };
+
+      const sessionUser = getStoredSessionUser();
+      if (sessionUser) {
+        applyUser(sessionUser);
       }
+      verifyCurrentSession().then((verified) => {
+        if (verified) {
+          applyUser(verified);
+        }
+      });
     });
   }, []);
 

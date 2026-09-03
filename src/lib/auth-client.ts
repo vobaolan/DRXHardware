@@ -187,3 +187,31 @@ export async function loginWithGoogle(payload?: {
     return null;
   }
 }
+
+/**
+ * Update user profile (name, phone, address) to backend & Supabase
+ */
+export async function updateUserProfile(payload: {
+  name: string;
+  phone?: string;
+  address?: string;
+}): Promise<AuthUser | null> {
+  try {
+    const res = await fetch('/api/auth/me', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.user) {
+        setSessionUser(data.user);
+        return data.user;
+      }
+    }
+    return null;
+  } catch (e) {
+    console.error('Update profile error:', e);
+    return null;
+  }
+}
