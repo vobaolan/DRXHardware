@@ -82,16 +82,16 @@ Rules:
         return {
           answer: finalResponse.content || '',
           source,
-          documents
+          documents: documents.length > 0 ? documents : ((finalResponse as any).matchedProducts || [])
         };
 
       } else {
-        // No tools called, general knowledge
-        source = 'deepseek';
+        // No tools called, general knowledge with real-time Supabase matching
+        source = 'supabase_ai';
         return {
           answer: responseMessage.content || '',
           source,
-          documents: []
+          documents: (responseMessage as any).matchedProducts || []
         };
       }
     } catch (error) {

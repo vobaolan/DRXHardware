@@ -1197,7 +1197,10 @@ export default function AdminDashboardPage() {
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                       {filteredOrders.map((o) => {
-                        const pDetails = o.paymentDetails && typeof o.paymentDetails === 'object' ? o.paymentDetails : {};
+                        if (!o) return null;
+                        const pDetails = typeof o.paymentDetails === 'string'
+                          ? (() => { try { return JSON.parse(o.paymentDetails); } catch { return {}; } })()
+                          : (o.paymentDetails && typeof o.paymentDetails === 'object' ? o.paymentDetails : {});
                         const needInst = Boolean(pDetails.needInstallation);
                         const isProxy = Boolean(pDetails.isProxyRecipient);
                         const isPickup = o.deliveryType === 'STORE_PICKUP';
@@ -1209,14 +1212,16 @@ export default function AdminDashboardPage() {
                           pDetails.check_collected_cod || o.paymentStatus === 'PAID'
                         ].filter(Boolean).length;
 
+                        const orderDisplayCode = o.orderCode || (o.id ? String(o.id).slice(0, 8).toUpperCase() : 'DRX');
+
                         return (
                           <tr key={o.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                             <td className="py-3.5 px-4 font-mono font-bold text-[#0284c7] whitespace-nowrap">
-                              #{o.orderCode || o.id.slice(0, 8)}
+                              #{orderDisplayCode}
                             </td>
                             <td className="py-3.5 px-3 whitespace-nowrap">
-                              <span className="font-bold text-slate-900 dark:text-white block">{o.customerName}</span>
-                              <span className="text-[10px] text-slate-400 font-mono block">{o.customerPhone}</span>
+                              <span className="font-bold text-slate-900 dark:text-white block">{o.customerName || 'Khách hàng'}</span>
+                              <span className="text-[10px] text-slate-400 font-mono block">{o.customerPhone || 'Chưa có SĐT'}</span>
                             </td>
                             <td className="py-3.5 px-3 max-w-[220px]">
                               <div className="flex flex-wrap gap-1 mb-1">

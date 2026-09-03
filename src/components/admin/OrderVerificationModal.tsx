@@ -22,17 +22,28 @@ const formatVND = (num: number | string | null | undefined) => {
 export function OrderVerificationModal({ order, onClose, onOrderUpdated }: OrderVerificationModalProps) {
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // Parse paymentDetails
-  const paymentDetails = order?.paymentDetails && typeof order.paymentDetails === 'object'
-    ? order.paymentDetails
-    : {};
+  if (!order) return null;
+
+  // Safe parse paymentDetails
+  const paymentDetails = (() => {
+    if (!order.paymentDetails) return {};
+    if (typeof order.paymentDetails === 'object') return order.paymentDetails;
+    if (typeof order.paymentDetails === 'string') {
+      try {
+        return JSON.parse(order.paymentDetails);
+      } catch (e) {
+        return {};
+      }
+    }
+    return {};
+  })();
 
   const needInstallation = Boolean(paymentDetails.needInstallation);
   const isProxyRecipient = Boolean(paymentDetails.isProxyRecipient);
   const proxyName = paymentDetails.proxyName || '';
   const proxyPhone = paymentDetails.proxyPhone || '';
-  const technicalNotes = paymentDetails.technicalNotes || order?.notes || '';
-  const isStorePickup = order?.deliveryType === 'STORE_PICKUP';
+  const technicalNotes = paymentDetails.technicalNotes || order.notes || '';
+  const isStorePickup = order.deliveryType === 'STORE_PICKUP';
 
   // Checklist state
   const [checklist, setChecklist] = useState({
@@ -40,11 +51,11 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
     check_assembled: Boolean(paymentDetails.check_assembled),
     check_packed: Boolean(paymentDetails.check_packed),
     check_handed_over: Boolean(paymentDetails.check_handed_over),
-    check_collected_cod: Boolean(paymentDetails.check_collected_cod) || order?.paymentStatus === 'PAID',
+    check_collected_cod: Boolean(paymentDetails.check_collected_cod) || order.paymentStatus === 'PAID',
   });
 
-  const [currentStatus, setCurrentStatus] = useState<string>(order?.status || 'PENDING');
-  const [currentPaymentStatus, setCurrentPaymentStatus] = useState<string>(order?.paymentStatus || 'PENDING');
+  const [currentStatus, setCurrentStatus] = useState<string>(order.status || 'PENDING');
+  const [currentPaymentStatus, setCurrentPaymentStatus] = useState<string>(order.paymentStatus || 'PENDING');
 
   // Handle Checklist Item Toggle
   const handleToggleCheck = async (key: keyof typeof checklist) => {
@@ -114,7 +125,7 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
 
       const data = await res.json();
       if (res.ok && data.order) {
-        showToast(`Đã cập nhật tiến độ đơn #${order.orderCode || order.id.slice(0, 8)}`, 'success');
+        showToast(`Đã cập nhật tiến độ đơn #${order.orderCode || (order.id ? String(order.id).slice(0, 8) : '')}`, 'success');
         onOrderUpdated(data.order);
       } else {
         showToast(data.message || 'Lỗi cập nhật đơn hàng', 'error');
@@ -126,6 +137,16 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
     }
   };
 
+  const formattedDate = (() => {
+    try {
+      return order.createdAt ? new Date(order.createdAt).toLocaleString('vi-VN') : new Date().toLocaleString('vi-VN');
+    } catch {
+      return '';
+    }
+  })();
+
+  const orderDisplayCode = order.orderCode || (typeof order.id === 'string' ? order.id.slice(0, 8).toUpperCase() : 'DRX');
+
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-2xl w-full space-y-6 shadow-2xl text-slate-900 dark:text-slate-100 my-8">
@@ -133,9 +154,9 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
         {/* HEADER */}
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="font-mono font-black text-base sm:text-lg text-[#0284c7]">
-                #{order.orderCode || order.id}
+                #{orderDisplayCode}
               </span>
               <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase border ${
                 currentStatus === 'COMPLETED' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800' :
@@ -153,9 +174,11 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
                 💵 COD ({currentPaymentStatus === 'PAID' ? 'Đã Thu Tiền' : 'Chưa Thu Tiền'})
               </span>
             </div>
-            <span className="text-xs text-slate-400 font-mono block mt-1">
-              Thời gian đặt: {new Date(order.createdAt).toLocaleString('vi-VN')}
-            </span>
+            {formattedDate && (
+              <span className="text-xs text-slate-400 font-mono block mt-1">
+                Thời gian đặt: {formattedDate}
+              </span>
+            )}
           </div>
 
           <button
@@ -195,7 +218,7 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
                 className="mt-0.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
               />
               <div className="text-xs">
-                <span className="font-bold block">1. Đã gọi điện thoại xác nhận đơn hàng với khách ({order.customerPhone})</span>
+                <span className="font-bold block">1. Đã gọi điện thoại xác nhận đơn hàng với khách ({order.customerPhone || 'Chưa có SĐT'})</span>
                 <span className="text-[11px] opacity-75">Kiểm tra đúng tên người nhận, địa chỉ giao hàng và mã linh kiện.</span>
               </div>
             </label>
@@ -213,7 +236,7 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
                 className="mt-0.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
               />
               <div className="text-xs">
-                <span className="font-bold flex items-center gap-1.5">
+                <span className="font-bold flex items-center gap-1.5 flex-wrap">
                   <span>2. Đã kiểm tra kho &amp; lắp ráp / cài đặt theo yêu cầu</span>
                   {needInstallation && (
                     <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-sky-100 text-[#0284c7]">Khách yêu cầu ráp</span>
@@ -277,7 +300,7 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
               />
               <div className="text-xs">
                 <span className="font-bold block">5. Đã thu tiền COD ({formatVND(order.netAmount || order.totalAmount)}) &amp; Hoàn tất</span>
-                <span className="text-[11px] opacity-75">Xác nhận khách đã nhận hàng &amp; thanh toán tiền mặt thành công. Tự động chuyển đơn sang COMPLETED.</span>
+                <span className="text-[11px] opacity-75">Xác nhận khách đã nhận hàng &amp; thanh toán thành công. Tự động chuyển đơn sang COMPLETED.</span>
               </div>
             </label>
           </div>
@@ -291,16 +314,18 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
           <div className="bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-1.5">
             <span className="text-[10px] uppercase font-bold text-slate-400 block">Thông Tin Người Nhận</span>
             <div className="font-extrabold text-slate-900 dark:text-white text-sm">
-              {order.customerName}
+              {order.customerName || 'Khách hàng'}
             </div>
             <div className="flex items-center gap-2">
-              <a 
-                href={`tel:${order.customerPhone}`}
-                className="inline-flex items-center gap-1 font-mono font-bold text-[#0284c7] hover:underline"
-              >
-                <Phone className="w-3.5 h-3.5" />
-                <span>{order.customerPhone}</span>
-              </a>
+              {order.customerPhone && (
+                <a 
+                  href={`tel:${order.customerPhone}`}
+                  className="inline-flex items-center gap-1 font-mono font-bold text-[#0284c7] hover:underline"
+                >
+                  <Phone className="w-3.5 h-3.5" />
+                  <span>{order.customerPhone}</span>
+                </a>
+              )}
               {order.customerEmail && (
                 <span className="text-slate-400 truncate max-w-[140px]">({order.customerEmail})</span>
               )}
@@ -315,7 +340,7 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
               <span>{isStorePickup ? 'Nhận tại Showroom DRX' : 'Giao hàng tận nơi'}</span>
             </div>
             <p className="text-[11px] text-slate-600 dark:text-slate-400 line-clamp-2" title={order.shippingAddress}>
-              {order.shippingAddress}
+              {order.shippingAddress || 'Nhận tại Showroom DRX Hardware (TP.HCM)'}
             </p>
           </div>
         </div>
@@ -380,7 +405,7 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
                     </div>
                   </div>
                   <span className="font-mono font-black text-slate-900 dark:text-white shrink-0">
-                    {formatVND(item.price * item.quantity)}
+                    {formatVND(Number(item.price || 0) * Number(item.quantity || 1))}
                   </span>
                 </div>
               ))
@@ -403,7 +428,7 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
                     </div>
                   </div>
                   <span className="font-mono font-black text-slate-900 dark:text-white shrink-0">
-                    {formatVND(item.price * item.quantity)}
+                    {formatVND(Number(item.price || 0) * Number(item.quantity || 1))}
                   </span>
                 </div>
               ))
@@ -425,7 +450,7 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
               className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-black uppercase text-slate-900 dark:text-white focus:outline-none focus:border-[#0284c7] cursor-pointer"
             >
               <option value="PENDING">PENDING (Chờ Duyệt)</option>
-              <option value="CONFIRMED">CONFIRMED (Đã Xác Nhận & Ráp)</option>
+              <option value="CONFIRMED">CONFIRMED (Đã Xác Nhận &amp; Ráp)</option>
               <option value="SHIPPING">SHIPPING (Đang Giao Hàng)</option>
               <option value="COMPLETED">COMPLETED (Hoàn Tất)</option>
               <option value="CANCELLED">CANCELLED (Hủy)</option>

@@ -1,16 +1,16 @@
 import { BaseTool } from './BaseTool';
-import { prisma } from '@/lib/prisma';
+import { liveDatabaseKnowledge, LiveProduct } from '../LiveDatabaseKnowledge';
 
 export class ProductSearchTool implements BaseTool {
   name = 'product_search';
-  description = 'Tìm kiếm thông tin sản phẩm (giá bán, tồn kho, v.v.) trong cửa hàng DRX Hardware dựa trên tên linh kiện, thiết bị hoặc từ khóa. Luôn luôn gọi công cụ này khi khách hỏi về linh kiện cụ thể, giá cả, hoặc hỏi cửa hàng có bán sản phẩm nào đó không.';
+  description = 'Tìm kiếm thông tin sản phẩm (giá bán, tồn kho, bảo hành, thông số kỹ thuật) trong cửa hàng DRX Hardware từ cơ sở dữ liệu Supabase theo thời gian thực. Luôn luôn gọi công cụ này khi khách hỏi về linh kiện cụ thể, giá cả, hoặc hỏi cửa hàng có bán sản phẩm nào đó không.';
   
   parameters = {
     type: 'object',
     properties: {
       query: {
         type: 'string',
-        description: 'Tên linh kiện, thiết bị phần cứng hoặc từ khóa sản phẩm cần tìm kiếm (ví dụ: "RTX 4060", "Core i5 13400F", "RAM DDR5")',
+        description: 'Tên linh kiện, thiết bị phần cứng hoặc từ khóa sản phẩm cần tìm kiếm (ví dụ: "RTX 4060", "Core i5 13400F", "RAM DDR5", "Bàn phím cơ")',
       },
     },
     required: ['query'],
@@ -20,40 +20,12 @@ export class ProductSearchTool implements BaseTool {
     const { query } = args;
 
     try {
-      const products = await prisma.product.findMany({
-        where: {
-          name: {
-            contains: query,
-            mode: 'insensitive'
-          }
-        },
-        take: 5,
-        orderBy: { createdAt: 'desc' }
-      });
+      const products = await liveDatabaseKnowledge.searchLiveProducts(query, 6);
 
       if (products.length === 0) {
-        // Fallback: split query into words and search again
-        const words = query.split(' ').filter((w: string) => w.length > 2);
-        if (words.length > 0) {
-          const fallbackProducts = await prisma.product.findMany({
-            where: {
-              OR: words.map((w: string) => ({
-                name: { 
-                  contains: w,
-                  mode: 'insensitive'
-                }
-              }))
-            },
-            take: 5,
-            orderBy: { createdAt: 'desc' }
-          });
-          
-          if (fallbackProducts.length > 0) {
-            return fallbackProducts.map(p => this.formatProduct(p));
-          }
-        }
-        
-        return { message: `Không tìm thấy sản phẩm nào khớp với từ khóa "${query}". Hãy khuyên khách hàng kiểm tra lại tên hoặc liên hệ admin.` };
+        return { 
+          message: `Không tìm thấy sản phẩm nào khớp với từ khóa "${query}" trong cơ sở dữ liệu. Bạn có thể gợi ý khách hàng xem các danh mục khác hoặc liên hệ hotline 1900.88.99.77.` 
+        };
       }
 
       return products.map(p => this.formatProduct(p));
@@ -63,21 +35,23 @@ export class ProductSearchTool implements BaseTool {
     }
   }
 
-  private formatProduct(p: any) {
-    const price = typeof p.price === 'string' ? parseFloat(p.price) : Number(p.price);
-    const discountPrice = p.discountPrice
-      ? (typeof p.discountPrice === 'string' ? parseFloat(p.discountPrice) : Number(p.discountPrice))
+  private formatProduct(p: LiveProduct) {
+    const priceFormatted = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(p.price);
+    const discFormatted = p.discountPrice 
+      ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(p.discountPrice)
       : null;
 
     return {
       name: p.name,
-      price: price.toLocaleString('vi-VN') + ' đ',
-      discountPrice: discountPrice ? discountPrice.toLocaleString('vi-VN') + ' đ' : null,
-      status: p.status !== false ? 'Còn hàng' : 'Hết hàng',
-      category: p.category || 'Không có',
-      platform: p.platform || 'Không có',
-      deliveryMethod: p.deliveryMethod || 'Tự động',
+      price: priceFormatted,
+      discountPrice: discFormatted,
+      status: p.inStock ? `Còn hàng (${p.stockQuantity} món)` : 'Hết hàng',
+      category: p.category,
+      brand: p.brand,
+      warranty: `${p.warrantyMonths} Tháng chính hãng`,
+      specs: p.specs,
       link: `/products/${p.slug}`,
     };
   }
 }
+

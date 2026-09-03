@@ -8,10 +8,12 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
+    const email = searchParams.get('email');
+    const phone = searchParams.get('phone');
 
-    if (!userId) {
+    if (!userId && !email && !phone) {
       return NextResponse.json(
-        { message: 'UserId là bắt buộc!' },
+        { message: 'UserId hoặc Email/Phone là bắt buộc!' },
         { status: 400 }
       );
     }
@@ -20,8 +22,13 @@ export async function GET(request: Request) {
 
     // 1. Primary: Prisma
     try {
+      const orConditions: any[] = [];
+      if (userId) orConditions.push({ userId });
+      if (email) orConditions.push({ customerEmail: email });
+      if (phone) orConditions.push({ customerPhone: phone });
+
       orders = await prisma.order.findMany({
-        where: { userId },
+        where: orConditions.length > 1 ? { OR: orConditions } : (orConditions[0] || { userId }),
         orderBy: { createdAt: 'desc' },
         include: {
           orderItems: {
@@ -46,11 +53,16 @@ export async function GET(request: Request) {
     // 2. Fallback: Supabase
     if (orders.length === 0) {
       try {
-        const { data: supaOrders } = await supabase
-          .from('Order')
-          .select('*')
-          .eq('userId', userId)
-          .order('createdAt', { ascending: false });
+        let query = supabase.from('Order').select('*');
+        if (userId) {
+          query = query.eq('userId', userId);
+        } else if (email) {
+          query = query.eq('customerEmail', email);
+        } else if (phone) {
+          query = query.eq('customerPhone', phone);
+        }
+
+        const { data: supaOrders } = await query.order('createdAt', { ascending: false });
 
         if (supaOrders) {
           orders = supaOrders;
@@ -105,10 +117,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: 'Vui lòng cung cấp Địa chỉ nhận hàng!' }, { status: 400 });
     }
 
-    // Generate Order Code: DRX + 6 digits (VD: DRX718294)
-    const randomSuffix = Math.floor(100000 + Math.random() * 900000);
-    const orderCode = `DRX${randomSuffix}`;
-    const orderId = `ord-${Date.now()}-${randomSuffix}`;
+    // Generate Order Code: DRX-xxxxx (5 random digits with hyphen, VD: DRX-84920)
+    const random5Digits = Math.floor(10000 + Math.random() * 90000);
+    const orderCode = `DRX-${random5Digits}`;
+    const orderId = `ord-${Date.now()}-${random5Digits}`;
 
     const resolvedTotal = Number(totalAmount || netAmount || 0);
     const resolvedNet = Number(netAmount || totalAmount || 0);

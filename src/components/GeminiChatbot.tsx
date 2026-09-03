@@ -42,30 +42,17 @@ export const GeminiChatbot: React.FC = () => {
     },
   ]);
 
-  // Fetch live catalog data from API and local store cache
+  // Fetch live catalog data directly from API (Connected to Supabase)
   const loadProductData = async () => {
-    let localProds: any[] = [];
     try {
-      const stored = localStorage.getItem('ods_admin_products');
-      if (stored) localProds = JSON.parse(stored);
-    } catch (e) {}
-
-    try {
-      const res = await fetch('/api/products');
+      const res = await fetch('/api/products', { cache: 'no-store' });
       const data = await res.json();
       if (res.ok && data.products && Array.isArray(data.products)) {
-        const combined = [...localProds];
-        data.products.forEach((ap: any) => {
-          if (!combined.some((p) => p.id === ap.id || p.slug === ap.slug)) {
-            combined.push(ap);
-          }
-        });
-        setProducts(combined);
-        return;
+        setProducts(data.products);
       }
-    } catch (e) {}
-
-    setProducts(localProds);
+    } catch (e) {
+      console.warn('Chatbot product sync notice:', e);
+    }
   };
 
   useEffect(() => {
@@ -97,31 +84,20 @@ export const GeminiChatbot: React.FC = () => {
     let replyText = `🤖 DRX CyberBot AI: Cảm ơn bạn đã nhắn tin! CyberBot luôn sẵn sàng hỗ trợ bạn tra cứu linh kiện máy tính, tư vấn cấu hình PC, kiểm tra khuyến mãi Flash Sale và bảo hành 36T tại DRX Hardware ⚡!`;
     let matchedProducts: any[] = [];
 
-    if (
-      q.includes('thời tiết') ||
-      q.includes('mưa') ||
-      q.includes('nắng') ||
-      q.includes('nhiệt độ') ||
-      q.includes('mấy giờ')
-    ) {
-      replyText = `🤖 DRX CyberBot AI: CyberBot là trợ lý AI chuyên trách riêng của DRX Hardware, tập trung 100% hỗ trợ tư vấn linh kiện máy tính và dịch vụ mua bán tại DRX Hardware 💻⚡.\n\nCyberBot không hỗ trợ các thông tin ngoài lề như thời tiết hay xem giờ. Bạn cần CyberBot tra cứu giá hoặc kiểm tra linh kiện nào tại DRX Hardware không ạ? 😊`;
-      matchedProducts = products.slice(0, 2);
-    } else {
-      const directMatches = products.filter((p) =>
-        q.split(' ').some((kw) => kw.length >= 2 && p.name.toLowerCase().includes(kw))
-      );
+    const directMatches = products.filter((p) =>
+      q.split(' ').some((kw) => kw.length >= 2 && (p.name.toLowerCase().includes(kw) || (p.category && String(p.category).toLowerCase().includes(kw))))
+    );
 
-      if (directMatches.length > 0) {
-        matchedProducts = directMatches;
-        const p = directMatches[0];
-        replyText = `🤖 DRX CyberBot AI:\n• Tên sản phẩm: ${p.name}\n• Tình trạng: ${
-          p.status !== false ? '📦 ĐANG CÒN HÀNG' : '🚫 HẾT HÀNG'
-        }\n• Giá bán: ${
-          p.discountPrice ? `${formatPrice(p.discountPrice)} (Gốc ${formatPrice(p.price)})` : formatPrice(p.price)
-        }\n• Dịch vụ: Bảo hành 1 đổi 1 36 tháng & Giao hàng toàn quốc!`;
-      } else {
-        matchedProducts = products.slice(0, 2);
-      }
+    if (directMatches.length > 0) {
+      matchedProducts = directMatches.slice(0, 3);
+      const p = directMatches[0];
+      replyText = `🤖 DRX CyberBot AI:\n• Tên sản phẩm: ${p.name}\n• Tình trạng: ${
+        p.status !== false && (p.stockQuantity ?? 1) > 0 ? '📦 ĐANG CÒN HÀNG' : '🚫 HẾT HÀNG'
+      }\n• Giá bán: ${
+        p.discountPrice ? `${formatPrice(p.discountPrice)} (Gốc ${formatPrice(p.price)})` : formatPrice(p.price)
+      }\n• Dịch vụ: Bảo hành 1 đổi 1 36 tháng & Giao hàng toàn quốc!`;
+    } else {
+      matchedProducts = products.slice(0, 2);
     }
 
     return { text: replyText, productCards: matchedProducts };
@@ -148,19 +124,29 @@ export const GeminiChatbot: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: query,
-          history: messages.slice(-5).map((m) => ({ role: m.sender, text: m.text })),
-          localProducts: products,
+          history: messages.slice(-5).map((m) => ({ role: m.sender === 'user' ? 'user' : 'assistant', content: m.text })),
         }),
       });
 
       const data = await res.json();
-      if (res.ok && data.reply) {
+      const botAnswer = data.answer || data.reply;
+      if (res.ok && botAnswer) {
+        const rawDocs = data.documents || data.productCards || [];
+        const formattedCards = Array.isArray(rawDocs) ? rawDocs.map((doc: any) => ({
+          name: doc.name || doc.productName || 'Linh kiện DRX',
+          price: typeof doc.price === 'number' ? doc.price : parseFloat(String(doc.price).replace(/[^\d]/g, '')) || 0,
+          discountPrice: doc.discountPrice ? (typeof doc.discountPrice === 'number' ? doc.discountPrice : parseFloat(String(doc.discountPrice).replace(/[^\d]/g, ''))) : null,
+          coverImage: doc.coverImage || 'https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?w=300',
+          category: doc.category || 'HARDWARE',
+          slug: doc.slug || (doc.link ? doc.link.replace('/products/', '') : ''),
+        })) : [];
+
         const botMsg: Message = {
           id: `bot-${Date.now()}`,
           sender: 'bot',
-          text: data.reply,
+          text: botAnswer,
           timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-          productCards: data.productCards || [],
+          productCards: formattedCards,
         };
         setMessages((prev) => [...prev, botMsg]);
         setIsTyping(false);
@@ -197,7 +183,7 @@ export const GeminiChatbot: React.FC = () => {
               className="relative hidden sm:flex items-center gap-2.5 bg-white text-zinc-900 px-4 py-3 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.12)] border border-zinc-200/90 text-xs font-semibold max-w-[270px] leading-snug"
             >
               <Zap className="h-4 w-4 text-amber-500 fill-amber-500 shrink-0 animate-bounce" />
-              <span>Bạn đang tìm game hay key bản quyền phù hợp? CyberBot sẽ giúp bạn tìm trong vài giây!</span>
+              <span>Bạn đang tìm linh kiện, PC Gaming hay cần tư vấn cấu hình? CyberBot sẽ giúp bạn ngay!</span>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -409,7 +395,7 @@ export const GeminiChatbot: React.FC = () => {
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                placeholder="Hỏi CyberBot về game, tồn kho, giá bán, bảo hành..."
+                placeholder="Hỏi CyberBot về linh kiện, giá cả, tư vấn build PC, bảo hành..."
                 className="flex-1 bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 text-xs text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-sky-500 focus:bg-white transition-all"
               />
               <button

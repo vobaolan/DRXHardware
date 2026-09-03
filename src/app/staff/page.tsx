@@ -893,7 +893,10 @@ export default function StaffWarehousePortalPage() {
               {/* ASSEMBLY CARDS GRID */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {filteredAssemblyOrders.map((ord) => {
-                  const pDetails = ord.paymentDetails && typeof ord.paymentDetails === 'object' ? ord.paymentDetails : {};
+                  if (!ord) return null;
+                  const pDetails = typeof ord.paymentDetails === 'string'
+                    ? (() => { try { return JSON.parse(ord.paymentDetails); } catch { return {}; } })()
+                    : (ord.paymentDetails && typeof ord.paymentDetails === 'object' ? ord.paymentDetails : {});
                   const needInst = Boolean(pDetails.needInstallation);
                   const isProxy = Boolean(pDetails.isProxyRecipient);
                   const isPickup = ord.deliveryType === 'STORE_PICKUP';
@@ -905,6 +908,9 @@ export default function StaffWarehousePortalPage() {
                     pDetails.check_collected_cod || ord.paymentStatus === 'PAID'
                   ].filter(Boolean).length;
 
+                  const orderDisplayCode = ord.orderCode || (ord.id ? String(ord.id).slice(0, 8).toUpperCase() : 'DRX');
+                  const dateStr = ord.createdAt ? new Date(ord.createdAt).toLocaleDateString('vi-VN') : '';
+
                   return (
                     <div 
                       key={ord.id} 
@@ -913,11 +919,13 @@ export default function StaffWarehousePortalPage() {
                       <div className="space-y-3">
                         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                           <span className="font-mono font-bold text-[#0284c7] text-xs">
-                            #{ord.orderCode || ord.id.slice(0, 8)}
+                            #{orderDisplayCode}
                           </span>
-                          <span className="text-[10.5px] font-mono text-slate-400">
-                            {new Date(ord.createdAt).toLocaleDateString('vi-VN')}
-                          </span>
+                          {dateStr && (
+                            <span className="text-[10.5px] font-mono text-slate-400">
+                              {dateStr}
+                            </span>
+                          )}
                         </div>
 
                         {/* SPECIAL REQUESTS BADGES */}
@@ -951,7 +959,7 @@ export default function StaffWarehousePortalPage() {
                               : 'Đơn Hàng Lắp Ráp PC DRX'}
                           </h4>
                           <div className="text-[11px] text-slate-500 dark:text-slate-400 space-y-0.5">
-                            <p>Khách: <strong className="text-slate-800 dark:text-slate-200">{ord.customerName}</strong> ({ord.customerPhone})</p>
+                            <p>Khách: <strong className="text-slate-800 dark:text-slate-200">{ord.customerName || 'Khách hàng'}</strong> ({ord.customerPhone || 'Chưa có SĐT'})</p>
                             <p className="truncate" title={ord.shippingAddress}>Địa chỉ: {ord.shippingAddress || 'Nhận tại Showroom DRX'}</p>
                             {ord.notes && <p className="italic text-slate-400 line-clamp-1">Ghi chú: "{ord.notes}"</p>}
                           </div>

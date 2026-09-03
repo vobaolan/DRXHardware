@@ -7,13 +7,14 @@ import {
   ShoppingBag, ArrowLeft, ArrowRight, ShieldCheck, CheckCircle2, 
   Truck, Building2, Wrench, UserCheck, MessageSquare, 
   Trash2, Plus, Minus, DollarSign, Check, Sparkles,
-  PackageCheck, User
+  PackageCheck, User, MapPin
 } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { showToast } from '@/components/Toast';
 import { motion, AnimatePresence } from 'framer-motion';
+import { VIETNAM_PROVINCES } from '@/lib/vietnamLocations';
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -39,6 +40,52 @@ export default function CheckoutPage() {
     technicalNotes: '',
   });
 
+  // Vietnam Administrative Locations State
+  const [selectedProvinceId, setSelectedProvinceId] = useState<string>('hcm');
+  const [selectedDistrictId, setSelectedDistrictId] = useState<string>('hcm_thu_duc');
+  const [selectedWardName, setSelectedWardName] = useState<string>('Phường Thảo Điền');
+  const [streetAddress, setStreetAddress] = useState<string>('');
+
+  const currentProvince = useMemo(() => {
+    return VIETNAM_PROVINCES.find(p => p.id === selectedProvinceId) || VIETNAM_PROVINCES[0];
+  }, [selectedProvinceId]);
+
+  const currentDistrict = useMemo(() => {
+    return currentProvince.districts.find(d => d.id === selectedDistrictId) || currentProvince.districts[0];
+  }, [currentProvince, selectedDistrictId]);
+
+  const wardsList = useMemo(() => {
+    return currentDistrict?.wards || [];
+  }, [currentDistrict]);
+
+  const handleProvinceChange = (provId: string) => {
+    setSelectedProvinceId(provId);
+    const prov = VIETNAM_PROVINCES.find(p => p.id === provId) || VIETNAM_PROVINCES[0];
+    const firstDist = prov.districts[0];
+    setSelectedDistrictId(firstDist?.id || '');
+    setSelectedWardName(firstDist?.wards[0] || '');
+  };
+
+  const handleDistrictChange = (distId: string) => {
+    setSelectedDistrictId(distId);
+    const dist = currentProvince.districts.find(d => d.id === distId) || currentProvince.districts[0];
+    setSelectedWardName(dist?.wards[0] || '');
+  };
+
+  // Sync with shippingInfo.address whenever province, district, ward, or streetAddress changes
+  useEffect(() => {
+    if (shippingInfo.fulfillmentMethod === 'DELIVERY') {
+      const parts: string[] = [];
+      if (streetAddress.trim()) parts.push(streetAddress.trim());
+      if (selectedWardName) parts.push(selectedWardName);
+      if (currentDistrict?.name) parts.push(currentDistrict.name);
+      if (currentProvince?.name) parts.push(currentProvince.name);
+
+      const computed = parts.join(', ');
+      setShippingInfo(prev => ({ ...prev, address: computed }));
+    }
+  }, [streetAddress, selectedWardName, currentDistrict, currentProvince, shippingInfo.fulfillmentMethod]);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createdOrder, setCreatedOrder] = useState<any>(null);
 
@@ -57,8 +104,10 @@ export default function CheckoutPage() {
           name: prev.name || u.name || '',
           phone: prev.phone || u.phone || '',
           email: prev.email || u.email || '',
-          address: prev.address || u.address || '',
         }));
+        if (u.address && !streetAddress) {
+          setStreetAddress(u.address);
+        }
       }
     });
   }, []);
@@ -610,18 +659,94 @@ export default function CheckoutPage() {
 
                   {/* ĐỊA CHỈ NHẬN HÀNG NẾU CHỌN GIAO TẬN NƠI */}
                   {shippingInfo.fulfillmentMethod === 'DELIVERY' && (
-                    <div className="space-y-1.5 pt-2">
-                      <label className="font-bold text-slate-700 dark:text-slate-300 uppercase text-[10.5px]">
-                        Địa Chỉ Nhận Hàng Cụ Thể: <span className="text-rose-500">*</span>
-                      </label>
-                      <textarea
-                        rows={2}
-                        required
-                        placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố..."
-                        value={shippingInfo.address}
-                        onChange={(e) => setShippingInfo({ ...shippingInfo, address: e.target.value })}
-                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:border-[#0284c7]"
-                      />
+                    <div className="space-y-4 pt-2 bg-slate-50/70 dark:bg-slate-800/40 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-700">
+                      <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-700/60 pb-2.5">
+                        <label className="font-bold text-slate-800 dark:text-slate-200 uppercase text-[11px] flex items-center gap-1.5">
+                          <MapPin className="w-4 h-4 text-[#0284c7]" />
+                          <span>Địa Chỉ Nhận Hàng Cụ Thể (Sau Sáp Nhập): <span className="text-rose-500">*</span></span>
+                        </label>
+                        <span className="text-[10.5px] text-[#0284c7] font-semibold">Tỉnh &rarr; Quận/Huyện &rarr; Phường/Xã</span>
+                      </div>
+
+                      {/* 3 CỘT CHỌN ĐỊA GIỚI HÀNH CHÍNH */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                        {/* 1. TỈNH / THÀNH PHỐ */}
+                        <div className="space-y-1">
+                          <label className="text-[10.5px] font-bold uppercase text-slate-600 dark:text-slate-400">
+                            Tỉnh / Thành Phố: <span className="text-rose-500">*</span>
+                          </label>
+                          <select
+                            value={selectedProvinceId}
+                            onChange={(e) => handleProvinceChange(e.target.value)}
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-[#0284c7] cursor-pointer"
+                          >
+                            {VIETNAM_PROVINCES.map((prov) => (
+                              <option key={prov.id} value={prov.id}>
+                                {prov.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* 2. QUẬN / HUYỆN / THỊ XÃ / TP TRỰC THUỘC */}
+                        <div className="space-y-1">
+                          <label className="text-[10.5px] font-bold uppercase text-slate-600 dark:text-slate-400">
+                            Quận / Huyện / TP: <span className="text-rose-500">*</span>
+                          </label>
+                          <select
+                            value={selectedDistrictId}
+                            onChange={(e) => handleDistrictChange(e.target.value)}
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-[#0284c7] cursor-pointer"
+                          >
+                            {currentProvince.districts.map((dist) => (
+                              <option key={dist.id} value={dist.id}>
+                                {dist.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* 3. PHƯỜNG / XÃ / THỊ TRẤN SAU SÁP NHẬP */}
+                        <div className="space-y-1">
+                          <label className="text-[10.5px] font-bold uppercase text-slate-600 dark:text-slate-400">
+                            Phường / Xã (Sau Sáp Nhập): <span className="text-rose-500">*</span>
+                          </label>
+                          <select
+                            value={selectedWardName}
+                            onChange={(e) => setSelectedWardName(e.target.value)}
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-[#0284c7] cursor-pointer"
+                          >
+                            {wardsList.map((ward, idx) => (
+                              <option key={idx} value={ward}>
+                                {ward}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* 4. SỐ NHÀ, TÊN TÒA NHÀ, TÊN ĐƯỜNG CỤ THỂ */}
+                      <div className="space-y-1 text-xs">
+                        <label className="text-[10.5px] font-bold uppercase text-slate-600 dark:text-slate-400">
+                          Số Nhà, Tên Tòa Nhà / Tên Đường Cụ Thể: <span className="text-rose-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required={shippingInfo.fulfillmentMethod === 'DELIVERY'}
+                          placeholder="Ví dụ: Số 123 Đường Nguyễn Huệ, Tòa nhà Landmark 81..."
+                          value={streetAddress}
+                          onChange={(e) => setStreetAddress(e.target.value)}
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:border-[#0284c7]"
+                        />
+                      </div>
+
+                      {/* PREVIEW ĐỊA CHỈ HOÀN CHỈNH */}
+                      <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-sky-100 dark:border-slate-700 text-xs flex items-start gap-2">
+                        <span className="text-[#0284c7] font-bold shrink-0 mt-0.5">📍 Địa chỉ giao hàng:</span>
+                        <span className="font-extrabold text-slate-800 dark:text-slate-200">
+                          {shippingInfo.address || 'Vui lòng nhập số nhà & tên đường để hoàn tất địa chỉ'}
+                        </span>
+                      </div>
                     </div>
                   )}
 
@@ -686,7 +811,7 @@ export default function CheckoutPage() {
                         />
                         <span className="text-xs font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
                           <UserCheck className="w-3.5 h-3.5 text-[#0284c7]" />
-                          Nhờ người khác nhận hàng dùm
+                          Nhờ người khác nhận hàng
                         </span>
                       </label>
 
