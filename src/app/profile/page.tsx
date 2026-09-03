@@ -14,7 +14,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useToast } from '@/components/Toast';
+import { useToast, showToast, showConfirm } from '@/components/Toast';
 import { useCart } from '@/context/CartContext';
 import { VIETNAM_PROVINCES, parseFullAddress } from '@/lib/vietnamLocations';
 
@@ -512,15 +512,23 @@ function ProfileContent() {
   };
 
   const handleDeleteSavedBuild = (buildId: string) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa cấu hình PC này khỏi danh sách đã lưu?')) return;
-    try {
-      const updated = savedBuilds.filter((b: any) => b.id !== buildId);
-      setSavedBuilds(updated);
-      localStorage.setItem('drx_saved_pc_builds', JSON.stringify(updated));
-      showToast('Đã xóa cấu hình PC thành công!', 'success');
-    } catch (e) {
-      showToast('Lỗi khi xóa cấu hình.', 'error');
-    }
+    showConfirm({
+      title: 'Xóa Cấu Hình Đã Lưu',
+      message: 'Bạn có chắc chắn muốn xóa cấu hình PC này khỏi danh sách đã lưu? Cấu hình sẽ bị gỡ bỏ khỏi tài khoản của bạn.',
+      confirmText: 'Xóa Cấu Hình',
+      cancelText: 'Giữ Lại',
+      variant: 'danger',
+      onConfirm: () => {
+        try {
+          const updated = savedBuilds.filter((b: any) => b.id !== buildId);
+          setSavedBuilds(updated);
+          localStorage.setItem('drx_saved_pc_builds', JSON.stringify(updated));
+          showToast('Đã xóa cấu hình PC thành công!', 'success');
+        } catch (e) {
+          showToast('Lỗi khi xóa cấu hình.', 'error');
+        }
+      }
+    });
   };
 
   const handleBuySavedBuild = (build: any) => {

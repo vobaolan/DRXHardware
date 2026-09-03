@@ -1,8 +1,8 @@
-'use client';
+﻿'use client';
 
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Info, X, AlertTriangle, Trash2, HelpCircle } from 'lucide-react';
 
 export type ToastType = 'success' | 'error' | 'info';
 
@@ -12,24 +12,35 @@ export interface ToastMessage {
   message: string;
 }
 
+export interface ConfirmOptions {
+  title?: string;
+  message: string;
+  confirmText?: string;
+  cancelText?: string;
+  variant?: 'danger' | 'warning' | 'info';
+  onConfirm: () => void | Promise<void>;
+  onCancel?: () => void;
+}
+
 interface ToastContextType {
   showToast: (message: string, type?: ToastType) => void;
-  confirmAction: (options: {
-    title?: string;
-    message: string;
-    confirmText?: string;
-    cancelText?: string;
-    onConfirm: () => void;
-  }) => void;
+  confirmAction: (options: ConfirmOptions) => void;
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
 let globalShowToast: (message: string, type?: ToastType) => void = () => {};
+let globalShowConfirm: (options: ConfirmOptions) => void = () => {};
 
 export const showToast = (message: string, type: ToastType = 'info') => {
   if (globalShowToast) {
     globalShowToast(message, type);
+  }
+};
+
+export const showConfirm = (options: ConfirmOptions) => {
+  if (globalShowConfirm) {
+    globalShowConfirm(options);
   }
 };
 
@@ -41,48 +52,55 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     message: string;
     confirmText: string;
     cancelText: string;
-    onConfirm: () => void;
+    variant: 'danger' | 'warning' | 'info';
+    onConfirm: () => void | Promise<void>;
+    onCancel?: () => void;
   } | null>(null);
 
-  const triggerToast = (message: string, type: ToastType = 'success') => {
-    const id = Date.now().toString();
+  const triggerToast = useCallback((message: string, type: ToastType = 'success') => {
+    const id = Date.now().toString() + Math.random().toString(36).substring(2, 5);
     setToasts((prev) => [...prev, { id, type, message }]);
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
     }, 3500);
-  };
+  }, []);
 
-  globalShowToast = triggerToast;
-
-  const confirmAction = ({
-    title = 'Xác Nhận Thao Tác',
-    message,
-    confirmText = 'Xác Nhận',
-    cancelText = 'Hủy Bỏ',
-    onConfirm,
-  }: {
-    title?: string;
-    message: string;
-    confirmText?: string;
-    cancelText?: string;
-    onConfirm: () => void;
-  }) => {
+  const triggerConfirm = useCallback((options: ConfirmOptions) => {
     setConfirmConfig({
       isOpen: true,
-      title,
-      message,
-      confirmText,
-      cancelText,
-      onConfirm,
+      title: options.title || 'Xác Nhận Thao Tác',
+      message: options.message,
+      confirmText: options.confirmText || 'Xác Nhận',
+      cancelText: options.cancelText || 'Hủy Bỏ',
+      variant: options.variant || 'danger',
+      onConfirm: options.onConfirm,
+      onCancel: options.onCancel,
     });
-  };
+  }, []);
+
+  useEffect(() => {
+    globalShowToast = triggerToast;
+    globalShowConfirm = triggerConfirm;
+  }, [triggerToast, triggerConfirm]);
+
+  // Handle ESC key for modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && confirmConfig?.isOpen) {
+        if (confirmConfig.onCancel) confirmConfig.onCancel();
+        setConfirmConfig(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [confirmConfig]);
 
   return (
-    <ToastContext.Provider value={{ showToast: triggerToast, confirmAction }}>
+    <ToastContext.Provider value={{ showToast: triggerToast, confirmAction: triggerConfirm }}>
       {children}
 
       {/* TOAST NOTIFICATION STACK */}
-      <div className="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 max-w-sm pointer-events-none">
+      <div className="fixed bottom-5 right-5 z-[999999] flex flex-col space-y-2 max-w-sm pointer-events-none">
         <AnimatePresence>
           {toasts.map((t) => (
             <motion.div
@@ -90,21 +108,21 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               initial={{ opacity: 0, y: 20, scale: 0.9 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 20, scale: 0.9 }}
-              className={`flex items-center space-x-3 rounded-ods p-3.5 shadow-2xl border text-xs font-semibold pointer-events-auto ${
+              className={`flex items-center space-x-3 rounded-2xl p-3.5 shadow-2xl border text-xs font-semibold pointer-events-auto backdrop-blur-md ${
                 t.type === 'success'
-                  ? 'bg-zinc-900 text-white border-emerald-500/40 shadow-emerald-950/20'
+                  ? 'bg-slate-900/95 text-white border-emerald-500/40 shadow-emerald-950/30'
                   : t.type === 'error'
-                  ? 'bg-zinc-900 text-white border-red-500/40 shadow-red-950/20'
-                  : 'bg-zinc-900 text-white border-sky-500/40 shadow-sky-950/20'
+                  ? 'bg-slate-900/95 text-white border-rose-500/40 shadow-rose-950/30'
+                  : 'bg-slate-900/95 text-white border-sky-500/40 shadow-sky-950/30'
               }`}
             >
-              {t.type === 'success' && <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />}
-              {t.type === 'error' && <AlertCircle className="h-4 w-4 text-red-400 shrink-0" />}
-              {t.type === 'info' && <Info className="h-4 w-4 text-sky-400 shrink-0" />}
+              {t.type === 'success' && <CheckCircle2 className="h-4.5 w-4.5 text-emerald-400 shrink-0" />}
+              {t.type === 'error' && <AlertCircle className="h-4.5 w-4.5 text-rose-400 shrink-0" />}
+              {t.type === 'info' && <Info className="h-4.5 w-4.5 text-sky-400 shrink-0" />}
               <span className="flex-1 leading-snug">{t.message}</span>
               <button
                 onClick={() => setToasts((prev) => prev.filter((item) => item.id !== t.id))}
-                className="text-zinc-400 hover:text-white transition-colors"
+                className="text-slate-400 hover:text-white transition-colors cursor-pointer p-0.5"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -113,44 +131,102 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         </AnimatePresence>
       </div>
 
-      {/* IN-WEBSITE CONFIRMATION MODAL */}
+      {/* IN-WEBSITE BEAUTIFUL CONFIRMATION DIALOG MODAL */}
       <AnimatePresence>
         {confirmConfig?.isOpen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => {
+              if (confirmConfig.onCancel) confirmConfig.onCancel();
+              setConfirmConfig(null);
+            }}
+            className="fixed inset-0 z-[9999999] bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4"
           >
             <motion.div
-              initial={{ scale: 0.95, y: 15 }}
+              initial={{ scale: 0.92, y: 20 }}
               animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.95, y: 15 }}
-              className="w-full max-w-sm rounded-ods border border-ods-border bg-white p-6 shadow-2xl space-y-4"
+              exit={{ scale: 0.92, y: 20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-7 shadow-2xl space-y-5 relative overflow-hidden"
             >
-              <div className="space-y-1">
-                <span className="text-[10px] text-ods-primary font-bold uppercase tracking-widest block">DRX HARDWARE THÔNG BÁO</span>
-                <h3 className="font-heading text-sm font-extrabold uppercase text-black">{confirmConfig.title}</h3>
+              {/* Top ambient color glow */}
+              <div
+                className={`absolute top-0 left-0 right-0 h-1.5 ${
+                  confirmConfig.variant === 'danger'
+                    ? 'bg-gradient-to-r from-rose-500 via-red-500 to-rose-600'
+                    : confirmConfig.variant === 'warning'
+                    ? 'bg-gradient-to-r from-amber-400 via-orange-500 to-amber-500'
+                    : 'bg-gradient-to-r from-sky-400 via-[#0284c7] to-blue-600'
+                }`}
+              />
+
+              <div className="flex items-start gap-4">
+                {/* Icon Badge */}
+                <div
+                  className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${
+                    confirmConfig.variant === 'danger'
+                      ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800/60'
+                      : confirmConfig.variant === 'warning'
+                      ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800/60'
+                      : 'bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-800/60'
+                  }`}
+                >
+                  {confirmConfig.variant === 'danger' ? (
+                    <Trash2 className="w-6 h-6" />
+                  ) : confirmConfig.variant === 'warning' ? (
+                    <AlertTriangle className="w-6 h-6" />
+                  ) : (
+                    <Info className="w-6 h-6" />
+                  )}
+                </div>
+
+                <div className="flex-1 space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/80 px-2 py-0.5 rounded-full border border-sky-200/60 dark:border-sky-800/60">
+                      DRX HARDWARE
+                    </span>
+                  </div>
+                  <h3 className="font-heading text-base sm:text-lg font-black text-slate-900 dark:text-white">
+                    {confirmConfig.title}
+                  </h3>
+                </div>
               </div>
 
-              <p className="text-xs text-ods-textMuted font-light leading-relaxed">
+              {/* Message */}
+              <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed pl-1">
                 {confirmConfig.message}
-              </p>
+              </div>
 
-              <div className="pt-2 flex justify-end gap-2 text-xs font-bold">
+              {/* Action Buttons */}
+              <div className="pt-2 flex items-center justify-end gap-3">
                 <button
-                  onClick={() => setConfirmConfig(null)}
-                  className="rounded-ods border border-ods-border bg-white px-4 py-2 text-gray-600 hover:bg-gray-100 uppercase tracking-wider transition-all"
+                  type="button"
+                  onClick={() => {
+                    if (confirmConfig.onCancel) confirmConfig.onCancel();
+                    setConfirmConfig(null);
+                  }}
+                  className="px-4.5 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 text-xs font-bold transition-all cursor-pointer"
                 >
                   {confirmConfig.cancelText}
                 </button>
+
                 <button
-                  onClick={() => {
+                  type="button"
+                  onClick={async () => {
                     const action = confirmConfig.onConfirm;
                     setConfirmConfig(null);
-                    action();
+                    await action();
                   }}
-                  className="rounded-ods bg-ods-primary hover:bg-ods-primaryHover text-white px-5 py-2 uppercase tracking-wider transition-all hover:shadow-buttonGlow active:scale-95"
+                  className={`px-5 py-2.5 rounded-2xl text-white text-xs font-black uppercase tracking-wide transition-all shadow-md active:scale-95 cursor-pointer flex items-center gap-1.5 ${
+                    confirmConfig.variant === 'danger'
+                      ? 'bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 shadow-rose-500/25'
+                      : confirmConfig.variant === 'warning'
+                      ? 'bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 shadow-amber-500/25'
+                      : 'bg-gradient-to-r from-sky-500 to-[#0284c7] hover:from-sky-600 hover:to-blue-700 shadow-sky-500/25'
+                  }`}
                 >
                   {confirmConfig.confirmText}
                 </button>

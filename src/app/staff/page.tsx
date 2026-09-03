@@ -12,7 +12,7 @@ import {
   ExternalLink, Layers, Sparkles, Award, PackageCheck, Ban
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { showToast } from '@/components/Toast';
+import { showToast, showConfirm } from '@/components/Toast';
 import { ProductFormModal, ProductFormData } from '@/components/admin/ProductFormModal';
 import { supabase } from '@/lib/supabase';
 import { ModernSelect, SelectOption } from '@/components/ui/ModernSelect';
@@ -317,20 +317,28 @@ export default function StaffWarehousePortalPage() {
     setIsFormModalOpen(true);
   };
 
-  const handleDeleteProduct = async (p: any) => {
-    if (!window.confirm(`Xác nhận xóa linh kiện "${p.name}" khỏi cơ sở dữ liệu kho?`)) return;
-    try {
-      const res = await fetch(`/api/admin/products?id=${p.id}`, { method: 'DELETE' });
-      if (res.ok) {
-        setProducts(prev => prev.filter(x => x.id !== p.id));
-        showToast(`Đã xóa linh kiện "${p.name}" thành công!`, 'success');
-        fetchAllStaffData();
-      } else {
-        showToast('Không thể xóa sản phẩm lúc này.', 'error');
+  const handleDeleteProduct = (p: any) => {
+    showConfirm({
+      title: 'Xác Nhận Xóa Linh Kiện',
+      message: `Bạn có chắc chắn muốn xóa linh kiện "${p.name}" khỏi cơ sở dữ liệu kho?`,
+      confirmText: 'Xóa Linh Kiện',
+      cancelText: 'Hủy Bỏ',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/admin/products?id=${p.id}`, { method: 'DELETE' });
+          if (res.ok) {
+            setProducts(prev => prev.filter(x => x.id !== p.id));
+            showToast(`Đã xóa linh kiện "${p.name}" thành công!`, 'success');
+            fetchAllStaffData();
+          } else {
+            showToast('Không thể xóa sản phẩm lúc này.', 'error');
+          }
+        } catch (e) {
+          showToast('Lỗi khi xóa sản phẩm!', 'error');
+        }
       }
-    } catch (e) {
-      showToast('Lỗi khi xóa sản phẩm!', 'error');
-    }
+    });
   };
 
   // Order & Assembly Status Update
@@ -397,20 +405,28 @@ export default function StaffWarehousePortalPage() {
     }
   };
 
-  const handleDeleteSerial = async (serialId: string) => {
-    if (!window.confirm('Bạn có chắc muốn xóa mã Serial này khỏi kho?')) return;
-    try {
-      const res = await fetch(`/api/admin/serials?id=${serialId}`, { method: 'DELETE' });
-      if (res.ok) {
-        setSerials(prev => prev.filter(s => s.id !== serialId));
-        showToast('Đã xóa mã Serial thành công!', 'success');
-        fetchAllStaffData();
-      } else {
-        showToast('Lỗi khi xóa mã Serial.', 'error');
+  const handleDeleteSerial = (serialId: string) => {
+    showConfirm({
+      title: 'Xác Nhận Xóa Serial (SN)',
+      message: 'Bạn có chắc chắn muốn xóa mã Serial này khỏi kho linh kiện?',
+      confirmText: 'Xóa Serial',
+      cancelText: 'Hủy Bỏ',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/admin/serials?id=${serialId}`, { method: 'DELETE' });
+          if (res.ok) {
+            setSerials(prev => prev.filter(s => s.id !== serialId));
+            showToast('Đã xóa mã Serial thành công!', 'success');
+            fetchAllStaffData();
+          } else {
+            showToast('Lỗi khi xóa mã Serial.', 'error');
+          }
+        } catch (e) {
+          showToast('Lỗi kết nối máy chủ.', 'error');
+        }
       }
-    } catch (e) {
-      showToast('Lỗi kết nối máy chủ.', 'error');
-    }
+    });
   };
 
   // Live Electronic Warranty Search Handler

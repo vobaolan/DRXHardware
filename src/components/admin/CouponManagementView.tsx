@@ -24,7 +24,7 @@ import {
   Clock,
   ChevronDown
 } from 'lucide-react';
-import { showToast } from '@/components/Toast';
+import { showToast, showConfirm } from '@/components/Toast';
 import { PortalDropdown } from '@/components/ui/PortalDropdown';
 
 interface CouponItem {
@@ -334,22 +334,29 @@ export function CouponManagementView({ canEdit = true }: { canEdit?: boolean }) 
   };
 
   // Delete Coupon
-  const handleDeleteCoupon = async (code: string) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa mã giảm giá "${code}"?`)) return;
-
-    try {
-      const res = await fetch(`/api/admin/coupons?code=${encodeURIComponent(code)}`, {
-        method: 'DELETE',
-      });
-      if (res.ok) {
-        showToast(`Đã xóa mã giảm giá "${code}" thành công!`, 'success');
-        fetchCoupons();
-      } else {
-        showToast('Lỗi khi xóa mã giảm giá.', 'error');
+  const handleDeleteCoupon = (code: string) => {
+    showConfirm({
+      title: 'Xóa Mã Giảm Giá',
+      message: `Bạn có chắc chắn muốn xóa vĩnh viễn mã giảm giá "${code}" khỏi hệ thống? Thao tác này không thể hoàn tác.`,
+      confirmText: 'Xóa Ngay',
+      cancelText: 'Hủy Bỏ',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/admin/coupons?code=${encodeURIComponent(code)}`, {
+            method: 'DELETE',
+          });
+          if (res.ok) {
+            showToast(`Đã xóa mã giảm giá "${code}" thành công!`, 'success');
+            fetchCoupons();
+          } else {
+            showToast('Lỗi khi xóa mã giảm giá.', 'error');
+          }
+        } catch (e) {
+          showToast('Không thể kết nối máy chủ.', 'error');
+        }
       }
-    } catch (e) {
-      showToast('Không thể kết nối máy chủ.', 'error');
-    }
+    });
   };
 
   // Submit Form

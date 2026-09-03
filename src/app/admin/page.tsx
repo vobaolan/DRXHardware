@@ -15,7 +15,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { showToast } from '@/components/Toast';
+import { showToast, showConfirm } from '@/components/Toast';
 import { ProductFormModal, ProductFormData } from '@/components/admin/ProductFormModal';
 import { supabase } from '@/lib/supabase';
 import { ModernSelect, SelectOption } from '@/components/ui/ModernSelect';
@@ -504,20 +504,28 @@ export default function AdminDashboardPage() {
     setIsFormModalOpen(true);
   };
 
-  const handleDeleteProduct = async (p: any) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa sản phẩm "${p.name}" khỏi cơ sở dữ liệu?`)) return;
-    try {
-      const res = await fetch(`/api/admin/products?id=${p.id}`, { method: 'DELETE' });
-      if (res.ok) {
-        setProducts(prev => prev.filter(x => x.id !== p.id));
-        showToast(`Đã xóa sản phẩm "${p.name}" thành công!`, 'success');
-        fetchAllData();
-      } else {
-        showToast('Không thể xóa sản phẩm lúc này.', 'error');
+  const handleDeleteProduct = (p: any) => {
+    showConfirm({
+      title: 'Xóa Sản Phẩm Khỏi Cửa Hàng',
+      message: `Bạn có chắc chắn muốn xóa sản phẩm "${p.name}" khỏi cơ sở dữ liệu? Toàn bộ thông tin linh kiện sẽ bị gỡ bỏ vĩnh viễn.`,
+      confirmText: 'Xóa Sản Phẩm',
+      cancelText: 'Hủy Bỏ',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/admin/products?id=${p.id}`, { method: 'DELETE' });
+          if (res.ok) {
+            setProducts(prev => prev.filter(x => x.id !== p.id));
+            showToast(`Đã xóa sản phẩm "${p.name}" thành công!`, 'success');
+            fetchAllData();
+          } else {
+            showToast('Không thể xóa sản phẩm lúc này.', 'error');
+          }
+        } catch (e) {
+          showToast('Lỗi khi xóa sản phẩm!', 'error');
+        }
       }
-    } catch (e) {
-      showToast('Lỗi khi xóa sản phẩm!', 'error');
-    }
+    });
   };
 
   // Handlers for Orders
@@ -583,20 +591,28 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const handleDeleteSerial = async (serialId: string) => {
-    if (!window.confirm('Bạn có chắc muốn xóa mã Serial này khỏi kho?')) return;
-    try {
-      const res = await fetch(`/api/admin/serials?id=${serialId}`, { method: 'DELETE' });
-      if (res.ok) {
-        setSerials(prev => prev.filter(s => s.id !== serialId));
-        showToast('Đã xóa mã Serial thành công!', 'success');
-        fetchAllData();
-      } else {
-        showToast('Lỗi khi xóa mã Serial.', 'error');
+  const handleDeleteSerial = (serialId: string) => {
+    showConfirm({
+      title: 'Xóa Mã Serial (SN)',
+      message: 'Bạn có chắc chắn muốn xóa mã Serial này khỏi kho linh kiện? Dữ liệu bảo hành theo SN này sẽ bị hủy.',
+      confirmText: 'Xóa Serial',
+      cancelText: 'Hủy Bỏ',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/admin/serials?id=${serialId}`, { method: 'DELETE' });
+          if (res.ok) {
+            setSerials(prev => prev.filter(s => s.id !== serialId));
+            showToast('Đã xóa mã Serial thành công!', 'success');
+            fetchAllData();
+          } else {
+            showToast('Lỗi khi xóa mã Serial.', 'error');
+          }
+        } catch (e) {
+          showToast('Lỗi kết nối máy chủ.', 'error');
+        }
       }
-    } catch (e) {
-      showToast('Lỗi kết nối máy chủ.', 'error');
-    }
+    });
   };
 
   // Handlers for User Account Management (CRUD & Permissions)
@@ -685,28 +701,33 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const handleDeleteUser = async (u: any) => {
+  const handleDeleteUser = (u: any) => {
     if (u.email === 'admin@drx.vn') {
       showToast('Không thể xóa tài khoản Quản trị Master (admin@drx.vn)!', 'error');
       return;
     }
 
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa tài khoản "${u.name || u.email}" (${u.email}) khỏi hệ thống? Thao tác không thể hoàn tác.`)) {
-      return;
-    }
-
-    try {
-      const res = await fetch(`/api/admin/users?userId=${u.id}`, { method: 'DELETE' });
-      const data = await res.json();
-      if (res.ok) {
-        setUsers(prev => prev.filter(x => x.id !== u.id));
-        showToast(data.message || 'Đã xóa tài khoản thành công!', 'success');
-      } else {
-        showToast(data.message || 'Không thể xóa tài khoản lúc này.', 'error');
+    showConfirm({
+      title: 'Xóa Tài Khoản Người Dùng',
+      message: `Bạn có chắc chắn muốn xóa tài khoản "${u.name || u.email}" (${u.email}) khỏi hệ thống? Thao tác này không thể hoàn tác.`,
+      confirmText: 'Xóa Tài Khoản',
+      cancelText: 'Hủy Bỏ',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/admin/users?userId=${u.id}`, { method: 'DELETE' });
+          const data = await res.json();
+          if (res.ok) {
+            setUsers(prev => prev.filter(x => x.id !== u.id));
+            showToast(data.message || 'Đã xóa tài khoản thành công!', 'success');
+          } else {
+            showToast(data.message || 'Không thể xóa tài khoản lúc này.', 'error');
+          }
+        } catch (e) {
+          showToast('Lỗi kết nối máy chủ.', 'error');
+        }
       }
-    } catch (e) {
-      showToast('Lỗi kết nối máy chủ.', 'error');
-    }
+    });
   };
 
   // Handlers for User Role Quick Switch
@@ -2256,14 +2277,13 @@ export default function AdminDashboardPage() {
 
                 {/* PASSWORD / RESET PASSWORD */}
                 <div className="space-y-1.5">
-                  <label className="text-slate-700 dark:text-slate-300 font-bold uppercase text-[10.5px] flex items-center justify-between">
-                    <span>{userModalMode === 'create' ? 'Mật Khẩu Khởi Tạo:' : 'Đổi Mật Khẩu Mới:'}</span>
-                    {userModalMode === 'edit' && <span className="text-[10px] text-slate-400 font-normal">Để trống nếu không đổi</span>}
+                  <label className="text-slate-700 dark:text-slate-300 font-bold uppercase text-[10.5px] block whitespace-nowrap">
+                    {userModalMode === 'create' ? 'Mật Khẩu Khởi Tạo:' : 'Đổi Mật Khẩu Mới:'}
                   </label>
                   <input
                     type="text"
                     required={userModalMode === 'create'}
-                    placeholder={userModalMode === 'create' ? "Tối thiểu 6 ký tự..." : "Nhập mật khẩu mới..."}
+                    placeholder={userModalMode === 'create' ? "Tối thiểu 6 ký tự..." : "Để trống nếu không đổi..."}
                     value={userFormData.password}
                     onChange={(e) => setUserFormData({ ...userFormData, password: e.target.value })}
                     className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:border-[#0284c7]"

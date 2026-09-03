@@ -6,7 +6,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { INITIAL_PRODUCTS, HardwareProduct } from '@/lib/hardware-data';
 import { useCart } from '@/context/CartContext';
-import { showToast } from '@/components/Toast';
+import { showToast, showConfirm } from '@/components/Toast';
 import { 
   CheckCircle2, 
   Trash2, 
@@ -184,20 +184,27 @@ function PCBuilderContent() {
   };
 
   const handleClearAll = () => {
-    if (window.confirm('Bạn có chắc muốn làm mới toàn bộ cấu hình PC này?')) {
-      setSelectedBuild({
-        cpu: null,
-        mainboard: null,
-        ram: null,
-        vga: null,
-        storage: null,
-        psu: null,
-        case: null,
-        cooling: null,
-        monitor: null,
-      });
-      showToast('Đã làm mới cấu hình PC.', 'info');
-    }
+    showConfirm({
+      title: 'Làm Mới Cấu Hình PC',
+      message: 'Bạn có chắc chắn muốn làm mới toàn bộ linh kiện đã chọn trong cấu hình này? Danh sách linh kiện đã chọn sẽ được đưa về trống.',
+      confirmText: 'Làm Mới Ngay',
+      cancelText: 'Giữ Lại',
+      variant: 'warning',
+      onConfirm: () => {
+        setSelectedBuild({
+          cpu: null,
+          mainboard: null,
+          ram: null,
+          vga: null,
+          storage: null,
+          psu: null,
+          case: null,
+          cooling: null,
+          monitor: null,
+        });
+        showToast('Đã làm mới cấu hình PC.', 'info');
+      }
+    });
   };
 
   // 1-Click Buy Entire PC Build
