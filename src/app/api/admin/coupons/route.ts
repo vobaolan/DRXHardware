@@ -107,7 +107,8 @@ export async function POST(request: Request) {
       minOrderValue = 0, 
       maxDiscount, 
       expiresAt, 
-      maxUses = 100 
+      maxUses = 100,
+      status = 'ACTIVE'
     } = body;
 
     if (!code?.trim()) {
@@ -130,6 +131,7 @@ export async function POST(request: Request) {
       expiresAt: expiryDate,
       maxUses: Number(maxUses || 100),
       usedCount: 0,
+      status: status?.toUpperCase() === 'INACTIVE' ? 'INACTIVE' : 'ACTIVE',
     };
 
     let created: any = null;
@@ -185,7 +187,8 @@ export async function PUT(request: Request) {
       maxDiscount, 
       expiresAt, 
       maxUses,
-      usedCount
+      usedCount,
+      status
     } = body;
 
     if (!code) {
@@ -200,6 +203,7 @@ export async function PUT(request: Request) {
     if (expiresAt) updateData.expiresAt = new Date(expiresAt);
     if (maxUses !== undefined) updateData.maxUses = Number(maxUses);
     if (usedCount !== undefined) updateData.usedCount = Number(usedCount);
+    if (status !== undefined) updateData.status = status?.toUpperCase() === 'INACTIVE' ? 'INACTIVE' : 'ACTIVE';
 
     let updated: any = null;
 
@@ -239,6 +243,8 @@ export async function PUT(request: Request) {
     );
   }
 }
+
+export const PATCH = PUT;
 
 // DELETE: Delete coupon
 export async function DELETE(request: Request) {

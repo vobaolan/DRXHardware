@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   PhoneCall, 
   MapPin, 
@@ -72,6 +73,11 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
   const proxyPhone = paymentDetails.proxyPhone || '';
   const technicalNotes = paymentDetails.technicalNotes || order.notes || '';
   const isStorePickup = order.deliveryType === 'STORE_PICKUP';
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Checklist state
   const [checklist, setChecklist] = useState({
@@ -250,8 +256,10 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
 
   const checksDoneCount = Object.values(checklist).filter(Boolean).length;
 
-  return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-start justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-200 py-6 sm:py-10">
+  if (!mounted) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] bg-slate-950/80 backdrop-blur-md flex items-start justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-200 py-6 sm:py-10">
       <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-6 sm:p-8 max-w-3xl w-full space-y-6 shadow-2xl text-slate-900 dark:text-slate-100 my-auto relative">
         
         {/* TOP AMBIENT ACCENT */}
@@ -778,6 +786,7 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
         </div>
       )}
 
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Tag, 
   Plus, 
@@ -20,7 +21,8 @@ import {
   X,
   ShieldCheck,
   TrendingUp,
-  Clock
+  Clock,
+  ChevronDown
 } from 'lucide-react';
 import { showToast } from '@/components/Toast';
 
@@ -34,7 +36,7 @@ interface CouponItem {
   maxUses: number;
   usedCount: number;
   createdAt?: string;
-  status?: string;
+  status?: 'ACTIVE' | 'INACTIVE' | 'DISABLED' | string;
 }
 
 interface CouponFormData {
@@ -45,6 +47,7 @@ interface CouponFormData {
   maxDiscount: number | null;
   expiresAt: string;
   maxUses: number;
+  status: 'ACTIVE' | 'INACTIVE';
 }
 
 const formatVND = (num: number | string | null | undefined) => {
@@ -58,7 +61,9 @@ export function CouponManagementView({ canEdit = true }: { canEdit?: boolean }) 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<'ALL' | 'PERCENT' | 'FIXED'>('ALL');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [activeStatusDropdown, setActiveStatusDropdown] = useState<string | null>(null);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -72,6 +77,7 @@ export function CouponManagementView({ canEdit = true }: { canEdit?: boolean }) 
     maxDiscount: null,
     expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     maxUses: 100,
+    status: 'ACTIVE',
   });
 
   // Fetch live coupons
@@ -95,6 +101,11 @@ export function CouponManagementView({ canEdit = true }: { canEdit?: boolean }) 
       setIsLoading(false);
       setIsRefreshing(false);
     }
+  }, []);
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
   }, []);
 
   useEffect(() => {
@@ -128,6 +139,7 @@ export function CouponManagementView({ canEdit = true }: { canEdit?: boolean }) 
       maxDiscount: null,
       expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       maxUses: 100,
+      status: 'ACTIVE',
     });
     setModalMode('create');
     setIsModalOpen(true);
@@ -144,9 +156,42 @@ export function CouponManagementView({ canEdit = true }: { canEdit?: boolean }) 
       maxDiscount: c.maxDiscount ? Number(c.maxDiscount) : null,
       expiresAt: expStr,
       maxUses: Number(c.maxUses) || 100,
+      status: c.status === 'INACTIVE' ? 'INACTIVE' : 'ACTIVE',
     });
     setModalMode('edit');
     setIsModalOpen(true);
+  };
+
+  // Quick Toggle Status
+  const handleToggleStatus = async (coupon: CouponItem, targetStatus: 'ACTIVE' | 'INACTIVE') => {
+    // Optimistic update
+    setCoupons(prev => prev.map(c => c.code === coupon.code ? { ...c, status: targetStatus } : c));
+
+    try {
+      const res = await fetch('/api/admin/coupons', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: coupon.code,
+          status: targetStatus,
+        }),
+      });
+
+      if (res.ok) {
+        showToast(
+          targetStatus === 'ACTIVE'
+            ? `Đã kích hoạt mã "${coupon.code}" thành công!`
+            : `Đã ngưng hoạt động mã "${coupon.code}"!`,
+          targetStatus === 'ACTIVE' ? 'success' : 'info'
+        );
+      } else {
+        fetchCoupons();
+        showToast('Không thể cập nhật trạng thái mã.', 'error');
+      }
+    } catch (e) {
+      fetchCoupons();
+      showToast('Lỗi kết nối máy chủ.', 'error');
+    }
   };
 
   // Delete Coupon
@@ -215,50 +260,66 @@ export function CouponManagementView({ canEdit = true }: { canEdit?: boolean }) 
     if (typeFilter !== 'ALL') {
       list = list.filter(c => c.discountType === typeFilter);
     }
+    if (statusFilter === 'ACTIVE') {
+      list = list.filter(c => c.status !== 'INACTIVE');
+    } else if (statusFilter === 'INACTIVE') {
+      list = list.filter(c => c.status === 'INACTIVE');
+    }
     return list;
-  }, [coupons, searchQuery, typeFilter]);
+  }, [coupons, searchQuery, typeFilter, statusFilter]);
 
   // Statistics
   const stats = useMemo(() => {
     const total = coupons.length;
     const now = new Date();
-    const active = coupons.filter(c => new Date(c.expiresAt) > now && c.usedCount < c.maxUses).length;
+    const active = coupons.filter(c => c.status !== 'INACTIVE' && new Date(c.expiresAt) > now && c.usedCount < c.maxUses).length;
+    const inactive = coupons.filter(c => c.status === 'INACTIVE').length;
     const totalUsed = coupons.reduce((sum, c) => sum + (Number(c.usedCount) || 0), 0);
-    return { total, active, totalUsed };
+    return { total, active, inactive, totalUsed };
   }, [coupons]);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
       
       {/* 1. STATS METRICS CARDS */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-xs flex items-center gap-4">
-          <div className="p-3.5 rounded-2xl bg-sky-50 dark:bg-sky-950/80 text-[#0284c7] border border-sky-100 dark:border-sky-800">
-            <Tag className="w-6 h-6" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 sm:p-5 shadow-xs flex items-center gap-3.5">
+          <div className="p-3 rounded-2xl bg-sky-50 dark:bg-sky-950/80 text-[#0284c7] border border-sky-100 dark:border-sky-800">
+            <Tag className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div>
-            <span className="text-[10.5px] uppercase font-black tracking-wider text-slate-400">Tổng Mã Giảm Giá</span>
-            <p className="text-2xl font-black font-heading text-slate-900 dark:text-white">{stats.total}</p>
+            <span className="text-[10px] sm:text-[10.5px] uppercase font-black tracking-wider text-slate-400">Tổng Mã</span>
+            <p className="text-xl sm:text-2xl font-black font-heading text-slate-900 dark:text-white">{stats.total}</p>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-xs flex items-center gap-4">
-          <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/80 text-emerald-600 border border-emerald-100 dark:border-emerald-800">
-            <CheckCircle2 className="w-6 h-6" />
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 sm:p-5 shadow-xs flex items-center gap-3.5">
+          <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/80 text-emerald-600 border border-emerald-100 dark:border-emerald-800">
+            <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div>
-            <span className="text-[10.5px] uppercase font-black tracking-wider text-slate-400">Đang Hoạt Động</span>
-            <p className="text-2xl font-black font-heading text-emerald-600 dark:text-emerald-400">{stats.active} Mã</p>
+            <span className="text-[10px] sm:text-[10.5px] uppercase font-black tracking-wider text-slate-400">Hoạt Động</span>
+            <p className="text-xl sm:text-2xl font-black font-heading text-emerald-600 dark:text-emerald-400">{stats.active}</p>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-xs flex items-center gap-4">
-          <div className="p-3.5 rounded-2xl bg-purple-50 dark:bg-purple-950/80 text-purple-600 border border-purple-100 dark:border-purple-800">
-            <TrendingUp className="w-6 h-6" />
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 sm:p-5 shadow-xs flex items-center gap-3.5">
+          <div className="p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/80 text-rose-600 border border-rose-100 dark:border-rose-800">
+            <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div>
-            <span className="text-[10.5px] uppercase font-black tracking-wider text-slate-400">Lượt Khách Đã Dùng</span>
-            <p className="text-2xl font-black font-heading text-purple-600 dark:text-purple-400">{stats.totalUsed} Lượt</p>
+            <span className="text-[10px] sm:text-[10.5px] uppercase font-black tracking-wider text-slate-400">Tạm Ngưng</span>
+            <p className="text-xl sm:text-2xl font-black font-heading text-rose-600 dark:text-rose-400">{stats.inactive}</p>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 sm:p-5 shadow-xs flex items-center gap-3.5">
+          <div className="p-3 rounded-2xl bg-purple-50 dark:bg-purple-950/80 text-purple-600 border border-purple-100 dark:border-purple-800">
+            <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6" />
+          </div>
+          <div>
+            <span className="text-[10px] sm:text-[10.5px] uppercase font-black tracking-wider text-slate-400">Đã Áp Dụng</span>
+            <p className="text-xl sm:text-2xl font-black font-heading text-purple-600 dark:text-purple-400">{stats.totalUsed} Lượt</p>
           </div>
         </div>
       </div>
@@ -304,29 +365,44 @@ export function CouponManagementView({ canEdit = true }: { canEdit?: boolean }) 
         </div>
 
         {/* Filter Controls */}
-        <div className="flex flex-col sm:flex-row gap-3 items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
-          <div className="relative w-full sm:w-80">
+        <div className="flex flex-col sm:flex-row gap-3 items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800 flex-wrap">
+          <div className="relative w-full sm:w-72">
             <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
             <input
               type="text"
               placeholder="Tìm theo mã code (VD: DRX, GAMING)..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3.5 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-bold focus:outline-none focus:border-[#0284c7]"
+              className="w-full pl-9 pr-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-bold focus:outline-none focus:border-[#0284c7]"
             />
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <span className="text-[11px] font-bold text-slate-400">Loại giảm:</span>
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value as any)}
-              className="px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-bold cursor-pointer"
-            >
-              <option value="ALL">Tất Cả Loại</option>
-              <option value="PERCENT">Giảm theo % (Phần trăm)</option>
-              <option value="FIXED">Giảm cố định (VNĐ)</option>
-            </select>
+          <div className="flex items-center gap-2.5 w-full sm:w-auto flex-wrap">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] font-bold text-slate-400">Loại:</span>
+              <select
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value as any)}
+                className="px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-bold cursor-pointer"
+              >
+                <option value="ALL">Tất Cả Loại</option>
+                <option value="PERCENT">Phần trăm (%)</option>
+                <option value="FIXED">Số tiền cố định (VNĐ)</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] font-bold text-slate-400">Trạng thái:</span>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as any)}
+                className="px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-bold cursor-pointer"
+              >
+                <option value="ALL">Tất Cả Trạng Thái</option>
+                <option value="ACTIVE">🟢 Đang Hoạt Động</option>
+                <option value="INACTIVE">🔴 Ngưng Hoạt Động</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
@@ -363,7 +439,8 @@ export function CouponManagementView({ canEdit = true }: { canEdit?: boolean }) 
                   const now = new Date();
                   const isExpired = new Date(coupon.expiresAt) < now;
                   const isDepleted = coupon.usedCount >= coupon.maxUses;
-                  const isActive = !isExpired && !isDepleted;
+                  const isInactive = coupon.status === 'INACTIVE' || coupon.status === 'DISABLED';
+                  const isActive = !isInactive && !isExpired && !isDepleted;
 
                   return (
                     <tr key={coupon.code} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
@@ -428,19 +505,124 @@ export function CouponManagementView({ canEdit = true }: { canEdit?: boolean }) 
 
                       {/* Status */}
                       <td className="py-3.5 px-4">
-                        {isActive ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
-                            <CheckCircle2 className="w-3 h-3" /> Hoạt động
-                          </span>
-                        ) : isExpired ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-800">
-                            <Clock className="w-3 h-3" /> Hết hạn
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-700">
-                            Hết lượt
-                          </span>
-                        )}
+                        <div className="relative inline-block text-left">
+                          {canEdit ? (
+                            <button
+                              type="button"
+                              onClick={() => setActiveStatusDropdown(activeStatusDropdown === coupon.code ? null : coupon.code)}
+                              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10.5px] font-black uppercase transition-all cursor-pointer shadow-xs active:scale-95 border ${
+                                isInactive
+                                  ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800 hover:bg-rose-100'
+                                  : isExpired
+                                  ? 'bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800 hover:bg-amber-100'
+                                  : isDepleted
+                                  ? 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-700'
+                                  : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100'
+                              }`}
+                              title="Click để đổi trạng thái"
+                            >
+                              {isInactive ? (
+                                <>
+                                  <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
+                                  <span>Ngưng hoạt động</span>
+                                  <ChevronDown className="w-3 h-3 ml-0.5 opacity-70" />
+                                </>
+                              ) : isExpired ? (
+                                <>
+                                  <Clock className="w-3 h-3 text-amber-500 shrink-0" />
+                                  <span>Hết hạn</span>
+                                  <ChevronDown className="w-3 h-3 ml-0.5 opacity-70" />
+                                </>
+                              ) : isDepleted ? (
+                                <>
+                                  <span className="w-2 h-2 rounded-full bg-slate-400 shrink-0" />
+                                  <span>Hết lượt</span>
+                                  <ChevronDown className="w-3 h-3 ml-0.5 opacity-70" />
+                                </>
+                              ) : (
+                                <>
+                                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                                  <span>Hoạt động</span>
+                                  <ChevronDown className="w-3 h-3 ml-0.5 opacity-70" />
+                                </>
+                              )}
+                            </button>
+                          ) : (
+                            <span
+                              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10.5px] font-black uppercase border ${
+                                isInactive
+                                  ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800'
+                                  : isExpired
+                                  ? 'bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800'
+                                  : isDepleted
+                                  ? 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-700'
+                                  : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                              }`}
+                            >
+                              <span className={`w-2 h-2 rounded-full shrink-0 ${isInactive ? 'bg-rose-500' : 'bg-emerald-500'}`} />
+                              <span>{isInactive ? 'Ngưng hoạt động' : 'Hoạt động'}</span>
+                            </span>
+                          )}
+
+                          {/* Quick Dropdown Menu */}
+                          {activeStatusDropdown === coupon.code && (
+                            <>
+                              <div 
+                                className="fixed inset-0 z-40" 
+                                onClick={() => setActiveStatusDropdown(null)} 
+                              />
+                              <div className="absolute left-0 mt-1.5 w-56 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-1.5 z-50 animate-in fade-in zoom-in-95 duration-150 text-xs">
+                                <div className="px-2.5 py-1.5 text-[10px] font-black uppercase text-slate-400 tracking-wider border-b border-slate-100 dark:border-slate-800 mb-1">
+                                  Chọn Trạng Thái
+                                </div>
+                                
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    handleToggleStatus(coupon, 'ACTIVE');
+                                    setActiveStatusDropdown(null);
+                                  }}
+                                  className={`w-full flex items-center justify-between p-2 rounded-xl transition-all text-left cursor-pointer ${
+                                    !isInactive
+                                      ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 font-extrabold'
+                                      : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-200 font-bold'
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                                    <div>
+                                      <span className="block text-xs">Hoạt Động</span>
+                                      <span className="block text-[10px] text-slate-400 font-normal">Cho phép áp dụng</span>
+                                    </div>
+                                  </div>
+                                  {!isInactive && <Check className="w-4 h-4 text-emerald-600 shrink-0" />}
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    handleToggleStatus(coupon, 'INACTIVE');
+                                    setActiveStatusDropdown(null);
+                                  }}
+                                  className={`w-full flex items-center justify-between p-2 rounded-xl transition-all text-left cursor-pointer ${
+                                    isInactive
+                                      ? 'bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 font-extrabold'
+                                      : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-200 font-bold'
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
+                                    <div>
+                                      <span className="block text-xs">Ngưng Hoạt Động</span>
+                                      <span className="block text-[10px] text-slate-400 font-normal">Tạm dừng áp dụng</span>
+                                    </div>
+                                  </div>
+                                  {isInactive && <Check className="w-4 h-4 text-rose-600 shrink-0" />}
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
                       </td>
 
                       {/* Actions */}
@@ -474,9 +656,9 @@ export function CouponManagementView({ canEdit = true }: { canEdit?: boolean }) 
       </div>
 
       {/* 4. MODAL CREATE / EDIT COUPON */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-lg w-full space-y-5 shadow-2xl text-slate-900 dark:text-slate-100 relative">
+      {mounted && isModalOpen && createPortal(
+        <div className="fixed inset-0 z-[9999] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-lg w-full space-y-5 shadow-2xl text-slate-900 dark:text-slate-100 relative my-auto">
             
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3.5">
               <div className="flex items-center gap-2">
@@ -625,6 +807,40 @@ export function CouponManagementView({ canEdit = true }: { canEdit?: boolean }) 
                 </div>
               </div>
 
+              {/* Status Selector */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-300 block">
+                  Trạng Thái Áp Dụng:
+                </label>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, status: 'ACTIVE' }))}
+                    className={`p-2.5 rounded-xl border flex items-center justify-center gap-2 transition-all cursor-pointer text-xs font-black uppercase ${
+                      formData.status === 'ACTIVE'
+                        ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-400 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 shadow-xs'
+                        : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800/40'
+                    }`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                    <span>Hoạt Động</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, status: 'INACTIVE' }))}
+                    className={`p-2.5 rounded-xl border flex items-center justify-center gap-2 transition-all cursor-pointer text-xs font-black uppercase ${
+                      formData.status === 'INACTIVE'
+                        ? 'bg-rose-50 dark:bg-rose-950/60 border-rose-400 dark:border-rose-700 text-rose-700 dark:text-rose-400 shadow-xs'
+                        : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800/40'
+                    }`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
+                    <span>Ngưng Hoạt Động</span>
+                  </button>
+                </div>
+              </div>
+
               {/* Action Buttons */}
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
                 <button
@@ -647,7 +863,8 @@ export function CouponManagementView({ canEdit = true }: { canEdit?: boolean }) 
             </form>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>

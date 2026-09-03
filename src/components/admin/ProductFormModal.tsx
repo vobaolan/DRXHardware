@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   X, Plus, Trash2, Image as ImageIcon, Sparkles, Check, 
   Cpu, HardDrive, Monitor, Box, Zap, Fan, Gamepad2, Laptop, 
@@ -115,6 +116,11 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
   onClose,
   onSaved,
 }) => {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const [name, setName] = useState('');
   const [category, setCategory] = useState('VGA');
   const [brand, setBrand] = useState('ASUS');
@@ -395,9 +401,11 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
   const activeNumDiscountPrice = parseCommas(discountPriceInput);
   const activeNumCostPrice = parseCommas(costPriceInput);
 
-  return (
-    <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 max-w-4xl w-full space-y-6 shadow-2xl overflow-y-auto max-h-[92vh] text-slate-900 dark:text-slate-100 antialiased">
+  if (!mounted || !isOpen) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-200">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 max-w-4xl w-full space-y-6 shadow-2xl overflow-y-auto max-h-[92vh] text-slate-900 dark:text-slate-100 antialiased my-auto">
         
         {/* MODAL HEADER */}
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
@@ -885,6 +893,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

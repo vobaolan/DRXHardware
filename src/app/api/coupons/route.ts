@@ -92,6 +92,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: `Mã giảm giá "${cleanCode}" không tồn tại!` }, { status: 404 });
     }
 
+    // Validate Status (Active vs Inactive)
+    if (coupon.status === 'INACTIVE' || coupon.status === 'DISABLED' || coupon.status === false) {
+      return NextResponse.json({ message: `Mã giảm giá "${cleanCode}" hiện đang tạm ngưng hoạt động!` }, { status: 400 });
+    }
+
     // Validate Expiry Date
     const now = new Date();
     const expiry = new Date(coupon.expiresAt);
