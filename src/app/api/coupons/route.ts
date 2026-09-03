@@ -1,51 +1,7 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { supabase } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
-
-const DEFAULT_COUPONS: Record<string, any> = {
-  DRXHARDWARE: {
-    code: 'DRXHARDWARE',
-    discountType: 'PERCENT',
-    discountValue: 20,
-    minOrderValue: 500000,
-    maxDiscount: 2000000,
-    expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
-    maxUses: 999,
-    usedCount: 0,
-  },
-  DRX500K: {
-    code: 'DRX500K',
-    discountType: 'FIXED',
-    discountValue: 500000,
-    minOrderValue: 10000000,
-    maxDiscount: 500000,
-    expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
-    maxUses: 100,
-    usedCount: 0,
-  },
-  DRX100K: {
-    code: 'DRX100K',
-    discountType: 'FIXED',
-    discountValue: 100000,
-    minOrderValue: 1000000,
-    maxDiscount: 100000,
-    expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    maxUses: 500,
-    usedCount: 0,
-  },
-  HE2026: {
-    code: 'HE2026',
-    discountType: 'PERCENT',
-    discountValue: 15,
-    minOrderValue: 2000000,
-    maxDiscount: 1500000,
-    expiresAt: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString(),
-    maxUses: 200,
-    usedCount: 0,
-  }
-};
 
 export async function POST(request: Request) {
   try {
@@ -59,7 +15,7 @@ export async function POST(request: Request) {
     const cleanCode = code.trim().toUpperCase();
     let coupon: any = null;
 
-    // 1. Supabase Check (Fast Direct REST)
+    // Supabase Check (Fast Direct REST)
     try {
       const { data, error } = await supabase
         .from('Coupon')
@@ -72,24 +28,8 @@ export async function POST(request: Request) {
       console.warn('Supabase coupon validate warning:', e);
     }
 
-    // 2. Prisma Check (Fallback)
     if (!coupon) {
-      try {
-        coupon = await prisma.coupon.findUnique({
-          where: { code: cleanCode }
-        });
-      } catch (e) {
-        console.warn('Prisma coupon validate warning:', e);
-      }
-    }
-
-    // 3. Fallback to default seeded codes
-    if (!coupon && DEFAULT_COUPONS[cleanCode]) {
-      coupon = DEFAULT_COUPONS[cleanCode];
-    }
-
-    if (!coupon) {
-      return NextResponse.json({ message: `Mã giảm giá "${cleanCode}" không tồn tại!` }, { status: 404 });
+      return NextResponse.json({ message: `Mã giảm giá "${cleanCode}" không tồn tại hoặc đã bị xóa!` }, { status: 404 });
     }
 
     // Validate Status (Active vs Inactive)

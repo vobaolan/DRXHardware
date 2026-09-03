@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { supabase } from '@/lib/supabase';
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   try {
@@ -10,22 +12,23 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing productId parameter' }, { status: 400 });
     }
 
-    // 1. Kiểm tra sản phẩm (game) tồn tại
-    const product = await prisma.product.findUnique({
-      where: { id: productId },
-    });
+    // 1. Kiểm tra sản phẩm tồn tại trong Supabase
+    const { data: product } = await supabase
+      .from('Product')
+      .select('id, name')
+      .eq('id', productId)
+      .maybeSingle();
 
     if (!product) {
-      return NextResponse.json({ error: 'Product (Game) not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Không tìm thấy linh kiện / sản phẩm' }, { status: 404 });
     }
 
-    // 2. Phân tích danh sách key cần import
+    // 2. Phân tích danh sách serial/key cần import
     let keysList: string[] = [];
 
     if (Array.isArray(keys)) {
       keysList = keys.map((k) => String(k).trim()).filter(Boolean);
     } else if (typeof rawText === 'string') {
-      // Phân tách bằng dòng mới (mỗi dòng 1 key, bỏ dòng trống)
       keysList = rawText
         .split(/\r?\n/)
         .map((k) => k.trim())
@@ -33,28 +36,33 @@ export async function POST(req: Request) {
     }
 
     if (keysList.length === 0) {
-      return NextResponse.json({ error: 'No valid key codes found to import' }, { status: 400 });
+      return NextResponse.json({ error: 'Không tìm thấy danh sách mã serial hợp lệ' }, { status: 400 });
     }
 
-    // 3. Chuẩn bị dữ liệu để insert vào DB (trạng thái AVAILABLE)
+    // 3. Thực hiện insert hàng loạt vào ProductSerial
     const keysData = keysList.map((code) => ({
       productId: productId,
-      keyCode: code,
-      status: 'AVAILABLE' as const,
+      serialNumber: code,
+      status: 'AVAILABLE',
+      createdAt: new Date().toISOString(),
     }));
 
-    // 4. Thực hiện insert hàng loạt (Bulk Insert)
-    const importResult = await prisma.gameKey.createMany({
-      data: keysData,
-      skipDuplicates: true, // Tránh trùng key nếu DB có ràng buộc duy nhất (nếu cấu hình)
-    });
+    const { data: inserted, error } = await supabase
+      .from('ProductSerial')
+      .upsert(keysData)
+      .select('id');
 
-    console.log(`Bulk Import Success: Added ${importResult.count} keys to product ID ${productId} (${product.name})`);
+    const count = inserted?.length || keysList.length;
+
+    // Increment stock
+    try {
+      await supabase.rpc('increment_stock', { p_id: productId, count });
+    } catch (e) {}
 
     return NextResponse.json({
       success: true,
-      message: `Đã nhập thành công ${importResult.count} key vào sản phẩm "${product.name}".`,
-      count: importResult.count,
+      message: `Đã nhập thành công ${count} mã serial vào sản phẩm "${product.name}".`,
+      count,
     });
   } catch (error: any) {
     console.error('Bulk key import error:', error);

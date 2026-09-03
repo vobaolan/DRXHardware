@@ -464,7 +464,7 @@ export default function AdminDashboardPage() {
         (u.phone && u.phone.includes(q)) ||
         (u.address && u.address.toLowerCase().includes(q));
       
-      const isGoogle = u.provider === 'GOOGLE' || Boolean(u.image && u.image.includes('googleusercontent'));
+      const isGoogle = u.provider === 'GOOGLE' || Boolean(u.image && u.image.includes('googleusercontent')) || (u.id && (String(u.id).startsWith('user-google-') || String(u.id).startsWith('google-')));
       const matchesRole = 
         selectedUserRoleFilter === 'ALL' || 
         (selectedUserRoleFilter === 'GOOGLE' ? isGoogle : u.role === selectedUserRoleFilter);
@@ -1682,7 +1682,7 @@ export default function AdminDashboardPage() {
                     { id: 'USER', label: `Khách Hàng (${users.filter(u => u.role === 'USER' || !u.role).length})` },
                     { id: 'STAFF', label: `Nhân Viên (${users.filter(u => u.role === 'STAFF').length})` },
                     { id: 'ADMIN', label: `Quản Trị (${users.filter(u => u.role === 'ADMIN').length})` },
-                    { id: 'GOOGLE', label: `🔵 Google OAuth (${users.filter(u => u.provider === 'GOOGLE' || Boolean(u.image && u.image.includes('googleusercontent'))).length})` },
+                    { id: 'GOOGLE', label: `🔵 Google OAuth (${users.filter(u => u.provider === 'GOOGLE' || Boolean(u.image && u.image.includes('googleusercontent')) || (u.id && (String(u.id).startsWith('user-google-') || String(u.id).startsWith('google-')))).length})` },
                   ].map((tab) => (
                     <button
                       key={tab.id}
@@ -1746,7 +1746,7 @@ export default function AdminDashboardPage() {
                         </tr>
                       ) : (
                         filteredUsers.map((u) => {
-                          const isGoogleAuth = u.provider === 'GOOGLE' || Boolean(u.image && u.image.includes('googleusercontent'));
+                          const isGoogleAuth = u.provider === 'GOOGLE' || Boolean(u.image && u.image.includes('googleusercontent')) || (u.id && (String(u.id).startsWith('user-google-') || String(u.id).startsWith('google-')));
                           const uName = (u.name || '').trim().toLowerCase();
                           const uPhone = (u.phone || '').trim();
                           const uEmail = (u.email || '').trim().toLowerCase();

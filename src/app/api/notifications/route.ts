@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { supabase } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
@@ -8,7 +7,7 @@ export async function GET() {
   try {
     let notifications: any[] = [];
 
-    // 1. Primary: Supabase Cloud Database
+    // Direct Supabase Cloud Database Query
     try {
       const { data, error } = await supabase
         .from('Notification')
@@ -16,19 +15,11 @@ export async function GET() {
         .order('createdAt', { ascending: false })
         .limit(50);
 
-      if (!error && data) {
+      if (!error && data && Array.isArray(data)) {
         notifications = data;
       }
-    } catch (e) {}
-
-    // 2. Fallback to Prisma
-    if (notifications.length === 0) {
-      try {
-        notifications = await prisma.notification.findMany({
-          orderBy: { createdAt: 'desc' },
-          take: 50,
-        });
-      } catch (e) {}
+    } catch (e) {
+      console.warn('Supabase notifications warning:', e);
     }
 
     return NextResponse.json(notifications);
@@ -53,22 +44,13 @@ export async function POST(request: Request) {
 
     let created: any = null;
 
-    // 1. Insert to Supabase
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('Notification')
         .insert([notifData])
         .select()
         .single();
-      if (data) created = data;
-    } catch (e) {}
-
-    // 2. Also sync to Prisma
-    try {
-      const pCreated = await prisma.notification.create({
-        data: notifData,
-      });
-      if (!created) created = pCreated;
+      if (!error && data) created = data;
     } catch (e) {}
 
     return NextResponse.json(created || notifData, { status: 201 });
@@ -81,27 +63,11 @@ export async function PATCH(request: Request) {
   try {
     const { id } = await request.json();
     
-    // 1. Update in Supabase
     try {
       if (id) {
         await supabase.from('Notification').update({ read: true }).eq('id', id);
       } else {
         await supabase.from('Notification').update({ read: true }).eq('read', false);
-      }
-    } catch (e) {}
-
-    // 2. Also sync to Prisma
-    try {
-      if (id) {
-        await prisma.notification.update({
-          where: { id },
-          data: { read: true },
-        });
-      } else {
-        await prisma.notification.updateMany({
-          where: { read: false },
-          data: { read: true },
-        });
       }
     } catch (e) {}
 
@@ -116,23 +82,11 @@ export async function DELETE(request: Request) {
     const url = new URL(request.url);
     const id = url.searchParams.get('id');
 
-    // 1. Delete from Supabase
     try {
       if (id) {
         await supabase.from('Notification').delete().eq('id', id);
       } else {
         await supabase.from('Notification').delete().neq('id', '');
-      }
-    } catch (e) {}
-
-    // 2. Also delete from Prisma
-    try {
-      if (id) {
-        await prisma.notification.delete({
-          where: { id },
-        });
-      } else {
-        await prisma.notification.deleteMany();
       }
     } catch (e) {}
 

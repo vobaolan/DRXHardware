@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
-import { prisma } from '@/lib/prisma';
 import { supabase } from '@/lib/supabase';
-import { INITIAL_PRODUCTS } from '@/lib/hardware-data';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,57 +13,31 @@ export async function GET() {
   };
 
   try {
-    // 1. Primary query from Supabase Cloud Database (Fast Direct REST)
+    // 1. Direct query from Supabase Cloud Database (Fast Direct REST)
     let dbProducts: any[] = [];
     try {
       const { data: supaProds, error: supaErr } = await supabase
         .from('Product')
         .select('*')
         .order('createdAt', { ascending: false });
-      if (!supaErr && supaProds && supaProds.length > 0) {
+      if (!supaErr && supaProds && Array.isArray(supaProds)) {
         dbProducts = supaProds;
       }
     } catch (e) {
-      console.warn('Supabase products fetch warning, trying Prisma fallback:', e);
+      console.warn('Supabase products fetch warning:', e);
     }
-
-    // 2. Fallback to Prisma if Supabase had no records
-    if (!dbProducts || dbProducts.length === 0) {
-      try {
-        dbProducts = await prisma.product.findMany({
-          orderBy: { createdAt: 'desc' },
-        });
-      } catch (e) {}
-    }
-
-    // Real Database products (all created/edited by Admin & Staff in PostgreSQL)
-    const validDbProducts = Array.isArray(dbProducts) ? [...dbProducts] : [];
 
     // Sort validDbProducts strictly newest first (by updatedAt or createdAt)
-    validDbProducts.sort((a, b) => {
+    dbProducts.sort((a, b) => {
       const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime();
       const timeB = new Date(b.updatedAt || b.createdAt || 0).getTime();
       return timeB - timeA;
     });
 
-    const dbProductIds = new Set(validDbProducts.map((p: any) => p.id));
-    const dbProductSlugs = new Set(validDbProducts.map((p: any) => p.slug));
-    const dbProductNames = new Set(validDbProducts.map((p: any) => (p.name || '').toLowerCase().trim()));
-
-    // Filter out initial seed items that have been customized or created in DB
-    const remainingInitial = INITIAL_PRODUCTS.filter((ip: any) => 
-      !dbProductIds.has(ip.id) &&
-      !dbProductSlugs.has(ip.slug) &&
-      !dbProductNames.has((ip.name || '').toLowerCase().trim())
-    );
-
-    // Database products ALWAYS come first at the very top of the list!
-    const combined = [...validDbProducts, ...remainingInitial];
-
-    return NextResponse.json({ products: combined }, { status: 200, headers });
+    return NextResponse.json({ products: dbProducts }, { status: 200, headers });
   } catch (error: any) {
     console.error('Lỗi khi lấy danh sách sản phẩm admin:', error);
-    return NextResponse.json({ products: INITIAL_PRODUCTS }, { status: 200, headers });
+    return NextResponse.json({ products: [] }, { status: 200, headers });
   }
 }
 
@@ -144,7 +116,7 @@ export async function POST(request: Request) {
     if (wattage) productData.wattage = Number(wattage);
     if (formFactor) productData.formFactor = formFactor;
 
-    // 1. Save directly to Supabase Cloud Database (Fast Direct REST)
+    // Save directly to Supabase Cloud Database (Fast Direct REST)
     let savedProduct: any = null;
     try {
       const { data, error } = await supabase
@@ -156,14 +128,6 @@ export async function POST(request: Request) {
     } catch (supaErr) {
       console.warn('Supabase create product notice:', supaErr);
     }
-
-    // 2. Also sync to Prisma PostgreSQL if available
-    try {
-      const prismaProduct = await prisma.product.create({
-        data: productData,
-      });
-      if (!savedProduct) savedProduct = prismaProduct;
-    } catch (e) {}
 
     const finalProduct = savedProduct || productData;
 
@@ -255,7 +219,7 @@ export async function PUT(request: Request) {
     if (wattage) updatedData.wattage = Number(wattage);
     if (formFactor) updatedData.formFactor = formFactor;
 
-    // 1. Upsert directly in Supabase Cloud Database (Fast Direct REST)
+    // Upsert directly in Supabase Cloud Database (Fast Direct REST)
     let updatedProduct: any = null;
     try {
       const { data, error } = await supabase
@@ -271,22 +235,6 @@ export async function PUT(request: Request) {
         .single();
       if (!error && data) updatedProduct = data;
     } catch (err) {}
-
-    // 2. Also sync to Prisma PostgreSQL if available
-    try {
-      const pUpsert = await prisma.product.upsert({
-        where: { id },
-        create: {
-          id,
-          platform: brand || 'PC',
-          type: singleCategory,
-          status: true,
-          ...updatedData,
-        },
-        update: updatedData,
-      });
-      if (!updatedProduct) updatedProduct = pUpsert;
-    } catch (e) {}
 
     revalidatePath('/', 'layout');
     revalidatePath('/products', 'layout');
@@ -313,15 +261,19 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ message: 'Thiếu ID sản phẩm' }, { status: 400 });
     }
 
-    // 1. Delete from Supabase Cloud Database
+    // 1. Delete associated product serials first
     try {
-      await supabase.from('Product').delete().eq('id', id);
-    } catch (e) {}
+      await supabase.from('ProductSerial').delete().eq('productId', id);
+    } catch (e) {
+      console.warn('Product serial cleanup notice:', e);
+    }
 
-    // 2. Also delete from Prisma
-    try {
-      await prisma.product.delete({ where: { id } });
-    } catch (e) {}
+    // 2. Delete from Supabase Cloud Database
+    const { error } = await supabase.from('Product').delete().eq('id', id);
+    if (error) {
+      console.error('Supabase delete product error:', error);
+      return NextResponse.json({ message: 'Lỗi khi xóa từ cơ sở dữ liệu: ' + error.message }, { status: 500 });
+    }
 
     revalidatePath('/', 'layout');
     revalidatePath('/products', 'layout');

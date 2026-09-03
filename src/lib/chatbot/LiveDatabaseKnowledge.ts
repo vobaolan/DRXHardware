@@ -1,6 +1,4 @@
-import { prisma } from '@/lib/prisma';
 import { supabase } from '@/lib/supabase';
-import { INITIAL_PRODUCTS } from '@/lib/hardware-data';
 
 export interface LiveProduct {
   id: string;
@@ -21,36 +19,24 @@ export interface LiveProduct {
 
 export class LiveDatabaseKnowledge {
   /**
-   * Fetch all live products directly from PostgreSQL (Prisma) and Supabase Client
-   * with strict newest-first sorting and deduplication.
+   * Fetch all live products directly from Supabase Cloud Database
+   * with strict newest-first sorting.
    */
   async getAllLiveProducts(): Promise<LiveProduct[]> {
     let dbProducts: any[] = [];
 
-    // 1. Primary query: Prisma
+    // Query Supabase REST API directly
     try {
-      dbProducts = await prisma.product.findMany({
-        orderBy: { createdAt: 'desc' },
-      });
-    } catch (e) {
-      // Ignore & fallback to Supabase
-    }
+      const { data, error } = await supabase
+        .from('Product')
+        .select('*')
+        .order('createdAt', { ascending: false });
 
-    // 2. Fallback query: Supabase REST API
-    if (!dbProducts || dbProducts.length === 0) {
-      try {
-        const { data, error } = await supabase
-          .from('Product')
-          .select('*')
-          .order('createdAt', { ascending: false });
+      if (!error && data && Array.isArray(data)) {
+        dbProducts = data;
+      }
+    } catch (e) {}
 
-        if (!error && data && data.length > 0) {
-          dbProducts = data;
-        }
-      } catch (e) {}
-    }
-
-    // 3. Merge Supabase DB items with Initial hardware seed
     const validDb = Array.isArray(dbProducts) ? [...dbProducts] : [];
     validDb.sort((a, b) => {
       const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime();
@@ -58,19 +44,7 @@ export class LiveDatabaseKnowledge {
       return timeB - timeA;
     });
 
-    const dbIds = new Set(validDb.map((p: any) => p.id));
-    const dbSlugs = new Set(validDb.map((p: any) => p.slug));
-    const dbNames = new Set(validDb.map((p: any) => (p.name || '').toLowerCase().trim()));
-
-    const remainingSeeds = INITIAL_PRODUCTS.filter((ip: any) =>
-      !dbIds.has(ip.id) &&
-      !dbSlugs.has(ip.slug) &&
-      !dbNames.has((ip.name || '').toLowerCase().trim())
-    );
-
-    const merged = [...validDb, ...remainingSeeds];
-
-    return merged.map((p: any) => {
+    return validDb.map((p: any) => {
       const price = typeof p.price === 'string' ? parseFloat(p.price) : Number(p.price || 0);
       const discountPrice = p.discountPrice
         ? (typeof p.discountPrice === 'string' ? parseFloat(p.discountPrice) : Number(p.discountPrice))

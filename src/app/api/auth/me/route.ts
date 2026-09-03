@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAuthUserFromRequest, signJWT, setAuthCookie } from '@/lib/jwt';
 import { supabase } from '@/lib/supabase';
-import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,7 +18,7 @@ export async function GET(request: Request) {
     let userAddress: string | null = null;
     let userId = authUser.sub;
 
-    // 1. Fetch fresh user data & balance from Supabase Cloud PostgreSQL
+    // Direct fetch fresh user data & balance from Supabase Cloud PostgreSQL
     try {
       let query = supabase.from('User').select('id, name, email, role, balance, phone, address').limit(1);
       if (authUser.sub && authUser.sub !== 'admin-id-master') {
@@ -61,24 +60,6 @@ export async function GET(request: Request) {
       }
     } catch (e) {}
 
-    // 2. Fallback to Prisma if not fetched from REST
-    if (authUser.email) {
-      try {
-        const dbUser = await prisma.user.findFirst({
-          where: { email: authUser.email },
-          select: { id: true, balance: true, name: true, role: true, phone: true, address: true },
-        });
-        if (dbUser) {
-          if (dbUser.id) userId = dbUser.id;
-          if (dbUser.balance !== null && dbUser.balance !== undefined) userBalance = Number(dbUser.balance);
-          if (dbUser.name) userName = dbUser.name;
-          if (dbUser.role) userRole = dbUser.role;
-          if (dbUser.phone) userPhone = dbUser.phone;
-          if (dbUser.address) userAddress = dbUser.address;
-        }
-      } catch (e) {}
-    }
-
     return NextResponse.json(
       {
         user: {
@@ -115,46 +96,23 @@ export async function PUT(request: Request) {
 
     let updatedUserRecord: any = null;
 
-    // 1. Update directly in Supabase Cloud via Prisma
+    // Update in Supabase Cloud Database REST API
     try {
-      updatedUserRecord = await prisma.user.upsert({
-        where: { email: authUser.email },
-        update: {
-          name: trimmedName,
-          phone: trimmedPhone,
-          address: trimmedAddress,
-        },
-        create: {
-          email: authUser.email,
-          name: trimmedName,
-          phone: trimmedPhone,
-          address: trimmedAddress,
-          role: (authUser.role as any) || 'USER',
-        },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          role: true,
-          balance: true,
-          phone: true,
-          address: true,
-        },
-      });
-    } catch (prismaErr) {
-      console.warn('Prisma profile update warning, falling back to direct Supabase REST:', prismaErr);
-    }
-
-    // 2. Also ensure updated in Supabase REST API
-    try {
-      await supabase
+      const { data, error } = await supabase
         .from('User')
         .update({
           name: trimmedName,
           phone: trimmedPhone,
           address: trimmedAddress,
+          updatedAt: new Date().toISOString(),
         })
-        .eq('email', authUser.email);
+        .eq('email', authUser.email)
+        .select('*')
+        .maybeSingle();
+
+      if (!error && data) {
+        updatedUserRecord = data;
+      }
     } catch (e) {}
 
     const resolvedName = updatedUserRecord?.name || trimmedName;
@@ -164,7 +122,7 @@ export async function PUT(request: Request) {
     const resolvedAddress = updatedUserRecord?.address || trimmedAddress || '';
     const resolvedId = updatedUserRecord?.id || authUser.sub;
 
-    // Generate refreshed JWT with updated name
+    // Refreshed JWT
     const newToken = signJWT({
       sub: resolvedId,
       email: authUser.email,

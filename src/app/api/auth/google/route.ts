@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { supabase } from '@/lib/supabase';
 import { signJWT, setAuthCookie } from '@/lib/jwt';
 
@@ -62,7 +61,7 @@ export async function POST(request: Request) {
 
     let foundUser: any = null;
 
-    // 1. Check Supabase User table
+    // Direct Check in Supabase User table
     try {
       const { data: supaUsers } = await supabase
         .from('User')
@@ -76,18 +75,7 @@ export async function POST(request: Request) {
       console.warn('Supabase findUser error:', e);
     }
 
-    // 2. Check Prisma if not found
-    if (!foundUser) {
-      try {
-        foundUser = await prisma.user.findUnique({
-          where: { email: cleanEmail },
-        });
-      } catch (e) {
-        console.warn('Prisma findUser error:', e);
-      }
-    }
-
-    // 3. If user doesn't exist, create a new Google user directly in Supabase Cloud DB
+    // If user doesn't exist, create a new Google user directly in Supabase Cloud DB
     if (!foundUser) {
       const newUserId = `user-google-${Date.now()}`;
       try {
@@ -111,27 +99,14 @@ export async function POST(request: Request) {
         if (createdSupa) {
           foundUser = createdSupa;
         }
-      } catch (createSupaErr) {}
-
-      // Also sync to Prisma
-      try {
-        const newUser = await prisma.user.create({
-          data: {
-            id: foundUser?.id || newUserId,
-            name: userName,
-            email: cleanEmail,
-            image: userAvatar,
-            role: userRole as any,
-            balance: 0.0,
-          },
-        });
-        if (!foundUser) foundUser = newUser;
-      } catch (createPrismaErr) {}
+      } catch (createSupaErr) {
+        console.warn('Supabase create Google user error:', createSupaErr);
+      }
     }
 
-    // 4. Construct authenticated user object
+    // Construct authenticated user object
     const authUser = {
-      id: foundUser?.id || `google-${Date.now()}`,
+      id: foundUser?.id || `user-google-${Date.now()}`,
       name: foundUser?.name || userName,
       email: cleanEmail,
       image: foundUser?.image || userAvatar,
@@ -140,7 +115,7 @@ export async function POST(request: Request) {
       provider: 'google',
     };
 
-    // 5. Issue JWT Token & Set HttpOnly Cookie
+    // Issue JWT Token & Set HttpOnly Cookie
     const token = signJWT({
       sub: authUser.id,
       email: authUser.email,
@@ -160,9 +135,9 @@ export async function POST(request: Request) {
     setAuthCookie(response, token);
     return response;
   } catch (error: any) {
-    console.error('Google Auth Error:', error);
+    console.error('Lỗi khi đăng nhập Google:', error);
     return NextResponse.json(
-      { message: 'Lỗi xác thực Google: ' + error.message },
+      { message: 'Có lỗi xảy ra: ' + error.message },
       { status: 500 }
     );
   }

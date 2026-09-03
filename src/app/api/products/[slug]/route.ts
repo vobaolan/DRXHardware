@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import { prisma } from '@/lib/prisma';
-import { INITIAL_PRODUCTS } from '@/lib/hardware-data';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,53 +63,6 @@ export async function GET(
       }
     } catch (e) {
       console.warn('Supabase product slug query warning:', e);
-    }
-
-    // 2. Secondary: Prisma Query Fallback
-    if (!matchedProduct) {
-      try {
-        matchedProduct = await prisma.product.findFirst({
-          where: {
-            OR: [
-              { slug: decodedSlug },
-              { id: decodedSlug },
-              { id: rawSlug }
-            ]
-          }
-        });
-      } catch (e) {
-        console.warn('Prisma product slug query warning:', e);
-      }
-    }
-
-    // 3. Fallback: INITIAL_PRODUCTS Hardware Catalog
-    if (!matchedProduct) {
-      matchedProduct = INITIAL_PRODUCTS.find((p) => 
-        (p.slug && p.slug.toLowerCase() === decodedSlug) || 
-        p.id === decodedSlug || 
-        p.id === rawSlug
-      );
-
-      if (!matchedProduct) {
-        matchedProduct = INITIAL_PRODUCTS.find((p) => {
-          const normSlug = cleanSlug(p.slug);
-          const normName = cleanSlug(p.name);
-          return normSlug === normalizedTarget ||
-                 (normSlug && (normalizedTarget.includes(normSlug) || normSlug.includes(normalizedTarget))) ||
-                 (normName && (normalizedTarget.includes(normName) || normName.includes(normalizedTarget)));
-        });
-      }
-    }
-
-    // 4. Broadest keyword match fallback (e.g. searching key parts like 4070, 13400f, etc.)
-    if (!matchedProduct) {
-      const keywords = decodedSlug.split('-').filter(k => k.length >= 3);
-      if (keywords.length > 0) {
-        matchedProduct = INITIAL_PRODUCTS.find((p) => {
-          const pText = (p.name + ' ' + (p.slug || '')).toLowerCase();
-          return keywords.filter(kw => pText.includes(kw)).length >= 2;
-        });
-      }
     }
 
     if (matchedProduct) {

@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { supabase } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
@@ -8,46 +7,18 @@ export async function GET(request: Request) {
   try {
     let serials: any[] = [];
 
-    // 1. Primary: Supabase
+    // 1. Direct Supabase Cloud Database Query
     try {
       const { data, error } = await supabase
         .from('ProductSerial')
         .select('*, product:Product(id, name, category, brand, coverImage, price, warrantyMonths), order:Order(id, orderCode, customerName, customerPhone)')
         .order('createdAt', { ascending: false });
 
-      if (!error && data) {
+      if (!error && data && Array.isArray(data)) {
         serials = data;
       }
-    } catch (e) {}
-
-    // 2. Fallback to Prisma
-    if (serials.length === 0) {
-      try {
-        serials = await prisma.productSerial.findMany({
-          orderBy: { createdAt: 'desc' },
-          include: {
-            product: {
-              select: {
-                id: true,
-                name: true,
-                category: true,
-                brand: true,
-                coverImage: true,
-                price: true,
-                warrantyMonths: true,
-              }
-            },
-            order: {
-              select: {
-                id: true,
-                orderCode: true,
-                customerName: true,
-                customerPhone: true,
-              }
-            }
-          }
-        });
-      } catch (e) {}
+    } catch (e) {
+      console.warn('Supabase serials fetch warning:', e);
     }
 
     return NextResponse.json({ serials, keys: serials }, { status: 200 });
@@ -76,7 +47,6 @@ export async function POST(request: Request) {
 
     const createdSerials = [];
     for (const sn of snList) {
-      // 1. Upsert to Supabase
       try {
         const { data: supaItem } = await supabase
           .from('ProductSerial')
@@ -91,34 +61,11 @@ export async function POST(request: Request) {
 
         if (supaItem) createdSerials.push(supaItem);
       } catch (e) {}
-
-      // 2. Sync to Prisma
-      try {
-        const item = await prisma.productSerial.upsert({
-          where: { serialNumber: sn },
-          update: {
-            productId,
-            status: status || 'AVAILABLE',
-          },
-          create: {
-            productId,
-            serialNumber: sn,
-            status: status || 'AVAILABLE',
-          }
-        });
-        if (createdSerials.length === 0) createdSerials.push(item);
-      } catch (e) {}
     }
 
     // Increment product stock
     try {
       await supabase.rpc('increment_stock', { p_id: productId, count: createdSerials.length || snList.length });
-    } catch (e) {}
-    try {
-      await prisma.product.update({
-        where: { id: productId },
-        data: { stockQuantity: { increment: createdSerials.length || snList.length } }
-      });
     } catch (e) {}
 
     return NextResponse.json({ 
@@ -160,18 +107,6 @@ export async function PATCH(request: Request) {
       if (data) updated = data;
     } catch (e) {}
 
-    try {
-      const pUpdated = await prisma.productSerial.update({
-        where: { id },
-        data: {
-          status,
-          ...(warrantyEnd ? { warrantyEnd: new Date(warrantyEnd) } : {}),
-          ...(soldDate ? { soldDate: new Date(soldDate) } : {}),
-        }
-      });
-      if (!updated) updated = pUpdated;
-    } catch (e) {}
-
     return NextResponse.json({ success: true, serial: updated }, { status: 200 });
   } catch (error: any) {
     return NextResponse.json({ message: error.message }, { status: 500 });
@@ -187,17 +122,12 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ message: 'Thiếu ID serial' }, { status: 400 });
     }
 
-    try {
-      await supabase.from('ProductSerial').delete().eq('id', id);
-    } catch (e) {}
+    const { error } = await supabase.from('ProductSerial').delete().eq('id', id);
+    if (error) {
+      return NextResponse.json({ message: 'Lỗi xóa serial: ' + error.message }, { status: 500 });
+    }
 
-    try {
-      await prisma.productSerial.delete({
-        where: { id }
-      });
-    } catch (e) {}
-
-    return NextResponse.json({ success: true, message: 'Đã xóa Serial' }, { status: 200 });
+    return NextResponse.json({ success: true, message: 'Đã xóa Serial thành công!' }, { status: 200 });
   } catch (error: any) {
     return NextResponse.json({ message: error.message }, { status: 500 });
   }

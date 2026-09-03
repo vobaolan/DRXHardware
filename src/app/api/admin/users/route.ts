@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { supabase } from '@/lib/supabase';
 import bcrypt from 'bcryptjs';
 
@@ -56,6 +55,7 @@ export async function GET() {
       const cleanEmail = u.email.trim().toLowerCase();
       const isGoogleUser = Boolean(
         (u.image && String(u.image).includes('googleusercontent')) ||
+        (u.id && (String(u.id).startsWith('user-google-') || String(u.id).startsWith('google-'))) ||
         (!u.password && u.image)
       );
 
@@ -75,34 +75,6 @@ export async function GET() {
         orders: [],
       });
     }
-
-    // Enrich from Prisma if available
-    try {
-      const prismaUsers = await prisma.user.findMany({
-        orderBy: { createdAt: 'desc' },
-      });
-      for (const pu of prismaUsers) {
-        if (!pu.email) continue;
-        const cleanEmail = pu.email.trim().toLowerCase();
-        if (!userMap.has(cleanEmail)) {
-          userMap.set(cleanEmail, {
-            id: pu.id,
-            name: pu.name || cleanEmail.split('@')[0],
-            email: cleanEmail,
-            role: pu.role || 'USER',
-            image: pu.image || null,
-            provider: 'CREDENTIALS',
-            balance: Number(pu.balance || 0),
-            phone: pu.phone || '',
-            address: pu.address || '',
-            createdAt: pu.createdAt ? new Date(pu.createdAt).toISOString() : new Date().toISOString(),
-            _count: { orders: 0, transactions: 0 },
-            totalSpent: 0,
-            orders: [],
-          });
-        }
-      }
-    } catch (e) {}
 
     // 4. Link Orders & Statistics to Users (matching by userId, email, phone, or name)
     for (const [cleanEmail, userObj] of userMap.entries()) {
@@ -193,68 +165,35 @@ export async function POST(request: Request) {
     const validRole = role === 'ADMIN' ? 'ADMIN' : role === 'STAFF' ? 'STAFF' : 'USER';
     const userName = name || cleanEmail.split('@')[0];
 
-    let createdUser: any = null;
+    const { data: existingSupa } = await supabase
+      .from('User')
+      .select('id')
+      .eq('email', cleanEmail)
+      .maybeSingle();
 
-    // 1. Try Prisma
-    try {
-      const existing = await prisma.user.findUnique({ where: { email: cleanEmail } });
-      if (existing) {
-        return NextResponse.json({ message: 'Email này đã tồn tại trong hệ thống!' }, { status: 400 });
-      }
-
-      createdUser = await prisma.user.create({
-        data: {
-          email: cleanEmail,
-          name: userName,
-          password: hashedPassword,
-          role: validRole as any,
-          phone: phone || null,
-          address: address || null,
-          balance: 0,
-        }
-      });
-    } catch (prismaErr) {
-      console.warn('Prisma create user warning, falling back to Supabase:', prismaErr);
+    if (existingSupa) {
+      return NextResponse.json({ message: 'Email này đã tồn tại trong hệ thống!' }, { status: 400 });
     }
 
-    // 2. Fallback to Supabase
-    if (!createdUser) {
-      try {
-        const { data: existingSupa } = await supabase
-          .from('User')
-          .select('id')
-          .eq('email', cleanEmail)
-          .maybeSingle();
+    const { data: createdUser, error: insertErr } = await supabase
+      .from('User')
+      .insert([{
+        id: 'user-' + Date.now(),
+        email: cleanEmail,
+        name: userName,
+        password: hashedPassword,
+        role: validRole,
+        phone: phone || null,
+        address: address || null,
+        balance: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }])
+      .select('*')
+      .single();
 
-        if (existingSupa) {
-          return NextResponse.json({ message: 'Email này đã tồn tại trong hệ thống!' }, { status: 400 });
-        }
-
-        const { data: supaNew, error: insertErr } = await supabase
-          .from('User')
-          .insert([{
-            id: 'user-' + Date.now(),
-            email: cleanEmail,
-            name: userName,
-            password: hashedPassword,
-            role: validRole,
-            phone: phone || null,
-            address: address || null,
-            balance: 0,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          }])
-          .select('*')
-          .single();
-
-        if (insertErr) {
-          throw insertErr;
-        }
-        createdUser = supaNew;
-      } catch (supaErr: any) {
-        console.error('Supabase create user error:', supaErr);
-        throw supaErr;
-      }
+    if (insertErr || !createdUser) {
+      throw insertErr || new Error('Lỗi thêm người dùng');
     }
 
     return NextResponse.json({
@@ -298,44 +237,15 @@ export async function PATCH(request: Request) {
     }
     updateData.updatedAt = new Date().toISOString();
 
-    let updatedUser: any = null;
-
-    // 1. Update in Supabase User table (Primary Cloud DB)
-    try {
-      const query = supabase.from('User');
-      let supaBuilder;
-      if (userId) {
-        supaBuilder = query.update(updateData).eq('id', userId);
-      } else {
-        supaBuilder = query.update(updateData).eq('email', email);
-      }
-
-      const { data: supaUpdated, error: supaErr } = await supaBuilder.select('*').maybeSingle();
-      if (!supaErr && supaUpdated) {
-        updatedUser = supaUpdated;
-      }
-    } catch (supaErr: any) {
-      console.warn('Supabase update execution error:', supaErr);
+    const query = supabase.from('User');
+    let supaBuilder;
+    if (userId) {
+      supaBuilder = query.update(updateData).eq('id', userId);
+    } else {
+      supaBuilder = query.update(updateData).eq('email', email);
     }
 
-    // 2. Also update in Prisma PostgreSQL if available
-    try {
-      if (userId) {
-        const pUpdated = await prisma.user.update({
-          where: { id: userId },
-          data: updateData,
-        });
-        if (!updatedUser) updatedUser = pUpdated;
-      } else if (email) {
-        const pUpdated = await prisma.user.update({
-          where: { email },
-          data: updateData,
-        });
-        if (!updatedUser) updatedUser = pUpdated;
-      }
-    } catch (prismaErr) {
-      console.warn('Prisma user update error notice:', prismaErr);
-    }
+    const { data: updatedUser, error: supaErr } = await supaBuilder.select('*').maybeSingle();
 
     return NextResponse.json({
       success: true,
@@ -371,43 +281,23 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ message: 'Không thể xóa tài khoản Quản trị viên Master (admin@drx.vn)!' }, { status: 403 });
     }
 
-    let deleted = false;
+    const { data: targetSupa } = await supabase
+      .from('User')
+      .select('email')
+      .eq('id', userId)
+      .maybeSingle();
 
-    // 1. Delete from Supabase User table
-    try {
-      const { data: targetSupa } = await supabase
-        .from('User')
-        .select('email')
-        .eq('id', userId)
-        .maybeSingle();
-
-      if (targetSupa && targetSupa.email === 'admin@drx.vn') {
-        return NextResponse.json({ message: 'Không thể xóa tài khoản Quản trị viên Master (admin@drx.vn)!' }, { status: 403 });
-      }
-
-      const { error: supaDelErr } = await supabase
-        .from('User')
-        .delete()
-        .eq('id', userId);
-
-      if (!supaDelErr) deleted = true;
-    } catch (supaErr: any) {
-      console.warn('Supabase delete user error:', supaErr);
+    if (targetSupa && targetSupa.email === 'admin@drx.vn') {
+      return NextResponse.json({ message: 'Không thể xóa tài khoản Quản trị viên Master (admin@drx.vn)!' }, { status: 403 });
     }
 
-    // 2. Also delete from Prisma
-    try {
-      const targetUser = await prisma.user.findUnique({ where: { id: userId } });
-      if (targetUser && targetUser.email === 'admin@drx.vn') {
-        return NextResponse.json({ message: 'Không thể xóa tài khoản Quản trị viên Master (admin@drx.vn)!' }, { status: 403 });
-      }
+    const { error: supaDelErr } = await supabase
+      .from('User')
+      .delete()
+      .eq('id', userId);
 
-      await prisma.user.delete({
-        where: { id: userId },
-      });
-      deleted = true;
-    } catch (prismaErr) {
-      console.warn('Prisma delete user notice:', prismaErr);
+    if (supaDelErr) {
+      return NextResponse.json({ message: 'Lỗi xóa người dùng: ' + supaDelErr.message }, { status: 500 });
     }
 
     return NextResponse.json({

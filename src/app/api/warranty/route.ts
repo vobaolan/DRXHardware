@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { supabase } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
@@ -28,30 +27,6 @@ export async function GET(request: Request) {
       }
     } catch (e) {}
 
-    // Fallback to Prisma for serial
-    if (!serialMatch) {
-      try {
-        serialMatch = await prisma.productSerial.findFirst({
-          where: {
-            serialNumber: {
-              contains: q,
-              mode: 'insensitive',
-            }
-          },
-          include: {
-            product: true,
-            order: {
-              include: {
-                user: {
-                  select: { id: true, name: true, email: true, phone: true }
-                }
-              }
-            }
-          }
-        });
-      } catch (e) {}
-    }
-
     if (serialMatch) {
       const product = serialMatch.product;
       const order = serialMatch.order;
@@ -79,8 +54,8 @@ export async function GET(request: Request) {
           status: isValid ? 'ACTIVE' : 'EXPIRED',
           totalMonths,
           elapsedMonths,
-          customerName: order?.customerName || order?.user?.name || 'Khách Hàng DRX VIP',
-          customerPhone: order?.customerPhone || order?.user?.phone || 'Đã kích hoạt',
+          customerName: order?.customerName || 'Khách Hàng DRX VIP',
+          customerPhone: order?.customerPhone || 'Đã kích hoạt',
           orderCode: order?.orderCode || 'DRX-RETAIL',
           repairLogs: [
             {
@@ -93,65 +68,55 @@ export async function GET(request: Request) {
       }, { status: 200 });
     }
 
-    // 2. Search by orderCode or customerPhone in Order
-    const orderMatch = await prisma.order.findFirst({
-      where: {
-        OR: [
-          { orderCode: { contains: q, mode: 'insensitive' } },
-          { customerPhone: { contains: q } },
-        ]
-      },
-      include: {
-        orderItems: {
-          include: { product: true }
-        },
-        serials: {
-          include: { product: true }
-        }
-      },
-      orderBy: { createdAt: 'desc' }
-    });
+    // 2. Search by orderCode or customerPhone in Supabase Order table
+    try {
+      const { data: orderMatches } = await supabase
+        .from('Order')
+        .select('*')
+        .or(`orderCode.ilike.%${q}%,customerPhone.ilike.%${q}%`)
+        .order('createdAt', { ascending: false })
+        .limit(1);
 
-    if (orderMatch && orderMatch.orderItems && orderMatch.orderItems.length > 0) {
-      const firstItem = orderMatch.orderItems[0];
-      const product = firstItem.product;
-      const totalMonths = product?.warrantyMonths || 36;
-      const soldDate = orderMatch.createdAt;
-      const warrantyEndDate = new Date(new Date(soldDate).setMonth(new Date(soldDate).getMonth() + totalMonths));
-      const now = new Date();
-      const isValid = now <= warrantyEndDate;
-      const elapsedMonths = Math.max(0, Math.round((now.getTime() - new Date(soldDate).getTime()) / (1000 * 60 * 60 * 24 * 30)));
+      if (orderMatches && orderMatches.length > 0) {
+        const orderMatch = orderMatches[0];
+        const soldDate = orderMatch.createdAt;
+        const totalMonths = 36;
+        const warrantyEndDate = new Date(new Date(soldDate).setMonth(new Date(soldDate).getMonth() + totalMonths));
+        const now = new Date();
+        const isValid = now <= warrantyEndDate;
+        const elapsedMonths = Math.max(0, Math.round((now.getTime() - new Date(soldDate).getTime()) / (1000 * 60 * 60 * 24 * 30)));
 
-      const sn = orderMatch.serials?.[0]?.serialNumber 
-        || firstItem.serialsList?.[0] 
-        || `SN-DRX-${orderMatch.orderCode || orderMatch.id.slice(0, 8)}`;
+        const items = orderMatch.paymentDetails?.items || [];
+        const firstItem = items[0] || {};
+        const sn = `SN-DRX-${orderMatch.orderCode || orderMatch.id.slice(0, 8)}`;
 
-      return NextResponse.json({
-        found: true,
-        warranty: {
-          serialNumber: sn,
-          productName: product?.name || 'Bộ Máy Tính PC DRX Custom',
-          category: product?.category || 'PC',
-          brand: product?.brand || 'DRX',
-          coverImage: product?.coverImage || '',
-          purchaseDate: new Date(soldDate).toLocaleDateString('vi-VN'),
-          warrantyEnd: warrantyEndDate.toLocaleDateString('vi-VN'),
-          status: isValid ? 'ACTIVE' : 'EXPIRED',
-          totalMonths,
-          elapsedMonths,
-          customerName: orderMatch.customerName,
-          customerPhone: orderMatch.customerPhone,
-          orderCode: orderMatch.orderCode,
-          repairLogs: [
-            {
-              date: new Date(soldDate).toLocaleDateString('vi-VN'),
-              center: 'DRX Assembly & Service Center',
-              note: `Đã hoàn tất nghiệm thu và kích hoạt bảo hành điện tử chính hãng.`
-            }
-          ]
-        }
-      }, { status: 200 });
-    }
+        return NextResponse.json({
+          found: true,
+          warranty: {
+            serialNumber: sn,
+            productName: firstItem.name || 'Bộ Máy Tính PC DRX Custom',
+            category: 'PC',
+            brand: 'DRX',
+            coverImage: firstItem.coverImage || '',
+            purchaseDate: new Date(soldDate).toLocaleDateString('vi-VN'),
+            warrantyEnd: warrantyEndDate.toLocaleDateString('vi-VN'),
+            status: isValid ? 'ACTIVE' : 'EXPIRED',
+            totalMonths,
+            elapsedMonths,
+            customerName: orderMatch.customerName,
+            customerPhone: orderMatch.customerPhone,
+            orderCode: orderMatch.orderCode,
+            repairLogs: [
+              {
+                date: new Date(soldDate).toLocaleDateString('vi-VN'),
+                center: 'DRX Assembly & Service Center',
+                note: `Đã hoàn tất nghiệm thu và kích hoạt bảo hành điện tử chính hãng.`
+              }
+            ]
+          }
+        }, { status: 200 });
+      }
+    } catch (e) {}
 
     return NextResponse.json({
       found: false,

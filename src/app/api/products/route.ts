@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { supabase } from '@/lib/supabase';
-import { INITIAL_PRODUCTS } from '@/lib/hardware-data';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,54 +22,21 @@ export async function GET(request: Request) {
         .from('Product')
         .select('*')
         .order('createdAt', { ascending: false });
-      if (!error && data && data.length > 0) {
+      if (!error && data && Array.isArray(data)) {
         dbProducts = data;
       }
     } catch (e) {
       console.warn('Supabase product fetch warning:', e);
     }
 
-    // 2. Fallback to Prisma if Supabase had no records
-    if (!dbProducts || dbProducts.length === 0) {
-      try {
-        dbProducts = await prisma.product.findMany({
-          orderBy: { createdAt: 'desc' },
-        });
-      } catch (e) {}
-    }
-
-    // Real Database products (all created/edited by Admin & Staff in PostgreSQL)
-    const validDbProducts = Array.isArray(dbProducts) ? [...dbProducts] : [];
-
-    // Sort validDbProducts strictly newest first (by updatedAt or createdAt)
-    validDbProducts.sort((a, b) => {
+    // Sort strictly newest first (by updatedAt or createdAt)
+    dbProducts.sort((a, b) => {
       const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime();
       const timeB = new Date(b.updatedAt || b.createdAt || 0).getTime();
       return timeB - timeA;
     });
 
-    const dbProductIds = new Set(validDbProducts.map((p: any) => p.id));
-    const dbProductSlugs = new Set(validDbProducts.map((p: any) => p.slug));
-    const dbProductNames = new Set(validDbProducts.map((p: any) => (p.name || '').toLowerCase().trim()));
-
-    // Filter out initial seed items that have been customized or created in DB
-    const remainingInitial = INITIAL_PRODUCTS.filter((ip: any) => 
-      !dbProductIds.has(ip.id) &&
-      !dbProductSlugs.has(ip.slug) &&
-      !dbProductNames.has((ip.name || '').toLowerCase().trim())
-    ).map(p => ({
-      ...p,
-      discountPrice: p.discountPrice || null,
-      platform: p.brand,
-      type: p.category,
-      status: (p.stockQuantity ?? 1) > 0,
-      screenshots: p.screenshots || [p.coverImage]
-    }));
-
-    // Database products ALWAYS come first at the very top of the list!
-    const combined = [...validDbProducts, ...remainingInitial];
-
-    let formattedProducts = combined.map((p: any) => {
+    let formattedProducts = dbProducts.map((p: any) => {
       const price = typeof p.price === 'string' ? parseFloat(p.price) : Number(p.price);
       const discountPrice = p.discountPrice
         ? (typeof p.discountPrice === 'string' ? parseFloat(p.discountPrice) : Number(p.discountPrice))
@@ -137,6 +102,6 @@ export async function GET(request: Request) {
     return NextResponse.json({ products: formattedProducts }, { status: 200, headers });
   } catch (error: any) {
     console.error('Lỗi khi lấy danh sách linh kiện sản phẩm:', error);
-    return NextResponse.json({ products: INITIAL_PRODUCTS }, { status: 200, headers });
+    return NextResponse.json({ products: [] }, { status: 200, headers });
   }
 }

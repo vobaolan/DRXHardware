@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { supabase } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
@@ -15,7 +14,7 @@ export async function GET(request: Request) {
 
     let transactions: any[] = [];
 
-    // 1. Primary: Supabase Cloud Database (Fast Direct REST)
+    // Direct fetch from Supabase Cloud Database (Fast Direct REST)
     try {
       const { data, error } = await supabase
         .from('Transaction')
@@ -23,19 +22,11 @@ export async function GET(request: Request) {
         .eq('userId', userId)
         .order('createdAt', { ascending: false });
 
-      if (!error && data) {
+      if (!error && data && Array.isArray(data)) {
         transactions = data;
       }
-    } catch (e) {}
-
-    // 2. Fallback to Prisma
-    if (transactions.length === 0) {
-      try {
-        transactions = await prisma.transaction.findMany({
-          where: { userId },
-          orderBy: { createdAt: 'desc' },
-        });
-      } catch (e) {}
+    } catch (e) {
+      console.warn('Supabase transactions warning:', e);
     }
 
     return NextResponse.json({ transactions }, { status: 200 });

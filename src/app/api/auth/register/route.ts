@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { supabase } from '@/lib/supabase';
 import bcrypt from 'bcryptjs';
 import { signJWT, setAuthCookie } from '@/lib/jwt';
@@ -36,11 +35,10 @@ export async function POST(request: Request) {
     }
 
     const cleanEmail = email.trim().toLowerCase();
-    // Public registrations are ALWAYS strictly assigned USER role to prevent privilege escalation
     const assignedRole = cleanEmail === 'admin@drx.vn' ? 'ADMIN' : cleanEmail === 'staff@drx.vn' ? 'STAFF' : 'USER';
     const userName = (name && String(name).trim()) || cleanEmail.split('@')[0];
 
-    // 1. Check if user already exists in Supabase or Prisma
+    // 1. Check if user already exists in Supabase
     let existingUser: any = null;
 
     try {
@@ -54,15 +52,6 @@ export async function POST(request: Request) {
         existingUser = supaExisting;
       }
     } catch (e) {}
-
-    if (!existingUser) {
-      try {
-        const pExisting = await prisma.user.findUnique({
-          where: { email: cleanEmail },
-        });
-        if (pExisting) existingUser = pExisting;
-      } catch (e) {}
-    }
 
     if (existingUser) {
       return NextResponse.json(
@@ -102,26 +91,7 @@ export async function POST(request: Request) {
       console.warn('Supabase registration error:', supaErr);
     }
 
-    // 4. Also insert into Prisma PostgreSQL if connected
-    try {
-      const prismaUser = await prisma.user.create({
-        data: {
-          id: savedUser?.id || newUserId,
-          name: userName,
-          email: cleanEmail,
-          password: hashedPassword,
-          balance: 0.0,
-          role: assignedRole as any,
-        },
-      });
-      if (!savedUser) {
-        savedUser = prismaUser;
-      }
-    } catch (prismaErr: any) {
-      console.warn('Prisma registration sync notice:', prismaErr.message);
-    }
-
-    // 5. Construct authenticated user object
+    // 4. Construct authenticated user object
     const authUser = {
       id: savedUser?.id || newUserId,
       name: savedUser?.name || userName,
@@ -147,11 +117,10 @@ export async function POST(request: Request) {
 
     setAuthCookie(response, token);
     return response;
-
   } catch (error: any) {
-    console.error('Lỗi khi đăng ký tài khoản:', error);
+    console.error('Lỗi khi đăng ký:', error);
     return NextResponse.json(
-      { message: 'Có lỗi xảy ra khi tạo tài khoản. Vui lòng thử lại!' },
+      { message: 'Có lỗi xảy ra: ' + error.message },
       { status: 500 }
     );
   }

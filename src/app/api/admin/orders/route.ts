@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { supabase } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
@@ -8,67 +7,18 @@ export async function GET(request: Request) {
   try {
     let orders: any[] = [];
 
-    // 1. Primary: Supabase Cloud Database (Fast Direct REST)
+    // 1. Direct fetch from Supabase Cloud Database (Fast Direct REST)
     try {
       const { data: supaOrders, error: supaErr } = await supabase
         .from('Order')
         .select('*')
         .order('createdAt', { ascending: false });
 
-      if (!supaErr && supaOrders && supaOrders.length > 0) {
+      if (!supaErr && supaOrders && Array.isArray(supaOrders)) {
         orders = supaOrders;
       }
     } catch (e) {
       console.warn('Supabase get all orders warning:', e);
-    }
-
-    // 2. Enrich/Merge with Prisma if available
-    try {
-      const prismaOrders = await prisma.order.findMany({
-        orderBy: { createdAt: 'desc' },
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              phone: true,
-            }
-          },
-          orderItems: {
-            include: {
-              product: {
-                select: {
-                  id: true,
-                  name: true,
-                  slug: true,
-                  price: true,
-                  coverImage: true,
-                  category: true,
-                  brand: true,
-                  warrantyMonths: true,
-                }
-              }
-            }
-          },
-          serials: true,
-        },
-      });
-
-      if (prismaOrders && prismaOrders.length > 0) {
-        if (orders.length === 0) {
-          orders = prismaOrders;
-        } else {
-          const existingIds = new Set(orders.map(o => o.id));
-          for (const po of prismaOrders) {
-            if (!existingIds.has(po.id)) {
-              orders.push(po);
-            }
-          }
-        }
-      }
-    } catch (e) {
-      console.warn('Prisma get all orders notice:', e);
     }
 
     return NextResponse.json({ orders }, { status: 200 });
@@ -90,54 +40,21 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ message: 'Thiếu mã đơn hàng' }, { status: 400 });
     }
 
-    const dataToUpdate: any = {};
-    if (status) dataToUpdate.status = status;
-    if (paymentStatus) dataToUpdate.paymentStatus = paymentStatus;
-    if (paymentDetails) dataToUpdate.paymentDetails = paymentDetails;
+    const updatePayload: any = {
+      ...(status ? { status } : {}),
+      ...(paymentStatus ? { paymentStatus } : {}),
+      ...(paymentDetails ? { paymentDetails } : {}),
+      updatedAt: new Date().toISOString(),
+    };
 
-    let updatedOrder: any = null;
+    const { data: updatedOrder, error: supaErr } = await supabase
+      .from('Order')
+      .update(updatePayload)
+      .eq('id', orderId)
+      .select('*')
+      .single();
 
-    // 1. Try Prisma
-    try {
-      updatedOrder = await prisma.order.update({
-        where: { id: orderId },
-        data: dataToUpdate,
-        include: {
-          orderItems: {
-            include: { product: true }
-          },
-          serials: true,
-          user: true,
-        }
-      });
-    } catch (e) {
-      console.warn('Prisma update order warning:', e);
-    }
-
-    // 2. Update Supabase
-    try {
-      const { data: supaUpdated, error: supaErr } = await supabase
-        .from('Order')
-        .update({
-          ...(status ? { status } : {}),
-          ...(paymentStatus ? { paymentStatus } : {}),
-          ...(paymentDetails ? { paymentDetails } : {}),
-          updatedAt: new Date().toISOString(),
-        })
-        .eq('id', orderId)
-        .select('*')
-        .single();
-
-      if (!supaErr && supaUpdated) {
-        if (!updatedOrder) {
-          updatedOrder = supaUpdated;
-        }
-      }
-    } catch (e) {
-      console.warn('Supabase update order warning:', e);
-    }
-
-    if (!updatedOrder) {
+    if (supaErr || !updatedOrder) {
       return NextResponse.json({ message: 'Không tìm thấy đơn hàng để cập nhật' }, { status: 404 });
     }
 
@@ -164,15 +81,15 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ message: 'Thiếu ID đơn hàng' }, { status: 400 });
     }
 
+    // Clean up order items and delete order
     try {
-      await prisma.order.delete({
-        where: { id: orderId }
-      });
+      await supabase.from('OrderItem').delete().eq('orderId', orderId);
     } catch (e) {}
 
-    try {
-      await supabase.from('Order').delete().eq('id', orderId);
-    } catch (e) {}
+    const { error } = await supabase.from('Order').delete().eq('id', orderId);
+    if (error) {
+      return NextResponse.json({ message: 'Lỗi khi xóa đơn hàng: ' + error.message }, { status: 500 });
+    }
 
     return NextResponse.json({ success: true, message: 'Đã xóa đơn hàng thành công' }, { status: 200 });
   } catch (error: any) {

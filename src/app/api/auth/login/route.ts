@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { supabase } from '@/lib/supabase';
 import bcrypt from 'bcryptjs';
 import { signJWT, setAuthCookie } from '@/lib/jwt';
 import { checkRateLimit, resetRateLimit, getClientIp } from '@/lib/rate-limiter';
@@ -36,9 +36,9 @@ export async function POST(request: Request) {
     ) {
       let adminBalance = 0;
       try {
-        const dbAdmin = await prisma.user.findUnique({ where: { email: cleanEmail } });
-        if (dbAdmin && dbAdmin.balance !== undefined && dbAdmin.balance !== null) {
-          adminBalance = Number(dbAdmin.balance);
+        const { data } = await supabase.from('User').select('balance').eq('email', cleanEmail).maybeSingle();
+        if (data && data.balance !== undefined && data.balance !== null) {
+          adminBalance = Number(data.balance);
         }
       } catch (e) {}
 
@@ -77,8 +77,8 @@ export async function POST(request: Request) {
     ) {
       let staffId = 'staff-id-drx';
       try {
-        const dbStaff = await prisma.user.findUnique({ where: { email: cleanEmail } });
-        if (dbStaff) staffId = dbStaff.id;
+        const { data } = await supabase.from('User').select('id').eq('email', cleanEmail).maybeSingle();
+        if (data) staffId = data.id;
       } catch (e) {}
 
       const staffUser = {
@@ -109,10 +109,9 @@ export async function POST(request: Request) {
       return response;
     }
 
-    // 1. Primary check in Supabase Cloud Database (Fast Direct REST)
+    // Direct check in Supabase Cloud Database (Fast Direct REST)
     let user: any = null;
     try {
-      const { supabase } = await import('@/lib/supabase');
       const { data: supabaseUsers } = await supabase
         .from('User')
         .select('*')
@@ -123,17 +122,6 @@ export async function POST(request: Request) {
       }
     } catch (e) {}
 
-    // 2. Fallback check in Prisma if needed
-    if (!user) {
-      try {
-        user = await prisma.user.findUnique({
-          where: { email: cleanEmail },
-        });
-      } catch (e) {
-        console.warn('Prisma login fetch notice:', e);
-      }
-    }
-
     if (!user) {
       return NextResponse.json(
         { message: 'Tài khoản hoặc mật khẩu không chính xác!' },
@@ -141,61 +129,54 @@ export async function POST(request: Request) {
       );
     }
 
-    if (user) {
-      if (!user.password) {
-        return NextResponse.json(
-          { message: 'Tài khoản này được đăng ký bằng phương thức khác!' },
-          { status: 400 }
-        );
-      }
+    if (!user.password) {
+      return NextResponse.json(
+        { message: 'Tài khoản này được đăng ký bằng Google OAuth. Vui lòng chọn "Đăng nhập bằng Google"!' },
+        { status: 400 }
+      );
+    }
 
-      let isPasswordValid = false;
-      try {
-        isPasswordValid = bcrypt.compareSync(password, user.password);
-      } catch (e) {}
+    let isPasswordValid = false;
+    try {
+      isPasswordValid = bcrypt.compareSync(password, user.password);
+    } catch (e) {}
 
-      if (!isPasswordValid && user.password === password) {
-        isPasswordValid = true;
-      }
+    if (!isPasswordValid && user.password === password) {
+      isPasswordValid = true;
+    }
 
-      if (isPasswordValid) {
-        const authUser = {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          balance: Number(user.balance || 0),
-          role: user.role,
-        };
+    if (isPasswordValid) {
+      const authUser = {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        balance: Number(user.balance || 0),
+        role: user.role,
+      };
 
-        const token = signJWT({
-          sub: authUser.id,
-          email: authUser.email,
-          name: authUser.name,
-          role: authUser.role,
-        });
+      const token = signJWT({
+        sub: authUser.id,
+        email: authUser.email,
+        name: authUser.name,
+        role: authUser.role,
+      });
 
-        resetRateLimit(`login_${clientIp}`);
+      resetRateLimit(`login_${clientIp}`);
 
-        const response = NextResponse.json(
-          {
-            message: 'Đăng nhập thành công!',
-            user: authUser,
-          },
-          { status: 200 }
-        );
+      const response = NextResponse.json(
+        {
+          message: 'Đăng nhập thành công!',
+          user: authUser,
+        },
+        { status: 200 }
+      );
 
-        setAuthCookie(response, token);
-        return response;
-      } else {
-        return NextResponse.json(
-          { message: 'Mật khẩu không chính xác!' },
-          { status: 401 }
-        );
-      }
+      setAuthCookie(response, token);
+      return response;
     } else {
       return NextResponse.json(
-        { message: 'Tài khoản không tồn tại!' },
-        { status: 404 }
+        { message: 'Mật khẩu không chính xác!' },
+        { status: 401 }
       );
     }
   } catch (error: any) {
