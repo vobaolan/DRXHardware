@@ -40,9 +40,20 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ message: 'Thiếu mã đơn hàng' }, { status: 400 });
     }
 
+    // Validate & sanitize paymentStatus for PostgreSQL enum (PENDING | PAID | FAILED | REFUNDED)
+    let sanitizedPaymentStatus = paymentStatus;
+    if (sanitizedPaymentStatus) {
+      const upperPay = String(sanitizedPaymentStatus).toUpperCase();
+      if (upperPay === 'CANCELLED') {
+        sanitizedPaymentStatus = 'FAILED';
+      } else if (!['PENDING', 'PAID', 'FAILED', 'REFUNDED'].includes(upperPay)) {
+        sanitizedPaymentStatus = undefined;
+      }
+    }
+
     const updatePayload: any = {
       ...(status ? { status } : {}),
-      ...(paymentStatus ? { paymentStatus } : {}),
+      ...(sanitizedPaymentStatus ? { paymentStatus: sanitizedPaymentStatus } : {}),
       ...(paymentDetails ? { paymentDetails } : {}),
       updatedAt: new Date().toISOString(),
     };
@@ -62,12 +73,12 @@ export async function PATCH(request: Request) {
       const strippedCode = cleanCode.replace(/-/g, '');
       const digitsOnly = cleanCode.replace(/\D/g, '');
 
-      const { data: altMatch } = await supabase
-        .from('Order')
-        .select('id')
-        .or(`orderCode.eq.${cleanCode},orderCode.eq.${strippedCode},orderCode.ilike.%${digitsOnly}%,id.ilike.%${cleanCode}%`)
-        .limit(1)
-        .maybeSingle();
+      let query = supabase.from('Order').select('id');
+      if (cleanCode) {
+        query = query.or(`orderCode.eq.${cleanCode},orderCode.eq.${strippedCode}${digitsOnly ? `,orderCode.ilike.%${digitsOnly}%` : ''},id.ilike.%${cleanCode}%`);
+      }
+
+      const { data: altMatch } = await query.limit(1).maybeSingle();
 
       if (altMatch) {
         targetOrderId = altMatch.id;
@@ -83,7 +94,12 @@ export async function PATCH(request: Request) {
       .select('*')
       .single();
 
-    if (supaErr || !updatedOrder) {
+    if (supaErr) {
+      console.error('Lỗi Supabase khi cập nhật đơn hàng:', supaErr);
+      return NextResponse.json({ message: 'Lỗi cập nhật đơn hàng: ' + (supaErr.message || 'Lỗi dữ liệu') }, { status: 500 });
+    }
+
+    if (!updatedOrder) {
       return NextResponse.json({ message: 'Không tìm thấy đơn hàng để cập nhật' }, { status: 404 });
     }
 

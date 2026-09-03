@@ -211,6 +211,15 @@ export const formatOrderDisplayCode = (ord: any): string => {
   return `#DRX-${(nums || '84920').padStart(5, '0').slice(-5)}`;
 };
 
+const ADMIN_ORDER_STATUS_OPTIONS: SelectOption[] = [
+  { value: 'ALL', label: 'Tất Cả Trạng Thái' },
+  { value: 'PENDING', label: 'Chờ Duyệt (PENDING)', badge: 'Chờ Gọi' },
+  { value: 'CONFIRMED', label: 'Đã Xác Nhận (CONFIRMED)', badge: 'Ráp PC' },
+  { value: 'SHIPPING', label: 'Đang Vận Chuyển (SHIPPING)', badge: 'Giao Hàng' },
+  { value: 'COMPLETED', label: 'Đã Hoàn Tất (COMPLETED)', badge: 'Đã Thu' },
+  { value: 'CANCELLED', label: 'Đã Hủy (CANCELLED)', badge: 'Đã Hủy' },
+];
+
 export default function AdminDashboardPage() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
@@ -1430,19 +1439,15 @@ export default function AdminDashboardPage() {
                   />
                 </div>
 
-                <div className="flex items-center gap-2 flex-wrap">
-                  <select
+                <div className="flex items-center gap-2">
+                  <ModernSelect
+                    options={ADMIN_ORDER_STATUS_OPTIONS}
                     value={orderStatusFilter}
-                    onChange={(e) => setOrderStatusFilter(e.target.value)}
-                    className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus:border-[#0284c7]"
-                  >
-                    <option value="ALL">Tất Cả Trạng Thái</option>
-                    <option value="PENDING">Chờ Duyệt (PENDING)</option>
-                    <option value="CONFIRMED">Đã Xác Nhận (CONFIRMED)</option>
-                    <option value="SHIPPING">Đang Vận Chuyển (SHIPPING)</option>
-                    <option value="COMPLETED">Đã Hoàn Tất (COMPLETED)</option>
-                    <option value="CANCELLED">Đã Hủy (CANCELLED)</option>
-                  </select>
+                    onChange={(val) => setOrderStatusFilter(String(val))}
+                    placeholder="Lọc trạng thái..."
+                    className="w-56 sm:w-64"
+                    align="right"
+                  />
                 </div>
               </div>
 

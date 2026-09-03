@@ -54,6 +54,14 @@ const SERIAL_STATUS_OPTIONS: SelectOption[] = [
   { value: 'WARRANTY', label: 'Đang Bảo Hành (WARRANTY)', badge: 'BẢO HÀNH' },
 ];
 
+const STAFF_ASSEMBLY_OPTIONS: SelectOption[] = [
+  { value: 'ALL', label: 'Tất Cả Tiến Độ' },
+  { value: 'PENDING', label: 'Chờ Kỹ Thuật Tiếp Nhận', badge: 'Chờ Tiếp Nhận' },
+  { value: 'CONFIRMED', label: 'Đã Duyệt Lắp Ráp', badge: 'Đang Ráp' },
+  { value: 'SHIPPING', label: 'Đang Vận Chuyển', badge: 'Vận Chuyển' },
+  { value: 'COMPLETED', label: 'Đã Hoàn Tất Nghiệm Thu', badge: 'Nghiệm Thu' },
+];
+
 const formatVND = (num: number | string | null | undefined) => {
   const n = Number(num) || 0;
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
@@ -1003,18 +1011,15 @@ export default function StaffWarehousePortalPage() {
                   />
                 </div>
 
-                <div className="flex items-center gap-2 flex-wrap">
-                  <select
+                <div className="flex items-center gap-2">
+                  <ModernSelect
+                    options={STAFF_ASSEMBLY_OPTIONS}
                     value={assemblyStatusFilter}
-                    onChange={(e) => setAssemblyStatusFilter(e.target.value)}
-                    className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus:border-[#0284c7]"
-                  >
-                    <option value="ALL">Tất Cả Tiến Độ</option>
-                    <option value="PENDING">Chờ Kỹ Thuật Tiếp Nhận</option>
-                    <option value="CONFIRMED">Đã Duyệt Lắp Ráp</option>
-                    <option value="SHIPPING">Đang Vận Chuyển</option>
-                    <option value="COMPLETED">Đã Hoàn Tất Nghiệm Thu</option>
-                  </select>
+                    onChange={(val) => setAssemblyStatusFilter(String(val))}
+                    placeholder="Lọc tiến độ..."
+                    className="w-56 sm:w-64"
+                    align="right"
+                  />
                 </div>
               </div>
 

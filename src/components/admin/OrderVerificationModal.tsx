@@ -171,13 +171,15 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
         cancelledBy: 'STAFF_OR_ADMIN',
       };
 
+      const targetPaymentStatus = order.paymentStatus === 'PAID' ? 'REFUNDED' : 'FAILED';
+
       const res = await fetch('/api/admin/orders', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           orderId: order.id || order.orderCode || orderDisplayCode,
           status: 'CANCELLED',
-          paymentStatus: 'CANCELLED',
+          paymentStatus: targetPaymentStatus,
           paymentDetails: mergedDetails,
         }),
       });
@@ -186,7 +188,7 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
       if (res.ok && data.order) {
         showToast(`Đã hủy đơn hàng #${orderDisplayCode} thành công!`, 'success');
         setCurrentStatus('CANCELLED');
-        setCurrentPaymentStatus('CANCELLED');
+        setCurrentPaymentStatus(targetPaymentStatus);
         setIsCancelModalOpen(false);
         onOrderUpdated(data.order);
       } else {
@@ -234,9 +236,11 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
 
   const formattedDate = (() => {
     try {
-      return order.createdAt ? new Date(order.createdAt).toLocaleString('vi-VN') : new Date().toLocaleString('vi-VN');
-    } catch {
-      return '';
+      const d = new Date(order.createdAt);
+      if (isNaN(d.getTime())) return null;
+      return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' ' + d.toLocaleDateString('vi-VN');
+    } catch (e) {
+      return null;
     }
   })();
 
@@ -264,11 +268,12 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
         {/* ─────────────────────────────────────────────────────────────
             HEADER: ORDER CODE, STATUS, PAYMENT & LOGICAL ACTIONS
            ───────────────────────────────────────────────────────────── */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800/80 pb-5">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/90 px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs">
-                <span className="font-mono font-black text-sm sm:text-base text-[#0284c7]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 border-b border-slate-100 dark:border-slate-800/80 pb-5">
+          <div className="space-y-2 flex-1 min-w-0">
+            {/* Top row with all badges strictly aligned together */}
+            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+              <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/90 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs shrink-0">
+                <span className="font-mono font-black text-xs sm:text-sm text-[#0284c7]">
                   #{orderDisplayCode}
                 </span>
                 <button
@@ -281,24 +286,29 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
                 </button>
               </div>
 
-              {/* High-craft Status Dropdown Selector */}
-              <OrderStatusSelector
-                currentStatus={currentStatus}
-                onStatusChange={handleStatusChange}
-                size="md"
-                placement="bottom"
-              />
+              {/* High-craft Status Dropdown Selector - Compact size to prevent awkward wrap */}
+              <div className="shrink-0">
+                <OrderStatusSelector
+                  orderId={order.id}
+                  currentStatus={currentStatus}
+                  onStatusChange={handleStatusChange}
+                  size="sm"
+                  placement="bottom"
+                />
+              </div>
 
-              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-wide border ${
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-wide border whitespace-nowrap shrink-0 ${
                 currentPaymentStatus === 'PAID'
                   ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-400/30'
-                  : currentPaymentStatus === 'CANCELLED'
-                  ? 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-400/30'
+                  : currentPaymentStatus === 'REFUNDED'
+                  ? 'bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-400/30'
+                  : currentPaymentStatus === 'CANCELLED' || currentPaymentStatus === 'FAILED'
+                  ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-400/30'
                   : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-400/30'
               }`}>
                 <span>{order.paymentMethod === 'BANKING' ? '💳 Banking' : '💵 COD'}</span>
                 <span>•</span>
-                <span>{currentPaymentStatus === 'PAID' ? 'Đã Thu Tiền' : currentPaymentStatus === 'CANCELLED' ? 'Đã Hủy' : 'Chưa Thu Tiền'}</span>
+                <span>{currentPaymentStatus === 'PAID' ? 'Đã Thu Tiền' : currentPaymentStatus === 'REFUNDED' ? 'Đã Hoàn Tiền' : 'Chưa Thu Tiền'}</span>
               </span>
             </div>
 
@@ -317,7 +327,7 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
           </div>
 
           {/* Right Controls: Logical contextual actions + Close button */}
-          <div className="flex items-center gap-2.5 self-end md:self-center">
+          <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
             {currentStatus === 'COMPLETED' ? (
               <div className="flex items-center gap-2">
                 <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-xs font-bold shadow-2xs">
