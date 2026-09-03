@@ -86,7 +86,7 @@ function PCBuilderContent() {
     monitor: null,
   });
 
-  const [currentBuildName, setCurrentBuildName] = useState<string>('Cấu Hình PC Tự Lắp DRX');
+  const [currentBuildName, setCurrentBuildName] = useState<string>('Cấu Hình DRX Build Gaming');
   const [activeStepModal, setActiveStepModal] = useState<string | null>(null);
   const [isQuotationOpen, setIsQuotationOpen] = useState(false);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
@@ -310,10 +310,10 @@ function PCBuilderContent() {
             <div className="space-y-2.5 max-w-2xl">
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-sky-100 dark:bg-sky-500/20 text-[#0284c7] dark:text-sky-300 text-xs font-black uppercase tracking-wider border border-sky-200 dark:border-sky-500/30 shadow-2xs">
                 <Wrench className="w-4 h-4 text-[#0284c7] dark:text-sky-400" />
-                <span>DRX PC BUILDER • TỰ DỰNG CẤU HÌNH THÔNG MINH</span>
+                <span>DRX BUILD • TỰ DỰNG CẤU HÌNH THÔNG MINH</span>
               </div>
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-heading font-black text-slate-900 dark:text-white tracking-tight uppercase">
-                Tự Phối Cấu Hình PC Gaming &amp; Workstation
+                DRX BUILD - Tự Phối Cấu Hình PC Gaming &amp; Workstation
               </h1>
               <p className="text-slate-600 dark:text-slate-300 text-xs sm:text-sm font-normal leading-relaxed">
                 Tự do lựa chọn CPU, Mainboard, VGA, RAM với hệ thống tự động kiểm tra tương thích Socket LGA1700/AM5 và RAM DDR4/DDR5 chuẩn xác 100%. Hỗ trợ lưu cấu hình, xuất hóa đơn báo giá và đặt mua trọn gói!

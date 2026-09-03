@@ -34,7 +34,7 @@ const formatVND = (num: number) => {
 export function BuildQuotationModal({
   build,
   totalCost,
-  buildName = 'Cấu Hình PC Gaming / Workstation DRX',
+  buildName = 'Cấu Hình DRX Build Gaming / Workstation',
   onClose,
   onBuyAll
 }: BuildQuotationModalProps) {
@@ -271,7 +271,7 @@ export function BuildQuotationModal({
             </div>
             <div>
               <h3 className="font-heading text-sm sm:text-base font-black uppercase text-slate-900 dark:text-white">
-                BẢN BÁO GIÁ &amp; HÓA ĐƠN CẤU HÌNH PC
+                BẢN BÁO GIÁ &amp; HÓA ĐƠN DRX BUILD PC
               </h3>
               <p className="text-xs text-slate-500">
                 Xuất file ảnh chất lượng cao gửi cho người bán hàng hoặc đặt hàng ngay

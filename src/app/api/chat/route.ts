@@ -45,6 +45,7 @@ export async function POST(req: Request) {
       answer: response.answer,
       source: response.source,
       documents: response.documents,
+      products: response.documents || [],
     });
   } catch (error: any) {
     Logger.error('Chat API Error', error);

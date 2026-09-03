@@ -32,7 +32,7 @@ export function SaveBuildModal({
   onClose,
   onSaved
 }: SaveBuildModalProps) {
-  const [buildName, setBuildName] = useState('Cấu Hình PC Gaming DRX');
+  const [buildName, setBuildName] = useState('Cấu Hình DRX Build Gaming');
   const [note, setNote] = useState('');
   const [isSavedSuccess, setIsSavedSuccess] = useState(false);
 
@@ -78,12 +78,11 @@ export function SaveBuildModal({
       const updatedList = [newSavedBuild, ...list.filter(b => b.id !== newSavedBuild.id)];
       localStorage.setItem('drx_saved_pc_builds', JSON.stringify(updatedList));
 
-      showToast(`Đã lưu cấu hình "${newSavedBuild.name}" vào tài khoản thành công!`, 'success');
+      showToast(`Đã lưu cấu hình "${newSavedBuild.name}" vào tài khoản!`, 'success');
       setIsSavedSuccess(true);
       onSaved(newSavedBuild);
     } catch (e) {
-      console.error('Lỗi khi lưu cấu hình:', e);
-      showToast('Lỗi khi lưu vào bộ nhớ trình duyệt.', 'error');
+      showToast('Lỗi khi lưu cấu hình vào bộ nhớ máy.', 'error');
     }
   };
 
@@ -102,7 +101,7 @@ export function SaveBuildModal({
                 LƯU CẤU HÌNH VÀO TÀI KHOẢN
               </h3>
               <p className="text-[11px] text-slate-500">
-                Hiển thị trong mục "Cấu Hình PC Tự Ráp" của Profile
+                Hiển thị trong mục "Cấu Hình DRX Build" của Profile
               </p>
             </div>
           </div>

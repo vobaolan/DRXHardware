@@ -68,13 +68,13 @@ export const PortalHeader: React.FC<PortalHeaderProps> = ({
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="font-heading text-sm sm:text-base font-black uppercase text-slate-900 dark:text-white tracking-wide truncate">
-                {isAdminPortal ? 'CỔNG QUẢN TRỊ CEO & DOANH THU' : 'CỔNG VẬN HÀNH STAFF & KHO LINH KIỆN'}
+                {isAdminPortal ? 'CỔNG QUẢN TRỊ DRX ADMIN & DOANH THU' : 'CỔNG VẬN HÀNH STAFF & KHO LINH KIỆN'}
               </h1>
 
               {isAdminPortal ? (
                 <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-purple-50 dark:bg-purple-950/70 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 flex items-center gap-1 shadow-2xs">
                   <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />
-                  👑 CEO ADMIN
+                  👑 DRX ADMIN
                 </span>
               ) : (
                 <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-sky-50 dark:bg-sky-950/70 text-[#0284c7] dark:text-sky-300 border border-sky-200 dark:border-sky-800 flex items-center gap-1 shadow-2xs">
@@ -135,10 +135,10 @@ export const PortalHeader: React.FC<PortalHeaderProps> = ({
             <Link
               href="/admin"
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 dark:bg-slate-800 hover:bg-purple-600 text-white font-bold text-xs transition-all shadow-xs"
-              title="Chuyển sang Cổng Quản Trị CEO (Admin)"
+              title="Chuyển sang Cổng Quản Trị DRX Admin"
             >
               <ShieldCheck className="w-3.5 h-3.5" />
-              <span className="hidden lg:inline">CEO Admin</span>
+              <span className="hidden lg:inline">DRX Admin</span>
             </Link>
           )}
 

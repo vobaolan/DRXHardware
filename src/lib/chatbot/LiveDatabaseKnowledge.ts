@@ -101,14 +101,24 @@ export class LiveDatabaseKnowledge {
   }
 
   /**
-   * Search matching products in Supabase real-time
+   * Search matching products in Supabase real-time with smart NLP keyword matching
    */
-  async searchLiveProducts(query: string, limit = 6): Promise<LiveProduct[]> {
+  async searchLiveProducts(query: string, limit = 3): Promise<LiveProduct[]> {
     const all = await this.getAllLiveProducts();
     const cleanQ = query.toLowerCase().trim();
     if (!cleanQ) return all.slice(0, limit);
 
-    const keywords = cleanQ.split(/\s+/).filter(w => w.length > 1);
+    // Vietnamese common stop words to prevent noise in keyword scoring
+    const STOP_WORDS = new Set([
+      'đang', 'bán', 'giá', 'nhiêu', 'bao', 'nhiêu', 'mua', 'có', 'không', 'cho', 'hỏi',
+      'là', 'gì', 'ở', 'đâu', 'này', 'được', 'nào', 'với', 'và', 'của', 'mình', 'bạn',
+      'shop', 'ad', 'ạ', 'ơi', 'nha', 'nhé', 'tìm', 'kiếm', 'xem', 'hàng', 'còn', 'hết',
+      'tư', 'vấn', 'cần', 'muốn', 'giúp', 'em', 'anh', 'chị', 'mẫu', 'loại', 'cái', 'thế'
+    ]);
+
+    const rawKeywords = cleanQ.split(/[\s,.\-_\/]+/).filter(w => w.length > 1);
+    const keywords = rawKeywords.filter(w => !STOP_WORDS.has(w));
+    const effectiveKeywords = keywords.length > 0 ? keywords : rawKeywords;
 
     const scored = all.map(p => {
       let score = 0;
@@ -118,28 +128,48 @@ export class LiveDatabaseKnowledge {
       const descLower = p.description.toLowerCase();
       const specsStr = JSON.stringify(p.specs).toLowerCase();
 
-      // Exact phrase match
-      if (nameLower.includes(cleanQ)) score += 50;
-      if (catLower.includes(cleanQ)) score += 30;
-      if (brandLower.includes(cleanQ)) score += 20;
+      // Exact phrase match in Name
+      if (nameLower.includes(cleanQ)) score += 80;
+      if (cleanQ.includes(nameLower)) score += 60;
+      if (brandLower && cleanQ.includes(brandLower)) score += 25;
 
       // Keyword matches
-      for (const kw of keywords) {
-        if (nameLower.includes(kw)) score += 15;
-        if (catLower.includes(kw)) score += 10;
-        if (brandLower.includes(kw)) score += 8;
-        if (specsStr.includes(kw)) score += 6;
-        if (descLower.includes(kw)) score += 3;
+      let matchedKwCount = 0;
+      for (const kw of effectiveKeywords) {
+        if (nameLower.includes(kw)) {
+          score += 20;
+          matchedKwCount++;
+        } else if (brandLower.includes(kw)) {
+          score += 15;
+          matchedKwCount++;
+        } else if (catLower.includes(kw)) {
+          score += 10;
+          matchedKwCount++;
+        } else if (specsStr.includes(kw)) {
+          score += 8;
+        } else if (descLower.includes(kw)) {
+          score += 4;
+        }
+      }
+
+      // Bonus if all query keywords match the product
+      if (effectiveKeywords.length > 1 && matchedKwCount >= effectiveKeywords.length) {
+        score += 40;
       }
 
       return { product: p, score };
     });
 
-    return scored
-      .filter(item => item.score > 0)
-      .sort((a, b) => b.score - a.score)
-      .map(item => item.product)
-      .slice(0, limit);
+    const validMatches = scored.filter(item => item.score > 0).sort((a, b) => b.score - a.score);
+    if (validMatches.length === 0) return [];
+
+    const topScore = validMatches[0].score;
+    // Only keep results with at least 50% of the top score to avoid irrelevant product pollution
+    const filtered = validMatches
+      .filter(item => item.score >= Math.max(20, topScore * 0.45))
+      .map(item => item.product);
+
+    return filtered.slice(0, limit);
   }
 
   /**
@@ -147,40 +177,31 @@ export class LiveDatabaseKnowledge {
    */
   async buildLiveStoreContext(userQuery: string): Promise<string> {
     const allProducts = await this.getAllLiveProducts();
-    const matched = await this.searchLiveProducts(userQuery, 5);
+    const matched = await this.searchLiveProducts(userQuery, 3);
 
     // Format top matching products
     const matchedStr = matched.length > 0 
       ? matched.map(p => {
           const priceFormatted = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(p.price);
           const discFormatted = p.discountPrice ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(p.discountPrice) : null;
-          const specsEntries = Object.entries(p.specs).slice(0, 5).map(([k, v]) => `${k}: ${v}`).join(' | ');
+          const specsEntries = Object.entries(p.specs).slice(0, 4).map(([k, v]) => `${k}: ${v}`).join(' | ');
 
-          return `- [${p.category}] **${p.name}** (Hãng: ${p.brand})\n  * Giá: ${discFormatted ? `${discFormatted} (Giá gốc ${priceFormatted})` : priceFormatted}\n  * Tồn kho: ${p.inStock ? `${p.stockQuantity} sản phẩm (Có sẵn)` : 'Hết hàng'}\n  * Bảo hành: ${p.warrantyMonths} Tháng chính hãng\n  * Link xem: /products/${p.slug}\n  * Thông số: ${specsEntries || 'Chính hãng 100%'}`;
+          return `- [${p.category}] **${p.name}** (Hãng: ${p.brand})\n  * Giá bán: ${discFormatted ? `${discFormatted} (Giá gốc ${priceFormatted})` : priceFormatted}\n  * Tồn kho: ${p.inStock ? `Còn ${p.stockQuantity} món` : 'Tạm hết hàng'}\n  * Bảo hành: ${p.warrantyMonths} Tháng chính hãng\n  * Đường dẫn: /products/${p.slug}\n  * Thông số: ${specsEntries || 'Chính hãng 100%'}`;
         }).join('\n\n')
       : 'Không có sản phẩm nào trùng khớp trực tiếp với từ khóa này.';
 
-    // Top 5 newest arrivals
-    const newestStr = allProducts.slice(0, 5).map(p => 
-      `• ${p.name} (${p.brand}) - ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(p.price)} [/products/${p.slug}]`
-    ).join('\n');
+    return `=== DỮ LIỆU THỜI GIAN THỰC TỪ CƠ SỞ DỮ LIỆU STORE DRX HARDWARE ===
+Tổng số sản phẩm trong kho: ${allProducts.length} sản phẩm.
 
-    return `=== DỮ LIỆU THỜI GIAN THỰC TỪ CƠ SỞ DỮ LIỆU SUPABASE (DRX HARDWARE STORE) ===
-Tổng số sản phẩm hiện có trong kho: ${allProducts.length} sản phẩm.
-
-[SẢN PHẨM KHỚP VỚI CÂU HỎI CỦA KHÁCH HÀNG]:
+[SẢN PHẨM PHÙ HỢP VỚI CÂU HỎI KHÁCH HÀNG]:
 ${matchedStr}
 
-[DANH SÁCH SẢN PHẨM MỚI NHẤT TRONG KHO]:
-${newestStr}
-
-[CHÍNH SÁCH BÁN HÀNG & DỊCH VỤ DRX HARDWARE]:
-1. Địa chỉ Showroom: Showroom DRX Hardware, TP. Hồ Chí Minh (Giờ mở cửa: 08:00 - 21:30).
-2. Hình thức giao hàng: Giao hàng tận nơi toàn quốc (Vận chuyển tiêu chuẩn đóng xốp chống sốc) hoặc Nhận trực tiếp tại Showroom.
-3. Thanh toán: Duy nhất COD - Thu tiền mặt hoặc chuyển khoản khi nhận và kiểm tra hàng tận tay.
-4. Dịch vụ kỹ thuật: Hỗ trợ lắp ráp trọn bộ PC, cài sẵn Windows/Driver & test nhiệt độ Full-load trước khi giao.
-5. Bảo hành: 36 Tháng chính hãng (1 đổi 1 trong 30 ngày đầu nếu có lỗi), tra cứu bảo hành điện tử theo Serial SN trên website.
-6. Hotline tư vấn: 1900.88.99.77 | Email: cskh@drx.vn | Website: https://websitedrx.vercel.app`;
+[CHÍNH SÁCH BÁN HÀNG & DỊCH VỤ]:
+• Showroom: 128 Nguyễn Trãi, Q.1, TP. Hồ Chí Minh & 45 Thái Hà, Q. Đống Đa, Hà Nội.
+• Hotline: 1900.88.99.77.
+• Giao hàng toàn quốc, thanh toán COD khi nhận hàng.
+• Bảo hành 36 tháng chính hãng (1 đổi 1 trong 30 ngày).
+• Lắp ráp PC & cài đặt Windows/Driver miễn phí.`;
   }
 }
 

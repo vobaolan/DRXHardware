@@ -196,7 +196,7 @@ export default function AdminDashboardPage() {
           const email = String(user.email || '').toLowerCase();
           const role = String(user.role || '').toUpperCase();
           
-          // Strict Role Policy: Only ADMIN can access CEO Admin Portal (/admin)
+          // Strict Role Policy: Only ADMIN can access DRX Admin Portal (/admin)
           // STAFF and regular USER are strictly forbidden from /admin
           if (role === 'ADMIN' || email === 'admin@drx.vn' || (email.includes('admin') && !email.includes('staff'))) {
             setIsAdmin(true);
@@ -592,7 +592,7 @@ export default function AdminDashboardPage() {
           <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-6 font-light">
             {isStaffUser ? (
               <>
-                Tài khoản của bạn mang vai trò <strong>NHÂN VIÊN (STAFF)</strong>. Theo quy định phân quyền, nhân viên không có quyền truy cập Cổng Quản Trị CEO (Admin). Vui lòng chuyển sang Cổng Vận Hành Kho.
+                Tài khoản của bạn mang vai trò <strong>NHÂN VIÊN (STAFF)</strong>. Theo quy định phân quyền, nhân viên không có quyền truy cập Cổng Quản Trị DRX Admin. Vui lòng chuyển sang Cổng Vận Hành Kho.
               </>
             ) : (
               <>
@@ -1473,7 +1473,7 @@ export default function AdminDashboardPage() {
                   <div className="text-2xl font-black font-heading text-slate-900 dark:text-white mt-2">
                     {users.filter(u => u.role === 'ADMIN').length}
                   </div>
-                  <span className="text-[10px] text-purple-600 font-medium">Toàn quyền kiểm soát CEO</span>
+                  <span className="text-[10px] text-purple-600 font-medium">Toàn quyền quản trị DRX Admin</span>
                 </div>
               </div>
 

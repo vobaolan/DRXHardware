@@ -406,15 +406,15 @@ export const Header: React.FC = () => {
             </Link>
           )}
 
-          {/* ADMIN CEO QUICK ACCESS */}
+          {/* ADMIN QUICK ACCESS */}
           {isAdmin && (
             <Link
               href="/admin"
               className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/60 hover:bg-purple-100 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-[11px] font-black uppercase tracking-wider transition-all shadow-xs"
-              title="DRX CEO Command Center"
+              title="DRX Admin Command Center"
             >
               <LayoutDashboard className="h-3.5 w-3.5" />
-              <span>CEO Admin</span>
+              <span>DRX Admin</span>
             </Link>
           )}
 
@@ -470,13 +470,13 @@ export const Header: React.FC = () => {
               <span>TRA CỨU HÓA ĐƠN</span>
             </Link>
 
-            {/* 4. BUILD PC TỰ ĐỘNG */}
+            {/* 4. DRX BUILD PC */}
             <Link
               href="/pc-builder"
               className="flex items-center gap-1.5 font-heading text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-1 group"
             >
               <IconCpu size={14} className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-              <span>BUILD PC TỰ ĐỘNG</span>
+              <span>DRX BUILD PC</span>
             </Link>
 
             {/* 5. TOP LINH KIỆN MUA NHIỀU */}

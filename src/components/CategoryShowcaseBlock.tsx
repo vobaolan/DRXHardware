@@ -4,7 +4,7 @@ import React, { useState, useRef } from 'react';
 import Link from 'next/link';
 import { 
   ShoppingCart, ArrowRight, ChevronLeft, ChevronRight, Zap, 
-  Flame, Shield, Cpu, Sparkles, Check 
+  Flame, Shield, Cpu, Sparkles, Check, Percent 
 } from 'lucide-react';
 import { HardwareProduct } from '@/lib/hardware-data';
 import { formatCurrency, calculateDiscountPercent } from '@/lib/utils';
@@ -266,25 +266,12 @@ export default function CategoryShowcaseBlock({
                     >
                       <Link href={`/products/${product.slug}`} className="flex flex-col h-full">
                         {/* Image Box */}
-                        <div className="relative aspect-[4/3] w-full rounded-xl overflow-hidden bg-slate-950 mb-2.5">
+                        <div className="relative aspect-[4/3] w-full rounded-xl overflow-hidden bg-slate-50 dark:bg-slate-950 p-2 mb-2.5 flex items-center justify-center border border-slate-100 dark:border-slate-800">
                           <img
                             src={product.coverImage}
                             alt={product.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
                           />
-                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent opacity-60" />
-
-                          {hasDiscount && (
-                            <div className="absolute top-2 left-2 bg-rose-600 text-white font-black text-[9px] px-2 py-0.5 rounded-full shadow-md">
-                              -{discountPercent}%
-                            </div>
-                          )}
-
-                          {product.brand && (
-                            <div className="absolute bottom-2 left-2 bg-slate-950/80 backdrop-blur-xs text-white text-[9px] font-bold px-2 py-0.5 rounded-full">
-                              {product.brand}
-                            </div>
-                          )}
                         </div>
 
                         {/* Title & Info */}
@@ -325,14 +312,31 @@ export default function CategoryShowcaseBlock({
 
                           {/* Price Tag */}
                           <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80">
-                            {hasDiscount && (
-                              <span className="text-[10px] text-slate-400 line-through font-mono-tech block">
-                                {formatCurrency(product.price)}
-                              </span>
+                            {hasDiscount ? (
+                              <>
+                                <div className="flex items-center gap-1 mb-0.5 flex-wrap">
+                                  <span className="text-[10px] text-slate-400 line-through font-mono-tech">
+                                    {formatCurrency(product.price)}
+                                  </span>
+                                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded bg-rose-50 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 text-[9px] font-black">
+                                    <Percent className="w-2 h-2 stroke-[2.5]" />
+                                    <span>-{discountPercent}%</span>
+                                  </span>
+                                </div>
+                                <span className="font-heading font-black text-sm text-rose-600 dark:text-rose-400 block">
+                                  {formatCurrency(activePrice)}
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block mb-0.5">
+                                  Giá niêm yết
+                                </span>
+                                <span className="font-heading font-black text-sm text-slate-900 dark:text-white block">
+                                  {formatCurrency(activePrice)}
+                                </span>
+                              </>
                             )}
-                            <span className="font-heading font-black text-sm text-rose-600 dark:text-rose-400">
-                              {formatCurrency(activePrice)}
-                            </span>
                           </div>
                         </div>
                       </Link>

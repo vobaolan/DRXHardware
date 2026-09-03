@@ -50,17 +50,16 @@ export class DeepSeekClient {
     const groqKey = process.env.GROQ_API_KEY;
     const deepseekKey = process.env.DEEPSEEK_API_KEY;
 
-    const systemPromptWithLiveDB = `Bạn là DRX CyberBot AI 🤖⚡ - Trợ lý AI chuyên nghiệp tư vấn phần cứng máy tính tại DRX Hardware.
+    const systemPromptWithLiveDB = `Bạn là DRX CyberBot AI 🤖⚡ - Trợ lý AI tư vấn linh kiện PC & Gaming Gear tại DRX Hardware.
 
-THÔNG TIN THỜI GIAN THỰC TỪ CƠ SỞ DỮ LIỆU SUPABASE CỦA WEBSITE:
+DỮ LIỆU SẢN PHẨM & KHO HÀNG THỰC TẾ:
 ${liveContext}
 
-QUY TẮC PHẢN HỒI:
-1. Luôn sử dụng dữ liệu thực tế từ cơ sở dữ liệu Supabase được cung cấp ở trên (tên sản phẩm, giá bán, bảo hành, tình trạng còn hàng, đường link /products/[slug]).
-2. Nếu admin vừa thêm sản phẩm mới vào Supabase, sản phẩm đó đã có trong danh sách trên, hãy tự tin trả lời và giới thiệu cho khách hàng.
-3. Luôn trả lời hoàn toàn bằng tiếng Việt thân thiện, chuyên nghiệp, chính xác về mặt kỹ thuật (socket CPU, bus RAM, công suất nguồn PSU, tương thích linh kiện).
-4. Định dạng tiền tệ đẹp dạng VND (Ví dụ: 15.500.000 đ).
-5. Không bịa đặt giá cả hoặc sản phẩm không có thật trong kho.`;
+QUY TẮC PHẢN HỒI (RẤT QUAN TRỌNG):
+1. TRẢ LỜI NGẮN GỌN, TRỌNG TÂM (Tối đa 1 - 2 câu ngắn).
+2. Khi khách hỏi giá hoặc sản phẩm, nêu rõ giá bán VND (ví dụ: 1.590.000 đ), bảo hành và tình trạng còn hàng.
+3. TUYỆT ĐỐI KHÔNG liệt kê danh sách dài dòng, không gạch đầu dòng lặp đi lặp lại vì giao diện sẽ tự động hiển thị thẻ sản phẩm tương tác bên dưới câu trả lời.
+4. Giọng điệu thân thiện, tự nhiên, chuẩn kỹ thuật phần cứng.`;
 
     const chatHistory = messages.map(m => ({
       role: m.role === 'user' ? 'user' : m.role === 'assistant' ? 'assistant' : 'system',
@@ -82,8 +81,8 @@ QUY TẮC PHẢN HỒI:
               { role: 'system', content: systemPromptWithLiveDB },
               ...chatHistory.slice(-6),
             ],
-            temperature: 0.5,
-            max_tokens: 800,
+            temperature: 0.4,
+            max_tokens: 300,
           }),
         });
 
@@ -112,8 +111,8 @@ QUY TẮC PHẢN HỒI:
               { role: 'system', content: systemPromptWithLiveDB },
               ...chatHistory.slice(-6),
             ],
-            temperature: 0.5,
-            max_tokens: 800,
+            temperature: 0.4,
+            max_tokens: 300,
           }),
         });
 
@@ -138,16 +137,24 @@ QUY TẮC PHẢN HỒI:
 
     // 1. Matched specific products in Supabase
     if (matchedProducts.length > 0) {
-      const productListStr = matchedProducts.map(p => {
+      if (matchedProducts.length === 1) {
+        const p = matchedProducts[0];
         const priceFormatted = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(p.price);
         const discFormatted = p.discountPrice ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(p.discountPrice) : null;
-        return `• **[${p.category}] ${p.name}**\n  💵 Giá bán: **${discFormatted ? `${discFormatted} (Gốc ${priceFormatted})` : priceFormatted}**\n  📦 Tình trạng: ${p.inStock ? `Còn ${p.stockQuantity} món` : 'Hết hàng'} | 🛡️ Bảo hành: ${p.warrantyMonths} Tháng\n  🔗 Xem ngay: [/products/${p.slug}]`;
-      }).join('\n\n');
+        
+        return {
+          role: 'assistant',
+          content: `Dạ, **${p.name}** hiện có giá ${discFormatted ? `ưu đãi **${discFormatted}** (giảm từ ${priceFormatted})` : `**${priceFormatted}**`}, bảo hành chính hãng **${p.warrantyMonths} tháng** (${p.inStock ? `còn ${p.stockQuantity} món` : 'tạm hết hàng'}).`,
+          matchedProducts: [p],
+        };
+      }
 
+      // 2 or 3 matched items
+      const topProducts = matchedProducts.slice(0, 3);
       return {
         role: 'assistant',
-        content: `Chào bạn! DRX CyberBot AI đã truy vấn cơ sở dữ liệu Supabase và tìm thấy các linh kiện phù hợp với yêu cầu của bạn:\n\n${productListStr}\n\n👉 Bạn có thể bấm trực tiếp vào sản phẩm để xem thông số chi tiết hoặc thêm vào giỏ hàng nhé!`,
-        matchedProducts,
+        content: `DRX Hardware hiện có các sản phẩm phù hợp với tìm kiếm của bạn:`,
+        matchedProducts: topProducts,
       };
     }
 
@@ -155,7 +162,7 @@ QUY TẮC PHẢN HỒI:
     if (q.includes('bảo hành') || q.includes('bao hanh') || q.includes('serial')) {
       return {
         role: 'assistant',
-        content: '🛡️ **Chính Sách Bảo Hành Điện Tử DRX Hardware**:\n• Toàn bộ linh kiện (VGA, CPU, Mainboard, RAM, SSD, Màn hình) và PC Prebuilt bán ra đều được bảo hành chính hãng **36 Tháng**.\n• Đổi mới 1-đổi-1 trong 30 ngày đầu tiên nếu phát sinh lỗi từ nhà sản xuất.\n• Bạn có thể vào mục **"Tra Cứu Bảo Hành"** trên website, nhập mã Serial (SN) hoặc Số điện thoại để xuất phiếu bảo hành chính hãng tức thì!',
+        content: '🛡️ **Bảo Hành 36 Tháng Chính Hãng**: 1 đổi 1 trong 30 ngày đầu nếu phát sinh lỗi. Bạn có thể tra cứu nhanh bằng mã Serial (SN) trên website!',
         matchedProducts: allProducts.slice(0, 2),
       };
     }
@@ -163,7 +170,7 @@ QUY TẮC PHẢN HỒI:
     if (q.includes('giao hàng') || q.includes('ship') || q.includes('vận chuyển') || q.includes('địa chỉ') || q.includes('showroom')) {
       return {
         role: 'assistant',
-        content: '🚚 **Hình Thức Giao Nhận DRX Hardware**:\n1. **Giao hàng tận nơi toàn quốc:** Đóng gói 3 lớp xốp chống va đập, miễn phí vận chuyển tiêu chuẩn 1 - 3 ngày làm việc.\n2. **Nhận tại Showroom DRX:** Nhận trực tiếp tại Showroom DRX Hardware (TP. Hồ Chí Minh), hỗ trợ kiểm tra linh kiện và ráp PC tại chỗ!\n\n📍 Giờ mở cửa Showroom: 08:00 - 21:30 (Mở cửa tất cả các ngày trong tuần).',
+        content: '🚚 **Giao Hàng & Showroom**:\n• Giao hàng COD toàn quốc (1-3 ngày).\n• Showroom: 128 Nguyễn Trãi, Q.1, HCM & 45 Thái Hà, Đống Đa, HN (08:00 - 21:30 hàng ngày).',
         matchedProducts: allProducts.slice(0, 2),
       };
     }
@@ -171,7 +178,7 @@ QUY TẮC PHẢN HỒI:
     if (q.includes('thanh toán') || q.includes('cod') || q.includes('trả tiền')) {
       return {
         role: 'assistant',
-        content: '💵 **Phương Thức Thanh Toán Tại DRX Hardware**:\n• **COD (Thu tiền khi nhận hàng):** Khách hàng được kiểm tra ngoại quan linh kiện, thùng xốp niêm phong trước khi thanh toán tiền mặt hoặc chuyển khoản cho shipper.\n• An toàn 100%, không lo rủi ro thanh toán trước!',
+        content: '💵 **Thanh Toán COD An Toàn**: Bạn được kiểm tra kiện hàng niêm phong trước khi thanh toán tiền mặt hoặc chuyển khoản cho shipper!',
         matchedProducts: allProducts.slice(0, 2),
       };
     }
@@ -179,21 +186,16 @@ QUY TẮC PHẢN HỒI:
     if (q.includes('lắp ráp') || q.includes('ráp máy') || q.includes('build pc') || q.includes('cài win')) {
       return {
         role: 'assistant',
-        content: '🛠️ **Dịch Vụ Lắp Ráp & Cài Đặt PC Miễn Phí**:\n• Khi đặt linh kiện tại trang Checkout, bạn chỉ cần tick chọn: *"Tôi cần hỗ trợ lắp đặt / cài đặt"*.\n• Kỹ thuật viên DRX sẽ hỗ trợ đi dây thẩm mỹ, dán keo tản nhiệt cao cấp, cài sẵn Windows/Driver và chạy test FurMark/Cinebench kiểm tra nhiệt độ Full-load trước khi bàn giao!',
-        matchedProducts: allProducts.slice(0, 3),
+        content: '🛠️ **Lắp Ráp & Cài Đặt PC Miễn Phí**: Kỹ thuật viên DRX sẽ hỗ trợ ráp máy, đi dây gọn đẹp, cài sẵn Win/Driver và test nhiệt độ Full-load trước khi giao!',
+        matchedProducts: allProducts.slice(0, 2),
       };
     }
 
-    // 3. Newest products summary
-    const newestList = allProducts.slice(0, 4).map(p => {
-      const priceFormatted = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(p.price);
-      return `• **${p.name}** - ${priceFormatted} [/products/${p.slug}]`;
-    }).join('\n');
-
+    // 3. Fallback greeting
     return {
       role: 'assistant',
-      content: `Xin chào! DRX CyberBot AI đang đồng bộ trực tiếp với cơ sở dữ liệu Supabase (${allProducts.length} linh kiện phần cứng có sẵn trong kho).\n\n🔥 **Một số linh kiện mới nhất vừa cập nhật:**\n${newestList}\n\nBạn cần tư vấn cấu hình PC hay tìm linh kiện theo ngân sách nào? Hãy nhắn cho mình nhé!`,
-      matchedProducts: allProducts.slice(0, 4),
+      content: `Xin chào! Mình là DRX CyberBot AI 🤖. Bạn cần tìm linh kiện, kiểm tra giá bán hay tư vấn cấu hình PC nào hãy gõ tên sản phẩm nhé!`,
+      matchedProducts: allProducts.slice(0, 2),
     };
   }
 

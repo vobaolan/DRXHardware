@@ -1,4 +1,4 @@
-﻿import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -32,12 +32,12 @@ async function main() {
     update: {
       password: hashPassword,
       role: 'ADMIN',
-      name: 'DRX CEO Admin',
+      name: 'DRX Admin',
       phone: '01699224729',
     },
     create: {
       email: 'admin@drx.vn',
-      name: 'DRX CEO Admin',
+      name: 'DRX Admin',
       password: hashPassword,
       role: 'ADMIN',
       phone: '01699224729',

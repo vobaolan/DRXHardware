@@ -75,7 +75,7 @@ export const Footer: React.FC = () => {
                 { label: 'Bo Mạch Chủ Mainboard', href: '/products?category=MAINBOARD' },
                 { label: 'Bộ Nhớ RAM DDR5', href: '/products?category=RAM' },
                 { label: 'Ổ Cứng SSD NVMe', href: '/products?category=STORAGE' },
-                { label: 'Công Cụ Build PC Tự Động', href: '/pc-builder' },
+                { label: 'Công Cụ DRX Build PC', href: '/pc-builder' },
               ].map((item) => (
                 <li key={item.label}>
                   <Link href={item.href} className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors flex items-center gap-1.5 group">

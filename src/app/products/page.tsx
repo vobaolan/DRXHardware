@@ -177,15 +177,9 @@ function ProductsCatalogContent() {
 
   // Sync state with query parameters
   useEffect(() => {
-    if (searchParams.get('filter')) {
-      setActiveFilter(searchParams.get('filter') || 'ALL');
-    }
-    if (searchParams.get('category')) {
-      setSelectedCategory(searchParams.get('category') || 'ALL');
-    }
-    if (searchParams.get('platform')) {
-      setSelectedPlatform(searchParams.get('platform') || 'ALL');
-    }
+    setActiveFilter(searchParams.get('filter') || 'ALL');
+    setSelectedCategory(searchParams.get('category') || 'ALL');
+    setSelectedPlatform(searchParams.get('platform') || 'ALL');
   }, [searchParams]);
 
   // Load products directly from Supabase PostgreSQL Database API
@@ -594,32 +588,6 @@ function ProductsCatalogContent() {
                 <option value="PRICE_DESC">Giá Giảm Dần</option>
               </select>
             </div>
-          </div>
-        </div>
-
-        {/* ─── CATEGORY QUICK-SWITCH HORIZONTAL PILLS ─── */}
-        <div className="mb-6 overflow-x-auto no-scrollbar pb-1">
-          <div className="flex items-center gap-2 min-w-max">
-            {ALL_CATEGORIES_NAV.map((cat) => {
-              const isSelected = selectedCategory.toUpperCase() === cat.id.toUpperCase();
-              return (
-                <button
-                  key={cat.id}
-                  onClick={() => {
-                    setSelectedCategory(cat.id);
-                    router.push(cat.id === 'ALL' ? '/products' : `/products?category=${cat.id}`, { scroll: false });
-                  }}
-                  className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 border ${
-                    isSelected
-                      ? 'bg-gradient-to-r from-[#0284c7] to-[#38bdf8] text-white border-transparent shadow-sm shadow-sky-500/25 scale-[1.02]'
-                      : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-[#0284c7]/50 hover:bg-slate-50 dark:hover:bg-slate-800/80'
-                  }`}
-                >
-                  <CategoryIcon name={cat.icon} className={`w-3.5 h-3.5 ${isSelected ? 'text-white' : 'text-[#0284c7]'}`} />
-                  <span>{cat.name}</span>
-                </button>
-              );
-            })}
           </div>
         </div>
 

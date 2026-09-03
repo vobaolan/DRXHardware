@@ -851,7 +851,7 @@ function ProfileContent() {
                     {/* Metric 3: Saved PC Builds */}
                     <div className="bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-amber-500/30 p-4 rounded-2xl flex flex-col justify-between shadow-xs">
                       <div className="flex justify-between items-center">
-                        <span className="text-[10px] font-bold text-slate-500 dark:text-amber-300/70 uppercase tracking-wider">Cấu Hình Tự Ráp</span>
+                        <span className="text-[10px] font-bold text-slate-500 dark:text-amber-300/70 uppercase tracking-wider">DRX Build Đã Lưu</span>
                         <Wrench className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                       </div>
                       <div className="mt-2">
@@ -859,7 +859,7 @@ function ProfileContent() {
                           {savedBuilds.length} <span className="text-xs font-normal text-slate-500 dark:text-slate-400">cấu hình</span>
                         </span>
                         <button onClick={() => setDashboardTab('builds')} className="text-[10px] font-bold text-amber-600 dark:text-amber-400 hover:underline inline-flex items-center gap-0.5 mt-0.5 cursor-pointer">
-                          <span>Xem PC Builder</span>
+                          <span>Xem DRX Build</span>
                           <ChevronRight className="h-3 w-3" />
                         </button>
                       </div>
@@ -940,7 +940,7 @@ function ProfileContent() {
                       </span>
                     </button>
 
-                    {/* 4. CẤU HÌNH PC TỰ RÁP */}
+                    {/* 4. CẤU HÌNH DRX BUILD */}
                     <button
                       onClick={() => setDashboardTab('builds')}
                       className={`flex items-center justify-between w-full text-left px-4 py-3 rounded-2xl text-xs font-heading font-black uppercase tracking-wider transition-all cursor-pointer ${
@@ -951,14 +951,14 @@ function ProfileContent() {
                     >
                       <div className="flex items-center gap-3">
                         <Wrench className={`h-4 w-4 ${dashboardTab === 'builds' ? 'text-white' : 'text-amber-500'}`} />
-                        <span>Cấu Hình PC Tự Ráp</span>
+                        <span>Cấu Hình DRX Build</span>
                       </div>
                       <span className={`text-[9.5px] px-2.5 py-0.5 rounded-full font-black tracking-wider ${
                         dashboardTab === 'builds'
                           ? 'bg-white/20 text-white'
                           : 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-700'
                       }`}>
-                        BUILDER
+                        DRX BUILD
                       </span>
                     </button>
 
@@ -1432,17 +1432,17 @@ function ProfileContent() {
                     </div>
                   )}
 
-                  {/* TAB 4: CẤU HÌNH PC TỰ RÁP */}
+                  {/* TAB 4: CẤU HÌNH DRX BUILD */}
                   {dashboardTab === 'builds' && (
                     <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-6 space-y-5 shadow-sm">
                       <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
                         <div>
                           <h3 className="font-heading text-sm font-black uppercase tracking-wider text-slate-900 dark:text-slate-100 flex items-center gap-2">
                             <Wrench className="h-4 w-4 text-amber-500" />
-                            <span>CẤU HÌNH PC TỰ RÁP ĐÃ LƯU</span>
+                            <span>CẤU HÌNH DRX BUILD ĐÃ LƯU</span>
                           </h3>
                           <p className="text-xs text-slate-500 dark:text-slate-400 font-light mt-0.5">
-                            Quản lý các bộ cấu hình PC bạn đã tự phối linh kiện trên công cụ DRX PC Builder.
+                            Quản lý các bộ cấu hình PC bạn đã tự phối linh kiện trên công cụ DRX Build.
                           </p>
                         </div>
                         <Link
@@ -1460,9 +1460,9 @@ function ProfileContent() {
                             <Wrench className="h-8 w-8" />
                           </div>
                           <div className="space-y-1">
-                            <h4 className="text-xs font-black text-slate-900 dark:text-slate-100 uppercase tracking-wider">Chưa có cấu hình PC nào được lưu</h4>
+                            <h4 className="text-xs font-black text-slate-900 dark:text-slate-100 uppercase tracking-wider">Chưa có cấu hình DRX Build nào được lưu</h4>
                             <p className="text-xs text-slate-500 dark:text-slate-400 font-light max-w-sm leading-relaxed mx-auto">
-                              Tự tay lựa chọn CPU, VGA, Mainboard, RAM và kiểm tra tương thích tự động với công cụ PC Builder của DRX!
+                              Tự tay lựa chọn CPU, VGA, Mainboard, RAM và kiểm tra tương thích tự động với công cụ DRX Build!
                             </p>
                           </div>
                           <Link
@@ -1470,7 +1470,7 @@ function ProfileContent() {
                             className="uiverse-btn-shimmer inline-flex items-center gap-2 rounded-2xl text-white px-6 py-3 text-xs font-heading font-black uppercase tracking-wider shadow-lg"
                           >
                             <Zap className="h-4 w-4 text-amber-300" />
-                            <span>Tự Xây Dựng Cấu Hình PC Ngay</span>
+                            <span>Tự Xây Dựng Cấu Hình DRX Build Ngay</span>
                           </Link>
                         </div>
                       ) : (
