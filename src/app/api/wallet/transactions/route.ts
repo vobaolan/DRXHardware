@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { supabase } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,11 +13,30 @@ export async function GET(request: Request) {
       return NextResponse.json({ message: 'Missing userId parameter' }, { status: 400 });
     }
 
-    // Lấy tất cả các giao dịch của user, sắp xếp mới nhất lên đầu
-    const transactions = await prisma.transaction.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-    });
+    let transactions: any[] = [];
+
+    // 1. Primary: Supabase Cloud Database (Fast Direct REST)
+    try {
+      const { data, error } = await supabase
+        .from('Transaction')
+        .select('*')
+        .eq('userId', userId)
+        .order('createdAt', { ascending: false });
+
+      if (!error && data) {
+        transactions = data;
+      }
+    } catch (e) {}
+
+    // 2. Fallback to Prisma
+    if (transactions.length === 0) {
+      try {
+        transactions = await prisma.transaction.findMany({
+          where: { userId },
+          orderBy: { createdAt: 'desc' },
+        });
+      } catch (e) {}
+    }
 
     return NextResponse.json({ transactions }, { status: 200 });
   } catch (error: any) {

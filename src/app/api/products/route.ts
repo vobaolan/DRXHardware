@@ -17,26 +17,26 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const categoryFilter = url.searchParams.get('category')?.toUpperCase();
 
-    // 1. Primary fetch from Prisma PostgreSQL
+    // 1. Primary fetch from Supabase Cloud Database (Fast Direct REST)
     let dbProducts: any[] = [];
     try {
-      dbProducts = await prisma.product.findMany({
-        orderBy: { createdAt: 'desc' },
-      });
+      const { data, error } = await supabase
+        .from('Product')
+        .select('*')
+        .order('createdAt', { ascending: false });
+      if (!error && data && data.length > 0) {
+        dbProducts = data;
+      }
     } catch (e) {
-      console.warn('Prisma fetch notice, trying Supabase fallback:', e);
+      console.warn('Supabase product fetch warning:', e);
     }
 
-    // 2. Fallback to Supabase client if Prisma had no records
+    // 2. Fallback to Prisma if Supabase had no records
     if (!dbProducts || dbProducts.length === 0) {
       try {
-        const { data } = await supabase
-          .from('Product')
-          .select('*')
-          .order('createdAt', { ascending: false });
-        if (data && data.length > 0) {
-          dbProducts = data;
-        }
+        dbProducts = await prisma.product.findMany({
+          orderBy: { createdAt: 'desc' },
+        });
       } catch (e) {}
     }
 

@@ -109,28 +109,29 @@ export async function POST(request: Request) {
       return response;
     }
 
-    // 1. Primary check in Prisma PostgreSQL
+    // 1. Primary check in Supabase Cloud Database (Fast Direct REST)
     let user: any = null;
     try {
-      user = await prisma.user.findUnique({
-        where: { email: cleanEmail },
-      });
-    } catch (e) {
-      console.warn('Prisma login fetch error:', e);
-    }
+      const { supabase } = await import('@/lib/supabase');
+      const { data: supabaseUsers } = await supabase
+        .from('User')
+        .select('*')
+        .eq('email', cleanEmail)
+        .limit(1);
+      if (supabaseUsers && supabaseUsers.length > 0) {
+        user = supabaseUsers[0];
+      }
+    } catch (e) {}
 
-    // 2. Fallback check in Supabase REST
+    // 2. Fallback check in Prisma if needed
     if (!user) {
       try {
-        const { supabase } = await import('@/lib/supabase');
-        const { data: supabaseUsers } = await supabase
-          .from('User')
-          .select('*')
-          .eq('email', cleanEmail);
-        if (supabaseUsers && supabaseUsers.length > 0) {
-          user = supabaseUsers[0];
-        }
-      } catch (e) {}
+        user = await prisma.user.findUnique({
+          where: { email: cleanEmail },
+        });
+      } catch (e) {
+        console.warn('Prisma login fetch notice:', e);
+      }
     }
 
     if (!user) {

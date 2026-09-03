@@ -59,27 +59,27 @@ export async function POST(request: Request) {
     const cleanCode = code.trim().toUpperCase();
     let coupon: any = null;
 
-    // 1. Prisma Check
+    // 1. Supabase Check (Fast Direct REST)
     try {
-      coupon = await prisma.coupon.findUnique({
-        where: { code: cleanCode }
-      });
+      const { data, error } = await supabase
+        .from('Coupon')
+        .select('*')
+        .eq('code', cleanCode)
+        .single();
+
+      if (!error && data) coupon = data;
     } catch (e) {
-      console.warn('Prisma coupon validate warning:', e);
+      console.warn('Supabase coupon validate warning:', e);
     }
 
-    // 2. Supabase Check
+    // 2. Prisma Check (Fallback)
     if (!coupon) {
       try {
-        const { data, error } = await supabase
-          .from('Coupon')
-          .select('*')
-          .eq('code', cleanCode)
-          .single();
-
-        if (!error && data) coupon = data;
+        coupon = await prisma.coupon.findUnique({
+          where: { code: cleanCode }
+        });
       } catch (e) {
-        console.warn('Supabase coupon validate warning:', e);
+        console.warn('Prisma coupon validate warning:', e);
       }
     }
 

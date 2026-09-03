@@ -1,5 +1,6 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { supabase } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,25 +13,44 @@ export async function GET(request: Request) {
       return NextResponse.json({ message: 'Vui lòng cung cấp mã Serial SN hoặc số điện thoại' }, { status: 400 });
     }
 
-    // 1. Search by serialNumber in ProductSerial
-    const serialMatch = await prisma.productSerial.findFirst({
-      where: {
-        serialNumber: {
-          contains: q,
-          mode: 'insensitive',
-        }
-      },
-      include: {
-        product: true,
-        order: {
+    // 1. Supabase direct search by serialNumber
+    let serialMatch: any = null;
+    try {
+      const { data: supaSerial } = await supabase
+        .from('ProductSerial')
+        .select('*, product:Product(*), order:Order(*)')
+        .ilike('serialNumber', `%${q}%`)
+        .limit(1)
+        .maybeSingle();
+
+      if (supaSerial) {
+        serialMatch = supaSerial;
+      }
+    } catch (e) {}
+
+    // Fallback to Prisma for serial
+    if (!serialMatch) {
+      try {
+        serialMatch = await prisma.productSerial.findFirst({
+          where: {
+            serialNumber: {
+              contains: q,
+              mode: 'insensitive',
+            }
+          },
           include: {
-            user: {
-              select: { id: true, name: true, email: true, phone: true }
+            product: true,
+            order: {
+              include: {
+                user: {
+                  select: { id: true, name: true, email: true, phone: true }
+                }
+              }
             }
           }
-        }
-      }
-    });
+        });
+      } catch (e) {}
+    }
 
     if (serialMatch) {
       const product = serialMatch.product;

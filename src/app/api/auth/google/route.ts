@@ -87,11 +87,37 @@ export async function POST(request: Request) {
       }
     }
 
-    // 3. If user doesn't exist, create a new Google user
+    // 3. If user doesn't exist, create a new Google user directly in Supabase Cloud DB
     if (!foundUser) {
+      const newUserId = `user-google-${Date.now()}`;
+      try {
+        const { data: createdSupa, error: supaCreateErr } = await supabase
+          .from('User')
+          .insert([
+            {
+              id: newUserId,
+              name: userName,
+              email: cleanEmail,
+              image: userAvatar,
+              role: userRole,
+              balance: 0.0,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            },
+          ])
+          .select('*')
+          .maybeSingle();
+
+        if (createdSupa) {
+          foundUser = createdSupa;
+        }
+      } catch (createSupaErr) {}
+
+      // Also sync to Prisma
       try {
         const newUser = await prisma.user.create({
           data: {
+            id: foundUser?.id || newUserId,
             name: userName,
             email: cleanEmail,
             image: userAvatar,
@@ -99,27 +125,8 @@ export async function POST(request: Request) {
             balance: 0.0,
           },
         });
-        foundUser = newUser;
-      } catch (createPrismaErr) {
-        // Fallback create in Supabase
-        try {
-          const { data: createdSupa } = await supabase
-            .from('User')
-            .insert([
-              {
-                name: userName,
-                email: cleanEmail,
-                image: userAvatar,
-                role: userRole,
-                balance: 0,
-              },
-            ])
-            .select('*');
-          if (createdSupa && createdSupa.length > 0) {
-            foundUser = createdSupa[0];
-          }
-        } catch (createSupaErr) {}
-      }
+        if (!foundUser) foundUser = newUser;
+      } catch (createPrismaErr) {}
     }
 
     // 4. Construct authenticated user object

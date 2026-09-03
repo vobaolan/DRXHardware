@@ -20,55 +20,55 @@ export async function GET(request: Request) {
 
     let orders: any[] = [];
 
-    // 1. Primary: Prisma
+    // 1. Primary: Supabase Cloud Database (Fast Direct REST)
     try {
-      const orConditions: any[] = [];
-      if (userId) orConditions.push({ userId });
-      if (email) orConditions.push({ customerEmail: email });
-      if (phone) orConditions.push({ customerPhone: phone });
+      let query = supabase.from('Order').select('*');
+      if (userId) {
+        query = query.eq('userId', userId);
+      } else if (email) {
+        query = query.eq('customerEmail', email);
+      } else if (phone) {
+        query = query.eq('customerPhone', phone);
+      }
 
-      orders = await prisma.order.findMany({
-        where: orConditions.length > 1 ? { OR: orConditions } : (orConditions[0] || { userId }),
-        orderBy: { createdAt: 'desc' },
-        include: {
-          orderItems: {
-            include: {
-              product: {
-                select: {
-                  id: true,
-                  name: true,
-                  coverImage: true,
-                  category: true,
-                  brand: true,
+      const { data: supaOrders, error: supaErr } = await query.order('createdAt', { ascending: false });
+
+      if (!supaErr && supaOrders && supaOrders.length > 0) {
+        orders = supaOrders;
+      }
+    } catch (e) {
+      console.warn('Supabase get orders warning:', e);
+    }
+
+    // 2. Fallback: Prisma if Supabase had no records
+    if (orders.length === 0) {
+      try {
+        const orConditions: any[] = [];
+        if (userId) orConditions.push({ userId });
+        if (email) orConditions.push({ customerEmail: email });
+        if (phone) orConditions.push({ customerPhone: phone });
+
+        orders = await prisma.order.findMany({
+          where: orConditions.length > 1 ? { OR: orConditions } : (orConditions[0] || { userId }),
+          orderBy: { createdAt: 'desc' },
+          include: {
+            orderItems: {
+              include: {
+                product: {
+                  select: {
+                    id: true,
+                    name: true,
+                    coverImage: true,
+                    category: true,
+                    brand: true,
+                  }
                 }
               }
             }
-          }
-        },
-      });
-    } catch (e) {
-      console.warn('Prisma get orders warning:', e);
-    }
-
-    // 2. Fallback: Supabase
-    if (orders.length === 0) {
-      try {
-        let query = supabase.from('Order').select('*');
-        if (userId) {
-          query = query.eq('userId', userId);
-        } else if (email) {
-          query = query.eq('customerEmail', email);
-        } else if (phone) {
-          query = query.eq('customerPhone', phone);
-        }
-
-        const { data: supaOrders } = await query.order('createdAt', { ascending: false });
-
-        if (supaOrders) {
-          orders = supaOrders;
-        }
+          },
+        });
       } catch (e) {
-        console.warn('Supabase get orders warning:', e);
+        console.warn('Prisma get orders notice:', e);
       }
     }
 
@@ -147,9 +147,57 @@ export async function POST(request: Request) {
 
     let createdOrder: any = null;
 
-    // 1. Try Prisma Transaction
+    // 1. Insert directly to Supabase Cloud Database (Fast Direct REST)
     try {
-      createdOrder = await prisma.order.create({
+      const { data: supaNew, error: supaErr } = await supabase
+        .from('Order')
+        .insert([{
+          id: orderId,
+          orderCode: orderCode,
+          userId: userId || null,
+          customerName: customerName.trim(),
+          customerPhone: customerPhone.trim(),
+          customerEmail: customerEmail?.trim() || null,
+          shippingAddress: fullAddress,
+          deliveryType: deliveryType,
+          notes: combinedNotes || null,
+          totalAmount: resolvedTotal,
+          discountAmount: resolvedDiscount,
+          netAmount: resolvedNet,
+          status: 'PENDING',
+          paymentMethod: 'COD',
+          paymentStatus: 'PENDING',
+          paymentDetails: {
+            shippingMethod,
+            needInstallation,
+            isProxyRecipient,
+            proxyName: proxyName.trim(),
+            proxyPhone: proxyPhone.trim(),
+            technicalNotes: technicalNotes.trim(),
+            items: cartItems.map((i: any) => ({
+              id: i.productId || i.id,
+              name: i.name,
+              price: i.discountPrice ?? i.price,
+              quantity: i.quantity || 1,
+              coverImage: i.coverImage,
+            }))
+          },
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }])
+        .select('*')
+        .single();
+
+      if (!supaErr && supaNew) {
+        createdOrder = supaNew;
+      }
+    } catch (supaErr: any) {
+      console.warn('Supabase create order notice:', supaErr);
+    }
+
+    // 2. Also sync to Prisma PostgreSQL if available
+    try {
+      const prismaOrder = await prisma.order.create({
         data: {
           id: orderId,
           orderCode: orderCode,
@@ -184,58 +232,9 @@ export async function POST(request: Request) {
           },
         },
       });
+      if (!createdOrder) createdOrder = prismaOrder;
     } catch (prismaErr) {
-      console.warn('Prisma create order warning, falling back to Supabase:', prismaErr);
-    }
-
-    // 2. Fallback to Supabase Database
-    if (!createdOrder) {
-      try {
-        const { data: supaNew, error: supaErr } = await supabase
-          .from('Order')
-          .insert([{
-            id: orderId,
-            orderCode: orderCode,
-            userId: userId || null,
-            customerName: customerName.trim(),
-            customerPhone: customerPhone.trim(),
-            customerEmail: customerEmail?.trim() || null,
-            shippingAddress: fullAddress,
-            deliveryType: deliveryType,
-            notes: combinedNotes || null,
-            totalAmount: resolvedTotal,
-            discountAmount: resolvedDiscount,
-            netAmount: resolvedNet,
-            status: 'PENDING',
-            paymentMethod: 'COD',
-            paymentStatus: 'PENDING',
-            paymentDetails: {
-              shippingMethod,
-              needInstallation,
-              isProxyRecipient,
-              proxyName: proxyName.trim(),
-              proxyPhone: proxyPhone.trim(),
-              technicalNotes: technicalNotes.trim(),
-              items: cartItems.map((i: any) => ({
-                id: i.productId || i.id,
-                name: i.name,
-                price: i.discountPrice ?? i.price,
-                quantity: i.quantity || 1,
-                coverImage: i.coverImage,
-              }))
-            },
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          }])
-          .select('*')
-          .single();
-
-        if (supaErr) throw supaErr;
-        createdOrder = supaNew;
-      } catch (supaErr: any) {
-        console.error('Supabase create order error:', supaErr);
-        throw supaErr;
-      }
+      console.warn('Prisma create order sync notice:', prismaErr);
     }
 
     // 3. Increment coupon usedCount in real database if couponCode applied

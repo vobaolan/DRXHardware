@@ -56,28 +56,28 @@ export async function GET() {
   try {
     let coupons: any[] = [];
 
-    // 1. Primary: Prisma
+    // 1. Primary: Supabase Cloud Database (Fast Direct REST)
     try {
-      coupons = await prisma.coupon.findMany({
-        orderBy: { createdAt: 'desc' },
-      });
+      const { data, error } = await supabase
+        .from('Coupon')
+        .select('*')
+        .order('createdAt', { ascending: false });
+
+      if (!error && data && data.length > 0) {
+        coupons = data;
+      }
     } catch (e) {
-      console.warn('Prisma get coupons error, fallback to Supabase:', e);
+      console.warn('Supabase get coupons warning:', e);
     }
 
-    // 2. Fallback: Supabase
+    // 2. Fallback: Prisma if Supabase had no records
     if (coupons.length === 0) {
       try {
-        const { data, error } = await supabase
-          .from('Coupon')
-          .select('*')
-          .order('createdAt', { ascending: false });
-
-        if (!error && data && data.length > 0) {
-          coupons = data;
-        }
+        coupons = await prisma.coupon.findMany({
+          orderBy: { createdAt: 'desc' },
+        });
       } catch (e) {
-        console.warn('Supabase get coupons error:', e);
+        console.warn('Prisma get coupons notice:', e);
       }
     }
 
@@ -136,31 +136,28 @@ export async function POST(request: Request) {
 
     let created: any = null;
 
-    // 1. Prisma
+    // 1. Insert directly to Supabase Cloud Database
     try {
-      created = await prisma.coupon.create({
+      const { data, error } = await supabase
+        .from('Coupon')
+        .insert([couponData])
+        .select()
+        .single();
+
+      if (!error && data) {
+        created = data;
+      }
+    } catch (e) {
+      console.warn('Supabase create coupon error:', e);
+    }
+
+    // 2. Also sync to Prisma
+    try {
+      const pCreated = await prisma.coupon.create({
         data: couponData,
       });
-    } catch (e: any) {
-      console.warn('Prisma create coupon error:', e);
-    }
-
-    // 2. Supabase
-    if (!created) {
-      try {
-        const { data, error } = await supabase
-          .from('Coupon')
-          .insert([couponData])
-          .select()
-          .single();
-
-        if (!error && data) {
-          created = data;
-        }
-      } catch (e) {
-        console.warn('Supabase create coupon error:', e);
-      }
-    }
+      if (!created) created = pCreated;
+    } catch (e: any) {}
 
     return NextResponse.json({
       message: `Đã tạo mã giảm giá ${cleanCode} thành công!`,
@@ -186,7 +183,7 @@ export async function PUT(request: Request) {
       minOrderValue, 
       maxDiscount, 
       expiresAt, 
-      maxUses,
+      maxUses, 
       usedCount,
       status
     } = body;
@@ -207,29 +204,28 @@ export async function PUT(request: Request) {
 
     let updated: any = null;
 
+    // 1. Update in Supabase Cloud Database
     try {
-      updated = await prisma.coupon.update({
+      const { data, error } = await supabase
+        .from('Coupon')
+        .update(updateData)
+        .eq('code', code)
+        .select()
+        .single();
+
+      if (!error && data) updated = data;
+    } catch (e) {
+      console.warn('Supabase update coupon error:', e);
+    }
+
+    // 2. Also sync to Prisma
+    try {
+      const pUpdated = await prisma.coupon.update({
         where: { code },
         data: updateData,
       });
-    } catch (e) {
-      console.warn('Prisma update coupon error:', e);
-    }
-
-    if (!updated) {
-      try {
-        const { data, error } = await supabase
-          .from('Coupon')
-          .update(updateData)
-          .eq('code', code)
-          .select()
-          .single();
-
-        if (!error && data) updated = data;
-      } catch (e) {
-        console.warn('Supabase update coupon error:', e);
-      }
-    }
+      if (!updated) updated = pUpdated;
+    } catch (e) {}
 
     return NextResponse.json({
       message: `Đã cập nhật mã giảm giá ${code}!`,

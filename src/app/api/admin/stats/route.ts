@@ -1,55 +1,51 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { supabase } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    // 1. Query real counts and aggregate revenue
-    const [
-      orders,
-      products,
-      serials,
-      users,
-    ] = await Promise.all([
-      prisma.order.findMany({
-        orderBy: { createdAt: 'desc' },
-        include: {
-          orderItems: {
-            include: { product: true }
-          },
-          serials: true,
-          user: {
-            select: { id: true, name: true, email: true }
-          }
-        }
-      }),
-      prisma.product.findMany({
-        select: {
-          id: true,
-          name: true,
-          price: true,
-          costPrice: true,
-          category: true,
-          stockQuantity: true,
-          status: true,
-        }
-      }),
-      prisma.productSerial.findMany({
-        select: {
-          id: true,
-          status: true,
-          productId: true,
-        }
-      }),
-      prisma.user.findMany({
-        select: {
-          id: true,
-          role: true,
-          createdAt: true,
-        }
-      })
-    ]);
+    let orders: any[] = [];
+    let products: any[] = [];
+    let serials: any[] = [];
+    let users: any[] = [];
+
+    // 1. Primary: Supabase Cloud Database (Fast Direct REST in Parallel)
+    try {
+      const [supaOrdersRes, supaProdsRes, supaSerialsRes, supaUsersRes] = await Promise.all([
+        supabase.from('Order').select('*').order('createdAt', { ascending: false }),
+        supabase.from('Product').select('id, name, price, costPrice, category, stockQuantity, status'),
+        supabase.from('ProductSerial').select('id, status, productId'),
+        supabase.from('User').select('id, role, createdAt')
+      ]);
+
+      if (supaOrdersRes.data) orders = supaOrdersRes.data;
+      if (supaProdsRes.data) products = supaProdsRes.data;
+      if (supaSerialsRes.data) serials = supaSerialsRes.data;
+      if (supaUsersRes.data) users = supaUsersRes.data;
+    } catch (supaErr) {
+      console.warn('Supabase stats warning:', supaErr);
+    }
+
+    // 2. Fallback to Prisma if Supabase had missing counts
+    if (orders.length === 0 || products.length === 0 || users.length === 0) {
+      try {
+        const [pOrders, pProducts, pSerials, pUsers] = await Promise.all([
+          orders.length === 0 ? prisma.order.findMany({ orderBy: { createdAt: 'desc' } }) : Promise.resolve([]),
+          products.length === 0 ? prisma.product.findMany({ select: { id: true, name: true, price: true, costPrice: true, category: true, stockQuantity: true, status: true } }) : Promise.resolve([]),
+          serials.length === 0 ? prisma.productSerial.findMany({ select: { id: true, status: true, productId: true } }) : Promise.resolve([]),
+          users.length === 0 ? prisma.user.findMany({ select: { id: true, role: true, createdAt: true } }) : Promise.resolve([])
+        ]);
+
+        if (orders.length === 0 && pOrders.length > 0) orders = pOrders;
+        if (products.length === 0 && pProducts.length > 0) products = pProducts;
+        if (serials.length === 0 && pSerials.length > 0) serials = pSerials;
+        if (users.length === 0 && pUsers.length > 0) users = pUsers;
+      } catch (pErr) {
+        console.warn('Prisma stats notice:', pErr);
+      }
+    }
 
     // Calculate revenue & profits from real orders
     let totalRevenue = 0;

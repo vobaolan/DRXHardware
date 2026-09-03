@@ -15,27 +15,26 @@ export async function GET() {
   };
 
   try {
+    // 1. Primary query from Supabase Cloud Database (Fast Direct REST)
     let dbProducts: any[] = [];
-
-    // 1. Primary query from Prisma PostgreSQL
     try {
-      dbProducts = await prisma.product.findMany({
-        orderBy: { createdAt: 'desc' },
-      });
+      const { data: supaProds, error: supaErr } = await supabase
+        .from('Product')
+        .select('*')
+        .order('createdAt', { ascending: false });
+      if (!supaErr && supaProds && supaProds.length > 0) {
+        dbProducts = supaProds;
+      }
     } catch (e) {
-      console.warn('Prisma products fetch error, trying Supabase fallback:', e);
+      console.warn('Supabase products fetch warning, trying Prisma fallback:', e);
     }
 
-    // 2. Fallback to Supabase client if Prisma had no records
+    // 2. Fallback to Prisma if Supabase had no records
     if (!dbProducts || dbProducts.length === 0) {
       try {
-        const { data: supaProds } = await supabase
-          .from('Product')
-          .select('*')
-          .order('createdAt', { ascending: false });
-        if (supaProds && supaProds.length > 0) {
-          dbProducts = supaProds;
-        }
+        dbProducts = await prisma.product.findMany({
+          orderBy: { createdAt: 'desc' },
+        });
       } catch (e) {}
     }
 
@@ -145,23 +144,26 @@ export async function POST(request: Request) {
     if (wattage) productData.wattage = Number(wattage);
     if (formFactor) productData.formFactor = formFactor;
 
-    // 1. Save directly to Prisma PostgreSQL
+    // 1. Save directly to Supabase Cloud Database (Fast Direct REST)
     let savedProduct: any = null;
     try {
-      savedProduct = await prisma.product.create({
+      const { data, error } = await supabase
+        .from('Product')
+        .insert([productData])
+        .select()
+        .single();
+      if (!error && data) savedProduct = data;
+    } catch (supaErr) {
+      console.warn('Supabase create product notice:', supaErr);
+    }
+
+    // 2. Also sync to Prisma PostgreSQL if available
+    try {
+      const prismaProduct = await prisma.product.create({
         data: productData,
       });
-    } catch (e) {
-      console.warn('Prisma create product error, trying Supabase insert:', e);
-      try {
-        const { data } = await supabase
-          .from('Product')
-          .insert([productData])
-          .select()
-          .single();
-        if (data) savedProduct = data;
-      } catch (err) {}
-    }
+      if (!savedProduct) savedProduct = prismaProduct;
+    } catch (e) {}
 
     const finalProduct = savedProduct || productData;
 
@@ -253,10 +255,26 @@ export async function PUT(request: Request) {
     if (wattage) updatedData.wattage = Number(wattage);
     if (formFactor) updatedData.formFactor = formFactor;
 
-    // Upsert in Prisma / Supabase so default seed products get saved directly into DB
+    // 1. Upsert directly in Supabase Cloud Database (Fast Direct REST)
     let updatedProduct: any = null;
     try {
-      updatedProduct = await prisma.product.upsert({
+      const { data, error } = await supabase
+        .from('Product')
+        .upsert({
+          id,
+          platform: brand || 'PC',
+          type: singleCategory,
+          status: true,
+          ...updatedData,
+        })
+        .select()
+        .single();
+      if (!error && data) updatedProduct = data;
+    } catch (err) {}
+
+    // 2. Also sync to Prisma PostgreSQL if available
+    try {
+      const pUpsert = await prisma.product.upsert({
         where: { id },
         create: {
           id,
@@ -267,22 +285,8 @@ export async function PUT(request: Request) {
         },
         update: updatedData,
       });
-    } catch (e) {
-      try {
-        const { data } = await supabase
-          .from('Product')
-          .upsert({
-            id,
-            platform: brand || 'PC',
-            type: singleCategory,
-            status: true,
-            ...updatedData,
-          })
-          .select()
-          .single();
-        if (data) updatedProduct = data;
-      } catch (err) {}
-    }
+      if (!updatedProduct) updatedProduct = pUpsert;
+    } catch (e) {}
 
     revalidatePath('/', 'layout');
     revalidatePath('/products', 'layout');
@@ -309,11 +313,15 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ message: 'Thiếu ID sản phẩm' }, { status: 400 });
     }
 
+    // 1. Delete from Supabase Cloud Database
+    try {
+      await supabase.from('Product').delete().eq('id', id);
+    } catch (e) {}
+
+    // 2. Also delete from Prisma
     try {
       await prisma.product.delete({ where: { id } });
-    } catch (e) {
-      await supabase.from('Product').delete().eq('id', id);
-    }
+    } catch (e) {}
 
     revalidatePath('/', 'layout');
     revalidatePath('/products', 'layout');

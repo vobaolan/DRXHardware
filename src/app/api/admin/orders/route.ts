@@ -8,9 +8,23 @@ export async function GET(request: Request) {
   try {
     let orders: any[] = [];
 
-    // 1. Primary: Prisma
+    // 1. Primary: Supabase Cloud Database (Fast Direct REST)
     try {
-      orders = await prisma.order.findMany({
+      const { data: supaOrders, error: supaErr } = await supabase
+        .from('Order')
+        .select('*')
+        .order('createdAt', { ascending: false });
+
+      if (!supaErr && supaOrders && supaOrders.length > 0) {
+        orders = supaOrders;
+      }
+    } catch (e) {
+      console.warn('Supabase get all orders warning:', e);
+    }
+
+    // 2. Enrich/Merge with Prisma if available
+    try {
+      const prismaOrders = await prisma.order.findMany({
         orderBy: { createdAt: 'desc' },
         include: {
           user: {
@@ -40,32 +54,21 @@ export async function GET(request: Request) {
           serials: true,
         },
       });
-    } catch (e) {
-      console.warn('Prisma get all orders warning:', e);
-    }
 
-    // 2. Fallback / Merge with Supabase
-    try {
-      const { data: supaOrders, error: supaErr } = await supabase
-        .from('Order')
-        .select('*')
-        .order('createdAt', { ascending: false });
-
-      if (!supaErr && supaOrders && supaOrders.length > 0) {
+      if (prismaOrders && prismaOrders.length > 0) {
         if (orders.length === 0) {
-          orders = supaOrders;
+          orders = prismaOrders;
         } else {
-          // Merge unique orders
           const existingIds = new Set(orders.map(o => o.id));
-          for (const so of supaOrders) {
-            if (!existingIds.has(so.id)) {
-              orders.push(so);
+          for (const po of prismaOrders) {
+            if (!existingIds.has(po.id)) {
+              orders.push(po);
             }
           }
         }
       }
     } catch (e) {
-      console.warn('Supabase get all orders warning:', e);
+      console.warn('Prisma get all orders notice:', e);
     }
 
     return NextResponse.json({ orders }, { status: 200 });
