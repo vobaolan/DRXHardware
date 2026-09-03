@@ -66,6 +66,32 @@ const formatVND = (num: number | string | null | undefined) => {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
 };
 
+export const formatOrderDisplayCode = (ord: any): string => {
+  if (!ord) return '#DRX-00000';
+  let raw = String(ord.orderCode || ord.id || '').toUpperCase();
+  raw = raw.replace(/^#/, '').replace(/^ORD-/, '').trim();
+  
+  if (raw.startsWith('DRX-')) {
+    const digits = raw.replace('DRX-', '');
+    if (digits.length === 5) return `#${raw}`;
+    if (digits.length === 4) return `#DRX-0${digits}`;
+    return `#DRX-${digits.padStart(5, '0').slice(-5)}`;
+  }
+  
+  if (raw.startsWith('DRX')) {
+    const digits = raw.slice(3);
+    if (digits.length === 5) return `#DRX-${digits}`;
+    if (digits.length === 4) return `#DRX-0${digits}`;
+    return `#DRX-${digits.padStart(5, '0').slice(-5)}`;
+  }
+  
+  const nums = raw.replace(/\D/g, '');
+  if (nums.length >= 5) {
+    return `#DRX-${nums.slice(0, 5)}`;
+  }
+  return `#DRX-${(nums || '84920').padStart(5, '0').slice(-5)}`;
+};
+
 export default function AdminDashboardPage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
@@ -74,6 +100,7 @@ export default function AdminDashboardPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Live Database States
+  const [coupons, setCoupons] = useState<any[]>([]);
   const [stats, setStats] = useState<any>({
     totalRevenue: 0,
     totalProfit: 0,
@@ -131,16 +158,35 @@ export default function AdminDashboardPage() {
   const [inputSerialStatus, setInputSerialStatus] = useState('AVAILABLE');
   const [isSubmittingSn, setIsSubmittingSn] = useState(false);
 
+  const productSelectOptions: SelectOption[] = useMemo(() => {
+    return products.map((p) => {
+      const cleanName = (p.name || '').replace(/ODS/gi, 'DRX');
+      return {
+        value: p.id,
+        label: `[${p.category || 'PART'}] ${cleanName}`,
+        badge: p.category || 'LINH KIỆN',
+        description: `${p.brand || 'DRX'} • ${formatVND(p.price)}`,
+      };
+    });
+  }, [products]);
+
+  const SERIAL_STATUS_INIT_OPTIONS: SelectOption[] = [
+    { value: 'AVAILABLE', label: 'AVAILABLE (Có Sẵn Trong Kho)', badge: 'SẴN SÀNG' },
+    { value: 'SOLD', label: 'SOLD (Đã Xuất Bán)', badge: 'ĐÃ BÁN' },
+    { value: 'WARRANTY', label: 'WARRANTY (Đang Bảo Hành)', badge: 'BẢO HÀNH' },
+  ];
+
   // 1. Fetch all live data from Database
   const fetchAllData = useCallback(async (showNotification = false) => {
     setIsRefreshing(true);
     try {
-      const [statsRes, prodsRes, ordersRes, serialsRes, usersRes] = await Promise.all([
+      const [statsRes, prodsRes, ordersRes, serialsRes, usersRes, couponsRes] = await Promise.all([
         fetch(`/api/admin/stats?t=${Date.now()}`, { cache: 'no-store' }),
         fetch(`/api/admin/products?t=${Date.now()}`, { cache: 'no-store' }),
         fetch(`/api/admin/orders?t=${Date.now()}`, { cache: 'no-store' }),
         fetch(`/api/admin/serials?t=${Date.now()}`, { cache: 'no-store' }),
         fetch(`/api/admin/users?t=${Date.now()}`, { cache: 'no-store' }),
+        fetch(`/api/admin/coupons?t=${Date.now()}`, { cache: 'no-store' }),
       ]);
 
       if (statsRes.ok) {
@@ -167,6 +213,11 @@ export default function AdminDashboardPage() {
       if (usersRes.ok) {
         const usersData = await usersRes.json();
         if (usersData.users) setUsers(usersData.users);
+      }
+
+      if (couponsRes.ok) {
+        const couponsData = await couponsRes.json();
+        if (couponsData.coupons) setCoupons(couponsData.coupons);
       }
 
       if (showNotification) {
@@ -764,13 +815,18 @@ export default function AdminDashboardPage() {
               <Tag className="w-4 h-4" />
               <span>Mã Giảm Giá</span>
             </div>
-            {activeTab === 'coupons' && <ChevronRight className="w-4 h-4" />}
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-white/20 dark:bg-slate-800 text-current">
+              {coupons.length}
+            </span>
           </button>
 
           <div className="pt-4 mt-4 border-t border-slate-200/80 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 space-y-2">
             <div className="flex items-center justify-between">
-              <span>Trạng thái DB:</span>
-              <span className="text-emerald-600 dark:text-emerald-400 font-bold">Online</span>
+              <span>Trạng thái:</span>
+              <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-sm shadow-emerald-500/50" />
+                <span>Hoạt động</span>
+              </span>
             </div>
             <div className="flex items-center justify-between">
               <span>Phiên làm việc:</span>
@@ -986,7 +1042,7 @@ export default function AdminDashboardPage() {
                         {orders.slice(0, 5).map((o: any) => (
                           <tr key={o.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                             <td className="py-3 px-3 font-mono font-bold text-[#0284c7]">
-                              #{o.orderCode || o.id.slice(0, 8)}
+                              {formatOrderDisplayCode(o)}
                             </td>
                             <td className="py-3 px-3">
                               <span className="font-bold text-slate-900 dark:text-white block">{o.customerName}</span>
@@ -1229,12 +1285,12 @@ export default function AdminDashboardPage() {
                           pDetails.check_collected_cod || o.paymentStatus === 'PAID'
                         ].filter(Boolean).length;
 
-                        const orderDisplayCode = o.orderCode || (o.id ? String(o.id).slice(0, 8).toUpperCase() : 'DRX');
+                        const orderDisplayCode = formatOrderDisplayCode(o);
 
                         return (
                           <tr key={o.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                             <td className="py-3.5 px-4 font-mono font-bold text-[#0284c7] whitespace-nowrap">
-                              #{orderDisplayCode}
+                              {orderDisplayCode}
                             </td>
                             <td className="py-3.5 px-3 whitespace-nowrap">
                               <span className="font-bold text-slate-900 dark:text-white block">{o.customerName || 'Khách hàng'}</span>
@@ -1364,7 +1420,38 @@ export default function AdminDashboardPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                      {filteredSerials.map((s) => (
+                      {filteredSerials.length === 0 ? (
+                        <tr>
+                          <td colSpan={7} className="py-16 text-center">
+                            <div className="flex flex-col items-center justify-center space-y-3 max-w-sm mx-auto">
+                              <div className="w-14 h-14 rounded-2xl bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] flex items-center justify-center border border-sky-200 dark:border-sky-800 shadow-sm">
+                                <Boxes className="w-7 h-7" />
+                              </div>
+                              <div className="space-y-1">
+                                <p className="font-heading font-black text-sm text-slate-800 dark:text-slate-200">
+                                  Chưa Có Mã Serial (SN) Nào Trong Kho
+                                </p>
+                                <p className="text-xs text-slate-400 leading-relaxed">
+                                  Kho hàng hiện tại chưa có dữ liệu mã serial nào hoặc không tìm thấy kết quả phù hợp với bộ lọc.
+                                </p>
+                              </div>
+                              <button
+                                onClick={() => {
+                                  if (products.length > 0) {
+                                    setSelectedProductIdForSn(products[0].id);
+                                  }
+                                  setIsSnModalOpen(true);
+                                }}
+                                className="px-4 py-2 bg-gradient-to-r from-[#0284c7] to-[#38bdf8] hover:from-[#0369a1] text-white text-xs font-bold uppercase rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-sm shadow-sky-500/20 mt-1"
+                              >
+                                <Plus className="w-4 h-4" />
+                                <span>+ Nhập Mã Serial Mới</span>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredSerials.map((s) => (
                         <tr key={s.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                           <td className="py-3.5 px-4 font-mono font-black text-slate-900 dark:text-white whitespace-nowrap">
                             <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
@@ -1407,8 +1494,9 @@ export default function AdminDashboardPage() {
                             </button>
                           </td>
                         </tr>
-                      ))}
-                    </tbody>
+                      ))
+                    )}
+                  </tbody>
                   </table>
                 </div>
               </div>
@@ -1913,17 +2001,12 @@ export default function AdminDashboardPage() {
                 <label className="text-slate-700 dark:text-slate-300 font-bold uppercase text-[10.5px]">
                   Chọn Linh Kiện Gán Serial:
                 </label>
-                <select
+                <ModernSelect
+                  options={productSelectOptions}
                   value={selectedProductIdForSn}
-                  onChange={(e) => setSelectedProductIdForSn(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-[#0284c7]"
-                >
-                  {products.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      [{p.category}] {p.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(val) => setSelectedProductIdForSn(String(val))}
+                  placeholder="Chọn linh kiện gán Serial..."
+                />
               </div>
 
               <div className="space-y-1.5">
@@ -1945,15 +2028,12 @@ export default function AdminDashboardPage() {
                 <label className="text-slate-700 dark:text-slate-300 font-bold uppercase text-[10.5px]">
                   Trạng Thái Khởi Tạo:
                 </label>
-                <select
+                <ModernSelect
+                  options={SERIAL_STATUS_INIT_OPTIONS}
                   value={inputSerialStatus}
-                  onChange={(e) => setInputSerialStatus(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-[#0284c7]"
-                >
-                  <option value="AVAILABLE">AVAILABLE (Có Sẵn Trong Kho)</option>
-                  <option value="SOLD">SOLD (Đã Xuất Bán)</option>
-                  <option value="WARRANTY">WARRANTY (Đang Bảo Hành)</option>
-                </select>
+                  onChange={(val) => setInputSerialStatus(String(val))}
+                  placeholder="Chọn trạng thái..."
+                />
               </div>
 
               <div className="flex items-center justify-end gap-2.5 pt-2">
