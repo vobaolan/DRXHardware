@@ -8,7 +8,7 @@ import {
   Wrench, ArrowLeft, RefreshCw, Lock, ShieldAlert, Home, UserCheck,
   ChevronRight, Truck, FileText, SearchCode, Database, Tag, Clock, HardDrive, Cpu,
   Edit2, Trash2, Eye, Phone, Mail, MapPin, Calendar, Check, X,
-  ExternalLink, Layers, Sparkles, Award
+  ExternalLink, Layers, Sparkles, Award, PackageCheck, Ban
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { showToast } from '@/components/Toast';
@@ -17,6 +17,8 @@ import { supabase } from '@/lib/supabase';
 import { ModernSelect, SelectOption } from '@/components/ui/ModernSelect';
 import { PortalHeader } from '@/components/admin/PortalHeader';
 import { OrderVerificationModal } from '@/components/admin/OrderVerificationModal';
+import { OrderStatusSelector, OrderStatus } from '@/components/admin/OrderStatusSelector';
+import { CouponManagementView } from '@/components/admin/CouponManagementView';
 
 // Category mapping for filters
 const CATEGORY_NAMES: Record<string, string> = {
@@ -60,7 +62,7 @@ export default function StaffWarehousePortalPage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
   const [isAuthorizedStaff, setIsAuthorizedStaff] = useState(false);
-  const [activeTab, setActiveTab] = useState<'products' | 'inventory' | 'assembly' | 'warranty'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'inventory' | 'assembly' | 'warranty' | 'coupons'>('products');
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Live Database States
@@ -284,6 +286,7 @@ export default function StaffWarehousePortalPage() {
       });
       if (res.ok) {
         setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+        setAssemblyOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
         if (viewingOrder && viewingOrder.id === orderId) {
           setViewingOrder({ ...viewingOrder, status: newStatus });
         }
@@ -594,6 +597,21 @@ export default function StaffWarehousePortalPage() {
               <span>Tra Cứu Bảo Hành SN</span>
             </div>
             {activeTab === 'warranty' && <ChevronRight className="w-4 h-4" />}
+          </button>
+
+          <button
+            onClick={() => setActiveTab('coupons')}
+            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              activeTab === 'coupons' 
+                ? 'bg-gradient-to-r from-[#0284c7] to-[#38bdf8] text-white shadow-md shadow-sky-500/20 font-extrabold' 
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            <div className="flex items-center gap-2.5">
+              <Tag className="w-4 h-4" />
+              <span>Quản Lý Mã Giảm Giá</span>
+            </div>
+            {activeTab === 'coupons' && <ChevronRight className="w-4 h-4" />}
           </button>
 
           <div className="pt-4 mt-4 border-t border-slate-200/80 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 space-y-2">
@@ -978,19 +996,16 @@ export default function StaffWarehousePortalPage() {
                       </div>
 
                       <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 flex-wrap">
-                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase border ${
-                          ord.status === 'COMPLETED' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800' :
-                          ord.status === 'SHIPPING' ? 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800' :
-                          ord.status === 'CONFIRMED' ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800' :
-                          'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800'
-                        }`}>
-                          {ord.status}
-                        </span>
+                        <OrderStatusSelector
+                          currentStatus={ord.status}
+                          onStatusChange={(newSt) => handleUpdateOrderStatus(ord.id, newSt)}
+                          size="sm"
+                        />
 
                         <div className="flex items-center gap-1.5">
                           <button
                             onClick={() => setViewingOrder(ord)}
-                            className="px-3 py-1.5 rounded-lg bg-[#0284c7] hover:bg-[#0369a1] text-white text-[11px] font-extrabold cursor-pointer transition-all shadow-xs flex items-center gap-1"
+                            className="px-3.5 py-1.5 rounded-xl bg-[#0284c7] hover:bg-[#0369a1] text-white text-xs font-black uppercase tracking-wider cursor-pointer transition-all shadow-xs flex items-center gap-1.5 active:scale-95"
                           >
                             <PackageCheck className="w-3.5 h-3.5" />
                             <span>Mục Check Đơn</span>
@@ -1097,6 +1112,13 @@ export default function StaffWarehousePortalPage() {
                 )}
               </div>
             </div>
+          )}
+
+          {/* ============================================================ */}
+          {/* TAB 5: COUPON & VOUCHER MANAGEMENT                          */}
+          {/* ============================================================ */}
+          {activeTab === 'coupons' && (
+            <CouponManagementView canEdit={true} />
           )}
 
         </main>

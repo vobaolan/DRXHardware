@@ -10,7 +10,7 @@ import {
   Wrench, FileText, Sparkles, Filter, X, Award, ExternalLink,
   Edit2, Trash2, Phone, Mail, MapPin, Calendar, Clock, Check,
   UserCheck, ArrowDownRight, BarChart3, Hash, Layers, UserPlus,
-  KeyRound, Shield, ShieldQuestion
+  KeyRound, Shield, ShieldQuestion, PackageCheck, Ban, Tag
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { showToast } from '@/components/Toast';
@@ -19,6 +19,8 @@ import { supabase } from '@/lib/supabase';
 import { ModernSelect, SelectOption } from '@/components/ui/ModernSelect';
 import { PortalHeader } from '@/components/admin/PortalHeader';
 import { OrderVerificationModal } from '@/components/admin/OrderVerificationModal';
+import { OrderStatusSelector } from '@/components/admin/OrderStatusSelector';
+import { CouponManagementView } from '@/components/admin/CouponManagementView';
 
 const USER_ROLE_SELECT_OPTIONS: SelectOption[] = [
   { value: 'USER', label: '👤 Khách Hàng (User)', badge: 'USER' },
@@ -68,7 +70,7 @@ export default function AdminDashboardPage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders' | 'inventory' | 'users'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders' | 'inventory' | 'users' | 'coupons'>('overview');
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Live Database States
@@ -750,6 +752,21 @@ export default function AdminDashboardPage() {
             </span>
           </button>
 
+          <button
+            onClick={() => setActiveTab('coupons')}
+            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              activeTab === 'coupons' 
+                ? 'bg-gradient-to-r from-[#0284c7] to-[#38bdf8] text-white shadow-md shadow-sky-500/20 font-extrabold' 
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            <div className="flex items-center gap-2.5">
+              <Tag className="w-4 h-4" />
+              <span>Mã Giảm Giá</span>
+            </div>
+            {activeTab === 'coupons' && <ChevronRight className="w-4 h-4" />}
+          </button>
+
           <div className="pt-4 mt-4 border-t border-slate-200/80 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 space-y-2">
             <div className="flex items-center justify-between">
               <span>Trạng thái DB:</span>
@@ -1261,30 +1278,19 @@ export default function AdminDashboardPage() {
                               {formatVND(o.netAmount || o.totalAmount)}
                             </td>
                             <td className="py-3.5 px-3 whitespace-nowrap">
-                              <select
-                                value={o.status}
-                                onChange={(e) => handleUpdateOrderStatus(o.id, e.target.value)}
-                                className={`text-[10.5px] font-black uppercase px-2.5 py-1 rounded-full border focus:outline-none cursor-pointer ${
-                                  o.status === 'COMPLETED' ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800' :
-                                  o.status === 'SHIPPING' ? 'bg-purple-50 text-purple-700 border-purple-300 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800' :
-                                  o.status === 'CONFIRMED' ? 'bg-blue-50 text-blue-700 border-blue-300 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800' :
-                                  o.status === 'CANCELLED' ? 'bg-rose-50 text-rose-700 border-rose-300 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800' :
-                                  'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800'
-                                }`}
-                              >
-                                <option value="PENDING">PENDING</option>
-                                <option value="CONFIRMED">CONFIRMED</option>
-                                <option value="SHIPPING">SHIPPING</option>
-                                <option value="COMPLETED">COMPLETED</option>
-                                <option value="CANCELLED">CANCELLED</option>
-                              </select>
+                              <OrderStatusSelector
+                                currentStatus={o.status}
+                                onStatusChange={(newSt) => handleUpdateOrderStatus(o.id, newSt)}
+                                size="sm"
+                              />
                             </td>
                             <td className="py-3.5 px-4 text-right whitespace-nowrap">
                               <button
                                 onClick={() => setViewingOrder(o)}
-                                className="px-3 py-1.5 rounded-xl bg-[#0284c7] hover:bg-[#0369a1] text-white text-xs font-bold transition-all cursor-pointer shadow-xs"
+                                className="px-3.5 py-1.5 rounded-xl bg-[#0284c7] hover:bg-[#0369a1] text-white text-xs font-black uppercase tracking-wider transition-all cursor-pointer shadow-xs inline-flex items-center gap-1.5 active:scale-95"
                               >
-                                Check &amp; Chi Tiết
+                                <PackageCheck className="w-3.5 h-3.5" />
+                                <span>Check Đơn</span>
                               </button>
                             </td>
                           </tr>
@@ -1688,6 +1694,13 @@ export default function AdminDashboardPage() {
               </div>
 
             </div>
+          )}
+
+          {/* ============================================================ */}
+          {/* TAB 6: COUPON & VOUCHER MANAGEMENT                          */}
+          {/* ============================================================ */}
+          {activeTab === 'coupons' && (
+            <CouponManagementView canEdit={true} />
           )}
 
         </main>

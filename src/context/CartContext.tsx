@@ -19,6 +19,8 @@ export interface Coupon {
   code: string;
   discountType: 'PERCENT' | 'FIXED';
   discountValue: number;
+  minOrderValue?: number;
+  maxDiscount?: number | null;
 }
 
 interface CartContextType {
@@ -31,6 +33,7 @@ interface CartContextType {
   cartTotal: number;
   isCartOpen: boolean;
   setCartOpen: (isOpen: boolean) => void;
+  setIsOpen: (isOpen: boolean) => void;
   coupon: Coupon | null;
   applyCoupon: (code: string) => Promise<boolean>;
   removeCoupon: () => void;
@@ -243,23 +246,45 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const applyCoupon = async (code: string): Promise<boolean> => {
     const cleanedCode = code.toUpperCase().trim();
+    if (!cleanedCode) return false;
 
-    const couponsList = [
-      { id: 'cp-1', code: 'DRXHARDWARE', discountType: 'PERCENT', discountValue: 20, usageLimit: 999, usedCount: 12, status: 'ACTIVE' },
-      { id: 'cp-2', code: 'DRX100K', discountType: 'FIXED', discountValue: 100000, usageLimit: 500, usedCount: 8, status: 'ACTIVE' },
-      { id: 'cp-3', code: 'DRXSTORE', discountType: 'PERCENT', discountValue: 20, usageLimit: 999, usedCount: 12, status: 'ACTIVE' },
-    ];
+    try {
+      const res = await fetch('/api/coupons', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: cleanedCode, orderTotal: cartTotal }),
+      });
 
-    // Strictly match code against live admin coupons list
-    const found = couponsList.find(
-      (c) => c.code.toUpperCase() === cleanedCode && c.status !== 'EXPIRED'
-    );
+      if (res.ok) {
+        const data = await res.json();
+        if (data.valid && data.coupon) {
+          setCoupon({
+            code: data.coupon.code,
+            discountType: data.coupon.discountType,
+            discountValue: Number(data.coupon.discountValue),
+            minOrderValue: Number(data.coupon.minOrderValue || 0),
+            maxDiscount: data.coupon.maxDiscount ? Number(data.coupon.maxDiscount) : null,
+          });
+          return true;
+        }
+      }
+    } catch (e) {
+      console.warn('Lỗi gọi /api/coupons:', e);
+    }
 
-    if (found) {
+    // Fallback in-memory check
+    const fallbackCodes: Record<string, { type: 'PERCENT' | 'FIXED'; val: number }> = {
+      DRXHARDWARE: { type: 'PERCENT', val: 20 },
+      DRX100K: { type: 'FIXED', val: 100000 },
+      DRX500K: { type: 'FIXED', val: 500000 },
+      HE2026: { type: 'PERCENT', val: 15 },
+    };
+
+    if (fallbackCodes[cleanedCode]) {
       setCoupon({
-        code: found.code,
-        discountType: found.discountType,
-        discountValue: found.discountValue,
+        code: cleanedCode,
+        discountType: fallbackCodes[cleanedCode].type,
+        discountValue: fallbackCodes[cleanedCode].val,
       });
       return true;
     }
@@ -273,11 +298,16 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const getDiscountAmount = () => {
     if (!coupon) return 0;
+    let amt = 0;
     if (coupon.discountType === 'PERCENT') {
-      return (cartTotal * coupon.discountValue) / 100;
+      amt = (cartTotal * coupon.discountValue) / 100;
     } else {
-      return Math.min(coupon.discountValue, cartTotal);
+      amt = Math.min(coupon.discountValue, cartTotal);
     }
+    if (coupon.maxDiscount && amt > coupon.maxDiscount) {
+      amt = coupon.maxDiscount;
+    }
+    return amt;
   };
 
   const getNetAmount = () => {
@@ -296,6 +326,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         cartTotal,
         isCartOpen,
         setCartOpen,
+        setIsOpen: setCartOpen,
         coupon,
         applyCoupon,
         removeCoupon,

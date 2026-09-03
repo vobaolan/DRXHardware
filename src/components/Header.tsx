@@ -381,44 +381,6 @@ export const Header: React.FC = () => {
             )}
           </button>
 
-
-          {/* BELL THÔNG BÁO (When logged in) */}
-          {currentUser && (
-            isAdmin ? (
-              <div className="relative">
-                <button
-                  onClick={() => setIsAdminNotifOpen(!isAdminNotifOpen)}
-                  className="relative flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 p-2 text-slate-700 dark:text-slate-200 hover:text-cyan-600 dark:hover:text-cyan-400 transition-all cursor-pointer shadow-xs"
-                  title="Thông báo quản trị"
-                >
-                  <Bell className={`h-4.5 w-4.5 ${hasNewNotification ? 'animate-bounce text-amber-500' : ''}`} />
-                  {hasNewNotification && (
-                    <span className="absolute top-1 right-1 flex h-2.5 w-2.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
-                    </span>
-                  )}
-                </button>
-              </div>
-            ) : (
-              <div className="relative">
-                <button
-                  onClick={() => setIsUserNotifOpen(!isUserNotifOpen)}
-                  className="relative flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 p-2 text-slate-700 dark:text-slate-200 hover:text-cyan-600 dark:hover:text-cyan-400 transition-all cursor-pointer shadow-xs"
-                  title="Thông báo cá nhân"
-                >
-                  <Bell className={`h-4.5 w-4.5 ${hasUserNewMessage ? 'animate-bounce text-cyan-500' : ''}`} />
-                  {hasUserNewMessage && (
-                    <span className="absolute top-1 right-1 flex h-2.5 w-2.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-500"></span>
-                    </span>
-                  )}
-                </button>
-              </div>
-            )
-          )}
-
           {/* THEME TOGGLE (UI VERSE TOGGLE SWITCHER) */}
           <div title={theme === 'dark' ? 'Chuyển sang Giao diện Sáng' : 'Chuyển sang Giao diện Tối'}>
             <UiverseToggle

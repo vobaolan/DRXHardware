@@ -6,7 +6,6 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { Header } from '@/components/Header';
 import { ProductCard, ProductProps } from '@/components/ProductCard';
 import { Footer } from '@/components/Footer';
-import { CartProvider } from '@/context/CartContext';
 import { 
   Search, SlidersHorizontal, Flame, Clock, Tag, ArrowLeft, Grid, 
   X, RotateCcw, Check, Filter, ChevronRight
@@ -1429,10 +1428,8 @@ function ProductsCatalogContent() {
 
 export default function ProductsPage() {
   return (
-    <CartProvider>
-      <Suspense fallback={<div className="py-20 text-center text-xs font-bold text-slate-400">Loading DRX Hardware catalog...</div>}>
-        <ProductsCatalogContent />
-      </Suspense>
-    </CartProvider>
+    <Suspense fallback={<div className="py-20 text-center text-xs font-bold text-slate-400">Loading DRX Hardware catalog...</div>}>
+      <ProductsCatalogContent />
+    </Suspense>
   );
 }

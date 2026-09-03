@@ -24,7 +24,7 @@ interface MediaItem {
 
 export default function ProductDetailPage({ params }: { params: { slug: string } }) {
   const { showToast } = useToast();
-  const { addToCart, setIsOpen } = useCart();
+  const { addToCart, setCartOpen } = useCart();
   const [realProduct, setRealProduct] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -256,7 +256,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
       coverImage: product.coverImage,
       platform: product.brand || 'DRX',
     });
-    setIsOpen(true);
+    setCartOpen(true);
     showToast(`Đã thêm "${product.name}" vào giỏ hàng!`, 'success');
   };
 

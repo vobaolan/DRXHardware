@@ -4,9 +4,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { Header } from '@/components/Header';
 import { ProductCard, ProductProps } from '@/components/ProductCard';
-import { CartDrawer } from '@/components/CartDrawer';
 import { Footer } from '@/components/Footer';
-import { CartProvider } from '@/context/CartContext';
 import { Search, SlidersHorizontal, Clock, ArrowLeft, Trash2 } from 'lucide-react';
 
 export default function RecentlyViewedPage() {
@@ -92,9 +90,8 @@ export default function RecentlyViewedPage() {
   };
 
   return (
-    <CartProvider>
-      <div className="min-h-screen bg-white text-black flex flex-col antialiased">
-        <Header />
+    <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col antialiased">
+      <Header />
 
         <main className="flex-1 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
           {/* BREADCRUMB HEADER */}
@@ -212,8 +209,6 @@ export default function RecentlyViewedPage() {
         </main>
 
         <Footer />
-        <CartDrawer />
       </div>
-    </CartProvider>
   );
 }

@@ -9,12 +9,13 @@ import {
   ShoppingBag, Settings, LogOut, CheckCircle2, Copy, Check, ArrowRight, 
   ShieldCheck, Cpu, Box, Zap, PackageCheck, Wrench, ChevronRight,
   Award, CheckCircle, LayoutDashboard, Phone, MapPin,
-  Eye, EyeOff, Sparkles, X
+  Eye, EyeOff, Sparkles, X, Trash2, ShoppingCart, Download, ExternalLink
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useToast } from '@/components/Toast';
+import { useCart } from '@/context/CartContext';
 
 interface HardwareKey {
   id: string;
@@ -62,6 +63,8 @@ function GoogleIcon({ className = "w-4 h-4" }: { className?: string }) {
 function ProfileContent() {
   const { showToast } = useToast();
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const { addToCart } = useCart();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [authTab, setAuthTab] = useState<'login' | 'register'>('login');
   
@@ -423,6 +426,43 @@ function ProfileContent() {
     setNewPassword('');
     setConfirmNewPassword('');
     showToast('Đổi mật khẩu tài khoản thành công!', 'success');
+  };
+
+  const handleDeleteSavedBuild = (buildId: string) => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa cấu hình PC này khỏi danh sách đã lưu?')) return;
+    try {
+      const updated = savedBuilds.filter((b: any) => b.id !== buildId);
+      setSavedBuilds(updated);
+      localStorage.setItem('drx_saved_pc_builds', JSON.stringify(updated));
+      showToast('Đã xóa cấu hình PC thành công!', 'success');
+    } catch (e) {
+      showToast('Lỗi khi xóa cấu hình.', 'error');
+    }
+  };
+
+  const handleBuySavedBuild = (build: any) => {
+    const items = build.items || [];
+    if (items.length === 0) {
+      showToast('Cấu hình này không có linh kiện!', 'error');
+      return;
+    }
+    items.forEach((it: any) => {
+      const p = it.product;
+      if (p) {
+        addToCart({
+          id: p.id,
+          productId: p.id,
+          name: p.name,
+          slug: p.slug || p.id,
+          price: p.price,
+          discountPrice: p.discountPrice,
+          coverImage: p.coverImage,
+          platform: 'HARDWARE',
+        });
+      }
+    });
+    showToast(`Đã thêm toàn bộ linh kiện của "${build.name}" vào giỏ hàng!`, 'success');
+    router.push('/checkout');
   };
 
   // Calculate total registered hardware items
@@ -1104,10 +1144,13 @@ function ProfileContent() {
                       ) : (
                         <div className="space-y-4">
                           {orders.map((order: any) => {
-                            const pDetails = typeof order.paymentDetails === 'string'
-                              ? (() => { try { return JSON.parse(order.paymentDetails); } catch { return {}; } })()
-                              : (order.paymentDetails && typeof order.paymentDetails === 'object' ? order.paymentDetails : {});
-                            const orderDisplayCode = order.orderCode || (order.id ? String(order.id).slice(0, 8).toUpperCase() : 'DRX');
+                            const orderDisplayCode = (() => {
+                              let raw = String(order.orderCode || order.id || 'DRX-83921').toUpperCase();
+                              raw = raw.replace(/^#/, '').replace(/^ORD-/, '');
+                              if (raw.startsWith('DRX-')) return raw;
+                              if (raw.startsWith('DRX')) return `DRX-${raw.slice(3)}`;
+                              return `DRX-${raw.slice(-5)}`;
+                            })();
                             const needInst = Boolean(pDetails.needInstallation);
                             const isProxy = Boolean(pDetails.isProxyRecipient);
                             const isPickup = order.deliveryType === 'STORE_PICKUP';
@@ -1167,7 +1210,18 @@ function ProfileContent() {
                                   </div>
                                 </div>
 
+                                {/* CANCELLATION NOTICE IF CANCELLED */}
+                                {order.status === 'CANCELLED' && (
+                                  <div className="p-3 bg-rose-50 dark:bg-rose-950/40 rounded-xl border border-rose-200 dark:border-rose-900/60 text-xs text-rose-800 dark:text-rose-300">
+                                    <span className="font-black uppercase text-[10.5px] block">ĐƠN HÀNG ĐÃ HỦY:</span>
+                                    <p className="text-[11px] opacity-90 mt-0.5">
+                                      {pDetails.cancellationReason || 'Đơn hàng đã được hủy bởi cửa hàng hoặc khách hàng.'}
+                                    </p>
+                                  </div>
+                                )}
+
                                 {/* OPERATIONAL CHECKLIST PROGRESS (SYNCED REAL-TIME WITH ADMIN & STAFF) */}
+                                {order.status !== 'CANCELLED' && (
                                 <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-sky-100 dark:border-slate-800 space-y-2">
                                   <div className="flex items-center justify-between text-[11px]">
                                     <span className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
@@ -1193,6 +1247,7 @@ function ProfileContent() {
                                     ))}
                                   </div>
                                 </div>
+                                )}
 
                                 {/* ITEMS LIST */}
                                 {itemsList.length > 0 && (
@@ -1419,26 +1474,111 @@ function ProfileContent() {
                           </Link>
                         </div>
                       ) : (
-                        <div className="space-y-4">
-                          {savedBuilds.map((build: any, bIdx: number) => (
-                            <div key={bIdx} className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-5 space-y-3">
-                              <div className="flex items-center justify-between">
-                                <h4 className="font-heading text-sm font-black uppercase text-slate-900 dark:text-white">
-                                  {build.name || `Cấu hình PC #${bIdx + 1}`}
-                                </h4>
-                                <span className="font-heading text-xs font-black text-[#0284c7]">
-                                  {formatCurrency(build.totalPrice || 0)}
-                                </span>
-                              </div>
-                              <Link
-                                href="/pc-builder"
-                                className="inline-flex items-center gap-1 text-xs font-bold text-[#0284c7] hover:underline"
+                        <div className="space-y-5">
+                          {savedBuilds.map((build: any, bIdx: number) => {
+                            const items = build.items || [];
+                            const dateStr = build.savedAt 
+                              ? new Date(build.savedAt).toLocaleDateString('vi-VN', {
+                                  day: '2-digit', month: '2-digit', year: 'numeric'
+                                })
+                              : 'Vừa lưu';
+
+                            return (
+                              <div 
+                                key={build.id || bIdx} 
+                                className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950 p-5 sm:p-6 space-y-4 shadow-2xs hover:border-sky-300 dark:hover:border-slate-700 transition-all"
                               >
-                                <span>Mở lại trong PC Builder</span>
-                                <ArrowRight className="w-3.5 h-3.5" />
-                              </Link>
-                            </div>
-                          ))}
+                                {/* Header of Saved Build Card */}
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/80 dark:border-slate-800/80 pb-3.5">
+                                  <div className="space-y-1">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <h4 className="font-heading text-sm sm:text-base font-black uppercase text-slate-900 dark:text-white">
+                                        {build.name || `Cấu hình PC #${bIdx + 1}`}
+                                      </h4>
+                                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-sky-100 text-[#0284c7] dark:bg-sky-950/80 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
+                                        {items.length || build.itemCount || 0} Linh Kiện
+                                      </span>
+                                    </div>
+                                    <p className="text-[11px] text-slate-500">
+                                      Ngày lưu: {dateStr} {build.note ? `• ${build.note}` : ''}
+                                    </p>
+                                  </div>
+
+                                  <div className="text-left sm:text-right">
+                                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Tổng giá trị:</span>
+                                    <span className="font-heading text-base sm:text-lg font-black text-rose-600 dark:text-rose-400">
+                                      {formatCurrency(build.totalPrice || 0)}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* Items mini-grid */}
+                                {items.length > 0 && (
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                                    {items.map((it: any, itIdx: number) => {
+                                      const p = it.product;
+                                      if (!p) return null;
+                                      return (
+                                        <div 
+                                          key={itIdx} 
+                                          className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-2.5 flex items-center gap-2.5 shadow-2xs"
+                                        >
+                                          <img 
+                                            src={p.coverImage || 'https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?w=100'} 
+                                            alt={p.name}
+                                            className="w-10 h-10 rounded-xl object-contain bg-slate-50 dark:bg-slate-950 p-1 shrink-0 border border-slate-100 dark:border-slate-800"
+                                          />
+                                          <div className="min-w-0 flex-1">
+                                            <span className="text-[9px] font-black uppercase text-[#0284c7] block">
+                                              {it.category || p.category}
+                                            </span>
+                                            <h5 className="font-heading text-[11px] font-bold text-slate-900 dark:text-white truncate" title={p.name}>
+                                              {p.name}
+                                            </h5>
+                                            <span className="text-[10px] font-mono text-slate-500 block">
+                                              {formatCurrency(p.discountPrice || p.price)}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+
+                                {/* Action Buttons */}
+                                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-slate-200/80 dark:border-slate-800/80">
+                                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                                    <Link
+                                      href={`/pc-builder?loadBuildId=${build.id}`}
+                                      className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-sky-50 dark:bg-sky-950/80 text-[#0284c7] dark:text-sky-300 hover:bg-sky-100 text-xs font-heading font-black uppercase tracking-wider flex items-center justify-center gap-1.5 border border-sky-200 dark:border-sky-800 transition-all cursor-pointer"
+                                    >
+                                      <Wrench className="w-3.5 h-3.5" />
+                                      <span>Tải Vào PC Builder</span>
+                                    </Link>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => handleBuySavedBuild(build)}
+                                      className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-[#0284c7] hover:bg-[#0369a1] text-white text-xs font-heading font-black uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer active:scale-95"
+                                    >
+                                      <ShoppingCart className="w-3.5 h-3.5" />
+                                      <span>Mua Toàn Bộ</span>
+                                    </button>
+                                  </div>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteSavedBuild(build.id)}
+                                    className="p-2 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/60 rounded-xl transition-colors cursor-pointer text-xs font-bold flex items-center gap-1 shrink-0"
+                                    title="Xóa cấu hình này"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                    <span>Xóa cấu hình</span>
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
                     </div>
