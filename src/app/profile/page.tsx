@@ -1264,6 +1264,11 @@ function ProfileContent() {
                               if (raw.startsWith('DRX')) return `DRX-${raw.slice(3)}`;
                               return `DRX-${raw.slice(-5)}`;
                             })();
+                            const pDetails = typeof order.paymentDetails === 'object' && order.paymentDetails !== null
+                              ? order.paymentDetails
+                              : typeof order.paymentDetails === 'string'
+                                ? (() => { try { return JSON.parse(order.paymentDetails); } catch(e) { return {}; } })()
+                                : {};
                             const needInst = Boolean(pDetails.needInstallation);
                             const isProxy = Boolean(pDetails.isProxyRecipient);
                             const isPickup = order.deliveryType === 'STORE_PICKUP';

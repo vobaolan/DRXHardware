@@ -96,13 +96,116 @@ function PCBuilderContent() {
   const [selectedBrand, setSelectedBrand] = useState('ALL');
   const [sortBy, setSortBy] = useState<'price_asc' | 'price_desc' | 'popular'>('popular');
 
+  // Category matching helper supporting both string and array
+  const matchesCategory = (product: any, targetCategory: string) => {
+    if (!product || !product.category) return false;
+    const target = targetCategory.toUpperCase();
+    if (Array.isArray(product.category)) {
+      return product.category.some((c: any) => String(c).toUpperCase() === target);
+    }
+    return String(product.category).toUpperCase() === target;
+  };
+
+  // 1-Click Preset Builders linking live Supabase products
+  const applyPreset = (type: 'intel' | 'amd' | 'empty', productsPool = allProducts) => {
+    if (type === 'empty') {
+      setSelectedBuild({
+        cpu: null,
+        mainboard: null,
+        ram: null,
+        vga: null,
+        storage: null,
+        psu: null,
+        case: null,
+        cooling: null,
+        monitor: null,
+      });
+      setCurrentBuildName('Cấu Hình Tự Chọn DRX Build');
+      showToast('Đã làm mới danh sách linh kiện PC.', 'info');
+      return;
+    }
+
+    const findProduct = (cat: string, searchKey: string) => {
+      return (
+        productsPool.find(
+          p => matchesCategory(p, cat) && p.name.toLowerCase().includes(searchKey.toLowerCase())
+        ) || productsPool.find(p => matchesCategory(p, cat)) || null
+      );
+    };
+
+    if (type === 'intel') {
+      const cpu = findProduct('CPU', '13400F') || findProduct('CPU', 'Intel');
+      const mainboard = findProduct('MAINBOARD', 'B760') || findProduct('MAINBOARD', 'Intel') || findProduct('MAINBOARD', '');
+      const ram = findProduct('RAM', 'Corsair') || findProduct('RAM', '32GB') || findProduct('RAM', '');
+      const vga = findProduct('VGA', '4060') || findProduct('VGA', 'RTX') || findProduct('VGA', '');
+      const storage = findProduct('STORAGE', 'Samsung') || findProduct('STORAGE', 'SSD') || findProduct('STORAGE', '');
+      const psu = findProduct('PSU', '750') || findProduct('PSU', 'RM750') || findProduct('PSU', '');
+      const caseItem = findProduct('CASE', 'NZXT') || findProduct('CASE', 'H9') || findProduct('CASE', '');
+      const cooling = findProduct('COOLING', 'Tản') || findProduct('COOLING', 'AIO') || findProduct('COOLING', '');
+
+      setSelectedBuild({
+        cpu,
+        mainboard,
+        ram,
+        vga,
+        storage,
+        psu,
+        case: caseItem,
+        cooling,
+        monitor: null,
+      });
+      setCurrentBuildName('Cấu Hình PC DRX Venom (Intel Core i5 13400F + RTX 4060)');
+      showToast('Đã nạp Cấu Hình Mẫu: PC Gaming Intel Core i5 + RTX 4060!', 'success');
+    } else if (type === 'amd') {
+      const cpu = findProduct('CPU', '7800X3D') || findProduct('CPU', 'AMD');
+      const mainboard = findProduct('MAINBOARD', 'B650') || findProduct('MAINBOARD', 'AM5') || findProduct('MAINBOARD', '');
+      const ram = findProduct('RAM', 'Corsair') || findProduct('RAM', 'DDR5') || findProduct('RAM', '');
+      const vga = findProduct('VGA', '4060') || findProduct('VGA', 'RTX') || findProduct('VGA', '');
+      const storage = findProduct('STORAGE', 'Samsung') || findProduct('STORAGE', 'SSD') || findProduct('STORAGE', '');
+      const psu = findProduct('PSU', '750') || findProduct('PSU', 'RM750') || findProduct('PSU', '');
+      const caseItem = findProduct('CASE', 'NZXT') || findProduct('CASE', 'H9') || findProduct('CASE', '');
+      const cooling = findProduct('COOLING', 'Tản') || findProduct('COOLING', 'AIO') || findProduct('COOLING', '');
+
+      setSelectedBuild({
+        cpu,
+        mainboard,
+        ram,
+        vga,
+        storage,
+        psu,
+        case: caseItem,
+        cooling,
+        monitor: null,
+      });
+      setCurrentBuildName('Cấu Hình PC DRX Quái Thú (AMD Ryzen 7 7800X3D + RTX 4060)');
+      showToast('Đã nạp Cấu Hình Mẫu: AMD Ryzen 7 7800X3D Siêu Cấp!', 'success');
+    }
+  };
+
   // Fetch live products from backend to ensure all latest items are present
   useEffect(() => {
     fetch('/api/products')
       .then(res => res.json())
       .then(data => {
         if (data.products && Array.isArray(data.products) && data.products.length > 0) {
-          setAllProducts(data.products);
+          const normalized = data.products.map((p: any) => ({
+            ...p,
+            category: Array.isArray(p.category) ? p.category[0] : p.category,
+          }));
+          setAllProducts(normalized);
+
+          // Auto-load preset if no saved build requested
+          const loadId = searchParams.get('loadBuildId');
+          const presetParam = searchParams.get('preset');
+          if (!loadId) {
+            if (presetParam === 'amd') {
+              applyPreset('amd', normalized);
+            } else if (presetParam === 'empty') {
+              applyPreset('empty', normalized);
+            } else {
+              applyPreset('intel', normalized);
+            }
+          }
         }
       })
       .catch(() => {});
@@ -246,7 +349,7 @@ function PCBuilderContent() {
   const filteredProducts = useMemo(() => {
     if (!activeStepObj) return [];
 
-    let list = allProducts.filter(p => p.category === activeStepObj.category);
+    let list = allProducts.filter(p => matchesCategory(p, activeStepObj.category));
 
     // Socket filter for Mainboard if CPU is already selected
     if (activeStepObj.category === "MAINBOARD" && selectedBuild.cpu?.socket) {
@@ -292,7 +395,7 @@ function PCBuilderContent() {
   const availableBrands = useMemo(() => {
     if (!activeStepObj) return [];
     const brands = new Set<string>();
-    allProducts.filter(p => p.category === activeStepObj.category).forEach(p => {
+    allProducts.filter(p => matchesCategory(p, activeStepObj.category)).forEach(p => {
       if (p.brand) brands.add(p.brand);
     });
     return Array.from(brands);
@@ -348,6 +451,110 @@ function PCBuilderContent() {
                 <FileSpreadsheet className="w-4 h-4" />
                 <span>Xuất Báo Giá</span>
               </button>
+            </div>
+          </div>
+        </div>
+
+        {/* 1.5. CẤU HÌNH GỢI Ý MẪU (QUICK PRESETS) - TỰ ĐỘNG LIÊN KẾT LINH KIỆN TƯƠNG THÍCH */}
+        <div className="rounded-3xl border border-slate-200/90 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 p-5 sm:p-6 shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800/80 pb-3">
+            <div className="flex items-center gap-2">
+              <Zap className="w-4 h-4 text-amber-500 fill-amber-500" />
+              <h2 className="text-xs sm:text-sm font-heading font-black uppercase tracking-wider text-slate-900 dark:text-white">
+                Cấu Hình Mẫu Đề Xuất (1 Chạm Tự Động Nạp Linh Kiện)
+              </h2>
+            </div>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+              Hoặc bấm vào từng linh kiện bên dưới để tự do phối theo ý muốn
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+            {/* PRESET 1: INTEL + RTX 4060 */}
+            <div 
+              onClick={() => applyPreset('intel')}
+              className="group p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950 hover:border-[#0284c7] dark:hover:border-sky-500 cursor-pointer transition-all hover:shadow-md relative overflow-hidden flex flex-col justify-between"
+            >
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[9.5px] font-black uppercase tracking-wider text-[#0284c7] bg-sky-100 dark:bg-sky-950/80 px-2 py-0.5 rounded-md border border-sky-200 dark:border-sky-800">
+                    INTEL CORE I5 GAMING
+                  </span>
+                  <span className="text-[11px] font-mono font-bold text-rose-600 dark:text-rose-400">
+                    Phổ Biến Nhất
+                  </span>
+                </div>
+                <h3 className="font-heading text-xs sm:text-sm font-black text-slate-900 dark:text-white uppercase group-hover:text-[#0284c7] transition-colors">
+                  PC DRX Venom Core i5 13400F + RTX 4060
+                </h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2">
+                  Core i5 13400F • B760M • 32GB RAM • RTX 4060 8GB • SSD 1TB • 750W Gold • Case H9 Flow
+                </p>
+              </div>
+              <div className="pt-3 mt-2 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between">
+                <span className="text-[10.5px] font-bold text-[#0284c7] group-hover:underline flex items-center gap-1">
+                  Nạp cấu hình này <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                </span>
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+                  100% Khớp Socket
+                </span>
+              </div>
+            </div>
+
+            {/* PRESET 2: AMD RYZEN 7 7800X3D */}
+            <div 
+              onClick={() => applyPreset('amd')}
+              className="group p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950 hover:border-amber-500 dark:hover:border-amber-500 cursor-pointer transition-all hover:shadow-md relative overflow-hidden flex flex-col justify-between"
+            >
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[9.5px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-950/80 px-2 py-0.5 rounded-md border border-amber-200 dark:border-amber-800">
+                    AMD RYZEN 7 FLAGSHIP
+                  </span>
+                  <span className="text-[11px] font-mono font-bold text-amber-600 dark:text-amber-400">
+                    Esports &amp; 3D
+                  </span>
+                </div>
+                <h3 className="font-heading text-xs sm:text-sm font-black text-slate-900 dark:text-white uppercase group-hover:text-amber-500 transition-colors">
+                  PC DRX Quái Thú Ryzen 7 7800X3D + RTX 4060
+                </h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2">
+                  Ryzen 7 7800X3D • B650M AM5 • 32GB DDR5 6000MHz • RTX 4060 8GB • SSD 1TB • 750W
+                </p>
+              </div>
+              <div className="pt-3 mt-2 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between">
+                <span className="text-[10.5px] font-bold text-amber-600 dark:text-amber-400 group-hover:underline flex items-center gap-1">
+                  Nạp cấu hình này <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                </span>
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+                  Chuẩn DDR5
+                </span>
+              </div>
+            </div>
+
+            {/* PRESET 3: TỰ CHỌN TỪ ĐẦU (CUSTOM BUILD) */}
+            <div 
+              onClick={() => applyPreset('empty')}
+              className="group p-4 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 bg-white/40 dark:bg-slate-900/40 hover:border-slate-400 dark:hover:border-slate-500 cursor-pointer transition-all hover:shadow-xs flex flex-col justify-between"
+            >
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[9.5px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">
+                    TỰ PHỐI RIÊNG
+                  </span>
+                </div>
+                <h3 className="font-heading text-xs sm:text-sm font-black text-slate-900 dark:text-white uppercase">
+                  Tự Chọn Cấu Hình Từ Đầu
+                </h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Làm mới danh sách, tự bấm chọn 9 bước linh kiện theo sở thích cá nhân.
+                </p>
+              </div>
+              <div className="pt-3 mt-2 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between">
+                <span className="text-[10.5px] font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1">
+                  Làm mới cấu hình <RotateCcw className="w-3 h-3" />
+                </span>
+              </div>
             </div>
           </div>
         </div>

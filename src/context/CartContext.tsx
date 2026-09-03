@@ -268,7 +268,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: true, message: data.message || `Áp dụng mã ${cleanedCode} thành công!` };
       }
 
-      return { success: false, message: data.message || 'Mã giảm giá không tồn tại hoặc đã hết hạn!' };
+      return { success: false, message: data.message || `Mã giảm giá "${cleanedCode}" không tồn tại.` };
     } catch (e) {
       console.warn('Lỗi gọi /api/coupons:', e);
       return { success: false, message: 'Lỗi kết nối máy chủ khi xác thực mã giảm giá.' };

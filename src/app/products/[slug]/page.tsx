@@ -522,6 +522,17 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
               </button>
             </div>
 
+            {/* LINK TO PC BUILDER IF PREBUILT PC */}
+            {(product.isPrebuilt || (Array.isArray(product.category) ? product.category.includes('PREBUILT_PC') : product.category === 'PREBUILT_PC') || product.name?.toLowerCase().includes('pc gaming')) && (
+              <Link
+                href="/pc-builder?preset=intel"
+                className="w-full flex items-center justify-center gap-2 rounded-xl bg-sky-50 dark:bg-sky-950/70 hover:bg-sky-100 dark:hover:bg-sky-900/80 text-[#0284c7] dark:text-sky-300 py-3 text-xs font-heading font-black uppercase tracking-wider border border-sky-200 dark:border-sky-800 transition-all cursor-pointer shadow-2xs"
+              >
+                <Wrench className="h-4 w-4" />
+                <span>Tùy Biến Cấu Hình Này Trong DRX PC Builder</span>
+              </Link>
+            )}
+
             {/* Commitments */}
             <div className="border-t border-slate-200 dark:border-slate-800 pt-4 space-y-2 text-xs font-medium text-slate-600 dark:text-slate-300">
               <div className="flex items-center gap-2">

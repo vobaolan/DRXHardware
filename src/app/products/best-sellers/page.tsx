@@ -75,78 +75,68 @@ export default function BestSellersPage() {
 
         <main className="flex-1 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
           {/* BREADCRUMB HEADER */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-ods-border pb-6 mb-8 gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-6 mb-8 gap-4">
             <div>
-              <Link href="/" className="inline-flex items-center gap-1.5 text-xs font-bold text-ods-textMuted hover:text-black uppercase tracking-wider mb-2 transition-colors">
-                <ArrowLeft className="h-4 w-4 text-ods-primary" /> Trang Chủ Cửa Hàng
+              <Link href="/" className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-[#0284c7] dark:hover:text-sky-400 uppercase tracking-wider mb-2 transition-colors">
+                <ArrowLeft className="h-4 w-4 text-[#0284c7]" /> Trang Chủ Cửa Hàng
               </Link>
-              <h1 className="font-heading text-2xl sm:text-3xl font-extrabold uppercase tracking-wider text-black flex items-center gap-2.5">
+              <h1 className="font-heading text-2xl sm:text-3xl font-extrabold uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2.5">
                 <Flame className="h-7 w-7 text-amber-500 fill-amber-500" />
                 <span>SẢN PHẨM MUA NHIỀU (HOT BEST SELLERS)</span>
               </h1>
-              <p className="text-xs text-ods-textMuted font-light mt-1">
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-normal mt-1">
                 Top các linh kiện máy tính, màn hình và PC bán chạy nhất được đông đảo khách hàng tin tưởng lựa chọn tại DRX Hardware.
               </p>
             </div>
 
-            <span className="text-xs font-extrabold text-amber-700 bg-amber-50 border border-amber-200 px-3.5 py-1.5 rounded-full shrink-0">
+            <span className="text-xs font-extrabold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 px-3.5 py-1.5 rounded-full shrink-0 shadow-2xs">
               {bestSellersProducts.length} Sản Phẩm Hot
             </span>
           </div>
 
           {/* CONTROLS STRIP */}
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-8 bg-ods-surface border border-ods-border p-4 rounded-ods">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-8 bg-slate-50/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl shadow-2xs">
+            <div className="flex items-center gap-2 flex-wrap">
               <button
                 onClick={() => setSelectedPlatform('ALL')}
-                className={`px-4 py-2 rounded-ods text-xs font-bold uppercase transition-all ${
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold uppercase transition-all cursor-pointer ${
                   selectedPlatform === 'ALL'
-                    ? 'bg-black text-white shadow-sm'
-                    : 'bg-white text-gray-700 border border-ods-border hover:border-black'
+                    ? 'bg-[#0284c7] text-white shadow-sm'
+                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-[#0284c7]'
                 }`}
               >
-                TẤT CẢ NỀN TẢNG
+                TẤT CẢ
               </button>
               <button
-                onClick={() => setSelectedPlatform('STEAM')}
-                className={`px-4 py-2 rounded-ods text-xs font-bold uppercase transition-all ${
-                  selectedPlatform === 'STEAM'
-                    ? 'bg-black text-white shadow-sm'
-                    : 'bg-white text-gray-700 border border-ods-border hover:border-black'
+                onClick={() => setSelectedPlatform('HARDWARE')}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold uppercase transition-all cursor-pointer ${
+                  selectedPlatform === 'HARDWARE'
+                    ? 'bg-[#0284c7] text-white shadow-sm'
+                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-[#0284c7]'
                 }`}
               >
-                STEAM
-              </button>
-              <button
-                onClick={() => setSelectedPlatform('SERVICE')}
-                className={`px-4 py-2 rounded-ods text-xs font-bold uppercase transition-all ${
-                  selectedPlatform === 'SERVICE'
-                    ? 'bg-black text-white shadow-sm'
-                    : 'bg-white text-gray-700 border border-ods-border hover:border-black'
-                }`}
-              >
-                DỊCH VỤ / TÀI KHOẢN
+                LINH KIỆN PC
               </button>
             </div>
 
             <div className="flex items-center gap-3 w-full md:w-auto">
               <div className="relative w-full sm:w-64">
-                <Search className="absolute left-3 top-2.5 h-4 w-4 text-ods-textMuted" />
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
                 <input
                   type="text"
                   placeholder="Tìm kiếm sản phẩm bán chạy..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full rounded-ods border border-ods-border bg-white py-2 pl-9 pr-3 text-xs font-semibold text-black placeholder-zinc-400 focus:border-ods-primary focus:outline-none"
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 py-2 pl-9 pr-3 text-xs font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-[#0284c7] focus:outline-none"
                 />
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
-                <SlidersHorizontal className="h-4 w-4 text-ods-textMuted" />
+                <SlidersHorizontal className="h-4 w-4 text-slate-400" />
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="rounded-ods border border-ods-border bg-white py-2 px-3 text-xs font-semibold text-black focus:border-ods-primary focus:outline-none"
+                  className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 py-2 px-3 text-xs font-semibold text-slate-900 dark:text-white focus:border-[#0284c7] focus:outline-none cursor-pointer"
                 >
                   <option value="FEATURED">Nổi Bật Nhất</option>
                   <option value="PRICE_ASC">Giá Thấp ➔ Cao</option>
@@ -158,15 +148,15 @@ export default function BestSellersPage() {
 
           {/* PRODUCTS GRID */}
           {isLoading ? (
-            <div className="py-20 text-center text-xs font-semibold text-ods-textMuted">
+            <div className="py-20 text-center text-xs font-semibold text-slate-400">
               Đang tải danh sách sản phẩm bán chạy...
             </div>
           ) : bestSellersProducts.length === 0 ? (
-            <div className="py-20 text-center space-y-3 rounded-ods border border-ods-border bg-ods-surface p-8">
-              <p className="text-sm font-bold text-black">Chưa có sản phẩm nào thuộc danh mục Mua Nhiều.</p>
+            <div className="py-20 text-center space-y-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 p-8">
+              <p className="text-sm font-bold text-slate-900 dark:text-white">Chưa có sản phẩm nào thuộc danh mục Mua Nhiều.</p>
               <Link
                 href="/products"
-                className="inline-block rounded-ods bg-ods-primary hover:bg-ods-primaryHover text-white px-5 py-2.5 text-xs font-bold uppercase tracking-wider transition-all mt-2"
+                className="inline-block rounded-xl bg-[#0284c7] hover:bg-[#0369a1] text-white px-5 py-2.5 text-xs font-bold uppercase tracking-wider transition-all mt-2 shadow-sm"
               >
                 Khám Phá Tất Cả Sản Phẩm
               </Link>

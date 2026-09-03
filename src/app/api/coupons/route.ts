@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     }
 
     if (!coupon) {
-      return NextResponse.json({ message: `Mã giảm giá "${cleanCode}" không tồn tại hoặc đã bị xóa!` }, { status: 404 });
+      return NextResponse.json({ message: `Mã giảm giá "${cleanCode}" không tồn tại.` }, { status: 404 });
     }
 
     // Validate Status (Active vs Inactive)
