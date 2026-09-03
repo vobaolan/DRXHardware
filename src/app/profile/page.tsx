@@ -17,6 +17,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useToast, showToast, showConfirm } from '@/components/Toast';
 import { useCart } from '@/context/CartContext';
 import { VIETNAM_PROVINCES, parseFullAddress } from '@/lib/vietnamLocations';
+import { ModernSelect } from '@/components/ui/ModernSelect';
 
 interface HardwareKey {
   id: string;
@@ -112,6 +113,27 @@ function ProfileContent() {
   const wardsList = React.useMemo(() => {
     return currentDistrict?.wards || [];
   }, [currentDistrict]);
+
+  const provinceOptions = React.useMemo(() => {
+    return VIETNAM_PROVINCES.map((prov) => ({
+      value: prov.id,
+      label: prov.name,
+    }));
+  }, []);
+
+  const districtOptions = React.useMemo(() => {
+    return (currentProvince?.districts || []).map((dist) => ({
+      value: dist.id,
+      label: dist.name,
+    }));
+  }, [currentProvince]);
+
+  const wardOptions = React.useMemo(() => {
+    return (wardsList || []).map((ward) => ({
+      value: ward,
+      label: ward,
+    }));
+  }, [wardsList]);
 
   const handleProvinceChange = (provId: string) => {
     setSelectedProvinceId(provId);
@@ -1739,92 +1761,116 @@ function ProfileContent() {
                           </div>
 
                           {/* ĐỊA CHỈ GIAO HÀNG MẶC ĐỊNH (SAU SÁP NHẬP) */}
-                          <div className="space-y-3 pt-2 bg-slate-50/70 dark:bg-slate-800/40 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-700">
-                            <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-700/60 pb-2.5">
-                              <label className="font-bold text-slate-800 dark:text-slate-200 uppercase text-[11px] flex items-center gap-1.5">
-                                <MapPin className="w-4 h-4 text-[#0284c7]" />
-                                <span>Địa Chỉ Nhận Hàng Cụ Thể (Sau Sáp Nhập):</span>
-                              </label>
-                              <span className="text-[10.5px] text-[#0284c7] font-semibold">Tỉnh &rarr; Quận/Huyện &rarr; Phường/Xã</span>
+                          <div className="space-y-4 pt-2 bg-slate-50/70 dark:bg-slate-800/40 p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-2xs">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/60 dark:border-slate-700/60 pb-3">
+                              <div className="flex items-center gap-2">
+                                <div className="p-1.5 rounded-xl bg-sky-500/10 text-[#0284c7]">
+                                  <MapPin className="w-4 h-4" />
+                                </div>
+                                <div>
+                                  <span className="font-heading text-xs font-black uppercase tracking-wide text-slate-900 dark:text-white block">
+                                    Địa Chỉ Nhận Hàng Cụ Thể (Sau Sáp Nhập)
+                                  </span>
+                                  <span className="text-[10.5px] text-slate-400 block font-medium">
+                                    Cập nhật theo địa giới hành chính sáp nhập mới nhất
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="inline-flex items-center gap-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 px-3 py-1 rounded-full border border-slate-200/80 dark:border-slate-700 self-start sm:self-auto shadow-2xs">
+                                <span className="text-[#0284c7] font-extrabold">Tỉnh/TP</span>
+                                <span>&rarr;</span>
+                                <span className="text-[#0284c7] font-extrabold">Quận/Huyện</span>
+                                <span>&rarr;</span>
+                                <span className="text-[#0284c7] font-extrabold">Phường/Xã</span>
+                              </div>
                             </div>
 
-                            {/* 3 CỘT CHỌN ĐỊA GIỚI HÀNH CHÍNH */}
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                            {/* LƯỚI 2X2 THÔNG THOÁNG: 2 CỘT MỖI HÀNG, KHÔNG BỊ CHEN CHÚC */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
                               {/* 1. TỈNH / THÀNH PHỐ */}
-                              <div className="space-y-1">
-                                <label className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">
-                                  Tỉnh / Thành Phố: <span className="text-rose-500">*</span>
+                              <div className="space-y-1.5">
+                                <label className="text-[11px] font-bold uppercase text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                                  <span>Tỉnh / Thành Phố <span className="text-rose-500">*</span></span>
+                                  <span className="text-[10px] text-slate-400 font-normal">63 Tỉnh/TP</span>
                                 </label>
-                                <select
+                                <ModernSelect
+                                  options={provinceOptions}
                                   value={selectedProvinceId}
-                                  onChange={(e) => handleProvinceChange(e.target.value)}
-                                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-[#0284c7] cursor-pointer"
-                                >
-                                  {VIETNAM_PROVINCES.map((prov) => (
-                                    <option key={prov.id} value={prov.id}>
-                                      {prov.name}
-                                    </option>
-                                  ))}
-                                </select>
+                                  onChange={handleProvinceChange}
+                                  searchable={true}
+                                  searchPlaceholder="Tìm Tỉnh / Thành phố..."
+                                  placeholder="Chọn Tỉnh / Thành phố"
+                                />
                               </div>
 
                               {/* 2. QUẬN / HUYỆN / TP */}
-                              <div className="space-y-1">
-                                <label className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">
-                                  Quận / Huyện / TP: <span className="text-rose-500">*</span>
+                              <div className="space-y-1.5">
+                                <label className="text-[11px] font-bold uppercase text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                                  <span>Quận / Huyện / TP <span className="text-rose-500">*</span></span>
+                                  <span className="text-[10px] text-slate-400 font-normal">{districtOptions.length} khu vực</span>
                                 </label>
-                                <select
+                                <ModernSelect
+                                  options={districtOptions}
                                   value={selectedDistrictId}
-                                  onChange={(e) => handleDistrictChange(e.target.value)}
-                                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-[#0284c7] cursor-pointer"
-                                >
-                                  {currentProvince.districts.map((dist) => (
-                                    <option key={dist.id} value={dist.id}>
-                                      {dist.name}
-                                    </option>
-                                  ))}
-                                </select>
+                                  onChange={handleDistrictChange}
+                                  searchable={true}
+                                  searchPlaceholder="Tìm Quận / Huyện / TP..."
+                                  placeholder="Chọn Quận / Huyện"
+                                />
                               </div>
 
                               {/* 3. PHƯỜNG / XÃ */}
-                              <div className="space-y-1">
-                                <label className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">
-                                  Phường / Xã (Sau Sáp Nhập): <span className="text-rose-500">*</span>
+                              <div className="space-y-1.5">
+                                <label className="text-[11px] font-bold uppercase text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                                  <span>Phường / Xã (Sau Sáp Nhập) <span className="text-rose-500">*</span></span>
+                                  <span className="text-[10px] text-[#0284c7] font-semibold">{wardOptions.length} đơn vị</span>
                                 </label>
-                                <select
+                                <ModernSelect
+                                  options={wardOptions}
                                   value={selectedWardName}
-                                  onChange={(e) => setSelectedWardName(e.target.value)}
-                                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-[#0284c7] cursor-pointer"
-                                >
-                                  {wardsList.map((ward, idx) => (
-                                    <option key={idx} value={ward}>
-                                      {ward}
-                                    </option>
-                                  ))}
-                                </select>
+                                  onChange={setSelectedWardName}
+                                  searchable={true}
+                                  searchPlaceholder="Tìm Phường / Xã..."
+                                  placeholder="Chọn Phường / Xã"
+                                />
+                              </div>
+
+                              {/* 4. SỐ NHÀ, TÊN ĐƯỜNG CỤ THỂ */}
+                              <div className="space-y-1.5">
+                                <label className="text-[11px] font-bold uppercase text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                                  <span>Số Nhà, Tên Đường <span className="text-rose-500">*</span></span>
+                                  <span className="text-[10px] text-slate-400 font-normal">Chi tiết</span>
+                                </label>
+                                <input
+                                  type="text"
+                                  placeholder="Ví dụ: Số 123 Đường Nguyễn Huệ, Tòa nhà Landmark 81..."
+                                  value={streetAddress}
+                                  onChange={(e) => setStreetAddress(e.target.value)}
+                                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-900 dark:text-white placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:border-[#0284c7] focus:ring-2 focus:ring-[#0284c7]/20 shadow-2xs transition-all h-[42px]"
+                                />
                               </div>
                             </div>
 
-                            {/* 4. SỐ NHÀ, TÊN ĐƯỜNG CỤ THỂ */}
-                            <div className="space-y-1 text-xs">
-                              <label className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">
-                                Số Nhà, Tên Tòa Nhà / Tên Đường Cụ Thể:
-                              </label>
-                              <input
-                                type="text"
-                                placeholder="Ví dụ: Số 123 Đường Nguyễn Huệ, Tòa nhà Landmark 81..."
-                                value={streetAddress}
-                                onChange={(e) => setStreetAddress(e.target.value)}
-                                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:border-[#0284c7]"
-                              />
-                            </div>
-
                             {/* PREVIEW ĐỊA CHỈ HOÀN CHỈNH */}
-                            <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-sky-100 dark:border-slate-700 text-xs flex items-start gap-2">
-                              <span className="text-[#0284c7] font-bold shrink-0 mt-0.5">📍 Địa chỉ giao hàng:</span>
-                              <span className="font-extrabold text-slate-800 dark:text-slate-200">
-                                {profileAddress || 'Vui lòng chọn thông tin để hoàn tất địa chỉ'}
-                              </span>
+                            <div className="p-3.5 bg-gradient-to-br from-sky-50/90 via-white to-sky-50/50 dark:from-slate-900 dark:via-slate-800/80 dark:to-slate-900 rounded-2xl border border-sky-200/80 dark:border-slate-700 text-xs flex items-start gap-3 shadow-2xs">
+                              <div className="p-2 rounded-xl bg-sky-500/10 text-[#0284c7] shrink-0 mt-0.5 border border-sky-200/50 dark:border-sky-900/50">
+                                <MapPin className="w-4 h-4" />
+                              </div>
+                              <div className="space-y-1 min-w-0 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[10px] font-black uppercase tracking-wider text-[#0284c7]">
+                                    ĐỊA CHỈ GIAO HÀNG MẶC ĐỊNH
+                                  </span>
+                                  {profileAddress && (
+                                    <span className="text-[9px] font-black uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                                      Đã cập nhật
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="font-bold text-slate-800 dark:text-slate-100 text-xs leading-relaxed break-words">
+                                  {profileAddress || 'Vui lòng chọn thông tin để hoàn tất địa chỉ'}
+                                </p>
+                              </div>
                             </div>
                           </div>
 
