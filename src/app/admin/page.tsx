@@ -1157,7 +1157,7 @@ export default function AdminDashboardPage() {
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                          <Zap className="w-3 h-3 text-amber-500" /> Cổng VietQR & COD:
+                          <Zap className="w-3 h-3 text-amber-500" /> Thanh Toán COD & Banking:
                         </span>
                         <span className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
                           <CheckCircle2 className="w-3 h-3" /> Sẵn Sàng

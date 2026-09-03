@@ -265,18 +265,21 @@ export const RevenueChartWidget: React.FC<RevenueChartWidgetProps> = ({ data = [
           </div>
         </div>
 
-        {/* Dynamic Average Line Marker - Positioned cleanly on the RIGHT side to avoid overlapping chart bars/tooltips */}
+        {/* Dynamic Average Reference Line & Left Y-Axis Label - Anchored strictly to the Y-axis gutter so it NEVER overlaps chart bars */}
         {avgRevenue > 0 && maxRevenue > 0 && (
           <div 
             style={{ bottom: `calc(44px + ${(avgRevenue / maxRevenue) * 165}px)` }}
-            className="absolute left-28 sm:left-32 right-2 flex items-center pointer-events-none z-20"
+            className="absolute left-0 right-2 flex items-center pointer-events-none z-10"
           >
-            <div className="w-full border-b border-dashed border-emerald-500/60 dark:border-emerald-400/50 relative">
-              <span className="absolute right-0 -top-3 text-[9.5px] font-bold text-emerald-700 dark:text-emerald-300 bg-white/95 dark:bg-slate-900/95 px-2.5 py-0.5 rounded-full border border-emerald-300/80 dark:border-emerald-700/80 shadow-xs backdrop-blur-xs flex items-center gap-1.5 select-none">
+            {/* Left Y-Axis Badge (Stays strictly inside the left gutter w-24 sm:w-28) */}
+            <div className="w-24 sm:w-28 text-right shrink-0 pr-2">
+              <span className="inline-flex items-center gap-1 text-[9.5px] font-black text-emerald-700 dark:text-emerald-300 font-mono bg-emerald-50/95 dark:bg-emerald-950/90 px-1.5 py-0.5 rounded-md border border-emerald-300 dark:border-emerald-700/80 shadow-2xs">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Mức TB: <span className="font-black font-mono">{formatVND(avgRevenue)}</span>
+                TB: {formatVND(avgRevenue)}
               </span>
             </div>
+            {/* Clean dashed line across the chart area with zero text clutter */}
+            <div className="flex-1 border-b border-dashed border-emerald-500/60 dark:border-emerald-400/50" />
           </div>
         )}
 
