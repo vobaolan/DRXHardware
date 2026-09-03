@@ -17,92 +17,132 @@ export async function GET() {
     const userMap = new Map<string, any>();
 
     // 1. Fetch from Supabase User table (Real-time Cloud Database)
+    let supaUsers: any[] = [];
     try {
-      const { data: supaUsers, error: supaErr } = await supabase
+      const { data, error } = await supabase
         .from('User')
         .select('id, name, email, role, image, balance, phone, address, createdAt')
         .order('createdAt', { ascending: false });
-
-      if (supaUsers && supaUsers.length > 0) {
-        for (const u of supaUsers) {
-          if (!u.email) continue;
-          const cleanEmail = u.email.trim().toLowerCase();
-          const isGoogleUser = Boolean(
-            (u.image && String(u.image).includes('googleusercontent')) ||
-            (!u.password && u.image)
-          );
-
-          userMap.set(cleanEmail, {
-            id: u.id,
-            name: u.name || u.email?.split('@')[0] || 'Khách hàng DRX',
-            email: cleanEmail,
-            role: u.role || 'USER',
-            image: u.image || null,
-            provider: isGoogleUser ? 'GOOGLE' : 'CREDENTIALS',
-            balance: Number(u.balance ?? 0),
-            phone: u.phone || '',
-            address: u.address || '',
-            createdAt: u.createdAt || new Date().toISOString(),
-            _count: { orders: 0, transactions: 0 },
-            totalSpent: 0,
-          });
-        }
-      }
-    } catch (supaErr) {
-      console.warn('Supabase users fetch error:', supaErr);
+      if (data && Array.isArray(data)) supaUsers = data;
+    } catch (e) {
+      console.warn('Supabase user fetch warning:', e);
     }
 
-    // 2. Query Prisma PostgreSQL and merge/enrich with order statistics
+    // 2. Fetch all Orders from Supabase Order table
+    let supaOrders: any[] = [];
+    try {
+      const { data, error } = await supabase
+        .from('Order')
+        .select('*')
+        .order('createdAt', { ascending: false });
+      if (data && Array.isArray(data)) supaOrders = data;
+    } catch (e) {
+      console.warn('Supabase orders fetch warning:', e);
+    }
+
+    // 3. Fetch all Transactions from Supabase
+    let supaTransactions: any[] = [];
+    try {
+      const { data } = await supabase
+        .from('Transaction')
+        .select('*')
+        .order('createdAt', { ascending: false });
+      if (data && Array.isArray(data)) supaTransactions = data;
+    } catch (e) {}
+
+    // Populate userMap with Supabase Users
+    for (const u of supaUsers) {
+      if (!u.email) continue;
+      const cleanEmail = u.email.trim().toLowerCase();
+      const isGoogleUser = Boolean(
+        (u.image && String(u.image).includes('googleusercontent')) ||
+        (!u.password && u.image)
+      );
+
+      userMap.set(cleanEmail, {
+        id: u.id,
+        name: u.name || u.email?.split('@')[0] || 'Khách hàng DRX',
+        email: cleanEmail,
+        role: u.role || 'USER',
+        image: u.image || null,
+        provider: isGoogleUser ? 'GOOGLE' : 'CREDENTIALS',
+        balance: Number(u.balance ?? 0),
+        phone: u.phone || '',
+        address: u.address || '',
+        createdAt: u.createdAt || new Date().toISOString(),
+        _count: { orders: 0, transactions: 0 },
+        totalSpent: 0,
+        orders: [],
+      });
+    }
+
+    // Enrich from Prisma if available
     try {
       const prismaUsers = await prisma.user.findMany({
         orderBy: { createdAt: 'desc' },
-        include: {
-          _count: {
-            select: { orders: true, transactions: true }
-          },
-          orders: {
-            select: {
-              id: true,
-              totalAmount: true,
-              status: true,
-              createdAt: true,
-            }
-          }
-        }
       });
-
-      if (prismaUsers && prismaUsers.length > 0) {
-        for (const u of prismaUsers) {
-          if (!u.email) continue;
-          const cleanEmail = u.email.trim().toLowerCase();
-          const totalSpent = u.orders
-            ? u.orders.filter(o => o.status === 'COMPLETED').reduce((sum, o) => sum + Number(o.totalAmount || 0), 0)
-            : 0;
-
-          const isGoogleUser = Boolean(
-            (u.image && u.image.includes('googleusercontent')) ||
-            (!u.password && u.image)
-          );
-
-          const existing = userMap.get(cleanEmail);
+      for (const pu of prismaUsers) {
+        if (!pu.email) continue;
+        const cleanEmail = pu.email.trim().toLowerCase();
+        if (!userMap.has(cleanEmail)) {
           userMap.set(cleanEmail, {
-            id: existing?.id || u.id,
-            name: existing?.name || u.name || cleanEmail.split('@')[0],
+            id: pu.id,
+            name: pu.name || cleanEmail.split('@')[0],
             email: cleanEmail,
-            role: existing?.role || u.role || 'USER',
-            image: existing?.image || u.image || null,
-            provider: isGoogleUser ? 'GOOGLE' : 'CREDENTIALS',
-            balance: Number(existing?.balance ?? u.balance ?? 0),
-            phone: existing?.phone || u.phone || '',
-            address: existing?.address || u.address || '',
-            createdAt: existing?.createdAt || u.createdAt?.toISOString() || new Date().toISOString(),
-            _count: u._count || existing?._count || { orders: 0, transactions: 0 },
-            totalSpent: totalSpent || existing?.totalSpent || 0,
+            role: pu.role || 'USER',
+            image: pu.image || null,
+            provider: 'CREDENTIALS',
+            balance: Number(pu.balance || 0),
+            phone: pu.phone || '',
+            address: pu.address || '',
+            createdAt: pu.createdAt ? new Date(pu.createdAt).toISOString() : new Date().toISOString(),
+            _count: { orders: 0, transactions: 0 },
+            totalSpent: 0,
+            orders: [],
           });
         }
       }
-    } catch (prismaErr) {
-      console.warn('Prisma users fetch warning:', prismaErr);
+    } catch (e) {}
+
+    // 4. Link Orders & Statistics to Users (matching by userId, email, phone, or name)
+    for (const [cleanEmail, userObj] of userMap.entries()) {
+      const uName = (userObj.name || '').trim().toLowerCase();
+      const uPhone = (userObj.phone || '').trim();
+      const uId = userObj.id;
+
+      const userOrders = supaOrders.filter(o => {
+        const oUserId = o.userId;
+        const oEmail = (o.customerEmail || '').trim().toLowerCase();
+        const oPhone = (o.customerPhone || '').trim();
+        const oName = (o.customerName || '').trim().toLowerCase();
+
+        if (oUserId && (oUserId === uId || oUserId === cleanEmail)) return true;
+        if (oEmail && oEmail === cleanEmail) return true;
+        if (uPhone && oPhone && (oPhone === uPhone || oPhone.endsWith(uPhone.slice(-7)))) return true;
+        if (uName && oName && (oName === uName || oName.includes(uName) || uName.includes(oName))) return true;
+        return false;
+      });
+
+      const userTx = supaTransactions.filter(t => t.userId === uId || t.userEmail === cleanEmail);
+
+      const totalSpent = userOrders.reduce((sum, o) => {
+        const st = String(o.status || '').toUpperCase();
+        if (st !== 'CANCELLED' && st !== 'REJECTED') {
+          return sum + Number(o.netAmount || o.totalAmount || 0);
+        }
+        return sum;
+      }, 0);
+
+      const latestOrder = userOrders[0];
+      userObj._count = { orders: userOrders.length, transactions: userTx.length };
+      userObj.totalSpent = totalSpent;
+      userObj.orders = userOrders;
+      if (!userObj.phone && latestOrder?.customerPhone) {
+        userObj.phone = latestOrder.customerPhone;
+      }
+      if (!userObj.address && latestOrder?.shippingAddress) {
+        userObj.address = latestOrder.shippingAddress;
+      }
     }
 
     const usersList: any[] = Array.from(userMap.values()).sort((a, b) => 

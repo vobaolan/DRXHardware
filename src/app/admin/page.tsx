@@ -1747,6 +1747,34 @@ export default function AdminDashboardPage() {
                       ) : (
                         filteredUsers.map((u) => {
                           const isGoogleAuth = u.provider === 'GOOGLE' || Boolean(u.image && u.image.includes('googleusercontent'));
+                          const uName = (u.name || '').trim().toLowerCase();
+                          const uPhone = (u.phone || '').trim();
+                          const uEmail = (u.email || '').trim().toLowerCase();
+
+                          const userMatchingOrders = orders.filter(o => {
+                            const oUid = o.userId;
+                            const oEmail = (o.customerEmail || '').trim().toLowerCase();
+                            const oPhone = (o.customerPhone || '').trim();
+                            const oName = (o.customerName || '').trim().toLowerCase();
+
+                            if (oUid && (oUid === u.id || oUid === uEmail)) return true;
+                            if (oEmail && oEmail === uEmail) return true;
+                            if (uPhone && oPhone && (oPhone === uPhone || oPhone.endsWith(uPhone.slice(-7)))) return true;
+                            if (uName && oName && (oName === uName || oName.includes(uName) || uName.includes(oName))) return true;
+                            return false;
+                          });
+
+                          const orderCount = Math.max(u._count?.orders ?? 0, userMatchingOrders.length);
+                          const totalSpent = (u.totalSpent && u.totalSpent > 0)
+                            ? u.totalSpent
+                            : userMatchingOrders
+                                .filter(o => String(o.status || '').toUpperCase() !== 'CANCELLED' && String(o.status || '').toUpperCase() !== 'REJECTED')
+                                .reduce((sum, o) => sum + Number(o.netAmount || o.totalAmount || 0), 0);
+
+                          const displayPhone = u.phone || userMatchingOrders[0]?.customerPhone || '';
+                          const displayAddress = u.address || userMatchingOrders[0]?.shippingAddress || '';
+                          const enrichedUser = { ...u, phone: displayPhone, address: displayAddress, totalSpent, _count: { ...u._count, orders: orderCount }, orders: userMatchingOrders };
+
                           return (
                           <tr key={u.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                             {/* USER INFO */}
@@ -1792,10 +1820,10 @@ export default function AdminDashboardPage() {
 
                             {/* PHONE */}
                             <td className="py-3.5 px-3 font-mono text-slate-600 dark:text-slate-300 whitespace-nowrap">
-                              {u.phone ? (
-                                <a href={`tel:${u.phone}`} className="hover:text-[#0284c7] flex items-center gap-1">
+                              {displayPhone ? (
+                                <a href={`tel:${displayPhone}`} className="hover:text-[#0284c7] flex items-center gap-1">
                                   <Phone className="w-3 h-3 text-slate-400" />
-                                  <span>{u.phone}</span>
+                                  <span>{displayPhone}</span>
                                 </a>
                               ) : (
                                 <span className="text-slate-400 italic">Chưa có SĐT</span>
@@ -1803,18 +1831,18 @@ export default function AdminDashboardPage() {
                             </td>
 
                             {/* ADDRESS */}
-                            <td className="py-3.5 px-3 max-w-[180px] truncate text-slate-600 dark:text-slate-300" title={u.address}>
-                              {u.address || <span className="text-slate-400 italic">Chưa có địa chỉ</span>}
+                            <td className="py-3.5 px-3 max-w-[180px] truncate text-slate-600 dark:text-slate-300" title={displayAddress}>
+                              {displayAddress || <span className="text-slate-400 italic">Chưa có địa chỉ</span>}
                             </td>
 
                             {/* ORDERS & SPEND */}
                             <td className="py-3.5 px-3 whitespace-nowrap">
                               <span className="font-bold text-slate-900 dark:text-white block">
-                                {u._count?.orders ?? 0} đơn hàng
+                                {orderCount} đơn hàng
                               </span>
-                              {u.totalSpent ? (
-                                <span className="text-[11px] text-emerald-600 font-mono block">
-                                  {formatVND(u.totalSpent)}
+                              {totalSpent > 0 ? (
+                                <span className="text-[11px] text-emerald-600 font-mono block font-bold">
+                                  {formatVND(totalSpent)}
                                 </span>
                               ) : (
                                 <span className="text-[11px] text-slate-400 font-mono block">0 đ</span>
@@ -1831,7 +1859,7 @@ export default function AdminDashboardPage() {
                               <div className="flex items-center justify-end gap-1.5">
                                 {/* VIEW DETAILS BUTTON */}
                                 <button
-                                  onClick={() => setViewingUserDetails(u)}
+                                  onClick={() => setViewingUserDetails(enrichedUser)}
                                   className="p-1.5 rounded-lg bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 text-[#0284c7] border border-sky-200 dark:border-sky-800 transition-all cursor-pointer"
                                   title="Xem Hồ Sơ Chi Tiết"
                                 >
@@ -1840,7 +1868,7 @@ export default function AdminDashboardPage() {
 
                                 {/* EDIT / RESET PASSWORD BUTTON */}
                                 <button
-                                  onClick={() => handleOpenEditUser(u)}
+                                  onClick={() => handleOpenEditUser(enrichedUser)}
                                   className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800 transition-all cursor-pointer"
                                   title="Chỉnh Sửa & Đổi Mật Khẩu"
                                 >
@@ -2402,6 +2430,29 @@ export default function AdminDashboardPage() {
                 </span>
               </div>
             </div>
+
+            {/* ORDER HISTORY PREVIEW */}
+            {viewingUserDetails.orders && viewingUserDetails.orders.length > 0 && (
+              <div className="space-y-2 bg-slate-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 text-xs">
+                <span className="text-[10.5px] uppercase font-bold text-slate-400 block">Lịch Sử Đơn Hàng ({viewingUserDetails.orders.length})</span>
+                <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                  {viewingUserDetails.orders.map((ord: any) => (
+                    <div key={ord.id} className="flex items-center justify-between p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-700/60 text-[11px]">
+                      <div>
+                        <span className="font-mono font-bold text-[#0284c7]">#{ord.orderCode || ord.id}</span>
+                        <span className="text-slate-400 ml-2">{new Date(ord.createdAt).toLocaleDateString('vi-VN')}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-bold text-emerald-600">{formatVND(ord.netAmount || ord.totalAmount || 0)}</span>
+                        <span className="px-1.5 py-0.5 rounded text-[9.5px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                          {ord.status}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="flex items-center justify-end gap-2.5 pt-2">
               <button
