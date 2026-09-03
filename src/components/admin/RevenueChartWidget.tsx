@@ -54,10 +54,47 @@ export const RevenueChartWidget: React.FC<RevenueChartWidgetProps> = ({ data = [
     return chartData.reduce((sum, d) => sum + (d.orders || 0), 0);
   }, [chartData]);
 
-  const maxRevenue = useMemo(() => {
-    const max = Math.max(...chartData.map(d => d.revenue || 0));
-    return max > 0 ? max : 10000000;
+  const rawMaxRevenue = useMemo(() => {
+    return Math.max(...chartData.map(d => d.revenue || 0), 0);
   }, [chartData]);
+
+  // Nice Numbers / Round Intervals algorithm for Y-axis with 25% headroom
+  const yAxisConfig = useMemo(() => {
+    if (rawMaxRevenue <= 0) {
+      return {
+        chartMax: 10000000,
+        ticks: [10000000, 6000000, 3000000, 0],
+      };
+    }
+
+    // Give 25% headroom so highest bar never touches the top border or squishes the crown icon
+    const targetMax = rawMaxRevenue * 1.25;
+    const intervals = 3; // 4 ticks: ceiling, 2 intermediate round steps, 0
+    const rawStep = targetMax / intervals;
+    const mag = Math.pow(10, Math.floor(Math.log10(rawStep)));
+    const ratio = rawStep / mag;
+
+    let niceStep = mag;
+    if (ratio <= 1.2) niceStep = 1 * mag;
+    else if (ratio <= 2.5) niceStep = 2 * mag;
+    else if (ratio <= 6) niceStep = 5 * mag;
+    else niceStep = 10 * mag;
+
+    // Keep step rounded to neat 500k/1M units
+    if (niceStep >= 1000000) {
+      niceStep = Math.ceil(niceStep / 1000000) * 1000000;
+    } else if (niceStep >= 100000) {
+      niceStep = Math.ceil(niceStep / 100000) * 100000;
+    }
+
+    const ceiling = niceStep * intervals;
+    const ticks: number[] = [];
+    for (let i = intervals; i >= 0; i--) {
+      ticks.push(i * niceStep);
+    }
+
+    return { chartMax: ceiling, ticks };
+  }, [rawMaxRevenue]);
 
   const avgRevenue = useMemo(() => {
     return Math.round(totalRevenue / Math.max(chartData.length, 1));
@@ -102,7 +139,7 @@ export const RevenueChartWidget: React.FC<RevenueChartWidgetProps> = ({ data = [
 
     const points = chartData.map((d, i) => {
       const x = paddingX + i * stepX;
-      const ratio = maxRevenue > 0 ? (d.revenue || 0) / maxRevenue : 0;
+      const ratio = yAxisConfig.chartMax > 0 ? (d.revenue || 0) / yAxisConfig.chartMax : 0;
       const y = height - paddingY - ratio * usableH;
       return { x, y, d, index: i };
     });
@@ -126,7 +163,7 @@ export const RevenueChartWidget: React.FC<RevenueChartWidgetProps> = ({ data = [
     const areaD = `${lineD} L ${points[points.length - 1].x} ${height} L ${points[0].x} ${height} Z`;
 
     return { line: lineD, area: areaD, points };
-  }, [chartData, maxRevenue]);
+  }, [chartData, yAxisConfig.chartMax]);
 
   return (
     <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-5 sm:p-7 space-y-6 shadow-xs relative overflow-hidden transition-all">
@@ -221,8 +258,8 @@ export const RevenueChartWidget: React.FC<RevenueChartWidgetProps> = ({ data = [
           <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1">
             <ShoppingBag className="w-3 h-3 text-purple-500" /> Tổng Đơn Hàng
           </span>
-          <span className="text-base sm:text-lg font-black text-purple-600 dark:text-purple-400 font-heading mt-1">
-            {totalOrders} Đơn
+          <span className="text-base sm:text-lg font-black text-purple-600 dark:text-purple-400 font-heading mt-1 truncate">
+            {totalOrders} Đơn Hàng
           </span>
         </div>
       </div>
@@ -230,39 +267,27 @@ export const RevenueChartWidget: React.FC<RevenueChartWidgetProps> = ({ data = [
       {/* 3. CHART CANVAS CONTAINER */}
       <div className="relative z-10 pt-6">
         
-        {/* Y-Axis Gutter & Full Width Gridlines */}
+        {/* Y-Axis Gutter & Full Width Gridlines with Nice Numbers */}
         <div className="absolute inset-0 pointer-events-none flex flex-col justify-between text-[10px] font-bold text-slate-400 dark:text-slate-500 pb-11">
-          {/* Max Level Line */}
-          <div className="w-full flex items-center gap-2">
-            <span className="w-24 sm:w-28 text-right shrink-0 pr-2 text-slate-500 dark:text-slate-400 font-mono font-semibold truncate">
-              {formatVND(maxRevenue)}
-            </span>
-            <div className="flex-1 border-b border-dashed border-slate-200/90 dark:border-slate-800" />
-          </div>
-
-          {/* 66% Level Line */}
-          <div className="w-full flex items-center gap-2">
-            <span className="w-24 sm:w-28 text-right shrink-0 pr-2 text-slate-400 dark:text-slate-500 font-mono truncate">
-              {formatVND(Math.round(maxRevenue * 0.66))}
-            </span>
-            <div className="flex-1 border-b border-dashed border-slate-200/70 dark:border-slate-800/70" />
-          </div>
-
-          {/* 33% Level Line */}
-          <div className="w-full flex items-center gap-2">
-            <span className="w-24 sm:w-28 text-right shrink-0 pr-2 text-slate-400 dark:text-slate-500 font-mono truncate">
-              {formatVND(Math.round(maxRevenue * 0.33))}
-            </span>
-            <div className="flex-1 border-b border-dashed border-slate-200/50 dark:border-slate-800/50" />
-          </div>
-
-          {/* 0 VND Baseline */}
-          <div className="w-full flex items-center gap-2">
-            <span className="w-24 sm:w-28 text-right shrink-0 pr-2 text-slate-500 dark:text-slate-400 font-mono font-bold">
-              0 đ
-            </span>
-            <div className="flex-1 border-b-2 border-slate-200 dark:border-slate-800" />
-          </div>
+          {yAxisConfig.ticks.map((tickVal, idx) => {
+            const isBase = idx === yAxisConfig.ticks.length - 1;
+            return (
+              <div key={idx} className="w-full flex items-center gap-2.5">
+                <span className={`w-24 sm:w-28 text-right shrink-0 pr-2 font-mono transition-colors ${
+                  isBase 
+                    ? 'text-slate-500 dark:text-slate-400 font-black text-[10.5px]' 
+                    : 'text-slate-400 dark:text-slate-500 font-semibold'
+                }`}>
+                  {formatVND(tickVal)}
+                </span>
+                <div className={`flex-1 ${
+                  isBase 
+                    ? 'border-b-2 border-slate-200 dark:border-slate-800' 
+                    : 'border-b border-dashed border-slate-200/80 dark:border-slate-800/80'
+                }`} />
+              </div>
+            );
+          })}
         </div>
 
         {/* CHART VISUALIZATION AREA (Padding-left gives full breathing space so Y-axis labels never touch bars) */}
@@ -272,7 +297,7 @@ export const RevenueChartWidget: React.FC<RevenueChartWidgetProps> = ({ data = [
           {chartMode === 'bar' && (
             <div className="w-full h-full flex items-end justify-between gap-2 sm:gap-3 relative z-10">
               {chartData.map((item, idx) => {
-                const heightPercent = maxRevenue > 0 ? ((item.revenue || 0) / maxRevenue) * 100 : 0;
+                const heightPercent = yAxisConfig.chartMax > 0 ? ((item.revenue || 0) / yAxisConfig.chartMax) * 100 : 0;
                 const isHovered = hoveredIndex === idx;
                 const isPeak = idx === peakDayIndex && item.revenue > 0;
                 const isToday = idx === chartData.length - 1;
@@ -289,18 +314,24 @@ export const RevenueChartWidget: React.FC<RevenueChartWidgetProps> = ({ data = [
                     <AnimatePresence>
                       {isHovered && (
                         <motion.div
-                          initial={{ opacity: 0, y: 6, scale: 0.95 }}
+                          initial={{ opacity: 0, y: 4, scale: 0.96 }}
                           animate={{ opacity: 1, y: 0, scale: 1 }}
-                          exit={{ opacity: 0, y: 4, scale: 0.95 }}
+                          exit={{ opacity: 0, y: 2, scale: 0.96 }}
                           transition={{ duration: 0.12 }}
-                          className="absolute -top-20 z-50 bg-slate-900/95 dark:bg-slate-950/95 text-white p-3 rounded-2xl border border-slate-700/80 shadow-2xl backdrop-blur-md pointer-events-none whitespace-nowrap text-left min-w-[155px]"
+                          className={`absolute -top-16 z-50 bg-slate-900/95 dark:bg-slate-950/95 text-white p-3 rounded-2xl border border-slate-700/80 shadow-2xl backdrop-blur-md pointer-events-none whitespace-nowrap text-left min-w-[160px] ${
+                            idx >= chartData.length - 2 
+                              ? 'right-0' 
+                              : idx <= 1 
+                                ? 'left-0' 
+                                : 'left-1/2 -translate-x-1/2'
+                          }`}
                         >
                           <div className="flex items-center justify-between gap-2 text-[10.5px] text-slate-400 border-b border-slate-800 pb-1.5 mb-1.5">
                             <span className="font-bold flex items-center gap-1.5">
                               <Calendar className="w-3.5 h-3.5 text-sky-400" />
                               {item.day} {item.fullDate ? `(${item.fullDate})` : ''}
                             </span>
-                            {isPeak && (
+                            {isPeak && item.revenue > 0 && (
                               <span className="text-amber-300 font-black text-[9px] bg-amber-400/25 px-1.5 py-0.2 rounded-full border border-amber-400/30">
                                 👑 ĐỈNH
                               </span>
@@ -311,7 +342,9 @@ export const RevenueChartWidget: React.FC<RevenueChartWidgetProps> = ({ data = [
                           </p>
                           <div className="flex items-center justify-between text-[10px] text-slate-300 mt-1">
                             <span className="font-semibold">{item.orders} đơn hàng</span>
-                            <span className="text-emerald-400 font-bold">{percentOfTotal}% tổng tuần</span>
+                            <span className="text-emerald-400 font-bold">
+                              {item.revenue > 0 ? `${percentOfTotal}% tổng tuần` : '0% tổng'}
+                            </span>
                           </div>
                         </motion.div>
                       )}
@@ -319,10 +352,14 @@ export const RevenueChartWidget: React.FC<RevenueChartWidgetProps> = ({ data = [
 
                     {/* Bar Pillar Container */}
                     <div className="w-full h-48 flex items-end justify-center">
-                      <div className="w-full max-w-[48px] h-full flex items-end justify-center rounded-2xl p-1 bg-slate-100/60 dark:bg-slate-800/30 border border-slate-200/60 dark:border-slate-800/60 group-hover:border-sky-400/70 group-hover:bg-sky-50/40 dark:group-hover:bg-sky-950/20 transition-all">
+                      <div className={`w-full max-w-[48px] h-full flex items-end justify-center rounded-2xl p-1 transition-all ${
+                        item.revenue > 0 
+                          ? 'bg-slate-100/60 dark:bg-slate-800/30 border border-slate-200/60 dark:border-slate-800/60 group-hover:border-sky-400/70 group-hover:bg-sky-50/40 dark:group-hover:bg-sky-950/20' 
+                          : 'bg-slate-50/50 dark:bg-slate-800/20 border border-dashed border-slate-200/60 dark:border-slate-800/60 group-hover:border-slate-300 dark:group-hover:border-slate-700'
+                      }`}>
                         <motion.div
                           initial={{ height: 0 }}
-                          animate={{ height: `${Math.max(heightPercent, 5)}%` }}
+                          animate={{ height: `${item.revenue > 0 ? Math.max(heightPercent, 6) : 3}%` }}
                           transition={{ type: 'spring', damping: 20, stiffness: 120, delay: idx * 0.03 }}
                           className={`w-full rounded-xl transition-all relative flex flex-col justify-between ${
                             item.revenue > 0
@@ -338,7 +375,7 @@ export const RevenueChartWidget: React.FC<RevenueChartWidgetProps> = ({ data = [
                           )}
 
                           {/* Star Icon Badge for Peak Day */}
-                          {isPeak && (
+                          {isPeak && item.revenue > 0 && (
                             <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 w-5.5 h-5.5 rounded-full bg-gradient-to-br from-amber-300 to-amber-500 text-slate-950 flex items-center justify-center shadow-md shadow-amber-400/50 border border-amber-200 z-10">
                               <Sparkles className="w-3 h-3 fill-slate-950" />
                             </div>
@@ -423,7 +460,12 @@ export const RevenueChartWidget: React.FC<RevenueChartWidgetProps> = ({ data = [
                     const isHovered = hoveredIndex === i;
                     const isPeak = i === peakDayIndex && pt.d.revenue > 0;
                     return (
-                      <g key={i} className="cursor-pointer">
+                      <g 
+                        key={i} 
+                        className="cursor-pointer"
+                        onMouseEnter={() => setHoveredIndex(i)}
+                        onMouseLeave={() => setHoveredIndex(null)}
+                      >
                         {isHovered && (
                           <line
                             x1={pt.x}
@@ -451,6 +493,46 @@ export const RevenueChartWidget: React.FC<RevenueChartWidgetProps> = ({ data = [
                     );
                   })}
                 </svg>
+
+                {/* Floating Tooltip in Area Mode */}
+                <AnimatePresence>
+                  {hoveredIndex !== null && chartData[hoveredIndex] && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 4, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 2, scale: 0.96 }}
+                      transition={{ duration: 0.12 }}
+                      className={`absolute -top-16 z-50 bg-slate-900/95 dark:bg-slate-950/95 text-white p-3 rounded-2xl border border-slate-700/80 shadow-2xl backdrop-blur-md pointer-events-none whitespace-nowrap text-left min-w-[160px] ${
+                        hoveredIndex >= chartData.length - 2 
+                          ? 'right-4' 
+                          : hoveredIndex <= 1 
+                            ? 'left-4' 
+                            : 'left-1/2 -translate-x-1/2'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2 text-[10.5px] text-slate-400 border-b border-slate-800 pb-1.5 mb-1.5">
+                        <span className="font-bold flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5 text-sky-400" />
+                          {chartData[hoveredIndex].day} {chartData[hoveredIndex].fullDate ? `(${chartData[hoveredIndex].fullDate})` : ''}
+                        </span>
+                        {hoveredIndex === peakDayIndex && chartData[hoveredIndex].revenue > 0 && (
+                          <span className="text-amber-300 font-black text-[9px] bg-amber-400/25 px-1.5 py-0.2 rounded-full border border-amber-400/30">
+                            👑 ĐỈNH
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm font-black text-sky-300 font-heading">
+                        {formatVND(chartData[hoveredIndex].revenue)}
+                      </p>
+                      <div className="flex items-center justify-between text-[10px] text-slate-300 mt-1">
+                        <span className="font-semibold">{chartData[hoveredIndex].orders} đơn hàng</span>
+                        <span className="text-emerald-400 font-bold">
+                          {chartData[hoveredIndex].revenue > 0 ? `${totalRevenue > 0 ? Math.round((chartData[hoveredIndex].revenue / totalRevenue) * 100) : 0}% tổng tuần` : '0% tổng'}
+                        </span>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               {/* X-Axis labels for Area Mode */}

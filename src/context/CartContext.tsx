@@ -35,7 +35,7 @@ interface CartContextType {
   setCartOpen: (isOpen: boolean) => void;
   setIsOpen: (isOpen: boolean) => void;
   coupon: Coupon | null;
-  applyCoupon: (code: string) => Promise<boolean>;
+  applyCoupon: (code: string) => Promise<{ success: boolean; message: string }>;
   removeCoupon: () => void;
   getDiscountAmount: () => number;
   getNetAmount: () => number;
@@ -244,9 +244,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return total + activePrice * item.quantity;
   }, 0);
 
-  const applyCoupon = async (code: string): Promise<boolean> => {
+  const applyCoupon = async (code: string): Promise<{ success: boolean; message: string }> => {
     const cleanedCode = code.toUpperCase().trim();
-    if (!cleanedCode) return false;
+    if (!cleanedCode) return { success: false, message: 'Vui lòng nhập mã giảm giá!' };
 
     try {
       const res = await fetch('/api/coupons', {
@@ -255,41 +255,24 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         body: JSON.stringify({ code: cleanedCode, orderTotal: cartTotal }),
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        if (data.valid && data.coupon) {
-          setCoupon({
-            code: data.coupon.code,
-            discountType: data.coupon.discountType,
-            discountValue: Number(data.coupon.discountValue),
-            minOrderValue: Number(data.coupon.minOrderValue || 0),
-            maxDiscount: data.coupon.maxDiscount ? Number(data.coupon.maxDiscount) : null,
-          });
-          return true;
-        }
+      const data = await res.json();
+
+      if (res.ok && data.valid && data.coupon) {
+        setCoupon({
+          code: data.coupon.code,
+          discountType: data.coupon.discountType,
+          discountValue: Number(data.coupon.discountValue),
+          minOrderValue: Number(data.coupon.minOrderValue || 0),
+          maxDiscount: data.coupon.maxDiscount ? Number(data.coupon.maxDiscount) : null,
+        });
+        return { success: true, message: data.message || `Áp dụng mã ${cleanedCode} thành công!` };
       }
+
+      return { success: false, message: data.message || 'Mã giảm giá không tồn tại hoặc đã hết hạn!' };
     } catch (e) {
       console.warn('Lỗi gọi /api/coupons:', e);
+      return { success: false, message: 'Lỗi kết nối máy chủ khi xác thực mã giảm giá.' };
     }
-
-    // Fallback in-memory check
-    const fallbackCodes: Record<string, { type: 'PERCENT' | 'FIXED'; val: number }> = {
-      DRXHARDWARE: { type: 'PERCENT', val: 20 },
-      DRX100K: { type: 'FIXED', val: 100000 },
-      DRX500K: { type: 'FIXED', val: 500000 },
-      HE2026: { type: 'PERCENT', val: 15 },
-    };
-
-    if (fallbackCodes[cleanedCode]) {
-      setCoupon({
-        code: cleanedCode,
-        discountType: fallbackCodes[cleanedCode].type,
-        discountValue: fallbackCodes[cleanedCode].val,
-      });
-      return true;
-    }
-
-    return false;
   };
 
   const removeCoupon = () => {

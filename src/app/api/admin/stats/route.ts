@@ -74,8 +74,11 @@ export async function GET() {
         if (!o.createdAt) return;
         const orderDateStr = getVnDateStr(o.createdAt);
         if (orderDateStr === dateStr && o.status !== 'CANCELLED') {
-          dayRevenue += Number(o.netAmount || o.totalAmount || 0);
           dayOrderCount++;
+          // Only realized revenue (COMPLETED or PAID) counts toward revenue
+          if (o.status === 'COMPLETED' || o.paymentStatus === 'PAID') {
+            dayRevenue += Number(o.netAmount || o.totalAmount || 0);
+          }
         }
       });
 

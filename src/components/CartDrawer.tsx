@@ -37,12 +37,12 @@ export const CartDrawer: React.FC = () => {
 
     if (!couponCode.trim()) return;
 
-    const success = await applyCoupon(couponCode);
-    if (success) {
+    const result = await applyCoupon(couponCode);
+    if (result.success) {
       setCouponSuccess(true);
       setCouponCode('');
     } else {
-      setCouponError('Mã giảm giá không hợp lệ hoặc đã hết hạn.');
+      setCouponError(result.message || 'Mã giảm giá không hợp lệ hoặc đã hết hạn.');
     }
   };
 
@@ -166,7 +166,7 @@ export const CartDrawer: React.FC = () => {
                       <Tag className="absolute left-3 top-2.5 h-4 w-4 text-ods-textMuted" />
                       <input
                         type="text"
-                        placeholder="MÃ GIẢM GIÁ (DRXHARDWARE, DRX100K)"
+                        placeholder="MÃ GIẢM GIÁ (VD: DRXGAMING10)..."
                         value={couponCode}
                         onChange={(e) => setCouponCode(e.target.value)}
                         className="w-full rounded-ods border border-ods-border bg-white py-2 pl-9 pr-4 text-xs font-bold text-black placeholder-zinc-400 focus:border-ods-primary focus:ring-1 focus:ring-ods-primary focus:outline-none transition-all uppercase"
