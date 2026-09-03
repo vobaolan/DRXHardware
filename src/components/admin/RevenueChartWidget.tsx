@@ -265,24 +265,6 @@ export const RevenueChartWidget: React.FC<RevenueChartWidgetProps> = ({ data = [
           </div>
         </div>
 
-        {/* Dynamic Average Reference Line & Left Y-Axis Label - Anchored strictly to the Y-axis gutter so it NEVER overlaps chart bars */}
-        {avgRevenue > 0 && maxRevenue > 0 && (
-          <div 
-            style={{ bottom: `calc(44px + ${(avgRevenue / maxRevenue) * 165}px)` }}
-            className="absolute left-0 right-2 flex items-center pointer-events-none z-10"
-          >
-            {/* Left Y-Axis Badge (Stays strictly inside the left gutter w-24 sm:w-28) */}
-            <div className="w-24 sm:w-28 text-right shrink-0 pr-2">
-              <span className="inline-flex items-center gap-1 text-[9.5px] font-black text-emerald-700 dark:text-emerald-300 font-mono bg-emerald-50/95 dark:bg-emerald-950/90 px-1.5 py-0.5 rounded-md border border-emerald-300 dark:border-emerald-700/80 shadow-2xs">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                TB: {formatVND(avgRevenue)}
-              </span>
-            </div>
-            {/* Clean dashed line across the chart area with zero text clutter */}
-            <div className="flex-1 border-b border-dashed border-emerald-500/60 dark:border-emerald-400/50" />
-          </div>
-        )}
-
         {/* CHART VISUALIZATION AREA (Padding-left gives full breathing space so Y-axis labels never touch bars) */}
         <div className="pl-28 sm:pl-32 h-64 relative flex items-end">
           
