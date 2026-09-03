@@ -240,12 +240,33 @@ function ProfileContent() {
           }
         });
       } else {
-        setCurrentUser(null);
-        setIsLoggedIn(false);
+        verifyCurrentSession().then((verified) => {
+          if (verified) {
+            const storedProvider = typeof window !== 'undefined' ? sessionStorage.getItem('drx_auth_provider') : null;
+            const resolvedVerified = storedProvider === 'google' || verified.provider === 'google' || verified.id?.startsWith('google-')
+              ? { ...verified, provider: 'google' }
+              : verified;
+            setCurrentUser(resolvedVerified);
+            setProfileName(resolvedVerified.name || '');
+            setProfilePhone(resolvedVerified.phone || '');
+            applyAddressToForm(resolvedVerified.address);
+            setIsLoggedIn(true);
+          } else {
+            setCurrentUser(null);
+            setIsLoggedIn(false);
+          }
+        });
       }
     };
 
     initAuth();
+
+    window.addEventListener('storage', initAuth);
+    window.addEventListener('ods_user_update', initAuth);
+    return () => {
+      window.removeEventListener('storage', initAuth);
+      window.removeEventListener('ods_user_update', initAuth);
+    };
 
     try {
       const savedEmail = localStorage.getItem('drx_remember_email');

@@ -184,8 +184,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch (e) {}
     };
 
+    window.addEventListener('storage', handleAuthChange);
     window.addEventListener('ods_user_update', handleAuthChange);
     return () => {
+      window.removeEventListener('storage', handleAuthChange);
       window.removeEventListener('ods_user_update', handleAuthChange);
     };
   }, []);

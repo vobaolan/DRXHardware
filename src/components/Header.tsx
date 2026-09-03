@@ -129,7 +129,13 @@ export const Header: React.FC = () => {
           }
         });
       } else {
-        setCurrentUser(null);
+        verifyCurrentSession().then((verified) => {
+          if (verified) {
+            setCurrentUser(verified);
+          } else {
+            setCurrentUser(null);
+          }
+        });
       }
     };
 

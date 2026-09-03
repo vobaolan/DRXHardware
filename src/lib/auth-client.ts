@@ -5,29 +5,43 @@ export interface AuthUser {
   balance: number;
   role: string;
   phone?: string;
+  address?: string;
   provider?: string;
 }
 
-const SESSION_KEY = 'drx_user';
-const SESSION_FLAG = 'drx_tab_session';
+const SESSION_KEY = 'drx_user_profile';
+const SESSION_COOKIE = 'drx_session_active';
 
 /**
- * Get current authenticated user from active tab session
+ * Check if the current browser session cookie is active.
+ * Session cookies (without expires/max-age) persist across all tabs while Chrome is open,
+ * and are automatically deleted by the browser when Chrome is completely closed.
+ */
+export function isBrowserSessionActive(): boolean {
+  if (typeof document === 'undefined') return false;
+  return document.cookie.split(';').some(c => c.trim().startsWith(`${SESSION_COOKIE}=`));
+}
+
+/**
+ * Get current authenticated user shared across all tabs during the Chrome session
  */
 export function getStoredSessionUser(): AuthUser | null {
   if (typeof window === 'undefined') return null;
 
   try {
-    // Check if the tab session is still active
-    const isTabActive = sessionStorage.getItem(SESSION_FLAG) === 'active';
-    if (!isTabActive) {
-      // If user closed tab and reopened, sessionStorage is cleared by the browser.
-      // Clean up legacy localStorage if any exists
+    // 1. Check if the browser session cookie is still active
+    if (!isBrowserSessionActive()) {
+      // If Chrome was completely closed and reopened, session cookie is gone!
+      localStorage.removeItem(SESSION_KEY);
+      localStorage.removeItem('drx_user');
       localStorage.removeItem('ods_user');
+      sessionStorage.removeItem('drx_tab_session');
+      sessionStorage.removeItem('drx_user');
       return null;
     }
 
-    const raw = sessionStorage.getItem(SESSION_KEY);
+    // 2. Read from localStorage (shared across all tabs of the browser)
+    const raw = localStorage.getItem(SESSION_KEY) || localStorage.getItem('drx_user') || sessionStorage.getItem('drx_user');
     if (!raw) return null;
 
     const user = JSON.parse(raw);
@@ -41,20 +55,22 @@ export function getStoredSessionUser(): AuthUser | null {
 }
 
 /**
- * Set authenticated user for the current tab session
+ * Set authenticated user for the current Chrome session (shared across all tabs)
  */
 export function setSessionUser(user: AuthUser): void {
   if (typeof window === 'undefined') return;
 
   try {
-    sessionStorage.setItem(SESSION_FLAG, 'active');
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
-    
-    // Clean up persistent localStorage so sensitive data is NEVER stored in F12 Local Storage
-    localStorage.removeItem('ods_user');
-    localStorage.removeItem('drx_user');
+    // Set browser session cookie: no expires & no max-age => destroyed when Chrome is closed completely
+    document.cookie = `${SESSION_COOKIE}=1; path=/; SameSite=Lax`;
 
-    // Notify other components
+    // Save to localStorage so ALL tabs share the active session
+    localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+    localStorage.setItem('drx_user', JSON.stringify(user));
+    sessionStorage.setItem('drx_tab_session', 'active');
+    sessionStorage.setItem('drx_user', JSON.stringify(user));
+
+    // Notify other components & tabs
     window.dispatchEvent(new Event('ods_user_update'));
   } catch (e) {
     console.error('Failed to save session user:', e);
@@ -62,15 +78,20 @@ export function setSessionUser(user: AuthUser): void {
 }
 
 /**
- * Clear user session (Logout)
+ * Clear user session (Manual Logout)
  */
 export async function clearSessionUser(): Promise<void> {
   if (typeof window === 'undefined') return;
 
   try {
-    sessionStorage.removeItem(SESSION_FLAG);
-    sessionStorage.removeItem(SESSION_KEY);
+    // Expire the session cookie immediately
+    document.cookie = `${SESSION_COOKIE}=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
+
+    localStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem('drx_user');
     localStorage.removeItem('ods_user');
+    sessionStorage.removeItem('drx_tab_session');
+    sessionStorage.removeItem('drx_user');
 
     // Invalidate server-side HttpOnly JWT cookie
     await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
@@ -87,11 +108,6 @@ export async function clearSessionUser(): Promise<void> {
 export async function verifyCurrentSession(): Promise<AuthUser | null> {
   if (typeof window === 'undefined') return null;
 
-  const currentLocal = getStoredSessionUser();
-  if (!currentLocal) {
-    return null;
-  }
-
   try {
     const res = await fetch('/api/auth/me', { cache: 'no-store' });
     if (res.ok) {
@@ -101,13 +117,15 @@ export async function verifyCurrentSession(): Promise<AuthUser | null> {
         return data.user;
       }
     } else if (res.status === 401) {
-      // Token expired or invalid
+      // Server token expired, invalid, or browser session ended
       await clearSessionUser();
       return null;
     }
-  } catch (e) {}
+  } catch (e) {
+    console.warn('verifyCurrentSession network warning:', e);
+  }
 
-  return currentLocal;
+  return getStoredSessionUser();
 }
 
 /**
