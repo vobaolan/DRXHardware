@@ -76,26 +76,23 @@ export async function GET() {
       });
     }
 
-    // 4. Link Orders & Statistics to Users (matching by userId, email, phone, or name)
+    // 4. Link Orders & Statistics to Users strictly and accurately
     for (const [cleanEmail, userObj] of userMap.entries()) {
-      const uName = (userObj.name || '').trim().toLowerCase();
-      const uPhone = (userObj.phone || '').trim();
+      const uPhone = (userObj.phone || '').trim().replace(/\D/g, '');
       const uId = userObj.id;
 
       const userOrders = supaOrders.filter(o => {
         const oUserId = o.userId;
         const oEmail = (o.customerEmail || '').trim().toLowerCase();
-        const oPhone = (o.customerPhone || '').trim();
-        const oName = (o.customerName || '').trim().toLowerCase();
+        const oPhone = (o.customerPhone || '').trim().replace(/\D/g, '');
 
         if (oUserId && (oUserId === uId || oUserId === cleanEmail)) return true;
         if (oEmail && oEmail === cleanEmail) return true;
-        if (uPhone && oPhone && (oPhone === uPhone || oPhone.endsWith(uPhone.slice(-7)))) return true;
-        if (uName && oName && (oName === uName || oName.includes(uName) || uName.includes(oName))) return true;
+        if (uPhone.length >= 9 && oPhone.length >= 9 && uPhone === oPhone) return true;
         return false;
       });
 
-      const userTx = supaTransactions.filter(t => t.userId === uId || t.userEmail === cleanEmail);
+      const userTx = supaTransactions.filter(t => t.userId === uId || (t.userEmail && t.userEmail.toLowerCase() === cleanEmail));
 
       const totalSpent = userOrders.reduce((sum, o) => {
         const st = String(o.status || '').toUpperCase();
@@ -105,16 +102,9 @@ export async function GET() {
         return sum;
       }, 0);
 
-      const latestOrder = userOrders[0];
       userObj._count = { orders: userOrders.length, transactions: userTx.length };
       userObj.totalSpent = totalSpent;
       userObj.orders = userOrders;
-      if (!userObj.phone && latestOrder?.customerPhone) {
-        userObj.phone = latestOrder.customerPhone;
-      }
-      if (!userObj.address && latestOrder?.shippingAddress) {
-        userObj.address = latestOrder.shippingAddress;
-      }
     }
 
     const usersList: any[] = Array.from(userMap.values()).sort((a, b) => 
@@ -226,6 +216,19 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ message: 'Thiếu ID hoặc Email người dùng' }, { status: 400 });
     }
 
+    const cleanEmail = email ? email.trim().toLowerCase() : undefined;
+
+    // 1. Locate existing user in Supabase by ID or Email
+    let targetUser: any = null;
+    if (userId) {
+      const { data } = await supabase.from('User').select('*').eq('id', userId).maybeSingle();
+      if (data) targetUser = data;
+    }
+    if (!targetUser && cleanEmail) {
+      const { data } = await supabase.from('User').select('*').eq('email', cleanEmail).maybeSingle();
+      if (data) targetUser = data;
+    }
+
     const updateData: any = {};
     if (name !== undefined) updateData.name = name;
     if (phone !== undefined) updateData.phone = phone;
@@ -237,15 +240,43 @@ export async function PATCH(request: Request) {
     }
     updateData.updatedAt = new Date().toISOString();
 
-    const query = supabase.from('User');
-    let supaBuilder;
-    if (userId) {
-      supaBuilder = query.update(updateData).eq('id', userId);
-    } else {
-      supaBuilder = query.update(updateData).eq('email', email);
-    }
+    let updatedUser: any = null;
 
-    const { data: updatedUser, error: supaErr } = await supaBuilder.select('*').maybeSingle();
+    if (targetUser) {
+      const { data, error: supaErr } = await supabase
+        .from('User')
+        .update(updateData)
+        .eq('id', targetUser.id)
+        .select('*')
+        .maybeSingle();
+
+      if (supaErr) throw new Error(supaErr.message);
+      updatedUser = data || { ...targetUser, ...updateData };
+    } else {
+      // If user record doesn't exist yet in Supabase User table, create it with the requested info
+      const newUserId = userId || `user-${Date.now()}`;
+      const userToInsert = {
+        id: newUserId,
+        email: cleanEmail || 'admin@drx.vn',
+        name: name || (cleanEmail ? cleanEmail.split('@')[0] : 'User'),
+        role: role || (cleanEmail && cleanEmail.includes('admin') ? 'ADMIN' : 'USER'),
+        phone: phone || null,
+        address: address || null,
+        balance: balance !== undefined ? Number(balance) : 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        ...(newPassword ? { password: bcrypt.hashSync(newPassword, 10) } : { password: '' }),
+      };
+
+      const { data: inserted, error: insertErr } = await supabase
+        .from('User')
+        .insert([userToInsert])
+        .select('*')
+        .maybeSingle();
+
+      if (insertErr) throw new Error(insertErr.message);
+      updatedUser = inserted || userToInsert;
+    }
 
     return NextResponse.json({
       success: true,
@@ -253,7 +284,7 @@ export async function PATCH(request: Request) {
       user: {
         id: updatedUser?.id || userId,
         name: updatedUser?.name || name,
-        email: updatedUser?.email || email,
+        email: updatedUser?.email || cleanEmail,
         role: updatedUser?.role || role,
         phone: updatedUser?.phone || phone,
         address: updatedUser?.address || address,

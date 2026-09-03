@@ -678,6 +678,7 @@ export default function AdminDashboardPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             userId: userFormData.id,
+            email: userFormData.email,
             name: userFormData.name,
             phone: userFormData.phone,
             address: userFormData.address,
@@ -688,8 +689,12 @@ export default function AdminDashboardPage() {
         const data = await res.json();
         if (res.ok) {
           showToast('Đã cập nhật thông tin tài khoản thành công!', 'success');
+          setUsers(prev => prev.map(u => (u.id === userFormData.id || u.email?.toLowerCase() === userFormData.email?.toLowerCase()) ? { ...u, ...userFormData } : u));
+          if (viewingUserDetails && (viewingUserDetails.id === userFormData.id || viewingUserDetails.email?.toLowerCase() === userFormData.email?.toLowerCase())) {
+            setViewingUserDetails(prev => prev ? { ...prev, ...userFormData } : null);
+          }
           setIsUserModalOpen(false);
-          fetchAllData();
+          fetchAllData(false);
         } else {
           showToast(data.message || 'Lỗi khi cập nhật tài khoản.', 'error');
         }
@@ -1671,7 +1676,7 @@ export default function AdminDashboardPage() {
                             {new Date(s.createdAt).toLocaleDateString('vi-VN')}
                           </td>
                           <td className="py-3.5 px-3 whitespace-nowrap font-mono text-[11px] text-[#0284c7]">
-                            {s.order?.orderCode ? `#${s.order.orderCode}` : '-'}
+                            {s.order ? formatOrderDisplayCode(s.order) : '-'}
                           </td>
                           <td className="py-3.5 px-4 text-right whitespace-nowrap">
                             <button
@@ -2004,7 +2009,7 @@ export default function AdminDashboardPage() {
                 </div>
                 <div>
                   <span className="text-[10px] font-black uppercase text-[#0284c7] tracking-wider block">CHI TIẾT ĐƠN HÀNG</span>
-                  <h3 className="font-heading text-base font-black">#{viewingOrder.orderCode || viewingOrder.id}</h3>
+                  <h3 className="font-heading text-base font-black">{formatOrderDisplayCode(viewingOrder)}</h3>
                 </div>
               </div>
               <button
@@ -2521,7 +2526,7 @@ export default function AdminDashboardPage() {
                   {viewingUserDetails.orders.map((ord: any) => (
                     <div key={ord.id} className="flex items-center justify-between p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-700/60 text-[11px]">
                       <div>
-                        <span className="font-mono font-bold text-[#0284c7]">#{ord.orderCode || ord.id}</span>
+                        <span className="font-mono font-bold text-[#0284c7]">{formatOrderDisplayCode(ord)}</span>
                         <span className="text-slate-400 ml-2">{new Date(ord.createdAt).toLocaleDateString('vi-VN')}</span>
                       </div>
                       <div className="flex items-center gap-2">
