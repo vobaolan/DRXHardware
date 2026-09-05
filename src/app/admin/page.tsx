@@ -22,6 +22,7 @@ import { ModernSelect, SelectOption } from '@/components/ui/ModernSelect';
 import { PortalHeader } from '@/components/admin/PortalHeader';
 import { OrderVerificationModal } from '@/components/admin/OrderVerificationModal';
 import { OrderStatusSelector } from '@/components/admin/OrderStatusSelector';
+import { CancelOrderModal } from '@/components/admin/CancelOrderModal';
 import { CouponManagementView } from '@/components/admin/CouponManagementView';
 import { PortalDropdown } from '@/components/ui/PortalDropdown';
 import { RevenueChartWidget } from '@/components/admin/RevenueChartWidget';
@@ -266,6 +267,8 @@ export default function AdminDashboardPage() {
   // Modals
   const [viewingProduct, setViewingProduct] = useState<any | null>(null);
   const [viewingOrder, setViewingOrder] = useState<any | null>(null);
+  const [cancellingOrder, setCancellingOrder] = useState<any | null>(null);
+  const [isCancellingOrder, setIsCancellingOrder] = useState(false);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [formModalMode, setFormModalMode] = useState<'create' | 'edit'>('create');
   const [editingProduct, setEditingProduct] = useState<ProductFormData | null>(null);
@@ -557,6 +560,62 @@ export default function AdminDashboardPage() {
       }
     } catch (e) {
       showToast('Không thể kết nối máy chủ để cập nhật đơn.', 'error');
+    }
+  };
+
+  const handleConfirmCancelOrder = async (reason: string) => {
+    if (!cancellingOrder) return;
+    setIsCancellingOrder(true);
+    try {
+      const pDetails = typeof cancellingOrder.paymentDetails === 'string'
+        ? (() => { try { return JSON.parse(cancellingOrder.paymentDetails); } catch { return {}; } })()
+        : (cancellingOrder.paymentDetails && typeof cancellingOrder.paymentDetails === 'object' ? cancellingOrder.paymentDetails : {});
+
+      const targetPaymentStatus = cancellingOrder.paymentStatus === 'PAID' ? 'REFUNDED' : 'FAILED';
+      const mergedDetails = {
+        ...pDetails,
+        cancellationReason: reason,
+        cancelledAt: new Date().toISOString(),
+        cancelledBy: 'ADMIN',
+      };
+
+      const res = await fetch('/api/admin/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: cancellingOrder.id,
+          status: 'CANCELLED',
+          paymentStatus: targetPaymentStatus,
+          paymentDetails: mergedDetails,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        showToast(`Đã hủy đơn hàng #${formatOrderDisplayCode(cancellingOrder)} thành công!`, 'success');
+        setOrders(prev => prev.map(o => o.id === cancellingOrder.id ? { 
+          ...o, 
+          status: 'CANCELLED', 
+          paymentStatus: targetPaymentStatus,
+          paymentDetails: mergedDetails 
+        } : o));
+        if (viewingOrder && viewingOrder.id === cancellingOrder.id) {
+          setViewingOrder({ 
+            ...viewingOrder, 
+            status: 'CANCELLED', 
+            paymentStatus: targetPaymentStatus,
+            paymentDetails: mergedDetails 
+          });
+        }
+        setCancellingOrder(null);
+        fetchAllData();
+      } else {
+        showToast(data.message || 'Lỗi khi hủy đơn hàng!', 'error');
+      }
+    } catch (e) {
+      showToast('Không thể kết nối máy chủ để hủy đơn.', 'error');
+    } finally {
+      setIsCancellingOrder(false);
     }
   };
 
@@ -1489,7 +1548,14 @@ export default function AdminDashboardPage() {
                         return (
                           <tr key={o.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                             <td className="py-3.5 px-4 font-mono font-bold text-[#0284c7] whitespace-nowrap">
-                              {orderDisplayCode}
+                              <div className="flex items-center gap-1.5">
+                                <span>{orderDisplayCode}</span>
+                                {o.status === 'CANCELLED' && (
+                                  <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                                    Đã Hủy
+                                  </span>
+                                )}
+                              </div>
                             </td>
                             <td className="py-3.5 px-3 whitespace-nowrap">
                               <span className="font-bold text-slate-900 dark:text-white block">{o.customerName || 'Khách hàng'}</span>
@@ -1497,19 +1563,28 @@ export default function AdminDashboardPage() {
                             </td>
                             <td className="py-3.5 px-3 max-w-[220px]">
                               <div className="flex flex-wrap gap-1 mb-1">
-                                {needInst && (
-                                  <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-sky-100 text-[#0284c7] border border-sky-200">
-                                    🛠️ Ráp PC
+                                {o.status === 'CANCELLED' ? (
+                                  <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300 border border-rose-200 dark:border-rose-800 flex items-center gap-0.5">
+                                    <Ban className="w-2.5 h-2.5" />
+                                    <span>Ngừng Vận Chuyển</span>
                                   </span>
+                                ) : (
+                                  <>
+                                    {needInst && (
+                                      <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-sky-100 text-[#0284c7] border border-sky-200">
+                                        🛠️ Ráp PC
+                                      </span>
+                                    )}
+                                    {isProxy && (
+                                      <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-purple-100 text-purple-700 border border-purple-200">
+                                        👥 Nhận Thay
+                                      </span>
+                                    )}
+                                    <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                                      {isPickup ? '🏬 Showroom' : '🚚 Tận Nơi'}
+                                    </span>
+                                  </>
                                 )}
-                                {isProxy && (
-                                  <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-purple-100 text-purple-700 border border-purple-200">
-                                    👥 Nhận Thay
-                                  </span>
-                                )}
-                                <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                                  {isPickup ? '🏬 Showroom' : '🚚 Tận Nơi'}
-                                </span>
                               </div>
                               <span className="text-[11px] text-slate-600 dark:text-slate-300 line-clamp-1" title={o.shippingAddress}>
                                 {o.shippingAddress || 'Nhận tại Showroom DRX'}
@@ -1534,10 +1609,41 @@ export default function AdminDashboardPage() {
                             </td>
                             <td className="py-3.5 px-3 whitespace-nowrap">
                               <OrderStatusSelector
+                                orderId={o.id}
                                 currentStatus={o.status}
-                                onStatusChange={(newSt) => handleUpdateOrderStatus(o.id, newSt)}
+                                onStatusChange={(newSt) => {
+                                  if (newSt === 'CANCELLED') {
+                                    setCancellingOrder(o);
+                                  } else {
+                                    handleUpdateOrderStatus(o.id, newSt);
+                                  }
+                                }}
                                 size="sm"
                               />
+
+                              {/* Prominent Cancellation Reason Display */}
+                              {o.status === 'CANCELLED' && (
+                                <div 
+                                  className="mt-1.5 flex items-start gap-1.5 p-2 rounded-xl bg-rose-50/90 dark:bg-rose-950/50 border border-rose-200/80 dark:border-rose-900/60 max-w-[210px] text-left whitespace-normal"
+                                  title={`Lý do hủy: ${pDetails.cancellationReason || 'Chưa cập nhật lý do'}`}
+                                >
+                                  <Ban className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
+                                  <div className="min-w-0">
+                                    <span className="text-[10px] font-black uppercase text-rose-700 dark:text-rose-400 block tracking-wider">
+                                      Lý do hủy đơn:
+                                    </span>
+                                    <p className="text-[11px] font-bold text-rose-900 dark:text-rose-200 line-clamp-2 leading-tight">
+                                      {pDetails.cancellationReason || 'Khách hủy / Đơn spam'}
+                                    </p>
+                                    {pDetails.cancelledAt && (
+                                      <span className="text-[9.5px] text-rose-500/80 dark:text-rose-400/70 block mt-0.5 font-mono">
+                                        {new Date(pDetails.cancelledAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}{' '}
+                                        {new Date(pDetails.cancelledAt).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
                             </td>
                             <td className="py-3.5 px-4 text-right whitespace-nowrap">
                               <button
@@ -2501,6 +2607,19 @@ export default function AdminDashboardPage() {
             setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
             fetchAllData(false);
           }}
+        />
+      )}
+
+      {/* ============================================================ */}
+      {/* MODAL 8: CANCEL ORDER REASON CONFIRMATION                    */}
+      {/* ============================================================ */}
+      {cancellingOrder && (
+        <CancelOrderModal
+          isOpen={!!cancellingOrder}
+          order={cancellingOrder}
+          onClose={() => setCancellingOrder(null)}
+          onConfirmCancel={handleConfirmCancelOrder}
+          isUpdating={isCancellingOrder}
         />
       )}
 

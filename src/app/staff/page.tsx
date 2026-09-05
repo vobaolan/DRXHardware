@@ -19,6 +19,7 @@ import { ModernSelect, SelectOption } from '@/components/ui/ModernSelect';
 import { PortalHeader } from '@/components/admin/PortalHeader';
 import { OrderVerificationModal } from '@/components/admin/OrderVerificationModal';
 import { OrderStatusSelector, OrderStatus } from '@/components/admin/OrderStatusSelector';
+import { CancelOrderModal } from '@/components/admin/CancelOrderModal';
 import { CouponManagementView } from '@/components/admin/CouponManagementView';
 
 // Category mapping for filters
@@ -120,6 +121,8 @@ export default function StaffWarehousePortalPage() {
   // Modals & Active Selections
   const [viewingProduct, setViewingProduct] = useState<any | null>(null);
   const [viewingOrder, setViewingOrder] = useState<any | null>(null);
+  const [cancellingOrder, setCancellingOrder] = useState<any | null>(null);
+  const [isCancellingOrder, setIsCancellingOrder] = useState(false);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [formModalMode, setFormModalMode] = useState<'create' | 'edit'>('create');
   const [editingProduct, setEditingProduct] = useState<ProductFormData | null>(null);
@@ -370,6 +373,68 @@ export default function StaffWarehousePortalPage() {
       }
     } catch (e) {
       showToast('Không thể kết nối máy chủ để cập nhật đơn.', 'error');
+    }
+  };
+
+  const handleConfirmCancelOrder = async (reason: string) => {
+    if (!cancellingOrder) return;
+    setIsCancellingOrder(true);
+    try {
+      const pDetails = typeof cancellingOrder.paymentDetails === 'string'
+        ? (() => { try { return JSON.parse(cancellingOrder.paymentDetails); } catch { return {}; } })()
+        : (cancellingOrder.paymentDetails && typeof cancellingOrder.paymentDetails === 'object' ? cancellingOrder.paymentDetails : {});
+
+      const targetPaymentStatus = cancellingOrder.paymentStatus === 'PAID' ? 'REFUNDED' : 'FAILED';
+      const mergedDetails = {
+        ...pDetails,
+        cancellationReason: reason,
+        cancelledAt: new Date().toISOString(),
+        cancelledBy: 'STAFF',
+      };
+
+      const res = await fetch('/api/admin/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: cancellingOrder.id,
+          status: 'CANCELLED',
+          paymentStatus: targetPaymentStatus,
+          paymentDetails: mergedDetails,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        showToast(`Đã hủy đơn hàng #${formatOrderDisplayCode(cancellingOrder)} thành công!`, 'success');
+        setOrders(prev => prev.map(o => o.id === cancellingOrder.id ? { 
+          ...o, 
+          status: 'CANCELLED', 
+          paymentStatus: targetPaymentStatus,
+          paymentDetails: mergedDetails 
+        } : o));
+        setAssemblyOrders(prev => prev.map(o => o.id === cancellingOrder.id ? { 
+          ...o, 
+          status: 'CANCELLED', 
+          paymentStatus: targetPaymentStatus,
+          paymentDetails: mergedDetails 
+        } : o));
+        if (viewingOrder && viewingOrder.id === cancellingOrder.id) {
+          setViewingOrder({ 
+            ...viewingOrder, 
+            status: 'CANCELLED', 
+            paymentStatus: targetPaymentStatus,
+            paymentDetails: mergedDetails 
+          });
+        }
+        setCancellingOrder(null);
+        fetchAllStaffData();
+      } else {
+        showToast(data.message || 'Lỗi khi hủy đơn hàng!', 'error');
+      }
+    } catch (e) {
+      showToast('Không thể kết nối máy chủ để hủy đơn.', 'error');
+    } finally {
+      setIsCancellingOrder(false);
     }
   };
 
@@ -1051,9 +1116,16 @@ export default function StaffWarehousePortalPage() {
                     >
                       <div className="space-y-3">
                         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-                          <span className="font-mono font-bold text-[#0284c7] text-xs">
-                            {orderDisplayCode}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-bold text-[#0284c7] text-xs">
+                              {orderDisplayCode}
+                            </span>
+                            {ord.status === 'CANCELLED' && (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                                Đã Hủy
+                              </span>
+                            )}
+                          </div>
                           {dateStr && (
                             <span className="text-[10.5px] font-mono text-slate-400">
                               {dateStr}
@@ -1063,25 +1135,53 @@ export default function StaffWarehousePortalPage() {
 
                         {/* SPECIAL REQUESTS BADGES */}
                         <div className="flex flex-wrap gap-1.5">
-                          {needInst && (
-                            <span className="px-2 py-0.5 rounded-md text-[9.5px] font-black uppercase bg-sky-100 dark:bg-sky-950 text-[#0284c7] border border-sky-200 dark:border-sky-800 flex items-center gap-1">
-                              <Wrench className="w-3 h-3" />
-                              <span>Cần Ráp Máy / Cài Đặt</span>
+                          {ord.status === 'CANCELLED' ? (
+                            <span className="px-2 py-0.5 rounded-md text-[9.5px] font-black uppercase bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 flex items-center gap-1">
+                              <Ban className="w-3 h-3" />
+                              <span>Ngừng Vận Chuyển</span>
                             </span>
+                          ) : (
+                            <>
+                              {needInst && (
+                                <span className="px-2 py-0.5 rounded-md text-[9.5px] font-black uppercase bg-sky-100 dark:bg-sky-950 text-[#0284c7] border border-sky-200 dark:border-sky-800 flex items-center gap-1">
+                                  <Wrench className="w-3 h-3" />
+                                  <span>Cần Ráp Máy / Cài Đặt</span>
+                                </span>
+                              )}
+                              {isProxy && (
+                                <span className="px-2 py-0.5 rounded-md text-[9.5px] font-black uppercase bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 flex items-center gap-1">
+                                  <UserCheck className="w-3 h-3" />
+                                  <span>Người Nhận Thay</span>
+                                </span>
+                              )}
+                              <span className="px-2 py-0.5 rounded-md text-[9.5px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                                {isPickup ? '🏬 Nhận Showroom' : '🚚 Giao Tận Nơi'}
+                              </span>
+                            </>
                           )}
-                          {isProxy && (
-                            <span className="px-2 py-0.5 rounded-md text-[9.5px] font-black uppercase bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 flex items-center gap-1">
-                              <UserCheck className="w-3 h-3" />
-                              <span>Người Nhận Thay</span>
-                            </span>
-                          )}
-                          <span className="px-2 py-0.5 rounded-md text-[9.5px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                            {isPickup ? '🏬 Nhận Showroom' : '🚚 Giao Tận Nơi'}
-                          </span>
                           <span className="px-2 py-0.5 rounded-md text-[9.5px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
                             💵 COD
                           </span>
                         </div>
+
+                        {/* Prominent Cancellation Reason Display */}
+                        {ord.status === 'CANCELLED' && (
+                          <div className="p-3 rounded-xl bg-rose-50/90 dark:bg-rose-950/50 border border-rose-200/80 dark:border-rose-900/60 text-xs text-rose-900 dark:text-rose-300 space-y-1">
+                            <div className="flex items-center gap-1.5 font-bold text-rose-700 dark:text-rose-400 text-[11px] uppercase tracking-wide">
+                              <Ban className="w-3.5 h-3.5 text-rose-500" />
+                              <span>Lý do hủy đơn hàng:</span>
+                            </div>
+                            <p className="text-[11.5px] font-bold text-rose-900 dark:text-rose-200 leading-tight">
+                              {pDetails.cancellationReason || 'Khách hủy / Không nhận hàng'}
+                            </p>
+                            {pDetails.cancelledAt && (
+                              <span className="text-[9.5px] text-rose-500/80 dark:text-rose-400/70 block font-mono">
+                                Hủy lúc: {new Date(pDetails.cancelledAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}{' '}
+                                {new Date(pDetails.cancelledAt).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}
+                              </span>
+                            )}
+                          </div>
+                        )}
 
                         <div className="space-y-1.5">
                           <h4 className="font-bold text-slate-900 dark:text-white text-xs line-clamp-2">
@@ -1112,8 +1212,15 @@ export default function StaffWarehousePortalPage() {
 
                       <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 flex-wrap">
                         <OrderStatusSelector
+                          orderId={ord.id}
                           currentStatus={ord.status}
-                          onStatusChange={(newSt) => handleUpdateOrderStatus(ord.id, newSt)}
+                          onStatusChange={(newSt) => {
+                            if (newSt === 'CANCELLED') {
+                              setCancellingOrder(ord);
+                            } else {
+                              handleUpdateOrderStatus(ord.id, newSt);
+                            }
+                          }}
                           size="sm"
                         />
 
@@ -1443,6 +1550,19 @@ export default function StaffWarehousePortalPage() {
             setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
             fetchAllStaffData(false);
           }}
+        />
+      )}
+
+      {/* ============================================================ */}
+      {/* MODAL 6: CANCEL ORDER REASON CONFIRMATION                    */}
+      {/* ============================================================ */}
+      {cancellingOrder && (
+        <CancelOrderModal
+          isOpen={!!cancellingOrder}
+          order={cancellingOrder}
+          onClose={() => setCancellingOrder(null)}
+          onConfirmCancel={handleConfirmCancelOrder}
+          isUpdating={isCancellingOrder}
         />
       )}
 

@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { showToast } from '@/components/Toast';
 import { OrderStatusSelector, OrderStatus } from './OrderStatusSelector';
+import { CancelOrderModal } from './CancelOrderModal';
 
 interface OrderVerificationModalProps {
   order: any;
@@ -36,19 +37,9 @@ const formatVND = (num: number | string | null | undefined) => {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
 };
 
-const CANCEL_REASONS = [
-  'Khách không nghe máy xác nhận (đã gọi nhiều lần)',
-  'Khách từ chối nhận / Đổi ý không mua',
-  'Nghi vấn đơn hàng spam ảo / Thông tin giả mạo',
-  'Hết hàng trong kho hoặc linh kiện tạm ngưng sản xuất',
-  'Khách yêu cầu hủy đơn trực tiếp qua hotline',
-];
-
 export function OrderVerificationModal({ order, onClose, onOrderUpdated }: OrderVerificationModalProps) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
-  const [selectedCancelReason, setSelectedCancelReason] = useState(CANCEL_REASONS[0]);
-  const [customCancelReason, setCustomCancelReason] = useState('');
   const [copiedCode, setCopiedCode] = useState(false);
 
   if (!order) return null;
@@ -159,8 +150,7 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
   };
 
   // Perform Order Cancellation (Spam / Refusal protection)
-  const handleConfirmCancelOrder = async () => {
-    const finalReason = customCancelReason.trim() || selectedCancelReason;
+  const handleConfirmCancelOrder = async (finalReason: string) => {
     setIsUpdating(true);
 
     try {
@@ -329,36 +319,16 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
           {/* Right Controls: Logical contextual actions + Close button */}
           <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
             {currentStatus === 'COMPLETED' ? (
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-xs font-bold shadow-2xs">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-                  <span>Đã Hoàn Tất</span>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setIsCancelModalOpen(true)}
-                  className="text-[11px] text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors underline cursor-pointer px-1"
-                  title="Xử lý hoàn trả hoặc hủy phát sinh"
-                >
-                  Hủy / Hoàn
-                </button>
-              </div>
-            ) : currentStatus !== 'CANCELLED' ? (
-              <button
-                type="button"
-                onClick={() => setIsCancelModalOpen(true)}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-rose-200 dark:border-rose-900/50 bg-rose-50/80 dark:bg-rose-950/40 hover:bg-rose-100 text-rose-700 dark:text-rose-400 text-xs font-bold transition-all cursor-pointer shadow-2xs"
-                title="Hủy đơn hàng nếu khách từ chối nhận hoặc spam"
-              >
-                <Ban className="w-3.5 h-3.5 text-rose-500" />
-                <span>Hủy Đơn</span>
-              </button>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800 text-xs font-bold">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-xs font-bold shadow-2xs">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                <span>Đã Hoàn Tất</span>
+              </span>
+            ) : currentStatus === 'CANCELLED' ? (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800 text-xs font-bold shadow-2xs">
                 <Ban className="w-3.5 h-3.5 text-rose-500" />
                 <span>Đơn Đã Hủy</span>
               </span>
-            )}
+            ) : null}
 
             <button
               type="button"
@@ -375,14 +345,26 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
             CANCELLATION ALERT (IF ALREADY CANCELLED)
            ───────────────────────────────────────────────────────────── */}
         {currentStatus === 'CANCELLED' && (
-          <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 space-y-1.5 text-xs text-rose-900 dark:text-rose-300">
-            <div className="flex items-center gap-2 font-black uppercase text-[11px] text-rose-700 dark:text-rose-400">
-              <Ban className="w-4 h-4" />
-              <span>ĐƠN HÀNG ĐÃ ĐƯỢC HỦY BỎ BỞI QUẢN TRỊ VIÊN / STAFF</span>
+          <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 space-y-2 text-xs text-rose-900 dark:text-rose-300 shadow-xs">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div className="flex items-center gap-2 font-black uppercase text-[11px] text-rose-700 dark:text-rose-400">
+                <Ban className="w-4 h-4" />
+                <span>ĐƠN HÀNG ĐÃ ĐƯỢC HỦY BỎ</span>
+              </div>
+              {paymentDetails.cancelledAt && (
+                <span className="text-[10.5px] font-mono text-rose-700 dark:text-rose-300 bg-rose-100/70 dark:bg-rose-900/50 px-2.5 py-0.5 rounded-lg font-bold border border-rose-200/60 dark:border-rose-800/60">
+                  {new Date(paymentDetails.cancelledAt).toLocaleString('vi-VN')}
+                </span>
+              )}
             </div>
-            <p className="text-[11.5px] opacity-90">
-              Lý do hủy: <strong>{paymentDetails.cancellationReason || 'Khách không mua / Đơn spam ảo'}</strong>
-            </p>
+            <div className="p-2.5 rounded-xl bg-white/70 dark:bg-slate-900/60 border border-rose-200/60 dark:border-rose-900/40">
+              <span className="text-[10px] uppercase font-black tracking-wider text-rose-500 dark:text-rose-400 block mb-0.5">
+                LÝ DO HỦY ĐƠN:
+              </span>
+              <p className="text-xs font-bold text-rose-900 dark:text-rose-200 leading-relaxed">
+                {paymentDetails.cancellationReason || 'Khách không mua / Đơn spam ảo'}
+              </p>
+            </div>
           </div>
         )}
 
@@ -629,6 +611,12 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
               <MapPin className="w-3 h-3 inline mr-1 text-slate-400 shrink-0" />
               <span>{order.shippingAddress || 'Showroom DRX Hardware (Q.10, TP. Hồ Chí Minh)'}</span>
             </p>
+            {currentStatus === 'CANCELLED' && (
+              <div className="mt-2 pt-2 border-t border-rose-200/60 dark:border-rose-900/50 flex items-center gap-1.5 text-rose-600 dark:text-rose-400 font-bold text-[11px]">
+                <Ban className="w-3 h-3 shrink-0" />
+                <span>Đã dừng vận chuyển do đơn hàng đã hủy</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -742,88 +730,20 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
       </div>
 
       {/* ─────────────────────────────────────────────────────────────
-          CANCELLATION CONFIRMATION MODAL (CHỐNG SPAM)
+      {/* ─────────────────────────────────────────────────────────────
+          CANCELLATION CONFIRMATION MODAL (CHỐNG SPAM & GHI LÝ DO)
          ───────────────────────────────────────────────────────────── */}
-      {isCancelModalOpen && (
-        <div className="fixed inset-0 z-60 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-rose-300 dark:border-rose-900 rounded-3xl p-6 max-w-md w-full space-y-5 shadow-2xl text-slate-900 dark:text-white animate-in zoom-in-95 duration-150">
-            <div className="flex items-center gap-3 text-rose-600 dark:text-rose-400 border-b border-slate-100 dark:border-slate-800 pb-3">
-              <div className="p-2 rounded-xl bg-rose-100 dark:bg-rose-950">
-                <AlertTriangle className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="font-heading text-sm font-black uppercase">
-                  XÁC NHẬN HỦY ĐƠN #{orderDisplayCode}
-                </h3>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                  Dành cho trường hợp khách không mua, từ chối nhận hoặc spam đơn
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-3 text-xs">
-              <label className="font-bold text-slate-700 dark:text-slate-300 block">
-                Chọn lý do hủy đơn:
-              </label>
-
-              <div className="space-y-1.5">
-                {CANCEL_REASONS.map((reason, idx) => (
-                  <label 
-                    key={idx} 
-                    className={`flex items-start gap-2.5 p-2.5 rounded-xl border transition-all cursor-pointer ${
-                      selectedCancelReason === reason 
-                        ? 'bg-rose-50 dark:bg-rose-950/60 border-rose-400 text-rose-900 dark:text-rose-200 font-bold' 
-                        : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="cancel_reason"
-                      checked={selectedCancelReason === reason}
-                      onChange={() => setSelectedCancelReason(reason)}
-                      className="mt-0.5 text-rose-600 focus:ring-rose-500 cursor-pointer"
-                    />
-                    <span className="text-xs">{reason}</span>
-                  </label>
-                ))}
-              </div>
-
-              <div className="space-y-1 pt-1">
-                <label className="text-[11px] text-slate-500 font-bold block">
-                  Hoặc nhập lý do chi tiết khác:
-                </label>
-                <input
-                  type="text"
-                  placeholder="Nhập ghi chú hủy đơn..."
-                  value={customCancelReason}
-                  onChange={(e) => setCustomCancelReason(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white focus:outline-none focus:border-rose-500"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-              <button
-                type="button"
-                onClick={() => setIsCancelModalOpen(false)}
-                disabled={isUpdating}
-                className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-bold cursor-pointer"
-              >
-                Quay Lại
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmCancelOrder}
-                disabled={isUpdating}
-                className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-black uppercase tracking-wider transition-all cursor-pointer shadow-md active:scale-95 flex items-center gap-1.5"
-              >
-                <Ban className="w-3.5 h-3.5" />
-                <span>{isUpdating ? 'Đang Hủy...' : 'Xác Nhận Hủy Đơn'}</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <CancelOrderModal
+        isOpen={isCancelModalOpen}
+        order={{
+          ...order,
+          orderCode: orderDisplayCode,
+          netAmount: order.netAmount || order.totalAmount,
+        }}
+        onClose={() => setIsCancelModalOpen(false)}
+        onConfirmCancel={handleConfirmCancelOrder}
+        isUpdating={isUpdating}
+      />
 
     </div>,
     document.body
