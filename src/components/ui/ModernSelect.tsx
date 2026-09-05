@@ -58,6 +58,7 @@ export const ModernSelect: React.FC<ModernSelectProps> = ({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
+  const listContainerRef = useRef<HTMLDivElement>(null);
 
   const isSearchEnabled = searchable !== undefined ? searchable : options.length > 7;
   const selectedOption = options.find((opt) => String(opt.value) === String(value));
@@ -106,7 +107,13 @@ export const ModernSelect: React.FC<ModernSelectProps> = ({
       setSearchTerm('');
       setTimeout(() => {
         searchInputRef.current?.focus();
-      }, 50);
+        if (listContainerRef.current) {
+          const selectedEl = listContainerRef.current.querySelector('[data-selected="true"]');
+          if (selectedEl) {
+            selectedEl.scrollIntoView({ block: 'nearest' });
+          }
+        }
+      }, 60);
 
       const handleScroll = (e: Event) => {
         if (popoverRef.current && popoverRef.current.contains(e.target as Node)) return;
@@ -243,7 +250,7 @@ export const ModernSelect: React.FC<ModernSelectProps> = ({
           )}
 
           {/* LIST OF OPTIONS */}
-          <div className="max-h-60 overflow-y-auto space-y-1 pr-1 overscroll-contain">
+          <div ref={listContainerRef} className="max-h-60 overflow-y-auto space-y-1 pr-1 overscroll-contain">
             {filteredOptions.length > 0 ? (
               filteredOptions.map((opt) => {
                 const isSelected = String(opt.value) === String(value);
@@ -251,6 +258,7 @@ export const ModernSelect: React.FC<ModernSelectProps> = ({
                   <button
                     key={String(opt.value)}
                     type="button"
+                    data-selected={isSelected ? 'true' : undefined}
                     onClick={() => handleSelect(opt.value)}
                     className={`w-full flex items-center justify-between gap-2.5 px-3 py-2 rounded-xl text-xs transition-all text-left cursor-pointer group ${
                       isSelected

@@ -72,8 +72,9 @@ export function getStoredSessionUser(): AuthUser | null {
 
 /**
  * Set authenticated user for the current Chrome session (shared across all tabs)
+ * Save user to localStorage, sessionStorage and session cookie
  */
-export function setSessionUser(user: AuthUser, token?: string): void {
+export function setSessionUser(user: AuthUser, token?: string, broadcast: boolean = true): void {
   if (typeof window === 'undefined') return;
 
   try {
@@ -92,8 +93,10 @@ export function setSessionUser(user: AuthUser, token?: string): void {
       sessionStorage.setItem(TOKEN_KEY, token);
     }
 
-    // Notify other components & tabs
-    window.dispatchEvent(new Event('ods_user_update'));
+    // Only notify other components & tabs when broadcast is true (e.g. login, logout, profile update)
+    if (broadcast) {
+      window.dispatchEvent(new Event('ods_user_update'));
+    }
   } catch (e) {
     console.error('Failed to save session user:', e);
   }
@@ -152,7 +155,8 @@ export async function verifyCurrentSession(): Promise<AuthUser | null> {
     if (res.ok) {
       const data = await res.json();
       if (data && data.user) {
-        setSessionUser(data.user, data.token);
+        // Silent update to avoid re-triggering ods_user_update event loops
+        setSessionUser(data.user, data.token, false);
         return data.user;
       }
     }

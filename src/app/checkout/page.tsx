@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
@@ -80,7 +80,12 @@ export default function CheckoutPage() {
     }));
   }, [wardsList]);
 
+  // Guards against background verifications overwriting active checkout edits
+  const isAddressDirtyRef = useRef(false);
+  const hasLoadedAddressRef = useRef(false);
+
   const handleProvinceChange = (provId: string) => {
+    isAddressDirtyRef.current = true;
     setSelectedProvinceId(provId);
     const prov = VIETNAM_PROVINCES.find(p => p.id === provId) || VIETNAM_PROVINCES[0];
     const firstDist = prov.districts[0];
@@ -89,9 +94,20 @@ export default function CheckoutPage() {
   };
 
   const handleDistrictChange = (distId: string) => {
+    isAddressDirtyRef.current = true;
     setSelectedDistrictId(distId);
     const dist = currentProvince.districts.find(d => d.id === distId) || currentProvince.districts[0];
     setSelectedWardName(dist?.wards[0] || '');
+  };
+
+  const handleWardChange = (ward: string) => {
+    isAddressDirtyRef.current = true;
+    setSelectedWardName(ward);
+  };
+
+  const handleStreetChange = (street: string) => {
+    isAddressDirtyRef.current = true;
+    setStreetAddress(street);
   };
 
   // Sync with shippingInfo.address whenever province, district, ward, or streetAddress changes
@@ -127,12 +143,13 @@ export default function CheckoutPage() {
           phone: prev.phone || u.phone || '',
           email: prev.email || u.email || '',
         }));
-        if (u.address) {
+        if (u.address && !isAddressDirtyRef.current && !hasLoadedAddressRef.current) {
           const parsed = parseFullAddress(u.address);
           setSelectedProvinceId(parsed.provinceId);
           setSelectedDistrictId(parsed.districtId);
           setSelectedWardName(parsed.wardName);
           setStreetAddress(parsed.street);
+          hasLoadedAddressRef.current = true;
         }
       };
 
@@ -764,7 +781,7 @@ export default function CheckoutPage() {
                           <ModernSelect
                             options={wardOptions}
                             value={selectedWardName}
-                            onChange={setSelectedWardName}
+                            onChange={handleWardChange}
                             searchable={true}
                             searchPlaceholder="Tìm Phường / Xã..."
                             placeholder="Chọn Phường / Xã"
@@ -782,7 +799,7 @@ export default function CheckoutPage() {
                             required={shippingInfo.fulfillmentMethod === 'DELIVERY'}
                             placeholder="Ví dụ: Số 123 Đường Nguyễn Huệ, Tòa nhà Landmark 81..."
                             value={streetAddress}
-                            onChange={(e) => setStreetAddress(e.target.value)}
+                            onChange={(e) => handleStreetChange(e.target.value)}
                             className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-900 dark:text-white placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:border-[#0284c7] focus:ring-2 focus:ring-[#0284c7]/20 shadow-2xs transition-all h-[42px]"
                           />
                         </div>

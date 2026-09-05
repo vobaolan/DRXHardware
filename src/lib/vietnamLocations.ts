@@ -592,6 +592,31 @@ export const VIETNAM_PROVINCES: ProvinceItem[] = [
   }
 ];
 
+function escapeRegExp(string: string): string {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function cleanProvincePrefix(str: string): string {
+  return str
+    .toLowerCase()
+    .replace(/^(thành phố|thành pho|thanh pho|tỉnh|tinh|thủ đô|thu do)\s+/i, '')
+    .trim();
+}
+
+function cleanDistrictPrefix(str: string): string {
+  return str
+    .toLowerCase()
+    .replace(/^(quận|quan|huyện|huyen|thị xã|thi xa|thành phố|thanh pho)\s+/i, '')
+    .trim();
+}
+
+function cleanWardPrefix(str: string): string {
+  return str
+    .toLowerCase()
+    .replace(/^(phường|phuong|xã|xa|thị trấn|thi tran)\s+/i, '')
+    .trim();
+}
+
 /**
  * Parse a full address string back into structured Administrative locations
  */
@@ -606,43 +631,102 @@ export function parseFullAddress(rawAddress: string) {
   }
 
   const trimmed = rawAddress.trim();
-  let matchedProvince = VIETNAM_PROVINCES[0];
-  let matchedDistrict = matchedProvince.districts[0];
-  let matchedWard = matchedDistrict?.wards[0] || '';
-  let remaining = trimmed;
 
-  // 1. Find matching province
-  for (const prov of VIETNAM_PROVINCES) {
-    if (trimmed.toLowerCase().includes(prov.name.toLowerCase())) {
+  // 1. Try segment parsing if separated by commas (Format: "Số nhà, Phường/Xã, Quận/Huyện, Tỉnh/TP")
+  const segments = trimmed.split(',').map((s) => s.trim()).filter(Boolean);
+  if (segments.length >= 3) {
+    const lastSeg = segments[segments.length - 1].toLowerCase();
+    const secondLastSeg = segments[segments.length - 2].toLowerCase();
+    const thirdLastSeg = segments.length >= 4 ? segments[segments.length - 3].toLowerCase() : '';
+
+    const matchedProv = VIETNAM_PROVINCES.find((p) => {
+      const pNameLower = p.name.toLowerCase();
+      const pClean = cleanProvincePrefix(p.name);
+      const segClean = cleanProvincePrefix(lastSeg);
+      return (
+        pNameLower === lastSeg ||
+        pClean === segClean ||
+        lastSeg.includes(pClean) ||
+        pClean.includes(segClean)
+      );
+    });
+
+    if (matchedProv) {
+      const matchedDist = matchedProv.districts.find((d) => {
+        const dNameLower = d.name.toLowerCase();
+        const dClean = cleanDistrictPrefix(d.name);
+        const segClean = cleanDistrictPrefix(secondLastSeg);
+        return (
+          dNameLower === secondLastSeg ||
+          dClean === segClean ||
+          new RegExp('(^|[^a-zA-Z0-9À-ỹ])' + escapeRegExp(d.name) + '([^a-zA-Z0-9À-ỹ]|$)', 'i').test(secondLastSeg) ||
+          new RegExp('(^|[^a-zA-Z0-9À-ỹ])' + escapeRegExp(dClean) + '([^a-zA-Z0-9À-ỹ]|$)', 'i').test(segClean)
+        );
+      });
+
+      if (matchedDist) {
+        const matchedW = thirdLastSeg ? matchedDist.wards.find((w) => {
+          const wNameLower = w.toLowerCase();
+          const wClean = cleanWardPrefix(w);
+          const segClean = cleanWardPrefix(thirdLastSeg);
+          return (
+            wNameLower === thirdLastSeg ||
+            wClean === segClean ||
+            new RegExp('(^|[^a-zA-Z0-9À-ỹ])' + escapeRegExp(w) + '([^a-zA-Z0-9À-ỹ]|$)', 'i').test(thirdLastSeg) ||
+            new RegExp('(^|[^a-zA-Z0-9À-ỹ])' + escapeRegExp(wClean) + '([^a-zA-Z0-9À-ỹ]|$)', 'i').test(segClean)
+          );
+        }) : null;
+
+        const street = segments.slice(0, thirdLastSeg ? segments.length - 3 : segments.length - 2).join(', ');
+
+        return {
+          provinceId: matchedProv.id,
+          districtId: matchedDist.id,
+          wardName: matchedW || matchedDist.wards[0] || '',
+          street,
+        };
+      }
+    }
+  }
+
+  // 2. Fallback matching with word boundaries & length-descending sort
+  let matchedProvince = VIETNAM_PROVINCES[0];
+  const sortedProvinces = [...VIETNAM_PROVINCES].sort((a, b) => b.name.length - a.name.length);
+  for (const prov of sortedProvinces) {
+    const provClean = cleanProvincePrefix(prov.name);
+    const rx = new RegExp('(^|[^a-zA-Z0-9À-ỹ])' + escapeRegExp(provClean) + '([^a-zA-Z0-9À-ỹ]|$)', 'i');
+    if (rx.test(trimmed) || trimmed.toLowerCase().includes(prov.name.toLowerCase())) {
       matchedProvince = prov;
-      matchedDistrict = prov.districts[0];
-      matchedWard = matchedDistrict?.wards[0] || '';
       break;
     }
   }
 
-  // 2. Find matching district
+  let matchedDistrict = matchedProvince.districts[0];
   if (matchedProvince) {
-    for (const dist of matchedProvince.districts) {
-      if (trimmed.toLowerCase().includes(dist.name.toLowerCase())) {
+    const sortedDistricts = [...matchedProvince.districts].sort((a, b) => b.name.length - a.name.length);
+    for (const dist of sortedDistricts) {
+      const rx = new RegExp('(^|[^a-zA-Z0-9À-ỹ])' + escapeRegExp(dist.name) + '([^a-zA-Z0-9À-ỹ]|$)', 'i');
+      if (rx.test(trimmed)) {
         matchedDistrict = dist;
-        matchedWard = dist.wards[0] || '';
         break;
       }
     }
   }
 
-  // 3. Find matching ward
+  let matchedWard = matchedDistrict?.wards[0] || '';
   if (matchedDistrict) {
-    for (const ward of matchedDistrict.wards) {
-      if (trimmed.toLowerCase().includes(ward.toLowerCase())) {
+    const sortedWards = [...matchedDistrict.wards].sort((a, b) => b.length - a.length);
+    for (const ward of sortedWards) {
+      const rx = new RegExp('(^|[^a-zA-Z0-9À-ỹ])' + escapeRegExp(ward) + '([^a-zA-Z0-9À-ỹ]|$)', 'i');
+      if (rx.test(trimmed)) {
         matchedWard = ward;
         break;
       }
     }
   }
 
-  // 4. Extract street address (part before ward, district, province)
+  // Extract street address (part before ward, district, province)
+  let remaining = trimmed;
   if (matchedWard && trimmed.includes(matchedWard)) {
     const parts = trimmed.split(matchedWard);
     remaining = parts[0].replace(/,\s*$/, '').trim();

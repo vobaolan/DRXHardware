@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, Suspense, useRef } from 'react';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { CartDrawer } from '@/components/CartDrawer';
@@ -96,6 +96,10 @@ function ProfileContent() {
   const [profileAddress, setProfileAddress] = useState('');
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
 
+  // Guards against background verifications overwriting active user edits
+  const isFormDirtyRef = useRef(false);
+  const hasLoadedAddressRef = useRef(false);
+
   // Vietnam Administrative Locations State for Profile Default Address
   const [selectedProvinceId, setSelectedProvinceId] = useState<string>('hcm');
   const [selectedDistrictId, setSelectedDistrictId] = useState<string>('hcm_thu_duc');
@@ -136,6 +140,7 @@ function ProfileContent() {
   }, [wardsList]);
 
   const handleProvinceChange = (provId: string) => {
+    isFormDirtyRef.current = true;
     setSelectedProvinceId(provId);
     const prov = VIETNAM_PROVINCES.find(p => p.id === provId) || VIETNAM_PROVINCES[0];
     const firstDist = prov.districts[0];
@@ -144,9 +149,20 @@ function ProfileContent() {
   };
 
   const handleDistrictChange = (distId: string) => {
+    isFormDirtyRef.current = true;
     setSelectedDistrictId(distId);
     const dist = currentProvince.districts.find(d => d.id === distId) || currentProvince.districts[0];
     setSelectedWardName(dist?.wards[0] || '');
+  };
+
+  const handleWardChange = (ward: string) => {
+    isFormDirtyRef.current = true;
+    setSelectedWardName(ward);
+  };
+
+  const handleStreetChange = (street: string) => {
+    isFormDirtyRef.current = true;
+    setStreetAddress(street);
   };
 
   // Sync profileAddress whenever location changes
@@ -160,15 +176,18 @@ function ProfileContent() {
     setProfileAddress(parts.join(', '));
   }, [streetAddress, selectedWardName, currentDistrict, currentProvince]);
 
-  const applyAddressToForm = (addrStr?: string) => {
-    if (addrStr && typeof addrStr === 'string' && addrStr.trim()) {
-      const parsed = parseFullAddress(addrStr);
-      setSelectedProvinceId(parsed.provinceId);
-      setSelectedDistrictId(parsed.districtId);
-      setSelectedWardName(parsed.wardName);
-      setStreetAddress(parsed.street);
-      setProfileAddress(addrStr);
-    }
+  const applyAddressToForm = (addrStr?: string, force: boolean = false) => {
+    if (!addrStr || typeof addrStr !== 'string' || !addrStr.trim()) return;
+    // Never overwrite if user is actively modifying the form unless explicitly forced
+    if (isFormDirtyRef.current && !force) return;
+
+    const parsed = parseFullAddress(addrStr);
+    setSelectedProvinceId(parsed.provinceId);
+    setSelectedDistrictId(parsed.districtId);
+    setSelectedWardName(parsed.wardName);
+    setStreetAddress(parsed.street);
+    setProfileAddress(addrStr);
+    hasLoadedAddressRef.current = true;
   };
 
   // Password change form states
@@ -219,9 +238,14 @@ function ProfileContent() {
           }
           return resolvedSessionUser;
         });
-        setProfileName(resolvedSessionUser.name || '');
-        setProfilePhone(resolvedSessionUser.phone || '');
-        applyAddressToForm(resolvedSessionUser.address);
+
+        if (!isFormDirtyRef.current) {
+          setProfileName(resolvedSessionUser.name || '');
+          setProfilePhone(resolvedSessionUser.phone || '');
+          if (!hasLoadedAddressRef.current) {
+            applyAddressToForm(resolvedSessionUser.address);
+          }
+        }
         setIsLoggedIn(true);
 
         verifyCurrentSession().then((verified) => {
@@ -230,9 +254,13 @@ function ProfileContent() {
               ? { ...verified, provider: 'google' }
               : verified;
             setCurrentUser(resolvedVerified);
-            setProfileName(resolvedVerified.name || '');
-            setProfilePhone(resolvedVerified.phone || '');
-            applyAddressToForm(resolvedVerified.address);
+            if (!isFormDirtyRef.current) {
+              setProfileName(resolvedVerified.name || '');
+              setProfilePhone(resolvedVerified.phone || '');
+              if (!hasLoadedAddressRef.current) {
+                applyAddressToForm(resolvedVerified.address);
+              }
+            }
             setIsLoggedIn(true);
           }
         });
@@ -244,9 +272,13 @@ function ProfileContent() {
               ? { ...verified, provider: 'google' }
               : verified;
             setCurrentUser(resolvedVerified);
-            setProfileName(resolvedVerified.name || '');
-            setProfilePhone(resolvedVerified.phone || '');
-            applyAddressToForm(resolvedVerified.address);
+            if (!isFormDirtyRef.current) {
+              setProfileName(resolvedVerified.name || '');
+              setProfilePhone(resolvedVerified.phone || '');
+              if (!hasLoadedAddressRef.current) {
+                applyAddressToForm(resolvedVerified.address);
+              }
+            }
             setIsLoggedIn(true);
           }
         });
@@ -518,6 +550,7 @@ function ProfileContent() {
       });
 
       if (updated) {
+        isFormDirtyRef.current = false;
         setCurrentUser(updated);
         setProfileName(updated.name || '');
         setProfilePhone(updated.phone || '');
@@ -1742,7 +1775,10 @@ function ProfileContent() {
                               type="text"
                               required
                               value={profileName}
-                              onChange={(e) => setProfileName(e.target.value)}
+                              onChange={(e) => {
+                                isFormDirtyRef.current = true;
+                                setProfileName(e.target.value);
+                              }}
                               placeholder="Họ và tên khách hàng"
                               className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-3 px-4 text-xs font-semibold text-slate-900 dark:text-slate-100 focus:border-[#0284c7] focus:outline-none"
                             />
@@ -1776,7 +1812,10 @@ function ProfileContent() {
                             <input
                               type="tel"
                               value={profilePhone}
-                              onChange={(e) => setProfilePhone(e.target.value)}
+                              onChange={(e) => {
+                                isFormDirtyRef.current = true;
+                                setProfilePhone(e.target.value);
+                              }}
                               placeholder="Ví dụ: 0908889999"
                               className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-3 px-4 text-xs font-semibold text-slate-900 dark:text-slate-100 focus:border-[#0284c7] focus:outline-none"
                             />
@@ -1850,7 +1889,7 @@ function ProfileContent() {
                                 <ModernSelect
                                   options={wardOptions}
                                   value={selectedWardName}
-                                  onChange={setSelectedWardName}
+                                  onChange={handleWardChange}
                                   searchable={true}
                                   searchPlaceholder="Tìm Phường / Xã..."
                                   placeholder="Chọn Phường / Xã"
@@ -1867,7 +1906,7 @@ function ProfileContent() {
                                   type="text"
                                   placeholder="Ví dụ: Số 123 Đường Nguyễn Huệ, Tòa nhà Landmark 81..."
                                   value={streetAddress}
-                                  onChange={(e) => setStreetAddress(e.target.value)}
+                                  onChange={(e) => handleStreetChange(e.target.value)}
                                   className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-900 dark:text-white placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:border-[#0284c7] focus:ring-2 focus:ring-[#0284c7]/20 shadow-2xs transition-all h-[42px]"
                                 />
                               </div>
