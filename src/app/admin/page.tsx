@@ -256,6 +256,95 @@ export default function AdminDashboardPage() {
   const [serials, setSerials] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
 
+  // Live Reactive Stats linked directly to live `orders` state
+  const activeStats = useMemo(() => {
+    let totalRevenue = 0;
+    let totalProfit = 0;
+    let pendingOrders = 0;
+    let shippingOrders = 0;
+    let completedOrders = 0;
+    let cancelledOrders = 0;
+
+    orders.forEach((o) => {
+      const amount = Number(o.netAmount || o.totalAmount || 0);
+      const isCompletedOrPaid = o.status === 'COMPLETED' || o.paymentStatus === 'PAID';
+      
+      if (isCompletedOrPaid) {
+        totalRevenue += amount;
+        totalProfit += Math.round(amount * 0.15);
+      }
+      
+      if (o.status === 'PENDING') pendingOrders++;
+      else if (o.status === 'SHIPPING' || o.status === 'CONFIRMED') shippingOrders++;
+      else if (o.status === 'COMPLETED') completedOrders++;
+      else if (o.status === 'CANCELLED') cancelledOrders++;
+    });
+
+    return {
+      totalRevenue: totalRevenue || stats.totalRevenue,
+      totalProfit: totalProfit || stats.totalProfit,
+      totalOrders: orders.length || stats.totalOrders,
+      pendingOrders,
+      shippingOrders,
+      completedOrders,
+      cancelledOrders,
+      totalProducts: products.length || stats.totalProducts,
+      totalUsers: users.length || stats.totalUsers,
+      totalSerials: serials.length || stats.totalSerials,
+      serialsAvailable: serials.filter(s => s.status === 'AVAILABLE').length || stats.serialsAvailable,
+      serialsSold: serials.filter(s => s.status === 'SOLD').length || stats.serialsSold,
+      serialsWarranty: serials.filter(s => s.status === 'WARRANTY').length || stats.serialsWarranty,
+    };
+  }, [orders, products, users, serials, stats]);
+
+  // Live 7-Day Chart Data linked directly to live `orders` state
+  const activeLast7Days = useMemo(() => {
+    if (orders.length === 0) return last7Days;
+
+    const days = ['Chủ Nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+    const now = new Date();
+    const getVnDateStr = (date: Date | string) => {
+      try {
+        const d = typeof date === 'string' ? new Date(date) : date;
+        return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(d);
+      } catch (e) {
+        return new Date(date).toISOString().split('T')[0];
+      }
+    };
+
+    const result: { day: string; date: string; fullDate: string; revenue: number; orders: number }[] = [];
+
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+      const dateStr = getVnDateStr(d);
+      const dayName = days[d.getDay()];
+
+      let dayRevenue = 0;
+      let dayOrderCount = 0;
+
+      orders.forEach((o) => {
+        if (!o.createdAt) return;
+        const orderDateStr = getVnDateStr(o.createdAt);
+        if (orderDateStr === dateStr && o.status !== 'CANCELLED') {
+          dayOrderCount++;
+          if (o.status === 'COMPLETED' || o.paymentStatus === 'PAID') {
+            dayRevenue += Number(o.netAmount || o.totalAmount || 0);
+          }
+        }
+      });
+
+      result.push({
+        day: dayName,
+        date: dateStr,
+        fullDate: d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+        revenue: dayRevenue,
+        orders: dayOrderCount,
+      });
+    }
+
+    return result;
+  }, [orders, last7Days]);
+
   // Search & Filter States
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('ALL');
@@ -418,6 +507,13 @@ export default function AdminDashboardPage() {
     };
   }, [fetchAllData]);
 
+  // Realtime Sync on Tab Navigation
+  useEffect(() => {
+    if (activeTab === 'overview' || activeTab === 'orders') {
+      fetchAllData(false);
+    }
+  }, [activeTab, fetchAllData]);
+
   // Max revenue for bar chart
   const maxRevenue = useMemo(() => {
     if (!last7Days || last7Days.length === 0) return 1;
@@ -543,18 +639,32 @@ export default function AdminDashboardPage() {
   // Handlers for Orders
   const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
+      const targetPaymentStatus = newStatus === 'COMPLETED' ? 'PAID' : undefined;
+      const payload: any = { orderId, status: newStatus };
+      if (targetPaymentStatus) {
+        payload.paymentStatus = targetPaymentStatus;
+      }
+
       const res = await fetch('/api/admin/orders', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId, status: newStatus }),
+        body: JSON.stringify(payload),
       });
       if (res.ok) {
-        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+        setOrders(prev => prev.map(o => o.id === orderId ? { 
+          ...o, 
+          status: newStatus,
+          ...(targetPaymentStatus ? { paymentStatus: targetPaymentStatus } : {})
+        } : o));
         if (viewingOrder && viewingOrder.id === orderId) {
-          setViewingOrder({ ...viewingOrder, status: newStatus });
+          setViewingOrder({ 
+            ...viewingOrder, 
+            status: newStatus,
+            ...(targetPaymentStatus ? { paymentStatus: targetPaymentStatus } : {})
+          });
         }
         showToast(`Đã chuyển đơn hàng sang trạng thái: ${newStatus}`, 'success');
-        fetchAllData();
+        fetchAllData(false);
       } else {
         showToast('Lỗi khi cập nhật trạng thái đơn hàng!', 'error');
       }
@@ -1076,7 +1186,7 @@ export default function AdminDashboardPage() {
                   </div>
                   <div>
                     <p className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-heading">
-                      {formatVND(stats.totalRevenue)}
+                      {formatVND(activeStats.totalRevenue)}
                     </p>
                     <p className="text-[11px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-bold mt-1">
                       <ArrowUpRight className="w-3.5 h-3.5" /> Tính từ các đơn hoàn tất/thanh toán
@@ -1093,7 +1203,7 @@ export default function AdminDashboardPage() {
                   </div>
                   <div>
                     <p className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-heading">
-                      {formatVND(stats.totalProfit)}
+                      {formatVND(activeStats.totalProfit)}
                     </p>
                     <p className="text-[11px] text-sky-600 dark:text-sky-400 flex items-center gap-1 font-bold mt-1">
                       Biên lợi nhuận gộp ~15.0%
@@ -1110,10 +1220,10 @@ export default function AdminDashboardPage() {
                   </div>
                   <div>
                     <p className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-heading">
-                      {stats.totalOrders} Đơn Hàng
+                      {activeStats.totalOrders} Đơn Hàng
                     </p>
                     <p className="text-[11px] text-amber-600 dark:text-amber-400 flex items-center gap-1 font-bold mt-1">
-                      {stats.pendingOrders} đơn chờ duyệt • {stats.shippingOrders} đang giao
+                      {activeStats.pendingOrders} đơn chờ duyệt • {activeStats.shippingOrders} đang giao
                     </p>
                   </div>
                 </div>
@@ -1127,10 +1237,10 @@ export default function AdminDashboardPage() {
                   </div>
                   <div>
                     <p className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-heading">
-                      {stats.totalSerials} Mã Serial
+                      {activeStats.totalSerials} Mã Serial
                     </p>
                     <p className="text-[11px] text-purple-600 dark:text-purple-400 flex items-center gap-1 font-bold mt-1">
-                      {stats.serialsAvailable} còn trong kho • {stats.serialsSold} đã bán
+                      {activeStats.serialsAvailable} còn trong kho • {activeStats.serialsSold} đã bán
                     </p>
                   </div>
                 </div>
@@ -1141,7 +1251,7 @@ export default function AdminDashboardPage() {
                 
                 {/* 7-DAY REVENUE KPI CHART (8 COLS) */}
                 <div className="lg:col-span-8">
-                  <RevenueChartWidget data={last7Days} formatVND={formatVND} />
+                  <RevenueChartWidget data={activeLast7Days} formatVND={formatVND} />
                 </div>
 
                 {/* OVERVIEW SUMMARY (4 COLS) - REDESIGNED SYSTEM DASHBOARD */}
@@ -1163,19 +1273,19 @@ export default function AdminDashboardPage() {
                     <div className="grid grid-cols-2 gap-2.5 mt-3.5">
                       <div className="p-3 rounded-xl bg-slate-50/90 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
                         <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Sản Phẩm</span>
-                        <p className="text-base font-black text-slate-900 dark:text-white font-heading mt-0.5">{stats.totalProducts} <span className="text-[10px] text-slate-400 font-normal">mã</span></p>
+                        <p className="text-base font-black text-slate-900 dark:text-white font-heading mt-0.5">{activeStats.totalProducts} <span className="text-[10px] text-slate-400 font-normal">mã</span></p>
                       </div>
                       <div className="p-3 rounded-xl bg-slate-50/90 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
                         <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Khách Hàng</span>
-                        <p className="text-base font-black text-slate-900 dark:text-white font-heading mt-0.5">{stats.totalUsers} <span className="text-[10px] text-slate-400 font-normal">user</span></p>
+                        <p className="text-base font-black text-slate-900 dark:text-white font-heading mt-0.5">{activeStats.totalUsers} <span className="text-[10px] text-slate-400 font-normal">user</span></p>
                       </div>
                       <div className="p-3 rounded-xl bg-slate-50/90 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
                         <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Serial Kho</span>
-                        <p className="text-base font-black text-emerald-600 dark:text-emerald-400 font-heading mt-0.5">{stats.serialsAvailable} <span className="text-[10px] text-emerald-600/70 font-normal">sẵn có</span></p>
+                        <p className="text-base font-black text-emerald-600 dark:text-emerald-400 font-heading mt-0.5">{activeStats.serialsAvailable} <span className="text-[10px] text-emerald-600/70 font-normal">sẵn có</span></p>
                       </div>
                       <div className="p-3 rounded-xl bg-slate-50/90 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
                         <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Đơn Hoàn Tất</span>
-                        <p className="text-base font-black text-sky-600 dark:text-sky-400 font-heading mt-0.5">{stats.completedOrders} <span className="text-[10px] text-sky-600/70 font-normal">đơn</span></p>
+                        <p className="text-base font-black text-sky-600 dark:text-sky-400 font-heading mt-0.5">{activeStats.completedOrders} <span className="text-[10px] text-sky-600/70 font-normal">đơn</span></p>
                       </div>
                     </div>
 
@@ -1188,13 +1298,13 @@ export default function AdminDashboardPage() {
                             <Package className="w-3.5 h-3.5 text-emerald-500" /> Tỷ lệ linh kiện sẵn có:
                           </span>
                           <span className="font-black text-emerald-600 dark:text-emerald-400 font-mono">
-                            {stats.totalSerials > 0 ? Math.round((stats.serialsAvailable / stats.totalSerials) * 100) : 100}%
+                            {activeStats.totalSerials > 0 ? Math.round((activeStats.serialsAvailable / activeStats.totalSerials) * 100) : 100}%
                           </span>
                         </div>
                         <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
                           <div 
                             className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-500"
-                            style={{ width: `${stats.totalSerials > 0 ? Math.min(100, Math.round((stats.serialsAvailable / stats.totalSerials) * 100)) : 100}%` }}
+                            style={{ width: `${activeStats.totalSerials > 0 ? Math.min(100, Math.round((activeStats.serialsAvailable / activeStats.totalSerials) * 100)) : 100}%` }}
                           />
                         </div>
                       </div>
@@ -1206,13 +1316,13 @@ export default function AdminDashboardPage() {
                             <ShoppingCart className="w-3.5 h-3.5 text-sky-500" /> Tỷ lệ hoàn tất đơn:
                           </span>
                           <span className="font-black text-sky-600 dark:text-sky-400 font-mono">
-                            {stats.totalOrders > 0 ? Math.round((stats.completedOrders / stats.totalOrders) * 100) : 100}%
+                            {activeStats.totalOrders > 0 ? Math.round((activeStats.completedOrders / activeStats.totalOrders) * 100) : 100}%
                           </span>
                         </div>
                         <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
                           <div 
                             className="h-full rounded-full bg-gradient-to-r from-[#0284c7] to-[#38bdf8] transition-all duration-500"
-                            style={{ width: `${stats.totalOrders > 0 ? Math.min(100, Math.round((stats.completedOrders / stats.totalOrders) * 100)) : 100}%` }}
+                            style={{ width: `${activeStats.totalOrders > 0 ? Math.min(100, Math.round((activeStats.completedOrders / activeStats.totalOrders) * 100)) : 100}%` }}
                           />
                         </div>
                       </div>

@@ -355,16 +355,34 @@ export default function StaffWarehousePortalPage() {
   // Order & Assembly Status Update
   const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
+      const targetPaymentStatus = newStatus === 'COMPLETED' ? 'PAID' : undefined;
+      const payload: any = { orderId, status: newStatus };
+      if (targetPaymentStatus) {
+        payload.paymentStatus = targetPaymentStatus;
+      }
+
       const res = await fetch('/api/admin/orders', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId, status: newStatus }),
+        body: JSON.stringify(payload),
       });
       if (res.ok) {
-        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
-        setAssemblyOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+        setOrders(prev => prev.map(o => o.id === orderId ? { 
+          ...o, 
+          status: newStatus,
+          ...(targetPaymentStatus ? { paymentStatus: targetPaymentStatus } : {})
+        } : o));
+        setAssemblyOrders(prev => prev.map(o => o.id === orderId ? { 
+          ...o, 
+          status: newStatus,
+          ...(targetPaymentStatus ? { paymentStatus: targetPaymentStatus } : {})
+        } : o));
         if (viewingOrder && viewingOrder.id === orderId) {
-          setViewingOrder({ ...viewingOrder, status: newStatus });
+          setViewingOrder({ 
+            ...viewingOrder, 
+            status: newStatus,
+            ...(targetPaymentStatus ? { paymentStatus: targetPaymentStatus } : {})
+          });
         }
         showToast(`Đã chuyển đơn hàng sang trạng thái: ${newStatus}`, 'success');
         fetchAllStaffData();

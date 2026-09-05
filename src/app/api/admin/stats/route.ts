@@ -62,8 +62,7 @@ export async function GET() {
     const last7Days: { day: string; date: string; fullDate: string; revenue: number; orders: number }[] = [];
 
     for (let i = 6; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(now.getDate() - i);
+      const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
       const dateStr = getVnDateStr(d);
       const dayName = days[d.getDay()];
 

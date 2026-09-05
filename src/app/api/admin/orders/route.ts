@@ -49,11 +49,15 @@ export async function PATCH(request: Request) {
       } else if (!['PENDING', 'PAID', 'FAILED', 'REFUNDED'].includes(upperPay)) {
         sanitizedPaymentStatus = undefined;
       }
+    } else if (status === 'COMPLETED') {
+      sanitizedPaymentStatus = 'PAID';
     }
 
+    const { paymentMethod } = body;
     const updatePayload: any = {
       ...(status ? { status } : {}),
       ...(sanitizedPaymentStatus ? { paymentStatus: sanitizedPaymentStatus } : {}),
+      ...(paymentMethod ? { paymentMethod } : {}),
       ...(paymentDetails ? { paymentDetails } : {}),
       updatedAt: new Date().toISOString(),
     };
