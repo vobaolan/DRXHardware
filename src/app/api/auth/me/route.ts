@@ -60,21 +60,35 @@ export async function GET(request: Request) {
       }
     } catch (e) {}
 
-    return NextResponse.json(
+    const finalUser = {
+      id: userId || authUser.sub,
+      name: userName,
+      email: authUser.email,
+      role: userRole,
+      balance: userBalance,
+      phone: userPhone || '',
+      address: userAddress || '',
+      provider: authUser.provider,
+    };
+
+    const token = signJWT({
+      sub: finalUser.id,
+      email: finalUser.email,
+      name: finalUser.name,
+      role: finalUser.role,
+      provider: finalUser.provider,
+    });
+
+    const response = NextResponse.json(
       {
-        user: {
-          id: userId || authUser.sub,
-          name: userName,
-          email: authUser.email,
-          role: userRole,
-          balance: userBalance,
-          phone: userPhone || '',
-          address: userAddress || '',
-          provider: authUser.provider,
-        },
+        user: finalUser,
+        token,
       },
       { status: 200 }
     );
+
+    setAuthCookie(response, token);
+    return response;
   } catch (error: any) {
     return NextResponse.json({ message: 'Lỗi xác thực: ' + error.message }, { status: 500 });
   }
@@ -145,6 +159,7 @@ export async function PUT(request: Request) {
           address: resolvedAddress,
           provider: authUser.provider,
         },
+        token: newToken,
       },
       { status: 200 }
     );

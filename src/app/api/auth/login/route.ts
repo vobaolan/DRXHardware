@@ -34,19 +34,26 @@ export async function POST(request: Request) {
       (cleanEmail === 'admin@drx.vn' || cleanEmail === 'admin@drxhardware.vn' || cleanEmail === 'admin@odsstore.vn') &&
       (password === '01699224729' || password === 'admin' || password.length >= 3)
     ) {
+      let adminId = '5f72a5d7-fbb6-41dc-ad43-b4f77978d67b';
       let adminBalance = 0;
+      let adminPhone = '01699224729';
+      let adminAddress = '';
       try {
-        const { data } = await supabase.from('User').select('balance').eq('email', cleanEmail).maybeSingle();
-        if (data && data.balance !== undefined && data.balance !== null) {
-          adminBalance = Number(data.balance);
+        const { data } = await supabase.from('User').select('id, balance, phone, address').eq('email', cleanEmail).maybeSingle();
+        if (data) {
+          if (data.id) adminId = data.id;
+          if (data.balance !== undefined && data.balance !== null) adminBalance = Number(data.balance);
+          if (data.phone) adminPhone = data.phone;
+          if (data.address) adminAddress = data.address;
         }
       } catch (e) {}
 
       const adminUser = {
-        id: 'admin-id-master',
+        id: adminId,
         name: 'DRX Admin',
         email: 'admin@drx.vn',
-        phone: '01699224729',
+        phone: adminPhone,
+        address: adminAddress,
         balance: adminBalance,
         role: 'ADMIN',
       };
@@ -62,6 +69,7 @@ export async function POST(request: Request) {
         {
           message: 'Đăng nhập Admin thành công!',
           user: adminUser,
+          token,
         },
         { status: 200 }
       );
@@ -76,17 +84,26 @@ export async function POST(request: Request) {
       (password === '01699224729' || password === 'staff')
     ) {
       let staffId = 'staff-id-drx';
+      let staffBalance = 0;
+      let staffPhone = '01699224729';
+      let staffAddress = '';
       try {
-        const { data } = await supabase.from('User').select('id').eq('email', cleanEmail).maybeSingle();
-        if (data) staffId = data.id;
+        const { data } = await supabase.from('User').select('id, balance, phone, address').eq('email', cleanEmail).maybeSingle();
+        if (data) {
+          if (data.id) staffId = data.id;
+          if (data.balance !== undefined && data.balance !== null) staffBalance = Number(data.balance);
+          if (data.phone) staffPhone = data.phone;
+          if (data.address) staffAddress = data.address;
+        }
       } catch (e) {}
 
       const staffUser = {
         id: staffId,
         name: 'Nhân Viên DRX',
         email: 'staff@drx.vn',
-        phone: '01699224729',
-        balance: 0,
+        phone: staffPhone,
+        address: staffAddress,
+        balance: staffBalance,
         role: 'STAFF',
       };
 
@@ -101,6 +118,7 @@ export async function POST(request: Request) {
         {
           message: 'Đăng nhập Nhân viên Staff thành công!',
           user: staffUser,
+          token,
         },
         { status: 200 }
       );
@@ -167,6 +185,7 @@ export async function POST(request: Request) {
         {
           message: 'Đăng nhập thành công!',
           user: authUser,
+          token,
         },
         { status: 200 }
       );

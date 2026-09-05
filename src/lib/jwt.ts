@@ -1,4 +1,4 @@
-﻿import crypto from 'crypto';
+import crypto from 'crypto';
 import { NextResponse } from 'next/server';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'DRX_HARDWARE_ULTRA_SECURE_JWT_SECRET_2026_x89q2';
@@ -137,12 +137,15 @@ export function clearAuthCookie(response: NextResponse): void {
  * Extract auth user from Request cookies or Authorization header
  */
 export function getAuthUserFromRequest(request: Request): JWTPayload | null {
-  // 1. Try from cookie
+  // 1. Try from cookie header
   const cookieHeader = request.headers.get('cookie') || '';
   const match = cookieHeader.match(/drx_auth_token=([^;]+)/);
   if (match && match[1]) {
-    const user = verifyJWT(match[1]);
-    if (user) return user;
+    try {
+      const rawVal = decodeURIComponent(match[1].trim());
+      const user = verifyJWT(rawVal);
+      if (user) return user;
+    } catch (e) {}
   }
 
   // 2. Try from Authorization Bearer header

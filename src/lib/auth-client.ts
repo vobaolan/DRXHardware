@@ -11,6 +11,7 @@ export interface AuthUser {
 
 const SESSION_KEY = 'drx_user_profile';
 const SESSION_COOKIE = 'drx_session_active';
+const TOKEN_KEY = 'drx_auth_bearer';
 
 /**
  * Check if the current browser session cookie is active.
@@ -19,7 +20,34 @@ const SESSION_COOKIE = 'drx_session_active';
  */
 export function isBrowserSessionActive(): boolean {
   if (typeof document === 'undefined') return false;
-  return document.cookie.split(';').some(c => c.trim().startsWith(`${SESSION_COOKIE}=`));
+
+  // 1. Check if browser session cookie is present
+  const hasCookie = document.cookie.split(';').some(c => c.trim().startsWith(`${SESSION_COOKIE}=`));
+  if (hasCookie) return true;
+
+  // 2. Fallback: If this tab was already active, re-seed the session cookie
+  if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('drx_tab_session') === 'active') {
+    const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
+    document.cookie = `${SESSION_COOKIE}=1; path=/; SameSite=Lax${isHttps ? '; Secure' : ''}`;
+    return true;
+  }
+
+  // 3. Fallback: If user profile exists in localStorage, maintain session for current browser window
+  if (typeof localStorage !== 'undefined') {
+    const raw = localStorage.getItem(SESSION_KEY) || localStorage.getItem('drx_user');
+    if (raw) {
+      try {
+        const u = JSON.parse(raw);
+        if (u && u.id && u.email) {
+          const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
+          document.cookie = `${SESSION_COOKIE}=1; path=/; SameSite=Lax${isHttps ? '; Secure' : ''}`;
+          return true;
+        }
+      } catch (e) {}
+    }
+  }
+
+  return false;
 }
 
 /**
@@ -29,18 +57,6 @@ export function getStoredSessionUser(): AuthUser | null {
   if (typeof window === 'undefined') return null;
 
   try {
-    // 1. Check if the browser session cookie is still active
-    if (!isBrowserSessionActive()) {
-      // If Chrome was completely closed and reopened, session cookie is gone!
-      localStorage.removeItem(SESSION_KEY);
-      localStorage.removeItem('drx_user');
-      localStorage.removeItem('ods_user');
-      sessionStorage.removeItem('drx_tab_session');
-      sessionStorage.removeItem('drx_user');
-      return null;
-    }
-
-    // 2. Read from localStorage (shared across all tabs of the browser)
     const raw = localStorage.getItem(SESSION_KEY) || localStorage.getItem('drx_user') || sessionStorage.getItem('drx_user');
     if (!raw) return null;
 
@@ -57,18 +73,24 @@ export function getStoredSessionUser(): AuthUser | null {
 /**
  * Set authenticated user for the current Chrome session (shared across all tabs)
  */
-export function setSessionUser(user: AuthUser): void {
+export function setSessionUser(user: AuthUser, token?: string): void {
   if (typeof window === 'undefined') return;
 
   try {
+    const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
     // Set browser session cookie: no expires & no max-age => destroyed when Chrome is closed completely
-    document.cookie = `${SESSION_COOKIE}=1; path=/; SameSite=Lax`;
+    document.cookie = `${SESSION_COOKIE}=1; path=/; SameSite=Lax${isHttps ? '; Secure' : ''}`;
 
     // Save to localStorage so ALL tabs share the active session
     localStorage.setItem(SESSION_KEY, JSON.stringify(user));
     localStorage.setItem('drx_user', JSON.stringify(user));
     sessionStorage.setItem('drx_tab_session', 'active');
     sessionStorage.setItem('drx_user', JSON.stringify(user));
+
+    if (token) {
+      localStorage.setItem(TOKEN_KEY, token);
+      sessionStorage.setItem(TOKEN_KEY, token);
+    }
 
     // Notify other components & tabs
     window.dispatchEvent(new Event('ods_user_update'));
@@ -85,16 +107,20 @@ export async function clearSessionUser(): Promise<void> {
 
   try {
     // Expire the session cookie immediately
-    document.cookie = `${SESSION_COOKIE}=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
+    const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
+    document.cookie = `${SESSION_COOKIE}=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax${isHttps ? '; Secure' : ''}`;
 
     localStorage.removeItem(SESSION_KEY);
     localStorage.removeItem('drx_user');
     localStorage.removeItem('ods_user');
+    localStorage.removeItem(TOKEN_KEY);
     sessionStorage.removeItem('drx_tab_session');
     sessionStorage.removeItem('drx_user');
+    sessionStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem('drx_auth_provider');
 
     // Invalidate server-side HttpOnly JWT cookie
-    await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => {});
 
     window.dispatchEvent(new Event('ods_user_update'));
   } catch (e) {
@@ -109,17 +135,26 @@ export async function verifyCurrentSession(): Promise<AuthUser | null> {
   if (typeof window === 'undefined') return null;
 
   try {
-    const res = await fetch('/api/auth/me', { cache: 'no-store' });
+    const token = (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(TOKEN_KEY) : null)
+      || (typeof localStorage !== 'undefined' ? localStorage.getItem(TOKEN_KEY) : null);
+
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const res = await fetch('/api/auth/me', {
+      cache: 'no-store',
+      credentials: 'include',
+      headers,
+    });
+
     if (res.ok) {
       const data = await res.json();
       if (data && data.user) {
-        setSessionUser(data.user);
+        setSessionUser(data.user, data.token);
         return data.user;
       }
-    } else if (res.status === 401) {
-      // Server token expired, invalid, or browser session ended
-      await clearSessionUser();
-      return null;
     }
   } catch (e) {
     console.warn('verifyCurrentSession network warning:', e);
@@ -136,12 +171,13 @@ export async function loginUser(email: string, password: string): Promise<AuthUs
     const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ email, password }),
     });
     if (res.ok) {
       const data = await res.json();
       if (data && data.user) {
-        setSessionUser(data.user);
+        setSessionUser(data.user, data.token);
         return data.user;
       }
     }
@@ -160,12 +196,13 @@ export async function registerUser(email: string, password: string, name?: strin
     const res = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ email, password, name }),
     });
     if (res.ok) {
       const data = await res.json();
       if (data && data.user) {
-        setSessionUser(data.user);
+        setSessionUser(data.user, data.token);
         return data.user;
       }
     }
@@ -190,12 +227,13 @@ export async function loginWithGoogle(payload?: {
     const res = await fetch('/api/auth/google', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify(payload || {}),
     });
     if (res.ok) {
       const data = await res.json();
       if (data && data.user) {
-        setSessionUser(data.user);
+        setSessionUser(data.user, data.token);
         return data.user;
       }
     }
@@ -215,15 +253,24 @@ export async function updateUserProfile(payload: {
   address?: string;
 }): Promise<AuthUser | null> {
   try {
+    const token = (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(TOKEN_KEY) : null)
+      || (typeof localStorage !== 'undefined' ? localStorage.getItem(TOKEN_KEY) : null);
+
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const res = await fetch('/api/auth/me', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
+      credentials: 'include',
       body: JSON.stringify(payload),
     });
     if (res.ok) {
       const data = await res.json();
       if (data && data.user) {
-        setSessionUser(data.user);
+        setSessionUser(data.user, data.token);
         return data.user;
       }
     }

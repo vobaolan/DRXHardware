@@ -128,6 +128,7 @@ export async function POST(request: Request) {
       {
         message: 'Đăng nhập bằng Google thành công!',
         user: authUser,
+        token,
       },
       { status: 200 }
     );

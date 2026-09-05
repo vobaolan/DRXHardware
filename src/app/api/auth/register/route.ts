@@ -111,6 +111,7 @@ export async function POST(request: Request) {
       {
         message: 'Đăng ký tài khoản thành công!',
         user: authUser,
+        token,
       },
       { status: 201 }
     );

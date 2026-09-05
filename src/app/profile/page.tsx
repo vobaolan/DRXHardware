@@ -234,9 +234,6 @@ function ProfileContent() {
             setProfilePhone(resolvedVerified.phone || '');
             applyAddressToForm(resolvedVerified.address);
             setIsLoggedIn(true);
-          } else {
-            setCurrentUser(null);
-            setIsLoggedIn(false);
           }
         });
       } else {
@@ -251,9 +248,6 @@ function ProfileContent() {
             setProfilePhone(resolvedVerified.phone || '');
             applyAddressToForm(resolvedVerified.address);
             setIsLoggedIn(true);
-          } else {
-            setCurrentUser(null);
-            setIsLoggedIn(false);
           }
         });
       }
@@ -353,6 +347,8 @@ function ProfileContent() {
         }
         setCurrentUser(user);
         setProfileName(user.name || '');
+        setProfilePhone(user.phone || '');
+        applyAddressToForm(user.address);
         setIsLoggedIn(true);
         showToast(`Đăng nhập thành công! Chào mừng ${user.name || 'bạn'}.`, 'success');
       } else {
