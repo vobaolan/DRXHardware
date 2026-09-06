@@ -1,20 +1,17 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { 
   X, 
   Download, 
-  Printer, 
-  Copy, 
-  Check, 
-  Send, 
   ShieldCheck, 
   PhoneCall, 
-  MapPin, 
   Globe, 
   Sparkles,
   ShoppingCart,
-  QrCode
+  CheckCircle2,
+  Wrench,
+  Truck
 } from 'lucide-react';
 import { showToast } from '@/components/Toast';
 import { HardwareProduct } from '@/lib/hardware-data';
@@ -39,8 +36,25 @@ export function BuildQuotationModal({
   onBuyAll
 }: BuildQuotationModalProps) {
   const [isGeneratingImg, setIsGeneratingImg] = useState(false);
-  const [copiedText, setCopiedText] = useState(false);
   const invoiceRef = useRef<HTMLDivElement>(null);
+
+  // Close on Escape key & Lock background scrolling
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [onClose]);
 
   const selectedItems = Object.entries(build)
     .filter(([_, item]) => item !== null)
@@ -56,8 +70,8 @@ export function BuildQuotationModal({
     year: 'numeric',
   });
 
-  // Export as Canvas PNG
-  const handleDownloadImage = () => {
+  // Export as Canvas PNG with Official Logo & Ultra Sharp Output
+  const handleDownloadImage = async () => {
     setIsGeneratingImg(true);
     try {
       const canvas = document.createElement('canvas');
@@ -68,63 +82,102 @@ export function BuildQuotationModal({
         return;
       }
 
-      // 2x HD resolution
+      // 2x HD Resolution for Ultra Sharp Output
       const width = 900;
       const rowHeight = 44;
-      const baseHeight = 560;
+      const baseHeight = 480;
       const height = baseHeight + (selectedItems.length * rowHeight);
 
       canvas.width = width * 2;
       canvas.height = height * 2;
       ctx.scale(2, 2);
 
-      // Background
+      // 1. Background
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, width, height);
 
-      // Header Top Bar
+      // 2. Header Top Banner (Cyber Gradient)
       const gradient = ctx.createLinearGradient(0, 0, width, 0);
       gradient.addColorStop(0, '#0284c7');
-      gradient.addColorStop(0.5, '#0ea5e9');
-      gradient.addColorStop(1, '#2563eb');
+      gradient.addColorStop(0.4, '#0ea5e9');
+      gradient.addColorStop(1, '#0369a1');
       ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, width, 110);
+      ctx.fillRect(0, 0, width, 105);
 
-      // Header Logo & Text
+      // Load & Draw Logo Image
+      try {
+        const logoImg = new Image();
+        logoImg.crossOrigin = 'anonymous';
+        await new Promise((resolve) => {
+          logoImg.onload = resolve;
+          logoImg.onerror = () => resolve(null);
+          logoImg.src = '/logo/logo-header.png';
+        });
+        if (logoImg.naturalWidth > 0) {
+          const logoHeight = 38;
+          const logoWidth = (logoImg.naturalWidth / logoImg.naturalHeight) * logoHeight;
+          ctx.drawImage(logoImg, 36, 20, logoWidth, logoHeight);
+        } else {
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 24px sans-serif';
+          ctx.fillText('DRX HARDWARE', 36, 48);
+        }
+      } catch (err) {
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 24px sans-serif';
+        ctx.fillText('DRX HARDWARE', 36, 48);
+      }
+
+      // Header Tagline & Info
+      ctx.font = 'bold 10.5px sans-serif';
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 26px sans-serif';
-      ctx.fillText('DRX HARDWARE', 36, 45);
+      ctx.fillText('HỆ THỐNG LINH KIỆN MÁY TÍNH & PC GAMING CHÍNH HÃNG', 36, 72);
 
-      ctx.font = '11px sans-serif';
+      ctx.font = '10.5px sans-serif';
       ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-      ctx.fillText('HỆ THỐNG LINH KIỆN MÁY TÍNH & PC GAMING CHÍNH HÃNG', 36, 68);
-      ctx.fillText('Hotline: 1900.8888 | 0908.888.999 • Website: websitedrx.vercel.app', 36, 88);
+      ctx.fillText('Hotline: 1900.8888 • Website: drxvn.vercel.app', 36, 88);
 
-      // Quote Title on Right
+      // Header Right: Quotation Badge
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+      ctx.fillRect(width - 230, 16, 194, 74);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(width - 230, 16, 194, 74);
+
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 18px sans-serif';
-      ctx.textAlign = 'right';
-      ctx.fillText('BẢN BÁO GIÁ CẤU HÌNH PC', width - 36, 45);
+      ctx.font = 'bold 12px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('BÁO GIÁ CẤU HÌNH PC', width - 133, 38);
 
-      ctx.font = '12px monospace';
-      ctx.fillText(`MÃ: #${quoteCode}`, width - 36, 68);
-      ctx.font = '11px sans-serif';
-      ctx.fillText(`Ngày tạo: ${currentDateStr}`, width - 36, 88);
+      ctx.font = 'bold 15px monospace';
+      ctx.fillStyle = '#fef08a';
+      ctx.fillText(`#${quoteCode}`, width - 133, 58);
+
+      ctx.font = '10.5px sans-serif';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+      ctx.fillText(`Ngày: ${currentDateStr}`, width - 133, 76);
       ctx.textAlign = 'left';
 
-      // Build Name Box
-      ctx.fillStyle = '#f8fafc';
-      ctx.strokeStyle = '#e2e8f0';
+      // 3. Build Name Banner Box
+      ctx.fillStyle = '#f0f9ff';
+      ctx.strokeStyle = '#bae6fd';
       ctx.lineWidth = 1;
-      ctx.fillRect(36, 130, width - 72, 45);
-      ctx.strokeRect(36, 130, width - 72, 45);
+      ctx.fillRect(36, 122, width - 72, 42);
+      ctx.strokeRect(36, 122, width - 72, 42);
 
       ctx.fillStyle = '#0f172a';
-      ctx.font = 'bold 14px sans-serif';
-      ctx.fillText(`Tên cấu hình: ${buildName}`, 50, 158);
+      ctx.font = 'bold 13px sans-serif';
+      const truncatedBuildName = buildName.length > 55 ? buildName.slice(0, 53) + '...' : buildName;
+      ctx.fillText(`Cấu hình: ${truncatedBuildName}`, 50, 148);
 
-      // Table Header
-      const tableTop = 195;
+      ctx.textAlign = 'right';
+      ctx.fillStyle = '#0284c7';
+      ctx.font = 'bold 11px monospace';
+      ctx.fillText(`${selectedItems.length} LINH KIỆN`, width - 50, 148);
+      ctx.textAlign = 'left';
+
+      // 4. Table Header
+      const tableTop = 180;
       ctx.fillStyle = '#0f172a';
       ctx.fillRect(36, tableTop, width - 72, 34);
 
@@ -133,41 +186,54 @@ export function BuildQuotationModal({
       ctx.fillText('STT', 50, tableTop + 22);
       ctx.fillText('DANH MỤC', 90, tableTop + 22);
       ctx.fillText('TÊN LINH KIỆN CHI TIẾT', 210, tableTop + 22);
-      ctx.fillText('BẢO HÀNH', 590, tableTop + 22);
+      ctx.fillText('BẢO HÀNH', 600, tableTop + 22);
       ctx.fillText('SL', 680, tableTop + 22);
       ctx.textAlign = 'right';
-      ctx.fillText('THÀNH TIỀN', width - 50, tableTop + 22);
+      ctx.fillText('ĐƠN GIÁ (VND)', width - 50, tableTop + 22);
       ctx.textAlign = 'left';
 
-      // Table Rows
+      // 5. Table Rows
       let currentY = tableTop + 34;
       selectedItems.forEach((item, idx) => {
-        // Alternating background
         ctx.fillStyle = idx % 2 === 0 ? '#ffffff' : '#f8fafc';
         ctx.fillRect(36, currentY, width - 72, rowHeight);
-        ctx.strokeStyle = '#f1f5f9';
+        ctx.strokeStyle = '#e2e8f0';
         ctx.strokeRect(36, currentY, width - 72, rowHeight);
 
-        ctx.fillStyle = '#334155';
-        ctx.font = '11px sans-serif';
-        ctx.fillText(String(idx + 1), 52, currentY + 26);
+        // STT
+        ctx.fillStyle = '#64748b';
+        ctx.font = 'bold 11px monospace';
+        ctx.fillText(String(idx + 1).padStart(2, '0'), 50, currentY + 26);
 
-        ctx.font = 'bold 11px sans-serif';
+        // Category Tag
+        ctx.fillStyle = '#e0f2fe';
+        ctx.fillRect(86, currentY + 10, 96, 23);
+        ctx.strokeStyle = '#bae6fd';
+        ctx.strokeRect(86, currentY + 10, 96, 23);
+
+        ctx.font = 'bold 10px sans-serif';
         ctx.fillStyle = '#0284c7';
-        ctx.fillText(item.product.category, 90, currentY + 26);
+        ctx.textAlign = 'center';
+        ctx.fillText(item.product.category, 134, currentY + 25);
+        ctx.textAlign = 'left';
 
+        // Product Name
         ctx.fillStyle = '#0f172a';
         ctx.font = 'bold 11px sans-serif';
-        const truncatedName = item.product.name.length > 50 
-          ? item.product.name.slice(0, 48) + '...' 
+        const truncatedName = item.product.name.length > 55 
+          ? item.product.name.slice(0, 53) + '...' 
           : item.product.name;
         ctx.fillText(truncatedName, 210, currentY + 26);
 
-        ctx.fillStyle = '#64748b';
-        ctx.font = '11px sans-serif';
-        ctx.fillText(`${item.product.warrantyMonths} Tháng`, 590, currentY + 26);
+        // Warranty
+        ctx.fillStyle = '#475569';
+        ctx.font = '10.5px sans-serif';
+        ctx.fillText(`${item.product.warrantyMonths}T`, 612, currentY + 26);
+
+        // Qty
         ctx.fillText('01', 685, currentY + 26);
 
+        // Price
         ctx.textAlign = 'right';
         ctx.fillStyle = '#0f172a';
         ctx.font = 'bold 12px sans-serif';
@@ -177,58 +243,48 @@ export function BuildQuotationModal({
         currentY += rowHeight;
       });
 
-      // Total Section
-      currentY += 15;
+      // 6. Total Summary Box
+      currentY += 14;
       ctx.fillStyle = '#f0fdf4';
       ctx.strokeStyle = '#86efac';
       ctx.lineWidth = 1.5;
-      ctx.fillRect(36, currentY, width - 72, 60);
-      ctx.strokeRect(36, currentY, width - 72, 60);
+      ctx.fillRect(36, currentY, width - 72, 56);
+      ctx.strokeRect(36, currentY, width - 72, 56);
 
       ctx.fillStyle = '#166534';
-      ctx.font = 'bold 13px sans-serif';
-      ctx.fillText('TỔNG THANH TOÁN TOÀN BỘ CẤU HÌNH (ĐÃ GỒM VAT):', 54, currentY + 36);
+      ctx.font = 'bold 12px sans-serif';
+      ctx.fillText('TỔNG TIỀN BÁO GIÁ (ĐÃ GỒM VAT 10%):', 50, currentY + 34);
 
       ctx.textAlign = 'right';
       ctx.fillStyle = '#dc2626';
       ctx.font = 'bold 22px sans-serif';
-      ctx.fillText(formatVND(totalCost), width - 54, currentY + 39);
+      ctx.fillText(formatVND(totalCost), width - 50, currentY + 37);
       ctx.textAlign = 'left';
 
-      // Footer Guarantee Box
-      currentY += 80;
+      // 7. Minimal Footer Commitment
+      currentY += 70;
       ctx.fillStyle = '#f8fafc';
       ctx.strokeStyle = '#e2e8f0';
-      ctx.fillRect(36, currentY, width - 72, 85);
-      ctx.strokeRect(36, currentY, width - 72, 85);
-
-      ctx.fillStyle = '#0f172a';
-      ctx.font = 'bold 11px sans-serif';
-      ctx.fillText('CAM KẾT CHẤT LƯỢNG TỪ DRX HARDWARE:', 50, currentY + 25);
+      ctx.fillRect(36, currentY, width - 72, 40);
+      ctx.strokeRect(36, currentY, width - 72, 40);
 
       ctx.fillStyle = '#475569';
       ctx.font = '10.5px sans-serif';
-      ctx.fillText('✓ 100% Linh kiện mới nguyên seal chính hãng, đầy đủ tem bảo hành nhà phân phối.', 50, currentY + 45);
-      ctx.fillText('✓ Miễn phí công lắp ráp, đi dây giấu nguồn thẩm mỹ, cài đặt Windows 11 & Test nhiệt độ Full-load.', 50, currentY + 62);
-      ctx.fillText('✓ Hỗ trợ giao hàng COD tận nơi toàn quốc - Kiểm tra hàng trước khi thanh toán.', 50, currentY + 79);
+      ctx.fillText('✓ Bảo hành chính hãng 1 đổi 1   •   ✓ Miễn phí lắp ráp & cài Win   •   ✓ Giao hàng COD toàn quốc', 50, currentY + 24);
 
-      // Signature on right
       ctx.textAlign = 'right';
-      ctx.fillStyle = '#0f172a';
-      ctx.font = 'bold 12px sans-serif';
-      ctx.fillText('DRX HARDWARE OFFICIAL', width - 60, currentY + 40);
-      ctx.font = 'italic 10.5px sans-serif';
-      ctx.fillStyle = '#64748b';
-      ctx.fillText('(Ký tên & Đóng dấu điện tử)', width - 60, currentY + 60);
+      ctx.fillStyle = '#0284c7';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillText('DRX HARDWARE OFFICIAL', width - 50, currentY + 24);
       ctx.textAlign = 'left';
 
-      // Trigger Download
+      // 8. Download File
       const link = document.createElement('a');
       link.download = `DRX_BaoGia_PC_${quoteCode}.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
 
-      showToast('Đã xuất và tải ảnh Báo giá PC (.PNG) thành công!', 'success');
+      showToast('Đã tải ảnh Báo giá PC (.PNG) sắc nét thành công!', 'success');
     } catch (e) {
       console.error(e);
       showToast('Lỗi khi xuất ảnh báo giá', 'error');
@@ -237,185 +293,180 @@ export function BuildQuotationModal({
     }
   };
 
-  // Copy structured message for Zalo / Messenger
-  const handleCopyMessageForSales = () => {
-    const lines = [
-      `🖥️ **BÁO GIÁ CẤU HÌNH PC - DRX HARDWARE**`,
-      `📋 Tên cấu hình: ${buildName}`,
-      `🔖 Mã báo giá: #${quoteCode}`,
-      `📅 Ngày lập: ${currentDateStr}`,
-      `---------------------------------`,
-      ...selectedItems.map((item, i) => `${i + 1}. [${item.product.category}] ${item.product.name} - ${formatVND(item.product.discountPrice || item.product.price)} (BH ${item.product.warrantyMonths}T)`),
-      `---------------------------------`,
-      `💰 **TỔNG TIỀN: ${formatVND(totalCost)}**`,
-      `✨ Đã bao gồm lắp ráp, cài win và test nhiệt độ`,
-      `📞 Hotline tư vấn: 1900.8888 | 0908.888.999`,
-      `🌐 Xem trực tiếp tại: https://websitedrx.vercel.app/pc-builder`,
-    ];
-
-    navigator.clipboard.writeText(lines.join('\n'));
-    setCopiedText(true);
-    showToast('Đã sao chép nội dung báo giá! Bạn có thể dán (Ctrl+V) gửi ngay cho người bán qua Zalo/Messenger.', 'success');
-    setTimeout(() => setCopiedText(false), 2500);
-  };
-
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-7 max-w-3xl w-full space-y-6 shadow-2xl text-slate-900 dark:text-slate-100 my-8 relative overflow-hidden">
+    <div 
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+      className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 overflow-y-auto animate-in fade-in duration-200"
+    >
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 sm:p-6 max-w-3xl w-full space-y-4 shadow-2xl text-slate-900 dark:text-slate-100 my-auto relative max-h-[92vh] flex flex-col"
+      >
         
         {/* HEADER MODAL */}
-        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-xl bg-[#0284c7] text-white">
-              <Sparkles className="w-5 h-5" />
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-gradient-to-br from-[#0284c7] to-sky-500 text-white shadow-sm">
+              <Sparkles className="w-4 h-4" />
             </div>
             <div>
               <h3 className="font-heading text-sm sm:text-base font-black uppercase text-slate-900 dark:text-white">
-                BẢN BÁO GIÁ &amp; HÓA ĐƠN DRX BUILD PC
+                BÁO GIÁ CẤU HÌNH DRX BUILD PC
               </h3>
-              <p className="text-xs text-slate-500">
-                Xuất file ảnh chất lượng cao gửi cho người bán hàng hoặc đặt hàng ngay
-              </p>
             </div>
           </div>
 
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-500 cursor-pointer"
+            className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/50 dark:hover:text-rose-400 text-slate-500 transition-all cursor-pointer border border-transparent hover:border-rose-200 dark:hover:border-rose-800"
+            title="Đóng (Esc)"
+            aria-label="Đóng"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* ─────────────────────────────────────────────────────────────
-            INVOICE PREVIEW CARD (PRINTABLE / SHAREABLE)
+            INVOICE PREVIEW CARD (MINIMALIST, CLEAN, BEAUTIFUL)
            ───────────────────────────────────────────────────────────── */}
-        <div 
-          ref={invoiceRef}
-          className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 space-y-5 shadow-xs text-xs"
-        >
-          {/* Top Company Brand */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="font-heading text-lg font-black text-[#0284c7]">DRX HARDWARE</span>
-                <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-emerald-100 text-emerald-700 border border-emerald-300">
-                  CHÍNH HÃNG
+        <div className="overflow-y-auto flex-1 pr-1 -mr-1 space-y-3.5">
+          <div 
+            ref={invoiceRef}
+            className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xs text-xs"
+          >
+            {/* Top Company Brand with Logo */}
+            <div className="flex items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-3.5">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2.5">
+                  <img 
+                    src="/logo/logo-header.png" 
+                    alt="DRX HARDWARE Logo" 
+                    className="h-8 w-auto object-contain dark:hidden" 
+                  />
+                  <img 
+                    src="/logo/logo-white.png" 
+                    alt="DRX HARDWARE Logo" 
+                    className="h-8 w-auto object-contain hidden dark:block" 
+                  />
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800/80">
+                    CHÍNH HÃNG
+                  </span>
+                </div>
+                
+                <div className="flex items-center gap-3 text-[10.5px] text-slate-500 dark:text-slate-400">
+                  <span className="flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-300">
+                    <PhoneCall className="w-3 h-3 text-[#0284c7]" /> 1900.8888
+                  </span>
+                  <span className="flex items-center gap-1 text-[#0284c7] font-semibold">
+                    <Globe className="w-3 h-3 text-[#0284c7]" /> drxvn.vercel.app
+                  </span>
+                </div>
+              </div>
+
+              {/* Quotation Info Box */}
+              <div className="text-right bg-slate-50 dark:bg-slate-900/80 px-3 py-2 rounded-xl border border-slate-100 dark:border-slate-800 shrink-0">
+                <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 block">MÃ BÁO GIÁ</span>
+                <span className="font-mono font-black text-xs sm:text-sm text-[#0284c7] block">#{quoteCode}</span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 block">{currentDateStr}</span>
+              </div>
+            </div>
+
+            {/* Build Title Banner */}
+            <div className="p-3 bg-sky-50/70 dark:bg-sky-950/30 rounded-xl border border-sky-200/70 dark:border-sky-800/50 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 truncate">
+                <span className="text-[10px] font-black text-[#0284c7] uppercase shrink-0">Cấu hình:</span>
+                <h4 className="font-heading font-black text-xs sm:text-sm text-slate-900 dark:text-white truncate">{buildName}</h4>
+              </div>
+              <span className="px-2 py-0.5 rounded-lg bg-white dark:bg-slate-900 text-[#0284c7] font-mono font-black text-[10px] border border-sky-200 dark:border-sky-800 shrink-0">
+                {selectedItems.length} Món
+              </span>
+            </div>
+
+            {/* Items Table */}
+            <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-100/80 dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-heading text-[10px] uppercase border-b border-slate-200 dark:border-slate-800">
+                    <th className="py-2.5 px-3 text-center w-10">STT</th>
+                    <th className="py-2.5 px-3 w-24">Danh Mục</th>
+                    <th className="py-2.5 px-3">Tên Linh Kiện</th>
+                    <th className="py-2.5 px-2 text-center w-14">BH</th>
+                    <th className="py-2.5 px-2 text-center w-12">SL</th>
+                    <th className="py-2.5 px-3 text-right w-32">Đơn Giá</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-800 dark:text-slate-200">
+                  {selectedItems.map((item, idx) => (
+                    <tr key={item.key} className="hover:bg-sky-50/20 dark:hover:bg-slate-900/40">
+                      <td className="py-2 px-3 text-center font-mono text-slate-400 font-bold text-[11px]">
+                        {idx + 1}
+                      </td>
+                      <td className="py-2 px-3">
+                        <span className="inline-block px-1.5 py-0.5 rounded font-black text-[9.5px] bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] dark:text-sky-400 border border-sky-200/70 dark:border-sky-800/60 uppercase">
+                          {item.product.category}
+                        </span>
+                      </td>
+                      <td className="py-2 px-3 font-medium text-slate-900 dark:text-slate-100 text-[11.5px] leading-snug">
+                        {item.product.name}
+                      </td>
+                      <td className="py-2 px-2 text-center font-mono text-slate-500 text-[11px]">
+                        {item.product.warrantyMonths}T
+                      </td>
+                      <td className="py-2 px-2 text-center font-mono text-slate-500 text-[11px]">
+                        01
+                      </td>
+                      <td className="py-2 px-3 font-mono font-black text-right text-slate-900 dark:text-white text-xs">
+                        {formatVND(item.product.discountPrice || item.product.price)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Total Box */}
+            <div className="p-3.5 bg-gradient-to-r from-emerald-50/80 via-sky-50/40 to-emerald-50/80 dark:from-emerald-950/30 dark:via-slate-900 dark:to-emerald-950/30 rounded-xl border border-emerald-200 dark:border-emerald-800/60 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <span className="font-heading text-xs uppercase font-black text-slate-900 dark:text-white">
+                  TỔNG TIỀN (ĐÃ GỒM VAT):
                 </span>
               </div>
-              <p className="text-slate-500 dark:text-slate-400 text-[11px]">
-                Hệ Thống Linh Kiện Máy Tính &amp; PC Gaming Chuyên Nghiệp
-              </p>
-              <div className="flex items-center gap-3 text-[10.5px] text-slate-500 flex-wrap">
-                <span className="flex items-center gap-1"><PhoneCall className="w-3 h-3 text-[#0284c7]" /> 1900.8888</span>
-                <span className="flex items-center gap-1"><MapPin className="w-3 h-3 text-[#0284c7]" /> Showroom TP. Hồ Chí Minh</span>
-                <span className="flex items-center gap-1"><Globe className="w-3 h-3 text-[#0284c7]" /> websitedrx.vercel.app</span>
-              </div>
+              <span className="font-heading font-black text-base sm:text-xl text-rose-600 dark:text-rose-400 font-mono">
+                {formatVND(totalCost)}
+              </span>
             </div>
 
-            <div className="text-left sm:text-right space-y-1 bg-slate-50 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-100 dark:border-slate-800 shrink-0">
-              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">MÃ BÁO GIÁ</span>
-              <span className="font-mono font-black text-sm text-[#0284c7] block">#{quoteCode}</span>
-              <span className="text-[10.5px] text-slate-500 block">Ngày lập: {currentDateStr}</span>
+            {/* Minimalist Commitments Footer */}
+            <div className="flex items-center justify-between text-[10.5px] text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800 pt-2.5">
+              <span className="flex items-center gap-1"><ShieldCheck className="w-3.5 h-3.5 text-emerald-500" /> Bảo hành 1 đổi 1</span>
+              <span className="flex items-center gap-1"><Wrench className="w-3.5 h-3.5 text-[#0284c7]" /> Miễn phí lắp ráp &amp; Win</span>
+              <span className="flex items-center gap-1"><Truck className="w-3.5 h-3.5 text-amber-500" /> Giao hàng COD toàn quốc</span>
             </div>
-          </div>
-
-          {/* Build Title Banner */}
-          <div className="p-3 bg-sky-50/60 dark:bg-sky-950/40 rounded-xl border border-sky-200/80 dark:border-sky-800/60 flex items-center justify-between gap-3">
-            <div>
-              <span className="text-[10px] font-bold text-sky-700 dark:text-sky-300 uppercase">Cấu hình:</span>
-              <h4 className="font-heading font-black text-xs sm:text-sm text-slate-900 dark:text-white">{buildName}</h4>
-            </div>
-            <span className="font-mono font-bold text-slate-500 text-[11px]">
-              {selectedItems.length} Linh Kiện
-            </span>
-          </div>
-
-          {/* Items Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-heading text-[10px] uppercase border-b border-slate-200 dark:border-slate-800">
-                  <th className="py-2.5 px-3">STT</th>
-                  <th className="py-2.5 px-3">Danh Mục</th>
-                  <th className="py-2.5 px-3">Tên Linh Kiện</th>
-                  <th className="py-2.5 px-3">BH</th>
-                  <th className="py-2.5 px-3 text-right">Đơn Giá</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-800 dark:text-slate-200">
-                {selectedItems.map((item, idx) => (
-                  <tr key={item.key} className="hover:bg-slate-50/80 dark:hover:bg-slate-900/40">
-                    <td className="py-2.5 px-3 font-mono text-slate-400">{idx + 1}</td>
-                    <td className="py-2.5 px-3 font-bold text-[#0284c7]">{item.product.category}</td>
-                    <td className="py-2.5 px-3 font-medium line-clamp-1 max-w-[280px]" title={item.product.name}>
-                      {item.product.name}
-                    </td>
-                    <td className="py-2.5 px-3 font-mono text-slate-500">{item.product.warrantyMonths}T</td>
-                    <td className="py-2.5 px-3 font-mono font-black text-right text-slate-900 dark:text-white">
-                      {formatVND(item.product.discountPrice || item.product.price)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Total Box */}
-          <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between">
-            <span className="font-heading text-xs uppercase font-black text-slate-900 dark:text-white">
-              TỔNG TIỀN BÁO GIÁ (ĐÃ GỒM VAT):
-            </span>
-            <span className="font-heading font-black text-base sm:text-lg text-rose-600 dark:text-rose-400">
-              {formatVND(totalCost)}
-            </span>
-          </div>
-
-          {/* Policy notes */}
-          <div className="flex items-center justify-between text-[10.5px] text-slate-500 border-t border-slate-100 dark:border-slate-800 pt-3">
-            <span>🛡️ Bảo hành 36 tháng chính hãng 1 đổi 1</span>
-            <span>🛠️ Miễn phí lắp ráp &amp; cài Win</span>
-            <span>🚚 Giao hàng COD tận nơi</span>
           </div>
         </div>
 
         {/* ─────────────────────────────────────────────────────────────
-            ACTION BUTTONS FOR USERS & SALESPERSON
+            ACTION BUTTONS (DOWNLOAD PNG, BUY ALL, CLOSE ONLY)
            ───────────────────────────────────────────────────────────── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-1">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 shrink-0 border-t border-slate-100 dark:border-slate-800">
           {/* Action 1: Download Image */}
           <button
             type="button"
             onClick={handleDownloadImage}
             disabled={isGeneratingImg}
-            className="px-4 py-3 rounded-2xl bg-[#0284c7] hover:bg-[#0369a1] text-white text-xs font-black uppercase tracking-wider transition-all cursor-pointer shadow-md flex items-center justify-center gap-2 active:scale-95"
+            className="px-4 py-3 rounded-2xl bg-gradient-to-r from-[#0284c7] to-[#0ea5e9] hover:from-[#0369a1] hover:to-[#0284c7] text-white text-xs font-black uppercase tracking-wider transition-all cursor-pointer shadow-md flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
           >
             <Download className="w-4 h-4" />
-            <span>{isGeneratingImg ? 'Đang Xuất Ảnh...' : 'Tải Ảnh Báo Giá (.PNG)'}</span>
+            <span>{isGeneratingImg ? 'Đang Tạo Ảnh...' : 'Tải Ảnh Báo Giá (.PNG)'}</span>
           </button>
 
-          {/* Action 2: Copy Text for Zalo */}
-          <button
-            type="button"
-            onClick={handleCopyMessageForSales}
-            className="px-4 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase tracking-wider transition-all cursor-pointer shadow-md flex items-center justify-center gap-2 active:scale-95"
-          >
-            {copiedText ? <Check className="w-4 h-4 text-emerald-200" /> : <Send className="w-4 h-4" />}
-            <span>{copiedText ? 'Đã Copy Báo Giá!' : 'Gửi Người Bán (Zalo)'}</span>
-          </button>
-
-          {/* Action 3: Print / PDF */}
-          <button
-            type="button"
-            onClick={() => window.print()}
-            className="px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs font-bold uppercase transition-all cursor-pointer flex items-center justify-center gap-2 border border-slate-200 dark:border-slate-700"
-          >
-            <Printer className="w-4 h-4 text-slate-500" />
-            <span>In Bản Báo Giá</span>
-          </button>
-
-          {/* Action 4: Buy All */}
+          {/* Action 2: Buy All */}
           <button
             type="button"
             onClick={() => {
@@ -427,9 +478,21 @@ export function BuildQuotationModal({
             <ShoppingCart className="w-4 h-4" />
             <span>Mua Toàn Bộ</span>
           </button>
+
+          {/* Action 3: Close Modal */}
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold uppercase transition-all cursor-pointer flex items-center justify-center gap-2 border border-slate-200/80 dark:border-slate-700"
+          >
+            <X className="w-4 h-4" />
+            <span>Đóng</span>
+          </button>
         </div>
 
       </div>
     </div>
   );
 }
+
+

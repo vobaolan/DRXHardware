@@ -265,154 +265,151 @@ export const RevenueChartWidget: React.FC<RevenueChartWidgetProps> = ({ data = [
       </div>
 
       {/* 3. CHART CANVAS CONTAINER */}
-      <div className="relative z-10 pt-6">
+      <div className="relative z-10 pt-4">
         
-        {/* Y-Axis Gutter & Full Width Gridlines with Nice Numbers */}
-        <div className="absolute inset-0 pointer-events-none flex flex-col justify-between text-[10px] font-bold text-slate-400 dark:text-slate-500 pb-11">
-          {yAxisConfig.ticks.map((tickVal, idx) => {
-            const isBase = idx === yAxisConfig.ticks.length - 1;
-            return (
-              <div key={idx} className="w-full flex items-center gap-2.5">
-                <span className={`w-24 sm:w-28 text-right shrink-0 pr-2 font-mono transition-colors ${
-                  isBase 
-                    ? 'text-slate-500 dark:text-slate-400 font-black text-[10.5px]' 
-                    : 'text-slate-400 dark:text-slate-500 font-semibold'
-                }`}>
-                  {formatVND(tickVal)}
-                </span>
-                <div className={`flex-1 ${
-                  isBase 
-                    ? 'border-b-2 border-slate-200 dark:border-slate-800' 
-                    : 'border-b border-dashed border-slate-200/80 dark:border-slate-800/80'
-                }`} />
-              </div>
-            );
-          })}
-        </div>
-
-        {/* CHART VISUALIZATION AREA (Padding-left gives full breathing space so Y-axis labels never touch bars) */}
-        <div className="pl-28 sm:pl-32 h-64 relative flex items-end">
+        {/* Main Chart Row: Y-Axis Labels (Left) + Plot Area with Gridlines & Bars (Right) */}
+        <div className="flex items-stretch gap-3">
           
-          {/* MODE 1: BAR CHART */}
-          {chartMode === 'bar' && (
-            <div className="w-full h-full flex items-end justify-between gap-2 sm:gap-3 relative z-10">
-              {chartData.map((item, idx) => {
-                const heightPercent = yAxisConfig.chartMax > 0 ? ((item.revenue || 0) / yAxisConfig.chartMax) * 100 : 0;
-                const isHovered = hoveredIndex === idx;
-                const isPeak = idx === peakDayIndex && item.revenue > 0;
-                const isToday = idx === chartData.length - 1;
-                const percentOfTotal = totalRevenue > 0 ? Math.round(((item.revenue || 0) / totalRevenue) * 100) : 0;
+          {/* Y-Axis Tick Labels Column (Exact Match to Plot Area Height) */}
+          <div className="w-24 sm:w-28 h-56 flex flex-col justify-between text-right shrink-0 pr-1 select-none pointer-events-none">
+            {yAxisConfig.ticks.map((tickVal, idx) => {
+              const isBase = idx === yAxisConfig.ticks.length - 1;
+              return (
+                <div key={idx} className="flex items-center justify-end h-0">
+                  <span className={`font-mono transition-colors -translate-y-1/2 ${
+                    isBase 
+                      ? 'text-slate-600 dark:text-slate-300 font-black text-[11px]' 
+                      : 'text-slate-400 dark:text-slate-500 font-semibold text-[10px]'
+                  }`}>
+                    {formatVND(tickVal)}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
 
+          {/* Plot Visualization Area (Height 224px, Shared Baseline) */}
+          <div className="flex-1 h-56 relative">
+            
+            {/* Horizontal Gridlines (Exact Alignment to Y-Axis Ticks) */}
+            <div className="absolute inset-0 pointer-events-none flex flex-col justify-between">
+              {yAxisConfig.ticks.map((_, idx) => {
+                const isBase = idx === yAxisConfig.ticks.length - 1;
                 return (
-                  <div
-                    key={idx}
-                    onMouseEnter={() => setHoveredIndex(idx)}
-                    onMouseLeave={() => setHoveredIndex(null)}
-                    className="flex-1 h-full flex flex-col items-center justify-end group cursor-pointer relative"
-                  >
-                    {/* Floating Rich Tooltip with high z-index and safe positioning */}
-                    <AnimatePresence>
-                      {isHovered && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 4, scale: 0.96 }}
-                          animate={{ opacity: 1, y: 0, scale: 1 }}
-                          exit={{ opacity: 0, y: 2, scale: 0.96 }}
-                          transition={{ duration: 0.12 }}
-                          className={`absolute -top-16 z-50 bg-slate-900/95 dark:bg-slate-950/95 text-white p-3 rounded-2xl border border-slate-700/80 shadow-2xl backdrop-blur-md pointer-events-none whitespace-nowrap text-left min-w-[160px] ${
-                            idx >= chartData.length - 2 
-                              ? 'right-0' 
-                              : idx <= 1 
-                                ? 'left-0' 
-                                : 'left-1/2 -translate-x-1/2'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between gap-2 text-[10.5px] text-slate-400 border-b border-slate-800 pb-1.5 mb-1.5">
-                            <span className="font-bold flex items-center gap-1.5">
-                              <Calendar className="w-3.5 h-3.5 text-sky-400" />
-                              {item.day} {item.fullDate ? `(${item.fullDate})` : ''}
-                            </span>
-                            {isPeak && item.revenue > 0 && (
-                              <span className="text-amber-300 font-black text-[9px] bg-amber-400/25 px-1.5 py-0.2 rounded-full border border-amber-400/30">
-                                👑 ĐỈNH
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-sm font-black text-sky-300 font-heading">
-                            {formatVND(item.revenue)}
-                          </p>
-                          <div className="flex items-center justify-between text-[10px] text-slate-300 mt-1">
-                            <span className="font-semibold">{item.orders} đơn hàng</span>
-                            <span className="text-emerald-400 font-bold">
-                              {item.revenue > 0 ? `${percentOfTotal}% tổng tuần` : '0% tổng'}
-                            </span>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-
-                    {/* Bar Pillar Container */}
-                    <div className="w-full h-48 flex items-end justify-center">
-                      <div className={`w-full max-w-[48px] h-full flex items-end justify-center rounded-2xl p-1 transition-all ${
-                        item.revenue > 0 
-                          ? 'bg-slate-100/60 dark:bg-slate-800/30 border border-slate-200/60 dark:border-slate-800/60 group-hover:border-sky-400/70 group-hover:bg-sky-50/40 dark:group-hover:bg-sky-950/20' 
-                          : 'bg-slate-50/50 dark:bg-slate-800/20 border border-dashed border-slate-200/60 dark:border-slate-800/60 group-hover:border-slate-300 dark:group-hover:border-slate-700'
-                      }`}>
-                        <motion.div
-                          initial={{ height: 0 }}
-                          animate={{ height: `${item.revenue > 0 ? Math.max(heightPercent, 6) : 3}%` }}
-                          transition={{ type: 'spring', damping: 20, stiffness: 120, delay: idx * 0.03 }}
-                          className={`w-full rounded-xl transition-all relative flex flex-col justify-between ${
-                            item.revenue > 0
-                              ? isPeak
-                                ? 'bg-gradient-to-t from-[#0284c7] via-[#0ea5e9] to-[#38bdf8] shadow-lg shadow-sky-500/35 border-t border-cyan-200'
-                                : 'bg-gradient-to-t from-[#0369a1] via-[#0284c7] to-[#38bdf8] group-hover:from-[#0284c7] group-hover:to-[#67e8f9] shadow-sm'
-                              : 'bg-slate-200/70 dark:bg-slate-700/50'
-                          }`}
-                        >
-                          {/* Glowing Neon Top Cap */}
-                          {item.revenue > 0 && (
-                            <div className="w-full h-1.5 rounded-t-xl bg-cyan-100 shadow-[0_0_10px_rgba(103,232,249,0.9)]" />
-                          )}
-
-                          {/* Star Icon Badge for Peak Day */}
-                          {isPeak && item.revenue > 0 && (
-                            <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 w-5.5 h-5.5 rounded-full bg-gradient-to-br from-amber-300 to-amber-500 text-slate-950 flex items-center justify-center shadow-md shadow-amber-400/50 border border-amber-200 z-10">
-                              <Sparkles className="w-3 h-3 fill-slate-950" />
-                            </div>
-                          )}
-                        </motion.div>
-                      </div>
-                    </div>
-
-                    {/* X-Axis Day Label & Today Badge */}
-                    <div className="mt-2.5 flex flex-col items-center gap-0.5">
-                      <span className={`text-[11.5px] transition-colors font-heading text-center ${
-                        isHovered 
-                          ? 'text-sky-600 dark:text-sky-400 font-black' 
-                          : isToday
-                            ? 'text-[#0284c7] dark:text-sky-400 font-black'
-                            : 'text-slate-600 dark:text-slate-300 font-bold'
-                      }`}>
-                        {item.day}
-                      </span>
-                      {isToday && (
-                        <span className="text-[8.5px] font-black uppercase text-white bg-sky-500 dark:bg-sky-600 px-1.5 py-0.2 rounded-full tracking-wider shadow-2xs">
-                          HÔM NAY
-                        </span>
-                      )}
-                    </div>
+                  <div key={idx} className="w-full flex items-center h-0">
+                    <div className={`w-full ${
+                      isBase 
+                        ? 'border-b-2 border-slate-300 dark:border-slate-700' 
+                        : 'border-b border-dashed border-slate-200 dark:border-slate-800'
+                    }`} />
                   </div>
                 );
               })}
             </div>
-          )}
 
-          {/* MODE 2: AREA SPLINE WAVE CHART */}
-          {chartMode === 'area' && (
-            <div className="w-full h-full relative z-10 flex flex-col justify-end">
-              <div className="w-full h-48 relative">
+            {/* MODE 1: BAR CHART */}
+            {chartMode === 'bar' && (
+              <div className="absolute inset-0 flex items-end justify-between gap-2 sm:gap-4 z-10">
+                {chartData.map((item, idx) => {
+                  const heightPercent = yAxisConfig.chartMax > 0 
+                    ? Math.min(100, Math.max(0, ((item.revenue || 0) / yAxisConfig.chartMax) * 100)) 
+                    : 0;
+                  const isHovered = hoveredIndex === idx;
+                  const isPeak = idx === peakDayIndex && item.revenue > 0;
+                  const isToday = idx === chartData.length - 1;
+                  const percentOfTotal = totalRevenue > 0 ? Math.round(((item.revenue || 0) / totalRevenue) * 100) : 0;
+
+                  return (
+                    <div
+                      key={idx}
+                      onMouseEnter={() => setHoveredIndex(idx)}
+                      onMouseLeave={() => setHoveredIndex(null)}
+                      className="flex-1 h-full flex flex-col items-center justify-end group cursor-pointer relative"
+                    >
+                      {/* Floating Rich Tooltip */}
+                      <AnimatePresence>
+                        {isHovered && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 4, scale: 0.96 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 2, scale: 0.96 }}
+                            transition={{ duration: 0.12 }}
+                            className={`absolute -top-16 z-50 bg-slate-900/95 dark:bg-slate-950/95 text-white p-3 rounded-2xl border border-slate-700/80 shadow-2xl backdrop-blur-md pointer-events-none whitespace-nowrap text-left min-w-[160px] ${
+                              idx >= chartData.length - 2 
+                                ? 'right-0' 
+                                : idx <= 1 
+                                  ? 'left-0' 
+                                  : 'left-1/2 -translate-x-1/2'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-2 text-[10.5px] text-slate-400 border-b border-slate-800 pb-1.5 mb-1.5">
+                              <span className="font-bold flex items-center gap-1.5">
+                                <Calendar className="w-3.5 h-3.5 text-sky-400" />
+                                {item.day} {item.fullDate ? `(${item.fullDate})` : ''}
+                              </span>
+                              {isPeak && item.revenue > 0 && (
+                                <span className="text-amber-300 font-black text-[9px] bg-amber-400/25 px-1.5 py-0.2 rounded-full border border-amber-400/30">
+                                  👑 ĐỈNH
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm font-black text-sky-300 font-heading">
+                              {formatVND(item.revenue)}
+                            </p>
+                            <div className="flex items-center justify-between text-[10px] text-slate-300 mt-1">
+                              <span className="font-semibold">{item.orders} đơn hàng</span>
+                              <span className="text-emerald-400 font-bold">
+                                {item.revenue > 0 ? `${percentOfTotal}% tổng tuần` : '0% tổng'}
+                              </span>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
+                      {/* Bar Pillar Sizing (Exact mathematical percentage of full 224px height) */}
+                      <div className="w-full h-full flex items-end justify-center">
+                        <div className={`w-full max-w-[44px] sm:max-w-[50px] h-full flex items-end justify-center rounded-2xl p-1 transition-all ${
+                          item.revenue > 0 
+                            ? 'bg-slate-100/60 dark:bg-slate-800/30 border border-slate-200/60 dark:border-slate-800/60 group-hover:border-sky-400/70 group-hover:bg-sky-50/40 dark:group-hover:bg-sky-950/20' 
+                            : 'bg-slate-50/50 dark:bg-slate-800/20 border border-dashed border-slate-200/60 dark:border-slate-800/60'
+                        }`}>
+                          <motion.div
+                            initial={{ height: 0 }}
+                            animate={{ height: `${item.revenue > 0 ? Math.max(heightPercent, 4) : 2}%` }}
+                            transition={{ type: 'spring', damping: 20, stiffness: 120, delay: idx * 0.03 }}
+                            className={`w-full rounded-xl transition-all relative flex flex-col justify-between ${
+                              item.revenue > 0
+                                ? isPeak
+                                  ? 'bg-gradient-to-t from-[#0284c7] via-[#0ea5e9] to-[#38bdf8] shadow-lg shadow-sky-500/35 border-t border-cyan-200'
+                                  : 'bg-gradient-to-t from-[#0369a1] via-[#0284c7] to-[#38bdf8] group-hover:from-[#0284c7] group-hover:to-[#67e8f9] shadow-sm'
+                                : 'bg-slate-200/70 dark:bg-slate-700/50'
+                            }`}
+                          >
+                            {/* Glowing Neon Top Cap */}
+                            {item.revenue > 0 && (
+                              <div className="w-full h-1.5 rounded-t-xl bg-cyan-100 shadow-[0_0_10px_rgba(103,232,249,0.9)]" />
+                            )}
+
+                            {/* Star Icon Badge for Peak Day */}
+                            {isPeak && item.revenue > 0 && (
+                              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 w-5.5 h-5.5 rounded-full bg-gradient-to-br from-amber-300 to-amber-500 text-slate-950 flex items-center justify-center shadow-md shadow-amber-400/50 border border-amber-200 z-10">
+                                <Sparkles className="w-3 h-3 fill-slate-950" />
+                              </div>
+                            )}
+                          </motion.div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* MODE 2: AREA SPLINE WAVE CHART */}
+            {chartMode === 'area' && (
+              <div className="absolute inset-0 z-10">
                 <svg
-                  viewBox="0 0 700 200"
+                  viewBox="0 0 700 224"
                   className="w-full h-full overflow-visible"
                   preserveAspectRatio="none"
                 >
@@ -442,7 +439,7 @@ export const RevenueChartWidget: React.FC<RevenueChartWidgetProps> = ({ data = [
                     fill="url(#revenue-area-gradient-v2)"
                   />
 
-                  {/* Main Spline Line */}
+                  {/* Line Stroke */}
                   <motion.path
                     initial={{ pathLength: 0 }}
                     animate={{ pathLength: 1 }}
@@ -452,26 +449,28 @@ export const RevenueChartWidget: React.FC<RevenueChartWidgetProps> = ({ data = [
                     stroke="url(#revenue-line-gradient-v2)"
                     strokeWidth="3.5"
                     strokeLinecap="round"
+                    strokeLinejoin="round"
                     filter="url(#glow-v2)"
                   />
 
-                  {/* Interactive Points */}
-                  {svgPathData.points.map((pt, i) => {
-                    const isHovered = hoveredIndex === i;
-                    const isPeak = i === peakDayIndex && pt.d.revenue > 0;
+                  {/* Data Points */}
+                  {svgPathData.points.map((pt, idx) => {
+                    const isHovered = hoveredIndex === idx;
+                    const isPeak = idx === peakDayIndex && pt.d.revenue > 0;
                     return (
-                      <g 
-                        key={i} 
+                      <g
+                        key={idx}
                         className="cursor-pointer"
-                        onMouseEnter={() => setHoveredIndex(i)}
+                        onMouseEnter={() => setHoveredIndex(idx)}
                         onMouseLeave={() => setHoveredIndex(null)}
                       >
+                        {/* Hover vertical dash guide */}
                         {isHovered && (
                           <line
                             x1={pt.x}
                             y1={0}
                             x2={pt.x}
-                            y2={200}
+                            y2={224}
                             stroke="#38bdf8"
                             strokeWidth="1.5"
                             strokeDasharray="3 3"
@@ -534,34 +533,37 @@ export const RevenueChartWidget: React.FC<RevenueChartWidgetProps> = ({ data = [
                   )}
                 </AnimatePresence>
               </div>
+            )}
+          </div>
+        </div>
 
-              {/* X-Axis labels for Area Mode */}
-              <div className="w-full flex items-center justify-between pt-2.5">
-                {chartData.map((item, idx) => {
-                  const isHovered = hoveredIndex === idx;
-                  const isToday = idx === chartData.length - 1;
-                  return (
-                    <div
-                      key={idx}
-                      onMouseEnter={() => setHoveredIndex(idx)}
-                      onMouseLeave={() => setHoveredIndex(null)}
-                      className="flex-1 text-center cursor-pointer"
-                    >
-                      <span className={`text-[11.5px] transition-colors font-heading ${
-                        isHovered 
-                          ? 'text-sky-600 dark:text-sky-400 font-black' 
-                          : isToday
-                            ? 'text-[#0284c7] dark:text-sky-400 font-black'
-                            : 'text-slate-600 dark:text-slate-300 font-bold'
-                      }`}>
-                        {item.day}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+        {/* X-Axis labels (Unified for both Bar & Area modes, left offset matches Y-axis width + gap) */}
+        <div className="flex items-center gap-3 pt-2.5">
+          <div className="w-24 sm:w-28 shrink-0 select-none pointer-events-none" />
+          <div className="flex-1 flex items-center justify-between">
+            {chartData.map((item, idx) => {
+              const isHovered = hoveredIndex === idx;
+              const isToday = idx === chartData.length - 1;
+              return (
+                <div
+                  key={idx}
+                  onMouseEnter={() => setHoveredIndex(idx)}
+                  onMouseLeave={() => setHoveredIndex(null)}
+                  className="flex-1 text-center cursor-pointer"
+                >
+                  <span className={`text-[11.5px] transition-colors font-heading ${
+                    isHovered 
+                      ? 'text-sky-600 dark:text-sky-400 font-black' 
+                      : isToday
+                        ? 'text-[#0284c7] dark:text-sky-400 font-black'
+                        : 'text-slate-600 dark:text-slate-300 font-bold'
+                  }`}>
+                    {item.day}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
