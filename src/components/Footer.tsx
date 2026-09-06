@@ -42,11 +42,7 @@ export const Footer: React.FC = () => {
             <div className="space-y-2.5 pt-2 text-slate-700 dark:text-slate-300 font-medium">
               <div className="flex items-start gap-2.5">
                 <MapPin className="h-4 w-4 text-cyan-600 dark:text-cyan-400 shrink-0 mt-0.5" />
-                <span>Showroom HCM: 128 Nguyễn Trãi, Q.1, TP. Hồ Chí Minh</span>
-              </div>
-              <div className="flex items-start gap-2.5">
-                <MapPin className="h-4 w-4 text-cyan-600 dark:text-cyan-400 shrink-0 mt-0.5" />
-                <span>Showroom Hà Nội: 45 Thái Hà, Q. Đống Đa, Hà Nội</span>
+                <span>Showroom: 128 Nguyễn Trãi, Q.1, TP. Hồ Chí Minh</span>
               </div>
               <div className="flex items-center gap-2.5">
                 <Phone className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />

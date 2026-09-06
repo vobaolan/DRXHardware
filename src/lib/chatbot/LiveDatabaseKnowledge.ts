@@ -171,7 +171,7 @@ Tổng số sản phẩm trong kho: ${allProducts.length} sản phẩm.
 ${matchedStr}
 
 [CHÍNH SÁCH BÁN HÀNG & DỊCH VỤ]:
-• Showroom: 128 Nguyễn Trãi, Q.1, TP. Hồ Chí Minh & 45 Thái Hà, Q. Đống Đa, Hà Nội.
+• Showroom: 128 Nguyễn Trãi, Q.1, TP. Hồ Chí Minh.
 • Hotline: 1900.88.99.77.
 • Giao hàng toàn quốc, thanh toán COD khi nhận hàng.
 • Bảo hành 36 tháng chính hãng (1 đổi 1 trong 30 ngày).

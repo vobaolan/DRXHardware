@@ -95,19 +95,19 @@ export async function PATCH(request: Request) {
       ...(soldDate ? { soldDate: new Date(soldDate).toISOString() } : {}),
     };
 
-    let updated: any = null;
+    const { data, error } = await supabase
+      .from('ProductSerial')
+      .update(updatePayload)
+      .eq('id', id)
+      .select()
+      .single();
 
-    try {
-      const { data } = await supabase
-        .from('ProductSerial')
-        .update(updatePayload)
-        .eq('id', id)
-        .select()
-        .single();
-      if (data) updated = data;
-    } catch (e) {}
+    if (error) {
+      console.error('Supabase serial update error:', error);
+      return NextResponse.json({ message: 'Lỗi cập nhật Serial: ' + error.message }, { status: 500 });
+    }
 
-    return NextResponse.json({ success: true, serial: updated }, { status: 200 });
+    return NextResponse.json({ success: true, serial: data }, { status: 200 });
   } catch (error: any) {
     return NextResponse.json({ message: error.message }, { status: 500 });
   }

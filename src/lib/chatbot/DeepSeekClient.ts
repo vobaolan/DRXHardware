@@ -170,7 +170,7 @@ QUY TẮC PHẢN HỒI (RẤT QUAN TRỌNG):
     if (q.includes('giao hàng') || q.includes('ship') || q.includes('vận chuyển') || q.includes('địa chỉ') || q.includes('showroom')) {
       return {
         role: 'assistant',
-        content: '🚚 **Giao Hàng & Showroom**:\n• Giao hàng COD toàn quốc (1-3 ngày).\n• Showroom: 128 Nguyễn Trãi, Q.1, HCM & 45 Thái Hà, Đống Đa, HN (08:00 - 21:30 hàng ngày).',
+        content: '🚚 **Giao Hàng & Showroom**:\n• Giao hàng COD toàn quốc (1-3 ngày).\n• Showroom: 128 Nguyễn Trãi, Q.1, HCM (08:00 - 21:30 hàng ngày).',
         matchedProducts: allProducts.slice(0, 2),
       };
     }

@@ -94,7 +94,7 @@ export async function POST(request: Request) {
       description: description || `Linh kiện chính hãng ${name} bảo hành ${warrantyMonths || 36} tháng tại DRX Hardware.`,
       price: originalPrice,
       discountPrice: discPrice,
-      costPrice: costPrice ? parseFloat(String(costPrice)) : undefined,
+      costPrice: costPrice ? parseFloat(String(costPrice)) : null,
       coverImage: coverImage.trim(),
       screenshots: finalScreenshots,
       category: singleCategory,
@@ -107,8 +107,8 @@ export async function POST(request: Request) {
       isFeatured: Boolean(isFeatured),
       isPrebuilt: Boolean(isPrebuilt),
       status: true,
-      platform: brand || 'PC',
-      type: singleCategory,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
 
     if (socket) productData.socket = socket;
@@ -117,16 +117,18 @@ export async function POST(request: Request) {
     if (formFactor) productData.formFactor = formFactor;
 
     // Save directly to Supabase Cloud Database (Fast Direct REST)
-    let savedProduct: any = null;
-    try {
-      const { data, error } = await supabase
-        .from('Product')
-        .insert([productData])
-        .select()
-        .single();
-      if (!error && data) savedProduct = data;
-    } catch (supaErr) {
-      console.warn('Supabase create product notice:', supaErr);
+    const { data: savedProduct, error: insertErr } = await supabase
+      .from('Product')
+      .insert([productData])
+      .select()
+      .single();
+
+    if (insertErr) {
+      console.error('Supabase insert product error:', insertErr);
+      return NextResponse.json(
+        { message: 'Lỗi khi lưu sản phẩm vào cơ sở dữ liệu: ' + insertErr.message },
+        { status: 500 }
+      );
     }
 
     const finalProduct = savedProduct || productData;
@@ -210,31 +212,51 @@ export async function PUT(request: Request) {
       isFlashDeal: Boolean(isFlashDeal),
       isFeatured: Boolean(isFeatured),
       isPrebuilt: Boolean(isPrebuilt),
+      updatedAt: new Date().toISOString(),
     };
 
     if (costPrice !== undefined) updatedData.costPrice = parseFloat(String(costPrice));
     if (status !== undefined) updatedData.status = Boolean(status);
-    if (socket) updatedData.socket = socket;
-    if (ramType) updatedData.ramType = ramType;
-    if (wattage) updatedData.wattage = Number(wattage);
-    if (formFactor) updatedData.formFactor = formFactor;
+    if (socket !== undefined) updatedData.socket = socket;
+    if (ramType !== undefined) updatedData.ramType = ramType;
+    if (wattage !== undefined) updatedData.wattage = wattage ? Number(wattage) : null;
+    if (formFactor !== undefined) updatedData.formFactor = formFactor;
 
-    // Upsert directly in Supabase Cloud Database (Fast Direct REST)
+    // Update in Supabase Cloud Database
     let updatedProduct: any = null;
-    try {
-      const { data, error } = await supabase
+    const { data: updateRes, error: updateErr } = await supabase
+      .from('Product')
+      .update(updatedData)
+      .eq('id', id)
+      .select()
+      .maybeSingle();
+
+    if (updateErr) {
+      console.error('Supabase update product error:', updateErr);
+      return NextResponse.json({ message: 'Lỗi cập nhật CSDL: ' + updateErr.message }, { status: 500 });
+    }
+
+    if (updateRes) {
+      updatedProduct = updateRes;
+    } else {
+      // If record not found, upsert it
+      const { data: upsertRes, error: upsertErr } = await supabase
         .from('Product')
         .upsert({
           id,
-          platform: brand || 'PC',
-          type: singleCategory,
-          status: true,
           ...updatedData,
+          status: status !== undefined ? Boolean(status) : true,
+          createdAt: new Date().toISOString(),
         })
         .select()
         .single();
-      if (!error && data) updatedProduct = data;
-    } catch (err) {}
+
+      if (upsertErr) {
+        console.error('Supabase upsert product error:', upsertErr);
+        return NextResponse.json({ message: 'Lỗi lưu sản phẩm vào CSDL: ' + upsertErr.message }, { status: 500 });
+      }
+      updatedProduct = upsertRes;
+    }
 
     revalidatePath('/', 'layout');
     revalidatePath('/products', 'layout');
@@ -243,7 +265,7 @@ export async function PUT(request: Request) {
 
     return NextResponse.json({
       message: 'Cập nhật linh kiện thành công!',
-      product: updatedProduct || { id, ...updatedData }
+      product: updatedProduct
     }, { status: 200 });
 
   } catch (error: any) {
