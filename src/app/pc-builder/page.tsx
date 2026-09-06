@@ -314,7 +314,7 @@ function PCBuilderContent() {
   const handleBuyAll = () => {
     const itemsToBuy = Object.values(selectedBuild).filter(Boolean) as HardwareProduct[];
     if (itemsToBuy.length === 0) {
-      showToast('Vui lòng chọn ít nhất một linh kiện để thanh toán!', 'error');
+      showToast('Vui lòng bấm chọn ít nhất một linh kiện vào cấu hình trước khi thanh toán!', 'error');
       return;
     }
 
@@ -329,12 +329,22 @@ function PCBuilderContent() {
       platform: 'HARDWARE',
     }));
 
-    addMultipleToCart(cartPayload, false);
-
-    showToast(`Đã thêm ${itemsToBuy.length} linh kiện vào giỏ hàng! Đang chuyển đến trang Thanh Toán...`, 'success');
-    
-    // Immediate and reliable navigation to checkout
-    router.push('/checkout');
+    try {
+      addMultipleToCart(cartPayload, false);
+      showToast(`Đã thêm ${itemsToBuy.length} linh kiện vào giỏ hàng! Đang chuyển đến trang Thanh Toán...`, 'success');
+      
+      // Reliable navigation across all browsers
+      if (typeof window !== 'undefined') {
+        window.location.href = '/checkout';
+      } else {
+        router.push('/checkout');
+      }
+    } catch (e) {
+      console.error('Error during handleBuyAll:', e);
+      if (typeof window !== 'undefined') {
+        window.location.href = '/checkout';
+      }
+    }
   };
 
   // Copy shareable link
@@ -667,15 +677,14 @@ function PCBuilderContent() {
                 <button
                   type="button"
                   onClick={handleBuyAll}
-                  disabled={selectedItemsCount === 0}
-                  className={`w-full py-3.5 rounded-2xl font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-md ${
+                  className={`w-full py-3.5 rounded-2xl font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer ${
                     selectedItemsCount > 0 
-                      ? 'uiverse-btn-shimmer text-white shadow-sky-500/20 active:scale-95 cursor-pointer' 
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-200 dark:border-slate-700'
+                      ? 'bg-gradient-to-r from-[#0284c7] via-[#0ea5e9] to-[#0284c7] hover:from-[#0369a1] hover:to-[#0284c7] text-white shadow-sky-500/25 active:scale-95' 
+                      : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 active:scale-95'
                   }`}
                 >
                   <ShoppingCart className="w-4 h-4" />
-                  <span>Mua Toàn Bộ Cấu Hình Này</span>
+                  <span>Mua Toàn Bộ Cấu Hình Này {selectedItemsCount > 0 ? `(${selectedItemsCount}/9 Món)` : ''}</span>
                 </button>
 
                 {/* 2. XUẤT ẢNH BÁO GIÁ & HÓA ĐƠN */}

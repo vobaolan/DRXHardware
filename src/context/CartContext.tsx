@@ -81,11 +81,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       return [];
     } else {
-      // 2. GUESTS (Khách): Stored in sessionStorage
-      // - F5 (Page Refresh): Preserved within current tab session!
-      // - Close tab / Open new tab: Automatically wiped/reset by the browser!
+      // 2. GUESTS (Khách): Stored in sessionStorage & localStorage
       try {
-        const guestCart = sessionStorage.getItem('drx_guest_cart');
+        const guestCart = sessionStorage.getItem('drx_guest_cart') || localStorage.getItem('drx_guest_cart');
         if (guestCart) {
           return JSON.parse(guestCart);
         }
@@ -110,9 +108,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } catch (e) {}
       }
     } else {
-      // Save to guest session storage (persists on F5, cleared on tab close)
+      // Save to guest session storage & localStorage for guaranteed continuity
       try {
         sessionStorage.setItem('drx_guest_cart', JSON.stringify(items));
+        localStorage.setItem('drx_guest_cart', JSON.stringify(items));
       } catch (e) {}
     }
   };
