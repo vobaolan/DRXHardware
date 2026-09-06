@@ -71,7 +71,7 @@ const BUILD_STEPS: BuildStep[] = [
 function PCBuilderContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { addToCart } = useCart();
+  const { addToCart, addMultipleToCart } = useCart();
 
   const [allProducts, setAllProducts] = useState<HardwareProduct[]>(INITIAL_PRODUCTS);
   const [selectedBuild, setSelectedBuild] = useState<Record<string, HardwareProduct | null>>({
@@ -318,18 +318,18 @@ function PCBuilderContent() {
       return;
     }
 
-    itemsToBuy.forEach(item => {
-      addToCart({
-        id: item.id,
-        productId: item.id,
-        name: item.name,
-        slug: item.slug || item.id,
-        price: item.price,
-        discountPrice: item.discountPrice,
-        coverImage: item.coverImage,
-        platform: 'HARDWARE',
-      });
-    });
+    const cartPayload = itemsToBuy.map(item => ({
+      id: item.id,
+      productId: item.id,
+      name: item.name,
+      slug: item.slug || item.id,
+      price: item.price,
+      discountPrice: item.discountPrice,
+      coverImage: item.coverImage,
+      platform: 'HARDWARE',
+    }));
+
+    addMultipleToCart(cartPayload, false);
 
     showToast(`Đã thêm ${itemsToBuy.length} linh kiện vào giỏ hàng! Đang chuyển đến trang Thanh Toán...`, 'success');
     router.push('/checkout');
