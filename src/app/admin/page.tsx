@@ -26,6 +26,7 @@ import { CancelOrderModal } from '@/components/admin/CancelOrderModal';
 import { CouponManagementView } from '@/components/admin/CouponManagementView';
 import { PortalDropdown } from '@/components/ui/PortalDropdown';
 import { RevenueChartWidget } from '@/components/admin/RevenueChartWidget';
+import { SerialManagementSection } from '@/components/admin/SerialManagementSection';
 
 function UserRoleButton({
   user,
@@ -1922,207 +1923,23 @@ export default function AdminDashboardPage() {
           {/* TAB 4: INVENTORY & SERIALS (SN)                              */}
           {/* ============================================================ */}
           {activeTab === 'inventory' && (
-            <div className="space-y-5">
-              
-              {/* TOOLBAR */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
-                <div className="relative flex-1 max-w-md">
-                  <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Tìm theo mã Serial SN, tên linh kiện, hãng..."
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-2 pl-9 pr-4 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:border-[#0284c7]"
-                  />
-                </div>
-
-                <div className="flex items-center gap-2.5 flex-wrap">
-                  <div className="w-56 sm:w-64">
-                    <ModernSelect
-                      options={SERIAL_STATUS_OPTIONS}
-                      value={serialStatusFilter}
-                      onChange={(val) => setSerialStatusFilter(String(val))}
-                      placeholder="Trạng thái Serial..."
-                    />
-                  </div>
-
-                  <button
-                    onClick={() => {
-                      if (products.length > 0) {
-                        setSelectedProductIdForSn(products[0].id);
-                      }
-                      setIsSnModalOpen(true);
-                    }}
-                    className="px-4 py-2 bg-gradient-to-r from-[#0284c7] to-[#38bdf8] hover:from-[#0369a1] hover:to-[#0284c7] text-white text-xs font-bold uppercase rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-sm shadow-sky-500/20 shrink-0"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>Nhập Mã Serial Mới</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* SERIALS TABLE */}
-              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-hidden shadow-xs">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
-                    <thead>
-                      <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 font-black uppercase text-[10px] tracking-wider">
-                        <th className="py-3 px-4">Mã Serial Number (SN)</th>
-                        <th className="py-3 px-3">Linh Kiện Liên Kết</th>
-                        <th className="py-3 px-3">Danh Mục</th>
-                        <th className="py-3 px-3 text-center">Trạng Thái Kho</th>
-                        <th className="py-3 px-3">Ngày Nhập</th>
-                        <th className="py-3 px-3">Đơn Hàng Liên Kết</th>
-                        <th className="py-3 px-4 text-right">Thao Tác</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                      {filteredSerials.length === 0 ? (
-                        <tr>
-                          <td colSpan={7} className="py-16 text-center">
-                            <div className="flex flex-col items-center justify-center space-y-3 max-w-sm mx-auto">
-                              <div className="w-14 h-14 rounded-2xl bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] flex items-center justify-center border border-sky-200 dark:border-sky-800 shadow-sm">
-                                <Boxes className="w-7 h-7" />
-                              </div>
-                              <div className="space-y-1">
-                                <p className="font-heading font-black text-sm text-slate-800 dark:text-slate-200">
-                                  Chưa Có Mã Serial (SN) Nào Trong Kho
-                                </p>
-                                <p className="text-xs text-slate-400 leading-relaxed">
-                                  Kho hàng hiện tại chưa có dữ liệu mã serial nào hoặc không tìm thấy kết quả phù hợp với bộ lọc.
-                                </p>
-                              </div>
-                              <button
-                                onClick={() => {
-                                  if (products.length > 0) {
-                                    setSelectedProductIdForSn(products[0].id);
-                                  }
-                                  setIsSnModalOpen(true);
-                                }}
-                                className="px-4 py-2 bg-gradient-to-r from-[#0284c7] to-[#38bdf8] hover:from-[#0369a1] text-white text-xs font-bold uppercase rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-sm shadow-sky-500/20 mt-1"
-                              >
-                                <Plus className="w-4 h-4" />
-                                <span>+ Nhập Mã Serial Mới</span>
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ) : (
-                        filteredSerials.map((s) => {
-                          const prod = s.product;
-                          const ord = s.order;
-                          const sku = prod?.modelCode || '';
-
-                          return (
-                            <tr key={s.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                              {/* SERIAL NUMBER & SKU */}
-                              <td className="py-3.5 px-4 font-mono whitespace-nowrap">
-                                <div className="flex flex-col gap-1">
-                                  <span className="font-black text-slate-900 dark:text-white px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 inline-block text-xs">
-                                    {s.serialNumber}
-                                  </span>
-                                  {sku && (
-                                    <span className="text-[10px] font-mono text-slate-400">
-                                      SKU: <span className="text-slate-600 dark:text-slate-300 font-bold">{sku}</span>
-                                    </span>
-                                  )}
-                                </div>
-                              </td>
-
-                              {/* PRODUCT INFO */}
-                              <td className="py-3.5 px-3 min-w-[220px]">
-                                <div className="flex items-center gap-2.5">
-                                  {prod?.coverImage ? (
-                                    <img
-                                      src={prod.coverImage}
-                                      alt={prod.name}
-                                      className="w-9 h-9 rounded-lg object-contain bg-slate-100 dark:bg-slate-800 p-0.5 border border-slate-200 dark:border-slate-700 shrink-0"
-                                    />
-                                  ) : (
-                                    <div className="w-9 h-9 rounded-lg bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] flex items-center justify-center shrink-0 border border-sky-200 dark:border-sky-800">
-                                      <Boxes className="w-4 h-4" />
-                                    </div>
-                                  )}
-                                  <div className="min-w-0">
-                                    <span className="font-bold text-slate-900 dark:text-white line-clamp-1 block text-xs" title={prod?.name}>
-                                      {prod?.name || 'Linh kiện DRX'}
-                                    </span>
-                                    <span className="text-[10px] text-slate-400 font-medium">
-                                      Hãng: {prod?.brand || 'DRX'} • BH {prod?.warrantyMonths || 36}T
-                                    </span>
-                                  </div>
-                                </div>
-                              </td>
-
-                              {/* CATEGORY */}
-                              <td className="py-3.5 px-3 font-extrabold text-[#0284c7] text-[10px] uppercase whitespace-nowrap">
-                                <span className="px-2 py-0.5 rounded bg-sky-50 dark:bg-sky-950/60 border border-sky-200 dark:border-sky-800">
-                                  {prod?.category || 'PART'}
-                                </span>
-                              </td>
-
-                              {/* STATUS QUICK TOGGLE */}
-                              <td className="py-3.5 px-3 text-center whitespace-nowrap">
-                                <SerialStatusButton
-                                  serial={s}
-                                  onUpdateStatus={handleUpdateSerialStatus}
-                                />
-                              </td>
-
-                              {/* IMPORT / SOLD DATE */}
-                              <td className="py-3.5 px-3 text-slate-500 whitespace-nowrap font-mono text-[11px]">
-                                <div>{new Date(s.createdAt).toLocaleDateString('vi-VN')}</div>
-                                {s.soldDate && (
-                                  <div className="text-[10px] text-slate-400">Xuất: {new Date(s.soldDate).toLocaleDateString('vi-VN')}</div>
-                                )}
-                              </td>
-
-                              {/* LINKED ORDER */}
-                              <td className="py-3.5 px-3 whitespace-nowrap text-xs">
-                                {ord ? (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      const fullOrder = orders.find(o => o.id === ord.id) || ord;
-                                      setViewingOrder(fullOrder);
-                                    }}
-                                    className="text-left group cursor-pointer"
-                                  >
-                                    <span className="font-mono font-bold text-[#0284c7] group-hover:underline block">
-                                      {formatOrderDisplayCode(ord)}
-                                    </span>
-                                    {(ord.customerName || ord.customerPhone) && (
-                                      <span className="text-[10px] text-slate-400 block truncate max-w-[140px]">
-                                        {ord.customerName || ord.customerPhone}
-                                      </span>
-                                    )}
-                                  </button>
-                                ) : (
-                                  <span className="text-slate-400 font-mono">-</span>
-                                )}
-                              </td>
-
-                              {/* ACTIONS */}
-                              <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                                <button
-                                  onClick={() => handleDeleteSerial(s.id)}
-                                  className="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 transition-all cursor-pointer"
-                                  title="Xóa Serial"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </td>
-                            </tr>
-                          );
-                        })
-                      )}
-                  </tbody>
-                  </table>
-                </div>
-              </div>
-
-            </div>
+            <SerialManagementSection
+              products={products}
+              serials={serials}
+              orders={orders}
+              onUpdateSerialStatus={handleUpdateSerialStatus}
+              onDeleteSerial={handleDeleteSerial}
+              onOpenAddSerialModal={(productId) => {
+                if (productId) {
+                  setSelectedProductIdForSn(productId);
+                } else if (products.length > 0) {
+                  setSelectedProductIdForSn(products[0].id);
+                }
+                setIsSnModalOpen(true);
+              }}
+              onViewOrder={(ord) => setViewingOrder(ord)}
+              formatOrderDisplayCode={formatOrderDisplayCode}
+            />
           )}
 
           {/* ============================================================ */}
