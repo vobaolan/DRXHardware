@@ -284,3 +284,43 @@ export async function updateUserProfile(payload: {
     return null;
   }
 }
+
+/**
+ * Change user password via backend & Supabase
+ */
+export async function changeUserPassword(payload: {
+  currentPassword?: string;
+  newPassword: string;
+  confirmNewPassword?: string;
+  email?: string;
+}): Promise<{ success: boolean; message: string; user?: AuthUser }> {
+  try {
+    const token = (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(TOKEN_KEY) : null)
+      || (typeof localStorage !== 'undefined' ? localStorage.getItem(TOKEN_KEY) : null);
+
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const res = await fetch('/api/auth/change-password', {
+      method: 'POST',
+      headers,
+      credentials: 'include',
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json();
+    if (res.ok && data.success) {
+      if (data.user) {
+        setSessionUser(data.user, data.token);
+      }
+      return { success: true, message: data.message || 'Đổi mật khẩu thành công!', user: data.user };
+    } else {
+      return { success: false, message: data.message || 'Không thể đổi mật khẩu lúc này.' };
+    }
+  } catch (e: any) {
+    console.error('Change password error:', e);
+    return { success: false, message: 'Lỗi kết nối máy chủ: ' + e.message };
+  }
+}
