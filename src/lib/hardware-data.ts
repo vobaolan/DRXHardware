@@ -52,7 +52,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Xung nhịp Turbo": "5.0 GHz"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 15,
+    "stockQuantity": 5,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -87,7 +87,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Băng thông bộ nhớ": "128-bit"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 20,
+    "stockQuantity": 5,
     "status": true,
     "isFlashDeal": true,
     "isFeatured": true,
@@ -123,7 +123,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Khe cắm mở rộng": "1x PCIe 5.0 x16"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 18,
+    "stockQuantity": 5,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -157,7 +157,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Kết nối": "Wi-Fi 6E, Bluetooth 5.2, 2.5G LAN"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 12,
+    "stockQuantity": 5,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": false,
@@ -191,7 +191,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Độ trễ Latency": "CL30"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 30,
+    "stockQuantity": 5,
     "status": true,
     "isFlashDeal": true,
     "isFeatured": true,
@@ -225,7 +225,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Chứng nhận hiệu suất": "80 Plus Gold"
     },
     "warrantyMonths": 84,
-    "stockQuantity": 15,
+    "stockQuantity": 5,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": false,
@@ -259,7 +259,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Hỗ trợ tản nhiệt nước": "Lên tới 360mm (Nóc + Đáy + Hông)"
     },
     "warrantyMonths": 24,
-    "stockQuantity": 10,
+    "stockQuantity": 5,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -296,7 +296,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Bộ nhớ đệm Cache": "20MB Intel Smart Cache"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 25,
+    "stockQuantity": 5,
     "status": true,
     "isFlashDeal": true,
     "isFeatured": true,
@@ -331,7 +331,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Chuẩn giao tiếp": "PCIe Gen 4.0 x4, NVMe 2.0"
     },
     "warrantyMonths": 60,
-    "stockQuantity": 40,
+    "stockQuantity": 5,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -365,7 +365,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Băng thông bộ nhớ": "192-bit"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 10,
+    "stockQuantity": 5,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -406,7 +406,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Chuẩn giao tiếp": "SATA 6Gb/s"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 67,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": true,
     "isFeatured": false,
@@ -443,7 +443,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Mainboard": "MSI B760M Mortar Wifi DDR4"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 8,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": true,
     "isFeatured": true,
@@ -478,7 +478,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Xung nhịp Turbo": "5.3 GHz"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 25,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -512,7 +512,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Xung nhịp Turbo": "6.0 GHz"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 15,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -546,7 +546,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Xung nhịp Turbo": "5.6 GHz"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 20,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -601,7 +601,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Điện năng tiêu thụ (Hoạt động)": "4.84W"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 44,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": false,
@@ -646,7 +646,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Hệ điều hành tương thích": "Windows 11 / Windows 10 / Windows 8.1"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 555,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": true,
     "isFeatured": false,
@@ -692,7 +692,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Số nhân/Số luồng": "10 nhân / 16 luồng"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 9,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -741,7 +741,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Xung bộ nhớ (Memory Clock)": "28 Gbps"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 44,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -791,7 +791,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Dung lượng bộ nhớ": "12GB"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 9,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -826,7 +826,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Xung nhịp Turbo": "5.3 GHz"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 22,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -859,7 +859,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Nguồn khuyến nghị": "650W"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 20,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": false,
@@ -892,7 +892,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Nguồn khuyến nghị": "850W+"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 10,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -926,7 +926,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Kết nối không dây": "Wi-Fi 6 + Bluetooth 5.2"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 25,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -960,7 +960,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Dung lượng": "32GB (2x16GB)"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 35,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": false,
@@ -994,7 +994,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Dung lượng": "32GB (2x16GB)"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 24,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -1028,7 +1028,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Chuẩn kết nối": "PCIe 3.0 x4 NVMe"
     },
     "warrantyMonths": 60,
-    "stockQuantity": 30,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": false,
@@ -1062,7 +1062,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Chuẩn kết nối": "PCIe 4.0 x4 NVMe"
     },
     "warrantyMonths": 60,
-    "stockQuantity": 25,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": false,
@@ -1095,7 +1095,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Chứng nhận": "80 Plus Bronze"
     },
     "warrantyMonths": 60,
-    "stockQuantity": 35,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -1129,7 +1129,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "PCIe 5.0 16-Pin (12VHPWR)": "Có"
     },
     "warrantyMonths": 120,
-    "stockQuantity": 20,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -1162,7 +1162,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Nguồn khuyến nghị": "700W+"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 18,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -1195,7 +1195,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Nguồn khuyến nghị": "1000W+"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 8,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -1230,7 +1230,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Kích thước": "ATX"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 18,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -1264,7 +1264,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Kích thước": "ATX"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 12,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -1298,7 +1298,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Hỗ trợ RGB": "Kingston FURY CTRL"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 40,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -1332,7 +1332,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Dung lượng": "32GB (2x16GB)"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 26,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": false,
@@ -1366,7 +1366,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Chuẩn kết nối": "PCIe 4.0 x4 NVMe"
     },
     "warrantyMonths": 60,
-    "stockQuantity": 35,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -1401,7 +1401,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Chuẩn kết nối": "PCIe 4.0 x4 NVMe"
     },
     "warrantyMonths": 60,
-    "stockQuantity": 20,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -1434,7 +1434,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Kích thước": "ATX"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 28,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": false,
@@ -1467,7 +1467,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Tụ điện": "100% Nhật Bản 105°C"
     },
     "warrantyMonths": 120,
-    "stockQuantity": 15,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -1501,7 +1501,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Nguồn khuyến nghị": "550W+"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 30,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": true,
     "isFeatured": true,
@@ -1534,7 +1534,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Nguồn khuyến nghị": "750W - 850W"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 14,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -1568,7 +1568,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Kích thước": "Micro-ATX"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 35,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": true,
     "isFeatured": true,
@@ -1601,7 +1601,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Khe RAM": "2x DDR5 6400MHz+"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 28,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": false,
@@ -1636,7 +1636,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Dung lượng": "16GB (1x16GB)"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 50,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": true,
     "isFeatured": true,
@@ -1670,7 +1670,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Chuẩn kết nối": "PCIe 4.0 x4 NVMe"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 45,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": true,
     "isFeatured": true,
@@ -1705,7 +1705,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Chuẩn kết nối": "PCIe 4.0 x4 NVMe"
     },
     "warrantyMonths": 60,
-    "stockQuantity": 40,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -1739,7 +1739,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Công suất danh định": "550W"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 30,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -1773,7 +1773,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Chuẩn hiệu suất": "80 PLUS Gold"
     },
     "warrantyMonths": 84,
-    "stockQuantity": 25,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -1807,7 +1807,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Tản nhiệt nước hỗ trợ": "240mm nóc"
     },
     "warrantyMonths": 12,
-    "stockQuantity": 40,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": true,
     "isFeatured": true,
@@ -1840,7 +1840,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Hỗ trợ Mainboard": "ATX, Micro-ATX, Mini-ITX"
     },
     "warrantyMonths": 12,
-    "stockQuantity": 30,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": false,
@@ -1873,7 +1873,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Kích thước Rad": "277 x 120 x 27mm"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 30,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": false,
@@ -1906,7 +1906,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Bộ điều khiển": "iCUE COMMANDER CORE đi kèm"
     },
     "warrantyMonths": 60,
-    "stockQuantity": 12,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -1940,7 +1940,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Độ phân giải": "FHD (1920x1080)"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 30,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": false,
@@ -1976,7 +1976,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Cảm biến ánh sáng": "Auto Dimming"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 15,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -2010,7 +2010,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Kết nối": "3 Mode: 2.4Ghz / Bluetooth 5.0 / USB-C"
     },
     "warrantyMonths": 12,
-    "stockQuantity": 25,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -2044,7 +2044,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Thời lượng pin": "18 giờ liên tục"
     },
     "warrantyMonths": 24,
-    "stockQuantity": 35,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": false,
@@ -2078,7 +2078,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Âm thanh không gian": "DTS:X Spatial Audio vĩnh viễn"
     },
     "warrantyMonths": 24,
-    "stockQuantity": 22,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -2111,7 +2111,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Hỗ trợ nền tảng": "Windows 10/11, Xbox Series X/S, Android, iOS"
     },
     "warrantyMonths": 12,
-    "stockQuantity": 30,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -2144,7 +2144,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Hỗ trợ Mainboard": "ATX, Micro-ATX, ITX"
     },
     "warrantyMonths": 12,
-    "stockQuantity": 25,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -2177,7 +2177,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Màu sắc": "Trắng nhám (Matte White)"
     },
     "warrantyMonths": 24,
-    "stockQuantity": 18,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -2210,7 +2210,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Hỗ trợ Tản Rad": "Lên tới 3 tản Rad 360mm cùng lúc"
     },
     "warrantyMonths": 12,
-    "stockQuantity": 15,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -2243,7 +2243,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Hỗ trợ Socket": "Intel LGA1700/1200, AMD AM5/AM4"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 35,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": true,
     "isFeatured": true,
@@ -2276,7 +2276,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Số ống đồng": "6x 6mm Heatpipes"
     },
     "warrantyMonths": 24,
-    "stockQuantity": 40,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -2309,7 +2309,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Phần mềm quản lý": "NZXT CAM"
     },
     "warrantyMonths": 72,
-    "stockQuantity": 18,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -2343,7 +2343,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Tần số quét": "180 Hz"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 25,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": false,
@@ -2378,7 +2378,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Độ phân giải": "2K QHD (2560 x 1440)"
     },
     "warrantyMonths": 24,
-    "stockQuantity": 22,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -2411,7 +2411,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Switch": "Akko CS Orange Switch"
     },
     "warrantyMonths": 12,
-    "stockQuantity": 20,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": false,
@@ -2444,7 +2444,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Chiều dài GPU tối đa": "360mm"
     },
     "warrantyMonths": 24,
-    "stockQuantity": 22,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -2477,7 +2477,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Kích thước Rad": "397 x 120 x 27mm (3 Quạt)"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 25,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -2512,7 +2512,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Thời gian phản hồi": "0.5ms (MPRT)"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 30,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": true,
     "isFeatured": true,
@@ -2546,7 +2546,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Công nghệ đồng bộ": "FreeSync Premium & G-Sync Compatible"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 20,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -2580,7 +2580,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Kết nối": "Type-C rời"
     },
     "warrantyMonths": 24,
-    "stockQuantity": 35,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": true,
     "isFeatured": true,
@@ -2614,7 +2614,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Trọng lượng": "240g siêu nhẹ"
     },
     "warrantyMonths": 24,
-    "stockQuantity": 30,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": true,
     "isFeatured": true,
@@ -2647,7 +2647,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Đệm tai": "AirWeave Memory Foam"
     },
     "warrantyMonths": 12,
-    "stockQuantity": 20,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": false,
@@ -2681,7 +2681,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Kích thước": "900 x 400 mm"
     },
     "warrantyMonths": 12,
-    "stockQuantity": 100,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": true,
     "isFeatured": true,
@@ -2714,7 +2714,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "4 Mô hình định hướng": "Stereo, Omnidirectional, Cardioid, Bidirectional"
     },
     "warrantyMonths": 24,
-    "stockQuantity": 20,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -2747,7 +2747,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Khung tai nghe": "Nhôm nguyên khối"
     },
     "warrantyMonths": 24,
-    "stockQuantity": 40,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -2781,7 +2781,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Tần số đáp ứng": "20Hz - 40.000Hz"
     },
     "warrantyMonths": 24,
-    "stockQuantity": 18,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -2815,7 +2815,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Âm thanh tích hợp": "ESS Sabre 9118 DAC / AMP"
     },
     "warrantyMonths": 24,
-    "stockQuantity": 15,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": false,
@@ -2848,7 +2848,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Phím chức năng": "15 phím LCD có thể hiển thị ảnh động"
     },
     "warrantyMonths": 24,
-    "stockQuantity": 18,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -2883,7 +2883,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Trọng lượng": "1.41 kg"
     },
     "warrantyMonths": 12,
-    "stockQuantity": 18,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": false,
@@ -2917,7 +2917,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Trọng lượng": "1.24 kg"
     },
     "warrantyMonths": 12,
-    "stockQuantity": 25,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -2951,7 +2951,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "RAM": "16GB DDR5 4800MHz (2 khe)"
     },
     "warrantyMonths": 24,
-    "stockQuantity": 22,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -2984,7 +2984,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Ổ cứng": "1TB NVMe PCIe Gen4 SSD"
     },
     "warrantyMonths": 24,
-    "stockQuantity": 12,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": false,
@@ -3022,7 +3022,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Tản nhiệt": "Deepcool AG400 ARGB"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 25,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -3056,7 +3056,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Chất liệu bọc": "Vải nỉ Soft Fabric thoáng khí chống tích nhiệt"
     },
     "warrantyMonths": 24,
-    "stockQuantity": 15,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -3090,7 +3090,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Màn hình": "15.6\" OLED FHD 600 nits 100% DCI-P3"
     },
     "warrantyMonths": 24,
-    "stockQuantity": 15,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -3124,7 +3124,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Trọng lượng": "1.3 kg"
     },
     "warrantyMonths": 12,
-    "stockQuantity": 14,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -3157,7 +3157,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Màn hình": "15.6\" FHD (1920x1080) 165Hz 100% sRGB G-Sync"
     },
     "warrantyMonths": 12,
-    "stockQuantity": 15,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": false,
@@ -3191,7 +3191,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Màn hình": "16\" QHD+ (2560x1600) 240Hz 3ms 100% DCI-P3 500 nits ROG Nebula"
     },
     "warrantyMonths": 24,
-    "stockQuantity": 8,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -3228,7 +3228,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Tản nhiệt": "Thermalright Aqua Elite 240 V3 AIO"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 18,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -3266,7 +3266,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Tản nhiệt": "Corsair iCUE H150i ELITE LCD XT Display 360mm"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 6,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -3301,7 +3301,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Trọng lượng": "1.65 kg"
     },
     "warrantyMonths": 12,
-    "stockQuantity": 20,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": true,
     "isFeatured": true,
@@ -3335,7 +3335,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Bảo mật": "Cảm biến vân tay + Nắp che camera ThinkShutter"
     },
     "warrantyMonths": 24,
-    "stockQuantity": 16,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": false,
@@ -3369,7 +3369,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Màn hình": "16\" WQXGA (2560x1600) IPS 165Hz 100% sRGB G-Sync"
     },
     "warrantyMonths": 12,
-    "stockQuantity": 20,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": true,
     "isFeatured": true,
@@ -3403,7 +3403,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Ổ cứng": "1TB PCIe Gen4 SSD"
     },
     "warrantyMonths": 24,
-    "stockQuantity": 18,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -3440,7 +3440,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Vỏ Case": "Xigmatek Kèm 3 Fan LED"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 20,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": true,
     "isFeatured": true,
@@ -3478,7 +3478,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Tản nhiệt": "Thermalright Aqua Elite 360 V3 ARGB"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 15,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -3516,7 +3516,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Tản nhiệt": "Thermalright Aqua Elite 360 V3 White ARGB"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 10,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -3557,7 +3557,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Chuẩn giao tiếp": "Sata III"
     },
     "warrantyMonths": 12,
-    "stockQuantity": 22,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -3604,7 +3604,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Số nhân/Số luồng": "6 nhân / 12 luồng"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 11,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": true,
     "isFeatured": true,
@@ -3649,7 +3649,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Nhân xử lý song song": "CUDA Cores 8960"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 4,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -3683,7 +3683,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Trọng lượng": "63g"
     },
     "warrantyMonths": 24,
-    "stockQuantity": 20,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -3717,7 +3717,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Trọng lượng": "85g"
     },
     "warrantyMonths": 24,
-    "stockQuantity": 60,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": true,
     "isFeatured": true,
@@ -3752,7 +3752,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Tương thích hệ điều hành": "macOS / Windows / Android / iOS"
     },
     "warrantyMonths": 12,
-    "stockQuantity": 16,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -3788,7 +3788,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Thời gian đáp ứng": "5ms"
     },
     "warrantyMonths": 24,
-    "stockQuantity": 30,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": true,
     "isFeatured": true,
@@ -3822,7 +3822,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Thời lượng pin": "Lên tới 95 giờ liên tục"
     },
     "warrantyMonths": 24,
-    "stockQuantity": 25,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -3857,7 +3857,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Tần số gửi tín hiệu": "8.000Hz Corsair AXON Hyper-Processing"
     },
     "warrantyMonths": 24,
-    "stockQuantity": 15,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -3893,7 +3893,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Tính năng đặc biệt": "ComfortView Plus bảo vệ mắt, Xoay dọc 90 độ"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 25,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
@@ -3928,7 +3928,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Dung lượng Pin": "3000mAh"
     },
     "warrantyMonths": 12,
-    "stockQuantity": 20,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": true,
     "isFeatured": true,
@@ -3964,7 +3964,7 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
       "Tính năng đặc biệt": "ProArt Preset, ProArt Palette, Daisy-chaining DP"
     },
     "warrantyMonths": 36,
-    "stockQuantity": 12,
+    "stockQuantity": 3,
     "status": true,
     "isFlashDeal": false,
     "isFeatured": true,
