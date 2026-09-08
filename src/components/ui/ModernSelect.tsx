@@ -74,7 +74,7 @@ export const ModernSelect: React.FC<ModernSelectProps> = ({
     const spaceBelow = window.innerHeight - rect.bottom;
     const minSpaceBelow = 240;
     const openUpward = spaceBelow < minSpaceBelow && rect.top > minSpaceBelow;
-    const popoverWidth = Math.max(rect.width, 240);
+    const popoverWidth = Math.max(rect.width, 280);
 
     let left = rect.left;
     if (align === 'right') {

@@ -52,7 +52,7 @@ export function SerialStatusButton({
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
         triggerRef={btnRef}
-        width={230}
+        width={250}
       >
         <div className="px-2.5 py-1.5 text-[10px] font-black uppercase text-slate-400 tracking-wider border-b border-slate-100 dark:border-slate-800 mb-1">
           Cập Nhật Trạng Thái SN
@@ -134,30 +134,38 @@ export function SerialStatusButton({
   );
 }
 
-const SERIAL_STATUS_FILTER_OPTIONS: SelectOption[] = [
+// Category options matching Kho Linh Kiện
+export const CATEGORY_NAMES: Record<string, string> = {
+  ALL: 'Tất Cả Danh Mục',
+  CPU: 'Bộ Vi Xử Lý (CPU)',
+  VGA: 'Card Màn Hình (VGA)',
+  MAINBOARD: 'Bo Mạch Chủ (Mainboard)',
+  RAM: 'Bộ Nhớ Trong (RAM)',
+  STORAGE: 'Ổ Cứng SSD / HDD',
+  PSU: 'Nguồn Máy Tính (PSU)',
+  CASE: 'Vỏ Máy Tính (Case)',
+  COOLING: 'Tản Nhiệt (Cooling)',
+  MONITOR: 'Màn Hình (Monitor)',
+  KEYBOARD: 'Bàn Phím Cơ & Chuột',
+  HEADSET: 'Tai Nghe Gaming',
+  GEAR: 'Gaming Gear Tổng Hợp',
+  LAPTOP: 'Laptop Văn Phòng',
+  LAPTOP_GAMING: 'Laptop Gaming & Đồ Họa',
+  PREBUILT_PC: 'PC Lắp Sẵn DRX',
+  ACCESSORY: 'Phụ Kiện Máy Tính',
+};
+
+export const CATEGORY_FILTER_OPTIONS: SelectOption[] = Object.entries(CATEGORY_NAMES).map(([key, label]) => ({
+  value: key,
+  label: label,
+  badge: key === 'ALL' ? 'TẤT CẢ' : key,
+}));
+
+export const SERIAL_STATUS_FILTER_OPTIONS: SelectOption[] = [
   { value: 'ALL', label: 'Tất Cả Trạng Thái SN', badge: 'TẤT CẢ' },
   { value: 'AVAILABLE', label: 'Trong Kho (AVAILABLE)', badge: 'SẴN SÀNG' },
   { value: 'SOLD', label: 'Đã Xuất Bán (SOLD)', badge: 'ĐÃ BÁN' },
   { value: 'WARRANTY', label: 'Đang Bảo Hành (WARRANTY)', badge: 'BẢO HÀNH' },
-];
-
-const CATEGORY_TABS = [
-  { key: 'ALL', label: 'Tất Cả' },
-  { key: 'CPU', label: 'CPU' },
-  { key: 'VGA', label: 'VGA' },
-  { key: 'RAM', label: 'RAM' },
-  { key: 'MAINBOARD', label: 'Mainboard' },
-  { key: 'SSD', label: 'SSD' },
-  { key: 'PSU', label: 'Nguồn PSU' },
-  { key: 'CASE', label: 'Case PC' },
-  { key: 'COOLING', label: 'Tản Nhiệt' },
-  { key: 'MONITOR', label: 'Màn Hình' },
-  { key: 'KEYBOARD', label: 'Bàn Phím' },
-  { key: 'MOUSE', label: 'Chuột Gaming' },
-  { key: 'HEADSET', label: 'Tai Nghe' },
-  { key: 'LAPTOP', label: 'Laptop' },
-  { key: 'PREBUILT_PC', label: 'PC Đồng Bộ' },
-  { key: 'ACCESSORY', label: 'Phụ Kiện' },
 ];
 
 interface SerialManagementSectionProps {
@@ -251,15 +259,17 @@ export function SerialManagementSection({
     }).length;
   }, [products, serialsByProductId]);
 
-  // Category serial counts for pills
-  const categorySerialCounts = useMemo(() => {
-    const counts: Record<string, number> = { ALL: serials.length };
-    serials.forEach((s) => {
-      const cat = s.product?.category || 'OTHER';
-      counts[cat] = (counts[cat] || 0) + 1;
-    });
-    return counts;
-  }, [serials]);
+  // Helper to check category match
+  const checkCategoryMatch = (prodCategory: string | undefined, filterCategory: string) => {
+    if (!filterCategory || filterCategory === 'ALL') return true;
+    if (!prodCategory) return false;
+    if (prodCategory === filterCategory) return true;
+    if (filterCategory === 'STORAGE' && (prodCategory === 'SSD' || prodCategory === 'STORAGE' || prodCategory === 'HDD')) return true;
+    if (filterCategory === 'LAPTOP' && (prodCategory === 'LAPTOP' || prodCategory === 'LAPTOP_GAMING')) return true;
+    if (filterCategory === 'KEYBOARD' && (prodCategory === 'KEYBOARD' || prodCategory === 'KEYBOARD_MOUSE' || prodCategory === 'MOUSE')) return true;
+    if (filterCategory === 'GEAR' && (prodCategory === 'GEAR' || prodCategory === 'KEYBOARD' || prodCategory === 'MOUSE' || prodCategory === 'HEADSET')) return true;
+    return false;
+  };
 
   // 1. Grouped by Product data list
   const productSerialGroups = useMemo(() => {
@@ -296,7 +306,7 @@ export function SerialManagementSection({
             (s.order?.customerPhone && s.order.customerPhone.includes(q))
         );
 
-      const matchesCategory = selectedCategory === 'ALL' || prod.category === selectedCategory;
+      const matchesCategory = checkCategoryMatch(prod.category, selectedCategory);
       const matchesStatus = statusFilter === 'ALL' || matchingSerials.length > 0;
 
       const isVisible = matchesCategory && matchesStatus && (matchesProductText || matchesSerialText);
@@ -344,7 +354,7 @@ export function SerialManagementSection({
         (s.order?.customerPhone && s.order.customerPhone.includes(q));
 
       const matchesStatus = statusFilter === 'ALL' || s.status === statusFilter;
-      const matchesCategory = selectedCategory === 'ALL' || s.product?.category === selectedCategory;
+      const matchesCategory = checkCategoryMatch(s.product?.category, selectedCategory);
 
       return matchesSearch && matchesStatus && matchesCategory;
     });
@@ -442,53 +452,11 @@ export function SerialManagementSection({
       </div>
 
       {/* ============================================================ */}
-      {/* 2. CATEGORY FILTER PILLS RIBBON                              */}
+      {/* 2. TOOLBAR: SEARCH, CATEGORY DROPDOWN, STATUS DROPDOWN, VIEW MODE */}
       {/* ============================================================ */}
-      <div className="bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">
-          <span className="text-[10px] font-black uppercase text-slate-400 pl-2 pr-1 shrink-0 flex items-center gap-1">
-            <Filter className="w-3 h-3" /> Danh Mục:
-          </span>
-          {CATEGORY_TABS.map((cat) => {
-            const count = cat.key === 'ALL' ? totalSerialsCount : (categorySerialCounts[cat.key] || 0);
-            const isSelected = selectedCategory === cat.key;
-            return (
-              <button
-                key={cat.key}
-                type="button"
-                onClick={() => {
-                  setSelectedCategory(cat.key);
-                  setProductPage(1);
-                  setFlatPage(1);
-                }}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer shrink-0 flex items-center gap-1.5 ${
-                  isSelected
-                    ? 'bg-gradient-to-r from-[#0284c7] to-[#38bdf8] text-white shadow-xs shadow-sky-500/20'
-                    : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300'
-                }`}
-              >
-                <span>{cat.label}</span>
-                <span
-                  className={`text-[10px] px-1.5 py-0.2 rounded-md font-mono ${
-                    isSelected
-                      ? 'bg-white/20 text-white'
-                      : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
-                  }`}
-                >
-                  {count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ============================================================ */}
-      {/* 3. TOOLBAR: SEARCH, STATUS FILTER, VIEW MODE & NEW SN BUTTON */}
-      {/* ============================================================ */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
         {/* Search Input */}
-        <div className="relative flex-1 max-w-md">
+        <div className="relative flex-1 min-w-[240px] max-w-md">
           <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
@@ -515,10 +483,24 @@ export function SerialManagementSection({
           )}
         </div>
 
-        {/* Filters & Actions */}
+        {/* Filters & Actions Group */}
         <div className="flex items-center gap-2.5 flex-wrap">
+          {/* Category Dropdown (Same as Kho Linh Kiện) */}
+          <div className="w-56 sm:w-64">
+            <ModernSelect
+              options={CATEGORY_FILTER_OPTIONS}
+              value={selectedCategory}
+              onChange={(val) => {
+                setSelectedCategory(String(val));
+                setProductPage(1);
+                setFlatPage(1);
+              }}
+              placeholder="Lọc theo danh mục..."
+            />
+          </div>
+
           {/* Status Dropdown */}
-          <div className="w-48 sm:w-56">
+          <div className="w-56 sm:w-64">
             <ModernSelect
               options={SERIAL_STATUS_FILTER_OPTIONS}
               value={statusFilter}
@@ -573,7 +555,7 @@ export function SerialManagementSection({
       </div>
 
       {/* ============================================================ */}
-      {/* 4. MODE 1: GROUPED BY PRODUCT VIEW (PRIMARY)                 */}
+      {/* 3. MODE 1: GROUPED BY PRODUCT VIEW (PRIMARY)                 */}
       {/* ============================================================ */}
       {viewMode === 'by_product' && (
         <div className="space-y-4">
@@ -610,7 +592,7 @@ export function SerialManagementSection({
                 Không Tìm Thấy Sản Phẩm Phù Hợp
               </h4>
               <p className="text-xs text-slate-400 max-w-md mx-auto mt-1 mb-4">
-                Không có linh kiện nào khớp với từ khóa tìm kiếm hoặc bộ lọc trạng thái Serial hiện tại.
+                Không có linh kiện nào khớp với từ khóa tìm kiếm hoặc bộ lọc danh mục/trạng thái Serial hiện tại.
               </p>
               <button
                 onClick={() => {
@@ -941,7 +923,7 @@ export function SerialManagementSection({
       )}
 
       {/* ============================================================ */}
-      {/* 5. MODE 2: FLAT AUDIT TABLE VIEW (DETAILED AUDIT)           */}
+      {/* 4. MODE 2: FLAT AUDIT TABLE VIEW (DETAILED AUDIT)           */}
       {/* ============================================================ */}
       {viewMode === 'flat' && (
         <div className="space-y-4">
