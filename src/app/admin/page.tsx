@@ -142,6 +142,123 @@ function UserRoleButton({
   );
 }
 
+function SerialStatusButton({
+  serial,
+  onUpdateStatus,
+}: {
+  serial: any;
+  onUpdateStatus: (serialId: string, newStatus: string) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const btnRef = useRef<HTMLButtonElement>(null);
+
+  const status = serial.status || 'AVAILABLE';
+
+  return (
+    <>
+      <button
+        ref={btnRef}
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10.5px] font-black uppercase transition-all cursor-pointer shadow-xs active:scale-95 border ${
+          status === 'AVAILABLE'
+            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800 hover:bg-emerald-100'
+            : status === 'SOLD'
+            ? 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 hover:bg-slate-200'
+            : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800 hover:bg-amber-100'
+        }`}
+        title="Click để đổi trạng thái Serial"
+      >
+        <span className={`w-1.5 h-1.5 rounded-full ${
+          status === 'AVAILABLE' ? 'bg-emerald-500' : status === 'SOLD' ? 'bg-slate-400' : 'bg-amber-500'
+        }`}></span>
+        <span>{status === 'AVAILABLE' ? 'Trong Kho' : status === 'SOLD' ? 'Đã Xuất Bán' : 'Bảo Hành'}</span>
+        <ChevronDown className={`w-3 h-3 ml-0.5 opacity-60 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      <PortalDropdown
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+        triggerRef={btnRef}
+        width={240}
+      >
+        <div className="px-2.5 py-1.5 text-[10px] font-black uppercase text-slate-400 tracking-wider border-b border-slate-100 dark:border-slate-800 mb-1">
+          Cập Nhật Trạng Thái SN
+        </div>
+
+        {/* Option AVAILABLE */}
+        <button
+          type="button"
+          onClick={() => {
+            onUpdateStatus(serial.id, 'AVAILABLE');
+            setIsOpen(false);
+          }}
+          className={`w-full flex items-center justify-between p-2 rounded-xl transition-all text-left cursor-pointer ${
+            status === 'AVAILABLE'
+              ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 font-extrabold'
+              : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300 font-bold'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <div>
+              <span className="block text-xs">Trong Kho (AVAILABLE)</span>
+              <span className="block text-[10px] text-slate-400 font-normal">Sẵn sàng xuất bán & ráp máy</span>
+            </div>
+          </div>
+          {status === 'AVAILABLE' && <Check className="w-4 h-4 text-emerald-600 shrink-0" />}
+        </button>
+
+        {/* Option SOLD */}
+        <button
+          type="button"
+          onClick={() => {
+            onUpdateStatus(serial.id, 'SOLD');
+            setIsOpen(false);
+          }}
+          className={`w-full flex items-center justify-between p-2 rounded-xl transition-all text-left cursor-pointer ${
+            status === 'SOLD'
+              ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-extrabold'
+              : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300 font-bold'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-slate-400"></span>
+            <div>
+              <span className="block text-xs">Đã Xuất Bán (SOLD)</span>
+              <span className="block text-[10px] text-slate-400 font-normal">Đã bàn giao cho khách hàng</span>
+            </div>
+          </div>
+          {status === 'SOLD' && <Check className="w-4 h-4 text-slate-700 dark:text-slate-300 shrink-0" />}
+        </button>
+
+        {/* Option WARRANTY */}
+        <button
+          type="button"
+          onClick={() => {
+            onUpdateStatus(serial.id, 'WARRANTY');
+            setIsOpen(false);
+          }}
+          className={`w-full flex items-center justify-between p-2 rounded-xl transition-all text-left cursor-pointer ${
+            status === 'WARRANTY'
+              ? 'bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 font-extrabold'
+              : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300 font-bold'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+            <div>
+              <span className="block text-xs">Bảo Hành (WARRANTY)</span>
+              <span className="block text-[10px] text-slate-400 font-normal">Đang tiếp nhận xử lý bảo hành</span>
+            </div>
+          </div>
+          {status === 'WARRANTY' && <Check className="w-4 h-4 text-amber-600 shrink-0" />}
+        </button>
+      </PortalDropdown>
+    </>
+  );
+}
+
 const USER_ROLE_SELECT_OPTIONS: SelectOption[] = [
   { value: 'USER', label: '👤 Khách Hàng (User)', badge: 'USER' },
   { value: 'STAFF', label: '🛠️ Nhân Viên (Staff)', badge: 'STAFF' },
@@ -556,7 +673,12 @@ export default function AdminDashboardPage() {
       const matchesSearch = !q ||
         (s.serialNumber && s.serialNumber.toLowerCase().includes(q)) ||
         (s.product?.name && s.product.name.toLowerCase().includes(q)) ||
-        (s.product?.brand && s.product.brand.toLowerCase().includes(q));
+        (s.product?.brand && s.product.brand.toLowerCase().includes(q)) ||
+        (s.product?.modelCode && s.product.modelCode.toLowerCase().includes(q)) ||
+        (s.product?.category && s.product.category.toLowerCase().includes(q)) ||
+        (s.order?.orderCode && s.order.orderCode.toLowerCase().includes(q)) ||
+        (s.order?.customerName && s.order.customerName.toLowerCase().includes(q)) ||
+        (s.order?.customerPhone && s.order.customerPhone.includes(q));
       const matchesStatus = serialStatusFilter === 'ALL' || s.status === serialStatusFilter;
       return matchesSearch && matchesStatus;
     });
@@ -766,6 +888,27 @@ export default function AdminDashboardPage() {
       showToast('Lỗi kết nối máy chủ.', 'error');
     } finally {
       setIsSubmittingSn(false);
+    }
+  };
+
+  const handleUpdateSerialStatus = async (serialId: string, newStatus: string) => {
+    try {
+      const res = await fetch('/api/admin/serials', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: serialId, status: newStatus }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSerials(prev => prev.map(s => s.id === serialId ? { ...s, ...(data.serial || {}), status: newStatus } : s));
+        const statusLabel = newStatus === 'AVAILABLE' ? 'Trong Kho' : newStatus === 'SOLD' ? 'Đã Xuất Bán' : 'Bảo Hành';
+        showToast(`Đã chuyển trạng thái SN sang: ${statusLabel}`, 'success');
+        fetchAllData(false);
+      } else {
+        showToast(data.message || 'Lỗi khi cập nhật trạng thái Serial.', 'error');
+      }
+    } catch (e) {
+      showToast('Lỗi kết nối máy chủ khi cập nhật Serial.', 'error');
     }
   };
 
@@ -1866,51 +2009,114 @@ export default function AdminDashboardPage() {
                           </td>
                         </tr>
                       ) : (
-                        filteredSerials.map((s) => (
-                        <tr key={s.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                          <td className="py-3.5 px-4 font-mono font-black text-slate-900 dark:text-white whitespace-nowrap">
-                            <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                              {s.serialNumber}
-                            </span>
-                          </td>
-                          <td className="py-3.5 px-3 min-w-[200px]">
-                            <span className="font-bold text-slate-900 dark:text-white line-clamp-1">
-                              {s.product?.name || 'Linh kiện DRX'}
-                            </span>
-                            <span className="text-[10px] text-slate-400">
-                              Hãng: {s.product?.brand || 'DRX'}
-                            </span>
-                          </td>
-                          <td className="py-3.5 px-3 font-extrabold text-[#0284c7] text-[10px] uppercase whitespace-nowrap">
-                            {s.product?.category || 'PART'}
-                          </td>
-                          <td className="py-3.5 px-3 text-center whitespace-nowrap">
-                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase border ${
-                              s.status === 'AVAILABLE' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800' :
-                              s.status === 'SOLD' ? 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700' :
-                              'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800'
-                            }`}>
-                              {s.status === 'AVAILABLE' ? 'Trong Kho' : s.status === 'SOLD' ? 'Đã Xuất Bán' : 'Bảo Hành'}
-                            </span>
-                          </td>
-                          <td className="py-3.5 px-3 text-slate-500 whitespace-nowrap font-mono text-[11px]">
-                            {new Date(s.createdAt).toLocaleDateString('vi-VN')}
-                          </td>
-                          <td className="py-3.5 px-3 whitespace-nowrap font-mono text-[11px] text-[#0284c7]">
-                            {s.order ? formatOrderDisplayCode(s.order) : '-'}
-                          </td>
-                          <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                            <button
-                              onClick={() => handleDeleteSerial(s.id)}
-                              className="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 transition-all cursor-pointer"
-                              title="Xóa Serial"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))
-                    )}
+                        filteredSerials.map((s) => {
+                          const prod = s.product;
+                          const ord = s.order;
+                          const sku = prod?.modelCode || '';
+
+                          return (
+                            <tr key={s.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                              {/* SERIAL NUMBER & SKU */}
+                              <td className="py-3.5 px-4 font-mono whitespace-nowrap">
+                                <div className="flex flex-col gap-1">
+                                  <span className="font-black text-slate-900 dark:text-white px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 inline-block text-xs">
+                                    {s.serialNumber}
+                                  </span>
+                                  {sku && (
+                                    <span className="text-[10px] font-mono text-slate-400">
+                                      SKU: <span className="text-slate-600 dark:text-slate-300 font-bold">{sku}</span>
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+
+                              {/* PRODUCT INFO */}
+                              <td className="py-3.5 px-3 min-w-[220px]">
+                                <div className="flex items-center gap-2.5">
+                                  {prod?.coverImage ? (
+                                    <img
+                                      src={prod.coverImage}
+                                      alt={prod.name}
+                                      className="w-9 h-9 rounded-lg object-contain bg-slate-100 dark:bg-slate-800 p-0.5 border border-slate-200 dark:border-slate-700 shrink-0"
+                                    />
+                                  ) : (
+                                    <div className="w-9 h-9 rounded-lg bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] flex items-center justify-center shrink-0 border border-sky-200 dark:border-sky-800">
+                                      <Boxes className="w-4 h-4" />
+                                    </div>
+                                  )}
+                                  <div className="min-w-0">
+                                    <span className="font-bold text-slate-900 dark:text-white line-clamp-1 block text-xs" title={prod?.name}>
+                                      {prod?.name || 'Linh kiện DRX'}
+                                    </span>
+                                    <span className="text-[10px] text-slate-400 font-medium">
+                                      Hãng: {prod?.brand || 'DRX'} • BH {prod?.warrantyMonths || 36}T
+                                    </span>
+                                  </div>
+                                </div>
+                              </td>
+
+                              {/* CATEGORY */}
+                              <td className="py-3.5 px-3 font-extrabold text-[#0284c7] text-[10px] uppercase whitespace-nowrap">
+                                <span className="px-2 py-0.5 rounded bg-sky-50 dark:bg-sky-950/60 border border-sky-200 dark:border-sky-800">
+                                  {prod?.category || 'PART'}
+                                </span>
+                              </td>
+
+                              {/* STATUS QUICK TOGGLE */}
+                              <td className="py-3.5 px-3 text-center whitespace-nowrap">
+                                <SerialStatusButton
+                                  serial={s}
+                                  onUpdateStatus={handleUpdateSerialStatus}
+                                />
+                              </td>
+
+                              {/* IMPORT / SOLD DATE */}
+                              <td className="py-3.5 px-3 text-slate-500 whitespace-nowrap font-mono text-[11px]">
+                                <div>{new Date(s.createdAt).toLocaleDateString('vi-VN')}</div>
+                                {s.soldDate && (
+                                  <div className="text-[10px] text-slate-400">Xuất: {new Date(s.soldDate).toLocaleDateString('vi-VN')}</div>
+                                )}
+                              </td>
+
+                              {/* LINKED ORDER */}
+                              <td className="py-3.5 px-3 whitespace-nowrap text-xs">
+                                {ord ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const fullOrder = orders.find(o => o.id === ord.id) || ord;
+                                      setViewingOrder(fullOrder);
+                                    }}
+                                    className="text-left group cursor-pointer"
+                                  >
+                                    <span className="font-mono font-bold text-[#0284c7] group-hover:underline block">
+                                      {formatOrderDisplayCode(ord)}
+                                    </span>
+                                    {(ord.customerName || ord.customerPhone) && (
+                                      <span className="text-[10px] text-slate-400 block truncate max-w-[140px]">
+                                        {ord.customerName || ord.customerPhone}
+                                      </span>
+                                    )}
+                                  </button>
+                                ) : (
+                                  <span className="text-slate-400 font-mono">-</span>
+                                )}
+                              </td>
+
+                              {/* ACTIONS */}
+                              <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                                <button
+                                  onClick={() => handleDeleteSerial(s.id)}
+                                  className="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 transition-all cursor-pointer"
+                                  title="Xóa Serial"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
                   </tbody>
                   </table>
                 </div>
@@ -2341,15 +2547,86 @@ export default function AdminDashboardPage() {
                 />
               </div>
 
+              {/* PRODUCT PREVIEW CARD */}
+              {(() => {
+                const selectedProd = products.find(p => p.id === selectedProductIdForSn);
+                if (!selectedProd) return null;
+                return (
+                  <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 flex items-center gap-3">
+                    {selectedProd.coverImage ? (
+                      <img src={selectedProd.coverImage} alt={selectedProd.name} className="w-10 h-10 rounded-xl object-contain bg-white dark:bg-slate-900 p-0.5 border border-slate-200 dark:border-slate-700 shrink-0" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] flex items-center justify-center shrink-0 border border-sky-200 dark:border-sky-800">
+                        <Boxes className="w-5 h-5" />
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-[#0284c7] text-white">
+                          {selectedProd.category}
+                        </span>
+                        {selectedProd.modelCode && (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+                            SKU: {selectedProd.modelCode}
+                          </span>
+                        )}
+                      </div>
+                      <p className="font-bold text-slate-900 dark:text-white truncate text-xs mt-0.5">
+                        {selectedProd.name}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })()}
+
               <div className="space-y-1.5">
-                <label className="text-slate-700 dark:text-slate-300 font-bold uppercase text-[10.5px] flex items-center justify-between">
-                  <span>Danh Sách Mã Serial (SN):</span>
-                  <span className="text-[10px] text-slate-400 font-normal">Mỗi mã một dòng</span>
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-slate-700 dark:text-slate-300 font-bold uppercase text-[10.5px]">
+                    Danh Sách Mã Serial (SN):
+                  </label>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const selectedProd = products.find(p => p.id === selectedProductIdForSn);
+                        const rawPrefix = selectedProd?.modelCode || `${selectedProd?.brand || 'DRX'}-${selectedProd?.category || 'PART'}`;
+                        const cleanPrefix = rawPrefix.toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 16);
+                        const rand = Math.floor(100000 + Math.random() * 900000);
+                        const newSn = `${cleanPrefix}-${rand}`;
+                        setInputSerialsText(prev => prev.trim() ? `${prev.trim()}\n${newSn}` : newSn);
+                      }}
+                      className="px-2 py-0.5 rounded-lg bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 text-[#0284c7] text-[10px] font-bold border border-sky-200 dark:border-sky-800 transition-colors cursor-pointer"
+                    >
+                      + 1 Mã Mẫu
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const selectedProd = products.find(p => p.id === selectedProductIdForSn);
+                        const rawPrefix = selectedProd?.modelCode || `${selectedProd?.brand || 'DRX'}-${selectedProd?.category || 'PART'}`;
+                        const cleanPrefix = rawPrefix.toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 16);
+                        const list = Array.from({ length: 5 }, () => `${cleanPrefix}-${Math.floor(100000 + Math.random() * 900000)}`).join('\n');
+                        setInputSerialsText(prev => prev.trim() ? `${prev.trim()}\n${list}` : list);
+                      }}
+                      className="px-2 py-0.5 rounded-lg bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 text-[#0284c7] text-[10px] font-bold border border-sky-200 dark:border-sky-800 transition-colors cursor-pointer"
+                    >
+                      + 5 Mã
+                    </button>
+                    {inputSerialsText && (
+                      <button
+                        type="button"
+                        onClick={() => setInputSerialsText('')}
+                        className="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-500 text-[10px] font-bold transition-colors cursor-pointer"
+                      >
+                        Xóa
+                      </button>
+                    )}
+                  </div>
+                </div>
                 <textarea
                   rows={4}
                   required
-                  placeholder={"SN-RTX4060-ASUS-001\nSN-RTX4060-ASUS-002\nSN-RTX4060-ASUS-003"}
+                  placeholder={"TUF-RTX4060-O8G-GAMING-629377\nTUF-RTX4060-O8G-GAMING-833785\n(Hoặc click '+ 5 Mã' phía trên)"}
                   value={inputSerialsText}
                   onChange={(e) => setInputSerialsText(e.target.value)}
                   className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:border-[#0284c7]"

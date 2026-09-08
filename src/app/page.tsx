@@ -432,9 +432,9 @@ export default function Home() {
                     products={liveProducts.filter(isCaseCoolingPsuProduct)}
                     subTabs={[
                       { id: 'ALL', label: 'Tất cả Case Tản' },
-                      { id: 'CASE', label: 'Case PC', filterFn: p => matchCat(p, 'CASE') || p.name.toLowerCase().includes('case') },
-                      { id: 'COOLING', label: 'Tản nhiệt', filterFn: p => matchCat(p, 'COOLING') || p.name.toLowerCase().includes('tản nhiệt') },
-                      { id: 'PSU', label: 'Bộ Nguồn PSU', filterFn: p => matchCat(p, 'PSU') || p.name.toLowerCase().includes('nguồn') },
+                      { id: 'CASE', label: 'Case PC', filterFn: p => matchCat(p, 'CASE') || p.name.toLowerCase().includes('case') || p.name.toLowerCase().includes('vỏ') },
+                      { id: 'COOLING', label: 'Tản nhiệt', filterFn: p => matchCat(p, 'COOLING') || p.name.toLowerCase().includes('tản nhiệt') || p.name.toLowerCase().includes('cooler') || p.name.toLowerCase().includes('liquid') },
+                      { id: 'PSU', label: 'Bộ Nguồn PSU', filterFn: p => matchCat(p, 'PSU') || (p.name.toLowerCase().includes('nguồn') && !p.name.toLowerCase().includes('mainboard')) || p.name.toLowerCase().includes('80 plus') },
                     ]}
                   />
 
@@ -449,10 +449,42 @@ export default function Home() {
                     products={liveProducts.filter(isGearProduct)}
                     subTabs={[
                       { id: 'ALL', label: 'Bàn phím & Gear' },
-                      { id: 'KEYBOARD', label: 'Bàn phím cơ', filterFn: p => p.name.toLowerCase().includes('bàn phím') || p.name.toLowerCase().includes('akko') || p.name.toLowerCase().includes('keychron') },
-                      { id: 'MOUSE', label: 'Chuột Gaming', filterFn: p => p.name.toLowerCase().includes('chuột') || p.name.toLowerCase().includes('razer') || p.name.toLowerCase().includes('logitech') },
-                      { id: 'HEADSET', label: 'Tai nghe', filterFn: p => p.name.toLowerCase().includes('tai nghe') || p.name.toLowerCase().includes('hyperx') || p.name.toLowerCase().includes('hs80') },
-                      { id: 'CHAIR', label: 'Bàn & Ghế', filterFn: p => p.name.toLowerCase().includes('ghế') || p.name.toLowerCase().includes('sihoo') },
+                      { 
+                        id: 'KEYBOARD', 
+                        label: 'Bàn phím cơ', 
+                        filterFn: p => {
+                          const name = p.name.toLowerCase();
+                          if (name.includes('chuột') || name.includes('mouse') || name.includes('tai nghe') || name.includes('headset') || name.includes('ghế')) return false;
+                          return matchCat(p, 'KEYBOARD') || name.includes('bàn phím') || name.includes('keyboard') || name.includes('akko') || name.includes('dareu') || name.includes('fl-esports');
+                        } 
+                      },
+                      { 
+                        id: 'MOUSE', 
+                        label: 'Chuột Gaming', 
+                        filterFn: p => {
+                          const name = p.name.toLowerCase();
+                          if (name.includes('tai nghe') || name.includes('headset') || name.includes('headphone') || name.includes('bàn phím') || name.includes('keyboard') || name.includes('ghế')) return false;
+                          return name.includes('chuột') || name.includes('mouse') || name.includes('superlight') || name.includes('deathadder') || name.includes('g102') || name.includes('gladius');
+                        } 
+                      },
+                      { 
+                        id: 'HEADSET', 
+                        label: 'Tai nghe', 
+                        filterFn: p => {
+                          const name = p.name.toLowerCase();
+                          if (name.includes('chuột') || name.includes('mouse') || name.includes('bàn phím') || name.includes('keyboard') || name.includes('ghế')) return false;
+                          return matchCat(p, 'HEADSET') || name.includes('tai nghe') || name.includes('headphone') || name.includes('headset') || name.includes('cloud') || name.includes('g435') || name.includes('hs80') || name.includes('blackshark') || name.includes('arctis');
+                        } 
+                      },
+                      { 
+                        id: 'CHAIR', 
+                        label: 'Bàn & Ghế', 
+                        filterFn: p => {
+                          const name = p.name.toLowerCase();
+                          if (name.includes('chuột') || name.includes('mouse') || name.includes('bàn phím') || name.includes('keyboard') || name.includes('tai nghe') || name.includes('headset')) return false;
+                          return matchCat(p, 'GEAR') || name.includes('ghế') || name.includes('bàn') || name.includes('tay cầm') || name.includes('stream deck') || name.includes('giá treo') || name.includes('microphone') || name.includes('t3 rush') || name.includes('throne');
+                        } 
+                      },
                     ]}
                   />
 
@@ -467,15 +499,36 @@ export default function Home() {
                     products={liveProducts.filter(isMonitorProduct)}
                     subTabs={[
                       { id: 'ALL', label: 'Màn hình khuyến mãi' },
-                      { id: 'GAMING', label: 'Màn hình gaming', filterFn: p => p.name.includes('144Hz') || p.name.includes('180Hz') || p.name.includes('240Hz') || p.name.includes('360Hz') || p.name.toLowerCase().includes('rog') || p.name.toLowerCase().includes('odyssey') || p.name.toLowerCase().includes('ultragear') },
-                      { id: 'OFFICE', label: 'Màn hình văn phòng', filterFn: p => (p.price && p.price < 7000000) || p.name.toLowerCase().includes('odyssey g4') },
-                      { id: 'DESIGN', label: 'Màn hình đồ họa', filterFn: p => p.name.toLowerCase().includes('ultrasharp') || p.name.toLowerCase().includes('ips black') || p.name.toLowerCase().includes('2k') || p.name.toLowerCase().includes('dell') },
+                      { 
+                        id: 'GAMING', 
+                        label: 'Màn hình gaming', 
+                        filterFn: p => {
+                          const name = p.name.toLowerCase();
+                          return name.includes('gaming') || name.includes('144hz') || name.includes('165hz') || name.includes('180hz') || name.includes('240hz') || name.includes('360hz') || name.includes('tuf') || name.includes('rog') || name.includes('odyssey') || name.includes('ultragear') || name.includes('24g2sp') || name.includes('vx2428') || name.includes('vg249') || name.includes('vg279');
+                        } 
+                      },
+                      { 
+                        id: 'OFFICE', 
+                        label: 'Màn hình văn phòng', 
+                        filterFn: p => {
+                          const name = p.name.toLowerCase();
+                          return name.includes('văn phòng') || name.includes('fhd') || (p.price && p.price <= 4000000) || name.includes('viewsonic') || name.includes('aoc') || name.includes('24g2sp');
+                        } 
+                      },
+                      { 
+                        id: 'DESIGN', 
+                        label: 'Màn hình đồ họa', 
+                        filterFn: p => {
+                          const name = p.name.toLowerCase();
+                          return name.includes('đồ họa') || name.includes('ultrasharp') || name.includes('proart') || name.includes('ips black') || name.includes('2k') || name.includes('4k') || name.includes('dell') || name.includes('u2724d') || name.includes('27gr75q') || (p.price && p.price >= 6000000);
+                        } 
+                      },
                     ]}
                   />
 
-                  {/* SHOWCASE 4: LAPTOP & LAPTOP GAMING */}
+                  {/* SHOWCASE 4: LAPTOP (HÌNH 4) */}
                   <CategoryShowcaseBlock
-                    title="LAPTOP & MOBILE"
+                    title="LAPTOP"
                     subtitle="MỎNG NHẸ MƯỢT MÀ"
                     badgeText="HÀNG BÁN CHẠY"
                     bannerImage="https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=600&q=80"
@@ -484,9 +537,16 @@ export default function Home() {
                     products={liveProducts.filter(isLaptopProduct)}
                     subTabs={[
                       { id: 'ALL', label: 'Laptop khuyến mãi' },
-                      { id: 'GAMING', label: 'Laptop gaming', filterFn: p => matchCat(p, 'LAPTOP_GAMING') || p.name.toLowerCase().includes('gaming') || p.name.toLowerCase().includes('rog') || p.name.toLowerCase().includes('loq') || p.name.toLowerCase().includes('legion') },
-                      { id: 'OFFICE', label: 'Laptop văn phòng', filterFn: p => matchCat(p, 'LAPTOP') || p.name.toLowerCase().includes('vivobook') },
-                      { id: 'STAND', label: 'Phụ kiện Laptop', filterFn: p => p.ramType !== undefined },
+                      { 
+                        id: 'GAMING', 
+                        label: 'Laptop gaming', 
+                        filterFn: p => matchCat(p, 'LAPTOP_GAMING') || p.name.toLowerCase().includes('gaming') || p.name.toLowerCase().includes('nitro') || p.name.toLowerCase().includes('legion') || p.name.toLowerCase().includes('rog') || p.name.toLowerCase().includes('tuf') || p.name.toLowerCase().includes('katana') || p.name.toLowerCase().includes('dell g15') || p.name.toLowerCase().includes('loq') 
+                      },
+                      { 
+                        id: 'OFFICE', 
+                        label: 'Laptop văn phòng', 
+                        filterFn: p => matchCat(p, 'LAPTOP') || p.name.toLowerCase().includes('macbook') || p.name.toLowerCase().includes('vivobook') || p.name.toLowerCase().includes('pavilion') || p.name.toLowerCase().includes('thinkpad') || p.name.toLowerCase().includes('swift') || p.name.toLowerCase().includes('inspiron') || p.name.toLowerCase().includes('zenbook') 
+                      },
                     ]}
                   />
 
@@ -501,11 +561,11 @@ export default function Home() {
                     products={liveProducts.filter(isCoreProduct)}
                     subTabs={[
                       { id: 'ALL', label: 'Tất cả Linh Kiện' },
-                      { id: 'CPU', label: 'Vi xử lý CPU', filterFn: p => matchCat(p, 'CPU') },
-                      { id: 'VGA', label: 'Card đồ họa VGA', filterFn: p => matchCat(p, 'VGA') },
-                      { id: 'MAINBOARD', label: 'Bo mạch Main', filterFn: p => matchCat(p, 'MAINBOARD') },
-                      { id: 'RAM', label: 'Bộ nhớ RAM', filterFn: p => matchCat(p, 'RAM') },
-                      { id: 'STORAGE', label: 'Ổ cứng SSD', filterFn: p => matchCat(p, 'STORAGE') },
+                      { id: 'CPU', label: 'Vi xử lý CPU', filterFn: p => matchCat(p, 'CPU') || p.name.toLowerCase().includes('cpu') || p.name.toLowerCase().includes('core i') || p.name.toLowerCase().includes('ryzen') },
+                      { id: 'VGA', label: 'Card đồ họa VGA', filterFn: p => matchCat(p, 'VGA') || p.name.toLowerCase().includes('card màn hình') || p.name.toLowerCase().includes('vga') || p.name.toLowerCase().includes('rtx') || p.name.toLowerCase().includes('geforce') },
+                      { id: 'MAINBOARD', label: 'Bo mạch Main', filterFn: p => matchCat(p, 'MAINBOARD') || p.name.toLowerCase().includes('bo mạch') || p.name.toLowerCase().includes('mainboard') || p.name.toLowerCase().includes('b760') || p.name.toLowerCase().includes('z790') || p.name.toLowerCase().includes('b650') || p.name.toLowerCase().includes('x670') },
+                      { id: 'RAM', label: 'Bộ nhớ RAM', filterFn: p => matchCat(p, 'RAM') || p.name.toLowerCase().includes('ram ') || p.name.toLowerCase().includes('ddr4') || p.name.toLowerCase().includes('ddr5') || p.name.toLowerCase().includes('trident') || p.name.toLowerCase().includes('vengeance') || p.name.toLowerCase().includes('fury') },
+                      { id: 'STORAGE', label: 'Ổ cứng SSD', filterFn: p => matchCat(p, 'STORAGE') || p.name.toLowerCase().includes('ssd') || p.name.toLowerCase().includes('hdd') || p.name.toLowerCase().includes('ổ cứng') || p.name.toLowerCase().includes('nvme') || p.name.toLowerCase().includes('sata') },
                     ]}
                   />
                 </>

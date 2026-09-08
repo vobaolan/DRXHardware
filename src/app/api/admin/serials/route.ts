@@ -11,7 +11,7 @@ export async function GET(request: Request) {
     try {
       const { data, error } = await supabase
         .from('ProductSerial')
-        .select('*, product:Product(id, name, category, brand, coverImage, price, warrantyMonths), order:Order(id, orderCode, customerName, customerPhone)')
+        .select('*, product:Product(id, name, category, brand, coverImage, price, warrantyMonths, modelCode), order:Order(id, orderCode, customerName, customerPhone)')
         .order('createdAt', { ascending: false });
 
       if (!error && data && Array.isArray(data)) {
@@ -83,7 +83,7 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const body = await request.json();
-    const { id, status, warrantyEnd, soldDate } = body;
+    const { id, status, warrantyEnd, soldDate, orderId } = body;
 
     if (!id || !status) {
       return NextResponse.json({ message: 'Thiếu ID serial hoặc trạng thái mới' }, { status: 400 });
@@ -91,15 +91,23 @@ export async function PATCH(request: Request) {
 
     const updatePayload: any = {
       status,
-      ...(warrantyEnd ? { warrantyEnd: new Date(warrantyEnd).toISOString() } : {}),
-      ...(soldDate ? { soldDate: new Date(soldDate).toISOString() } : {}),
+      ...(warrantyEnd !== undefined ? { warrantyEnd: warrantyEnd ? new Date(warrantyEnd).toISOString() : null } : {}),
+      ...(soldDate !== undefined ? { soldDate: soldDate ? new Date(soldDate).toISOString() : null } : {}),
+      ...(orderId !== undefined ? { orderId: orderId || null } : {}),
     };
+
+    if (status === 'SOLD' && !soldDate && updatePayload.soldDate === undefined) {
+      updatePayload.soldDate = new Date().toISOString();
+    } else if (status === 'AVAILABLE') {
+      updatePayload.orderId = null;
+      updatePayload.soldDate = null;
+    }
 
     const { data, error } = await supabase
       .from('ProductSerial')
       .update(updatePayload)
       .eq('id', id)
-      .select()
+      .select('*, product:Product(id, name, category, brand, coverImage, price, warrantyMonths, modelCode), order:Order(id, orderCode, customerName, customerPhone)')
       .single();
 
     if (error) {
