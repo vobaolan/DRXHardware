@@ -29,105 +29,7 @@ export async function POST(request: Request) {
 
     const cleanEmail = email.trim().toLowerCase();
 
-    // Master Admin fallback authentication
-    if (
-      (cleanEmail === 'admin@drx.vn' || cleanEmail === 'admin@drxhardware.vn' || cleanEmail === 'admin@odsstore.vn') &&
-      (password === '01699224729' || password === 'admin' || password.length >= 3)
-    ) {
-      let adminId = '5f72a5d7-fbb6-41dc-ad43-b4f77978d67b';
-      let adminBalance = 0;
-      let adminPhone = '01699224729';
-      let adminAddress = '';
-      try {
-        const { data } = await supabase.from('User').select('id, balance, phone, address').eq('email', cleanEmail).maybeSingle();
-        if (data) {
-          if (data.id) adminId = data.id;
-          if (data.balance !== undefined && data.balance !== null) adminBalance = Number(data.balance);
-          if (data.phone) adminPhone = data.phone;
-          if (data.address) adminAddress = data.address;
-        }
-      } catch (e) {}
-
-      const adminUser = {
-        id: adminId,
-        name: 'DRX Admin',
-        email: 'admin@drx.vn',
-        phone: adminPhone,
-        address: adminAddress,
-        balance: adminBalance,
-        role: 'ADMIN',
-      };
-
-      const token = signJWT({
-        sub: adminUser.id,
-        email: adminUser.email,
-        name: adminUser.name,
-        role: adminUser.role,
-      });
-
-      const response = NextResponse.json(
-        {
-          message: 'Đăng nhập Admin thành công!',
-          user: adminUser,
-          token,
-        },
-        { status: 200 }
-      );
-
-      setAuthCookie(response, token);
-      return response;
-    }
-
-    // Master Staff fallback authentication
-    if (
-      cleanEmail === 'staff@drx.vn' &&
-      (password === '01699224729' || password === 'staff')
-    ) {
-      let staffId = 'staff-id-drx';
-      let staffBalance = 0;
-      let staffPhone = '01699224729';
-      let staffAddress = '';
-      try {
-        const { data } = await supabase.from('User').select('id, balance, phone, address').eq('email', cleanEmail).maybeSingle();
-        if (data) {
-          if (data.id) staffId = data.id;
-          if (data.balance !== undefined && data.balance !== null) staffBalance = Number(data.balance);
-          if (data.phone) staffPhone = data.phone;
-          if (data.address) staffAddress = data.address;
-        }
-      } catch (e) {}
-
-      const staffUser = {
-        id: staffId,
-        name: 'Nhân Viên DRX',
-        email: 'staff@drx.vn',
-        phone: staffPhone,
-        address: staffAddress,
-        balance: staffBalance,
-        role: 'STAFF',
-      };
-
-      const token = signJWT({
-        sub: staffUser.id,
-        email: staffUser.email,
-        name: staffUser.name,
-        role: staffUser.role,
-      });
-
-      const response = NextResponse.json(
-        {
-          message: 'Đăng nhập Nhân viên Staff thành công!',
-          user: staffUser,
-          token,
-        },
-        { status: 200 }
-      );
-
-      setAuthCookie(response, token);
-      return response;
-    }
-
-    // Direct check in Supabase Cloud Database (Fast Direct REST)
+    // 1. Direct query in Supabase Cloud Database (Primary source of truth)
     let user: any = null;
     try {
       const { data: supabaseUsers } = await supabase
@@ -138,36 +40,58 @@ export async function POST(request: Request) {
       if (supabaseUsers && supabaseUsers.length > 0) {
         user = supabaseUsers[0];
       }
-    } catch (e) {}
-
-    if (!user) {
-      return NextResponse.json(
-        { message: 'Tài khoản hoặc mật khẩu không chính xác!' },
-        { status: 404 }
-      );
+    } catch (e) {
+      console.warn('Supabase login lookup warning:', e);
     }
 
-    if (!user.password) {
-      return NextResponse.json(
-        { message: 'Tài khoản này được đăng ký bằng Google OAuth. Vui lòng chọn "Đăng nhập bằng Google"!' },
-        { status: 400 }
-      );
-    }
+    // 2. If user exists in Supabase, verify password
+    if (user) {
+      let isPasswordValid = false;
 
-    let isPasswordValid = false;
-    try {
-      isPasswordValid = bcrypt.compareSync(password, user.password);
-    } catch (e) {}
+      if (user.password) {
+        try {
+          isPasswordValid = bcrypt.compareSync(password, user.password);
+        } catch (e) {}
 
-    if (!isPasswordValid && user.password === password) {
-      isPasswordValid = true;
-    }
+        if (!isPasswordValid && user.password === password) {
+          isPasswordValid = true;
+        }
+      }
 
-    if (isPasswordValid) {
+      // Master recovery fallback for admin & staff accounts
+      if (!isPasswordValid) {
+        if (
+          (cleanEmail === 'admin@drx.vn' || cleanEmail === 'admin@drxhardware.vn' || cleanEmail === 'admin@odsstore.vn') &&
+          (password === '01699224729' || password === 'admin')
+        ) {
+          isPasswordValid = true;
+        } else if (
+          cleanEmail === 'staff@drx.vn' &&
+          (password === '01699224729' || password === 'staff')
+        ) {
+          isPasswordValid = true;
+        }
+      }
+
+      if (!isPasswordValid) {
+        if (!user.password) {
+          return NextResponse.json(
+            { message: 'Tài khoản này được đăng ký bằng Google OAuth. Vui lòng chọn "Đăng nhập bằng Google"!' },
+            { status: 400 }
+          );
+        }
+        return NextResponse.json(
+          { message: 'Mật khẩu không chính xác!' },
+          { status: 401 }
+        );
+      }
+
       const authUser = {
         id: user.id,
         name: user.name,
         email: user.email,
+        phone: user.phone || '',
+        address: user.address || '',
         balance: Number(user.balance || 0),
         role: user.role,
       };
@@ -192,12 +116,81 @@ export async function POST(request: Request) {
 
       setAuthCookie(response, token);
       return response;
-    } else {
-      return NextResponse.json(
-        { message: 'Mật khẩu không chính xác!' },
-        { status: 401 }
-      );
     }
+
+    // 3. Fallback for admin / staff if record not yet populated in Supabase
+    if (
+      (cleanEmail === 'admin@drx.vn' || cleanEmail === 'admin@drxhardware.vn' || cleanEmail === 'admin@odsstore.vn') &&
+      (password === '01699224729' || password === 'admin')
+    ) {
+      const adminUser = {
+        id: '5f72a5d7-fbb6-41dc-ad43-b4f77978d67b',
+        name: 'DRX Admin',
+        email: 'admin@drx.vn',
+        phone: '01699224729',
+        address: '',
+        balance: 10000000,
+        role: 'ADMIN',
+      };
+
+      const token = signJWT({
+        sub: adminUser.id,
+        email: adminUser.email,
+        name: adminUser.name,
+        role: adminUser.role,
+      });
+
+      const response = NextResponse.json(
+        {
+          message: 'Đăng nhập Admin thành công!',
+          user: adminUser,
+          token,
+        },
+        { status: 200 }
+      );
+
+      setAuthCookie(response, token);
+      return response;
+    }
+
+    if (
+      cleanEmail === 'staff@drx.vn' &&
+      (password === '01699224729' || password === 'staff')
+    ) {
+      const staffUser = {
+        id: '54ab34be-b406-4285-b111-d1f625be4561',
+        name: 'Nhân Viên DRX',
+        email: 'staff@drx.vn',
+        phone: '01699224729',
+        address: '',
+        balance: 0,
+        role: 'STAFF',
+      };
+
+      const token = signJWT({
+        sub: staffUser.id,
+        email: staffUser.email,
+        name: staffUser.name,
+        role: staffUser.role,
+      });
+
+      const response = NextResponse.json(
+        {
+          message: 'Đăng nhập Nhân viên Staff thành công!',
+          user: staffUser,
+          token,
+        },
+        { status: 200 }
+      );
+
+      setAuthCookie(response, token);
+      return response;
+    }
+
+    return NextResponse.json(
+      { message: 'Tài khoản hoặc mật khẩu không chính xác!' },
+      { status: 404 }
+    );
   } catch (error: any) {
     return NextResponse.json(
       { message: 'Lỗi server: ' + error.message },
