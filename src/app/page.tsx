@@ -384,8 +384,14 @@ export default function Home() {
                 return targetCats.some(tc => pCats.includes(tc.toUpperCase()));
               };
 
-              const isMonitorProduct = (p: any) => {
+              const isPrebuiltPC = (p: any) => {
                 if (!p) return false;
+                const name = String(p.name || '').toLowerCase();
+                return matchCat(p, 'PREBUILT_PC') || p.isPrebuilt === true || name.startsWith('pc ') || name.startsWith('pc drx') || name.startsWith('pc gaming');
+              };
+
+              const isMonitorProduct = (p: any) => {
+                if (!p || isPrebuiltPC(p)) return false;
                 const name = String(p.name || '').toLowerCase();
                 const isVgaOrCard = name.includes('card màn hình') || name.includes('vga') || name.includes('geforce') || name.includes('radeon') || matchCat(p, 'VGA');
                 const isCoolingOrCase = matchCat(p, 'COOLING', 'CASE', 'PSU') || name.includes('tản nhiệt') || name.includes('vỏ case');
@@ -394,28 +400,27 @@ export default function Home() {
               };
 
               const isGearProduct = (p: any) => {
-                if (!p) return false;
+                if (!p || isPrebuiltPC(p) || isMonitorProduct(p)) return false;
                 const name = String(p.name || '').toLowerCase();
-                if (isMonitorProduct(p) || matchCat(p, 'CPU', 'VGA', 'MAINBOARD', 'RAM', 'STORAGE', 'CASE', 'COOLING', 'PSU', 'LAPTOP', 'LAPTOP_GAMING')) return false;
+                if (matchCat(p, 'CPU', 'VGA', 'MAINBOARD', 'RAM', 'STORAGE', 'CASE', 'COOLING', 'PSU', 'LAPTOP', 'LAPTOP_GAMING')) return false;
                 return matchCat(p, 'GEAR', 'KEYBOARD', 'HEADSET') || name.includes('bàn phím') || name.includes('chuột') || name.includes('tai nghe') || name.includes('ghế');
               };
 
               const isCaseCoolingPsuProduct = (p: any) => {
-                if (!p) return false;
+                if (!p || isPrebuiltPC(p) || isMonitorProduct(p) || isGearProduct(p)) return false;
                 const name = String(p.name || '').toLowerCase();
-                if (isMonitorProduct(p) || isGearProduct(p)) return false;
-                return matchCat(p, 'CASE', 'COOLING', 'PSU') || name.includes('vỏ case') || name.includes('tản nhiệt') || (name.includes('nguồn') && !name.includes('mainboard'));
+                if (matchCat(p, 'CPU', 'VGA', 'MAINBOARD', 'RAM', 'STORAGE', 'LAPTOP', 'LAPTOP_GAMING')) return false;
+                return matchCat(p, 'CASE', 'COOLING', 'PSU') || name.includes('vỏ case') || name.includes('tản nhiệt') || name.includes('nguồn máy tính') || (name.includes('nguồn') && !name.includes('mainboard'));
               };
 
               const isLaptopProduct = (p: any) => {
-                if (!p) return false;
+                if (!p || isPrebuiltPC(p)) return false;
                 const name = String(p.name || '').toLowerCase();
                 return matchCat(p, 'LAPTOP', 'LAPTOP_GAMING') || name.includes('laptop') || name.includes('macbook') || name.includes('vivobook') || name.includes('legion') || name.includes('loq');
               };
 
               const isCoreProduct = (p: any) => {
-                if (!p) return false;
-                if (isMonitorProduct(p) || isGearProduct(p) || isCaseCoolingPsuProduct(p) || isLaptopProduct(p)) return false;
+                if (!p || isPrebuiltPC(p) || isMonitorProduct(p) || isGearProduct(p) || isCaseCoolingPsuProduct(p) || isLaptopProduct(p)) return false;
                 return matchCat(p, 'CPU', 'VGA', 'MAINBOARD', 'RAM', 'STORAGE');
               };
 
@@ -432,9 +437,9 @@ export default function Home() {
                     products={liveProducts.filter(isCaseCoolingPsuProduct)}
                     subTabs={[
                       { id: 'ALL', label: 'Tất cả Case Tản' },
-                      { id: 'CASE', label: 'Case PC', filterFn: p => matchCat(p, 'CASE') || p.name.toLowerCase().includes('case') || p.name.toLowerCase().includes('vỏ') },
-                      { id: 'COOLING', label: 'Tản nhiệt', filterFn: p => matchCat(p, 'COOLING') || p.name.toLowerCase().includes('tản nhiệt') || p.name.toLowerCase().includes('cooler') || p.name.toLowerCase().includes('liquid') },
-                      { id: 'PSU', label: 'Bộ Nguồn PSU', filterFn: p => matchCat(p, 'PSU') || (p.name.toLowerCase().includes('nguồn') && !p.name.toLowerCase().includes('mainboard')) || p.name.toLowerCase().includes('80 plus') },
+                      { id: 'CASE', label: 'Case PC', filterFn: p => !isPrebuiltPC(p) && (matchCat(p, 'CASE') || p.name.toLowerCase().includes('vỏ case') || (p.name.toLowerCase().includes('case') && !p.name.toLowerCase().includes('pc '))) },
+                      { id: 'COOLING', label: 'Tản nhiệt', filterFn: p => !isPrebuiltPC(p) && (matchCat(p, 'COOLING') || p.name.toLowerCase().includes('tản nhiệt') || p.name.toLowerCase().includes('cooler') || p.name.toLowerCase().includes('liquid') || p.name.toLowerCase().includes('kraken')) },
+                      { id: 'PSU', label: 'Bộ Nguồn PSU', filterFn: p => !isPrebuiltPC(p) && (matchCat(p, 'PSU') || p.name.toLowerCase().includes('nguồn máy tính') || (p.name.toLowerCase().includes('nguồn') && !p.name.toLowerCase().includes('mainboard') && !p.name.toLowerCase().includes('pc ')) || p.name.toLowerCase().includes('80 plus')) },
                     ]}
                   />
 
@@ -455,7 +460,7 @@ export default function Home() {
                         filterFn: p => {
                           const name = p.name.toLowerCase();
                           if (name.includes('chuột') || name.includes('mouse') || name.includes('tai nghe') || name.includes('headset') || name.includes('ghế')) return false;
-                          return matchCat(p, 'KEYBOARD') || name.includes('bàn phím') || name.includes('keyboard') || name.includes('akko') || name.includes('dareu') || name.includes('fl-esports');
+                          return matchCat(p, 'KEYBOARD') || name.includes('bàn phím') || name.includes('keyboard') || name.includes('akko') || name.includes('dareu') || name.includes('fl-esports') || name.includes('keychron') || name.includes('k70');
                         } 
                       },
                       { 
@@ -482,7 +487,7 @@ export default function Home() {
                         filterFn: p => {
                           const name = p.name.toLowerCase();
                           if (name.includes('chuột') || name.includes('mouse') || name.includes('bàn phím') || name.includes('keyboard') || name.includes('tai nghe') || name.includes('headset')) return false;
-                          return matchCat(p, 'GEAR') || name.includes('ghế') || name.includes('bàn') || name.includes('tay cầm') || name.includes('stream deck') || name.includes('giá treo') || name.includes('microphone') || name.includes('t3 rush') || name.includes('throne');
+                          return matchCat(p, 'GEAR') || name.includes('ghế') || name.includes('bàn di') || name.includes('lót chuột') || name.includes('tay cầm') || name.includes('stream deck') || name.includes('giá treo') || name.includes('microphone') || name.includes('quadcast') || name.includes('t3 rush') || name.includes('throne');
                         } 
                       },
                     ]}
@@ -512,7 +517,7 @@ export default function Home() {
                         label: 'Màn hình văn phòng', 
                         filterFn: p => {
                           const name = p.name.toLowerCase();
-                          return name.includes('văn phòng') || name.includes('fhd') || (p.price && p.price <= 4000000) || name.includes('viewsonic') || name.includes('aoc') || name.includes('24g2sp');
+                          return name.includes('văn phòng') || name.includes('p2422h') || name.includes('ls24c310') || name.includes('essential') || name.includes('s3') || (name.includes('dell') && !name.includes('gaming') && !name.includes('ultrasharp')) || (!name.includes('165hz') && !name.includes('180hz') && !name.includes('240hz') && !name.includes('tuf') && !name.includes('ultragear') && !name.includes('24g2sp') && !name.includes('vx2428'));
                         } 
                       },
                       { 
@@ -520,7 +525,7 @@ export default function Home() {
                         label: 'Màn hình đồ họa', 
                         filterFn: p => {
                           const name = p.name.toLowerCase();
-                          return name.includes('đồ họa') || name.includes('ultrasharp') || name.includes('proart') || name.includes('ips black') || name.includes('2k') || name.includes('4k') || name.includes('dell') || name.includes('u2724d') || name.includes('27gr75q') || (p.price && p.price >= 6000000);
+                          return name.includes('đồ họa') || name.includes('proart') || name.includes('ultrasharp') || name.includes('pa278cv') || name.includes('u2724d') || name.includes('ips black') || name.includes('2k') || name.includes('4k') || name.includes('srgb 125%') || name.includes('27gr75q');
                         } 
                       },
                     ]}

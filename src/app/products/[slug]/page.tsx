@@ -37,10 +37,18 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
 
   // Customer Reviews State
   const [userReviews, setUserReviews] = useState<any[]>([]);
+  const [isLoadingReviews, setIsLoadingReviews] = useState(false);
   const [newRating, setNewRating] = useState(5);
   const [newHoverRating, setNewHoverRating] = useState(0);
   const [newComment, setNewComment] = useState('');
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+
+  // Computed average rating from real Supabase reviews
+  const averageRating = useMemo(() => {
+    if (!userReviews || userReviews.length === 0) return '5.0';
+    const total = userReviews.reduce((sum, r) => sum + (Number(r.rating) || 5), 0);
+    return (total / userReviews.length).toFixed(1);
+  }, [userReviews]);
 
   // Load Current Logged In User from session
   useEffect(() => {
@@ -122,70 +130,72 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
     }
   }, [product]);
 
-  // Load reviews for product
+  // Load real reviews from Supabase API
   useEffect(() => {
     if (product && product.id) {
-      const defaultRevs = [
-        {
-          id: 'rev-1',
-          author: 'Võ Hoàng Phúc',
-          rating: 5,
-          date: '28/02/2026',
-          comment: 'Hàng chính hãng full seal tem nhà phân phối, nhiệt độ cực mát, đóng gói rất cẩn thận!',
-        },
-        {
-          id: 'rev-2',
-          author: 'Trần Bình Minh',
-          rating: 5,
-          date: '25/02/2026',
-          comment: 'Nhân viên tư vấn nhiệt tình, hỗ trợ lắp ráp và test trực tiếp tại cửa hàng cực nhanh.',
-        }
-      ];
-
-      try {
-        const stored = localStorage.getItem(`ods_reviews_${product.id}`);
-        if (stored) {
-          setUserReviews(JSON.parse(stored));
-        } else {
-          setUserReviews(defaultRevs);
-        }
-      } catch (e) {
-        setUserReviews(defaultRevs);
-      }
+      setIsLoadingReviews(true);
+      fetch(`/api/reviews?productId=${encodeURIComponent(product.id)}&t=${Date.now()}`, { cache: 'no-store' })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && Array.isArray(data.reviews)) {
+            setUserReviews(data.reviews);
+          } else {
+            setUserReviews([]);
+          }
+        })
+        .catch((err) => {
+          console.error('Lỗi khi tải đánh giá từ Supabase:', err);
+          setUserReviews([]);
+        })
+        .finally(() => setIsLoadingReviews(false));
     }
-  }, [product]);
+  }, [product?.id]);
 
-  // Handle Review Submission
-  const handleAddReview = (e: React.FormEvent) => {
+  // Handle Review Submission to Supabase API
+  const handleAddReview = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newComment.trim()) {
       showToast('Vui lòng nhập nội dung đánh giá của bạn!', 'error');
       return;
     }
+    if (!product?.id) {
+      showToast('Không tìm thấy thông tin sản phẩm!', 'error');
+      return;
+    }
+
     setIsSubmittingReview(true);
-
-    const authorName = currentUser?.name || 'Khách Hàng DRX';
-
-    const revObj = {
-      id: `rev-${Date.now()}`,
-      author: authorName,
-      rating: newRating,
-      date: new Date().toLocaleDateString('vi-VN'),
-      comment: newComment.trim(),
-    };
-
-    const updated = [revObj, ...userReviews];
-    setUserReviews(updated);
     try {
-      if (product?.id) {
-        localStorage.setItem(`ods_reviews_${product.id}`, JSON.stringify(updated));
-      }
-    } catch (e) {}
+      const authorName = currentUser?.name || 'Khách Hàng DRX';
+      const res = await fetch('/api/reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          productId: product.id,
+          rating: newRating,
+          comment: newComment.trim(),
+          userId: currentUser?.id || null,
+          authorName: authorName
+        })
+      });
 
-    setNewComment('');
-    setNewRating(5);
-    setIsSubmittingReview(false);
-    showToast('Cảm ơn bạn đã gửi đánh giá cho sản phẩm!', 'success');
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        throw new Error(data.error || 'Lỗi khi gửi đánh giá');
+      }
+
+      if (data.review) {
+        setUserReviews((prev) => [data.review, ...prev]);
+      }
+
+      setNewComment('');
+      setNewRating(5);
+      showToast('Cảm ơn bạn đã gửi đánh giá thực tế cho sản phẩm!', 'success');
+    } catch (err: any) {
+      console.error('Lỗi gửi đánh giá:', err);
+      showToast(err.message || 'Không thể gửi đánh giá, vui lòng thử lại sau!', 'error');
+    } finally {
+      setIsSubmittingReview(false);
+    }
   };
 
   // Gallery items formatting
@@ -237,12 +247,6 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
   const discountPercent = hasDiscount && originalPrice > 0
     ? Math.round(((originalPrice - activePrice) / originalPrice) * 100)
     : 0;
-
-  const averageRating = useMemo(() => {
-    if (userReviews.length === 0) return 5.0;
-    const total = userReviews.reduce((sum: number, r: any) => sum + (r.rating || 5), 0);
-    return Math.round((total / userReviews.length) * 10) / 10;
-  }, [userReviews]);
 
   const handleAddToCart = () => {
     if (!product) return;
@@ -606,35 +610,68 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
           </div>
 
           {/* 2. PRODUCT DESCRIPTION */}
-          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-xs space-y-4">
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-xs space-y-5">
             <h2 className="font-heading text-base sm:text-lg font-black uppercase tracking-wider text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center gap-2">
               <Gamepad2 className="h-5 w-5 text-[#0284c7]" />
               <span>MÔ TẢ CHI TIẾT SẢN PHẨM</span>
             </h2>
 
-            <div className="space-y-4 text-xs leading-relaxed text-slate-700 dark:text-slate-300 font-normal pt-2">
-              <p className="whitespace-pre-line leading-relaxed text-sm">{product.description}</p>
+            <div className="space-y-4 text-xs leading-relaxed text-slate-700 dark:text-slate-300 font-normal pt-1">
+              {product.description ? (
+                product.description.split('\n\n').map((paragraph: string, idx: number) => {
+                  const isSectionBox = paragraph.includes('ĐẶC ĐIỂM NỔI BẬT') || paragraph.includes('THÔNG SỐ TIÊU BIỂU') || paragraph.includes('ĐÁNH GIÁ TỔNG QUAN');
+                  if (isSectionBox) {
+                    const lines = paragraph.split('\n');
+                    const headingText = lines[0];
+                    const contentLines = lines.slice(1);
+                    return (
+                      <div key={idx} className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 space-y-2">
+                        <h4 className="font-heading text-xs font-black text-[#0284c7] dark:text-[#38bdf8] uppercase tracking-wider">
+                          {headingText}
+                        </h4>
+                        <div className="space-y-1.5 text-slate-600 dark:text-slate-300">
+                          {contentLines.map((line: string, lIdx: number) => (
+                            <p key={lIdx} className="leading-relaxed">
+                              {line}
+                            </p>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  }
+                  return (
+                    <p key={idx} className="leading-relaxed text-slate-700 dark:text-slate-300 text-sm">
+                      {paragraph}
+                    </p>
+                  );
+                })
+              ) : (
+                <p className="text-slate-400 italic">Đang cập nhật mô tả chi tiết cho sản phẩm này...</p>
+              )}
             </div>
           </div>
 
-          {/* 3. CUSTOMER REVIEWS */}
+          {/* 3. REAL CUSTOMER REVIEWS (SYNCHRONIZED WITH SUPABASE) */}
           <div id="reviews-section" className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-xs space-y-8">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 flex-wrap gap-2">
               <h2 className="font-heading text-base sm:text-lg font-black uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2">
                 <MessageSquare className="h-5 w-5 text-[#0284c7]" />
                 <span>ĐÁNH GIÁ TỪ KHÁCH HÀNG ({userReviews.length})</span>
               </h2>
 
-              <span className="text-xs font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 px-3 py-1 rounded-full">
-                ⭐ {userReviews.length > 0 ? `${averageRating} / 5.0` : '5.0 / 5.0'}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-extrabold text-amber-600 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 px-3 py-1 rounded-full flex items-center gap-1">
+                  <span>⭐ {averageRating} / 5.0</span>
+                  <span className="text-[10px] text-slate-400 font-normal">({userReviews.length} lượt đánh giá)</span>
+                </span>
+              </div>
             </div>
 
             {/* WRITE REVIEW FORM */}
             <form onSubmit={handleAddReview} className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 p-5 space-y-4">
               <h4 className="font-heading text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2">
                 <Send className="h-4 w-4 text-[#0284c7]" />
-                <span>Gửi Nhận Xét Của Bạn</span>
+                <span>Gửi Nhận Xét Của Bạn (Lưu trực tiếp vào Database Supabase)</span>
               </h4>
 
               {/* Star Rating Picker */}
@@ -669,7 +706,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
                   rows={3}
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
-                  placeholder="Chia sẻ trải nghiệm của bạn về sản phẩm, hiệu năng, đóng gói..."
+                  placeholder="Chia sẻ trải nghiệm thực tế của bạn về sản phẩm, hiệu năng, nhiệt độ, đóng gói..."
                   className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#0284c7]"
                 />
               </div>
@@ -677,43 +714,63 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
               <button
                 type="submit"
                 disabled={isSubmittingReview}
-                className="px-5 py-2.5 rounded-xl bg-[#0284c7] hover:bg-[#0369a1] text-white font-extrabold text-xs uppercase tracking-wider shadow-md transition-all cursor-pointer disabled:opacity-50"
+                className="px-5 py-2.5 rounded-xl bg-[#0284c7] hover:bg-[#0369a1] text-white font-extrabold text-xs uppercase tracking-wider shadow-md transition-all cursor-pointer disabled:opacity-50 flex items-center gap-2"
               >
-                {isSubmittingReview ? 'Đang Gửi...' : 'Gửi Đánh Giá'}
+                {isSubmittingReview ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Đang Gửi...</span>
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-3.5 h-3.5" />
+                    <span>Gửi Đánh Giá</span>
+                  </>
+                )}
               </button>
             </form>
 
-            {/* REVIEWS LIST */}
-            <div className="space-y-3">
-              {userReviews.map((rev) => (
-                <div key={rev.id} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/30 p-4 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <div className="h-8 w-8 rounded-full bg-[#0284c7] text-white flex items-center justify-center font-bold text-xs uppercase shadow-sm">
-                        {rev.author.slice(0, 1)}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-xs text-slate-900 dark:text-white">{rev.author}</span>
-                          <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-100 dark:border-emerald-800">
-                            <CheckCircle2 className="h-2.5 w-2.5" /> Đã mua tại DRX
-                          </span>
+            {/* REVIEWS LIST FROM SUPABASE */}
+            {isLoadingReviews ? (
+              <div className="py-8 text-center text-xs text-slate-400">
+                Đang tải đánh giá từ hệ thống...
+              </div>
+            ) : userReviews.length === 0 ? (
+              <div className="py-8 text-center text-xs text-slate-400 bg-slate-50 dark:bg-slate-800/20 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
+                Chưa có đánh giá nào cho sản phẩm này. Hãy là người đầu tiên nhận xét!
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {userReviews.map((rev) => (
+                  <div key={rev.id} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/30 p-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="h-8 w-8 rounded-full bg-[#0284c7] text-white flex items-center justify-center font-bold text-xs uppercase shadow-sm">
+                          {rev.author.slice(0, 1)}
                         </div>
-                        <span className="text-[10px] text-slate-400 font-mono block">{rev.date}</span>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-xs text-slate-900 dark:text-white">{rev.author}</span>
+                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-100 dark:border-emerald-800">
+                              <CheckCircle2 className="h-2.5 w-2.5" /> Đã mua tại DRX
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-slate-400 font-mono block">{rev.date}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex text-amber-400">
+                        {[...Array(5)].map((_, i) => (
+                          <Star key={i} className={`h-3.5 w-3.5 fill-current ${i < rev.rating ? '' : 'text-slate-300 fill-none'}`} />
+                        ))}
                       </div>
                     </div>
 
-                    <div className="flex text-amber-400">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} className={`h-3.5 w-3.5 fill-current ${i < rev.rating ? '' : 'text-slate-300 fill-none'}`} />
-                      ))}
-                    </div>
+                    <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed pt-1">{rev.comment}</p>
                   </div>
-
-                  <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed pt-1">{rev.comment}</p>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
 
           </div>
 
