@@ -44,42 +44,25 @@ export async function POST(request: Request) {
       console.warn('Supabase login lookup warning:', e);
     }
 
-    // 2. If user exists in Supabase, verify password
+    // 2. If user exists in Supabase, strictly verify password
     if (user) {
+      if (!user.password) {
+        return NextResponse.json(
+          { message: 'Tài khoản này được đăng ký bằng Google OAuth. Vui lòng chọn "Đăng nhập bằng Google"!' },
+          { status: 400 }
+        );
+      }
+
       let isPasswordValid = false;
+      try {
+        isPasswordValid = bcrypt.compareSync(password, user.password);
+      } catch (e) {}
 
-      if (user.password) {
-        try {
-          isPasswordValid = bcrypt.compareSync(password, user.password);
-        } catch (e) {}
-
-        if (!isPasswordValid && user.password === password) {
-          isPasswordValid = true;
-        }
-      }
-
-      // Master recovery fallback for admin & staff accounts
-      if (!isPasswordValid) {
-        if (
-          (cleanEmail === 'admin@drx.vn' || cleanEmail === 'admin@drxhardware.vn' || cleanEmail === 'admin@odsstore.vn') &&
-          (password === '01699224729' || password === 'admin')
-        ) {
-          isPasswordValid = true;
-        } else if (
-          cleanEmail === 'staff@drx.vn' &&
-          (password === '01699224729' || password === 'staff')
-        ) {
-          isPasswordValid = true;
-        }
+      if (!isPasswordValid && user.password === password) {
+        isPasswordValid = true;
       }
 
       if (!isPasswordValid) {
-        if (!user.password) {
-          return NextResponse.json(
-            { message: 'Tài khoản này được đăng ký bằng Google OAuth. Vui lòng chọn "Đăng nhập bằng Google"!' },
-            { status: 400 }
-          );
-        }
         return NextResponse.json(
           { message: 'Mật khẩu không chính xác!' },
           { status: 401 }
