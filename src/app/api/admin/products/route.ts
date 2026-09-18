@@ -1,8 +1,14 @@
 import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { supabase } from '@/lib/supabase';
+import { INITIAL_PRODUCTS } from '@/lib/hardware-data';
 
 export const dynamic = 'force-dynamic';
+
+// High-speed In-Memory Cache with 15s TTL for Admin
+let adminCachedProducts: any[] | null = null;
+let lastAdminCacheTimestamp = 0;
+const ADMIN_CACHE_TTL_MS = 15 * 1000; // 15 seconds
 
 export async function GET() {
   const headers = {
@@ -13,31 +19,49 @@ export async function GET() {
   };
 
   try {
-    // 1. Direct query from Supabase Cloud Database (Fast Direct REST)
+    const now = Date.now();
     let dbProducts: any[] = [];
-    try {
-      const { data: supaProds, error: supaErr } = await supabase
-        .from('Product')
-        .select('*')
-        .order('createdAt', { ascending: false });
-      if (!supaErr && supaProds && Array.isArray(supaProds)) {
-        dbProducts = supaProds;
+
+    if (adminCachedProducts && (now - lastAdminCacheTimestamp < ADMIN_CACHE_TTL_MS)) {
+      dbProducts = adminCachedProducts;
+    } else {
+      // 1. Direct query from Supabase Cloud Database (Fast Direct REST)
+      try {
+        const { data: supaProds, error: supaErr } = await supabase
+          .from('Product')
+          .select('*')
+          .order('createdAt', { ascending: false });
+
+        if (!supaErr && supaProds && Array.isArray(supaProds) && supaProds.length > 0) {
+          dbProducts = supaProds;
+          adminCachedProducts = supaProds;
+          lastAdminCacheTimestamp = now;
+        } else if (adminCachedProducts) {
+          dbProducts = adminCachedProducts;
+        } else {
+          dbProducts = INITIAL_PRODUCTS;
+        }
+      } catch (e) {
+        console.warn('Supabase products fetch warning, using fallback:', e);
+        dbProducts = adminCachedProducts || INITIAL_PRODUCTS;
       }
-    } catch (e) {
-      console.warn('Supabase products fetch warning:', e);
+    }
+
+    if (!dbProducts || dbProducts.length === 0) {
+      dbProducts = INITIAL_PRODUCTS;
     }
 
     // Sort validDbProducts strictly newest first (by updatedAt or createdAt)
-    dbProducts.sort((a, b) => {
+    const sortedProducts = [...dbProducts].sort((a, b) => {
       const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime();
       const timeB = new Date(b.updatedAt || b.createdAt || 0).getTime();
       return timeB - timeA;
     });
 
-    return NextResponse.json({ products: dbProducts }, { status: 200, headers });
+    return NextResponse.json({ products: sortedProducts }, { status: 200, headers });
   } catch (error: any) {
     console.error('Lỗi khi lấy danh sách sản phẩm admin:', error);
-    return NextResponse.json({ products: [] }, { status: 200, headers });
+    return NextResponse.json({ products: INITIAL_PRODUCTS }, { status: 200, headers });
   }
 }
 

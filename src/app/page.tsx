@@ -18,47 +18,43 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { INITIAL_PRODUCTS } from '@/lib/hardware-data';
 
+const INITIAL_HOME_PRODUCTS: ProductProps[] = INITIAL_PRODUCTS.map(p => ({
+  id: p.id,
+  name: p.name,
+  slug: p.slug,
+  description: p.description,
+  price: p.price,
+  discountPrice: p.discountPrice || null,
+  coverImage: p.coverImage,
+  category: [p.category],
+  platform: p.brand,
+  type: p.category,
+  brand: p.brand,
+  socket: p.socket,
+  ramType: p.ramType,
+  wattage: p.wattage,
+  warrantyMonths: p.warrantyMonths,
+  deliveryMethod: 'GIFT',
+  status: (p.stockQuantity ?? 1) > 0,
+  isFlashDeal: p.isFlashDeal || false,
+  isFeaturedDeal: p.isFeatured || false,
+  screenshots: p.screenshots || [p.coverImage]
+}));
+
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [selectedPlatform, setSelectedPlatform] = useState<string>('ALL');
   const [selectedType, setSelectedType] = useState<string>('ALL');
   const [sortBy, setSortBy] = useState<string>('FEATURED');
-  const [liveProducts, setLiveProducts] = useState<ProductProps[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [liveProducts, setLiveProducts] = useState<ProductProps[]>(INITIAL_HOME_PRODUCTS);
+  const [isLoading, setIsLoading] = useState(false);
   const [currentFeaturedIndex, setCurrentFeaturedIndex] = useState(0);
 
-  const DEFAULT_HOME_PRODUCTS: ProductProps[] = useMemo(() => {
-    return INITIAL_PRODUCTS.map(p => ({
-      id: p.id,
-      name: p.name,
-      slug: p.slug,
-      description: p.description,
-      price: p.price,
-      discountPrice: p.discountPrice || null,
-      coverImage: p.coverImage,
-      category: [p.category],
-      platform: p.brand,
-      type: p.category,
-      brand: p.brand,
-      socket: p.socket,
-      ramType: p.ramType,
-      wattage: p.wattage,
-      warrantyMonths: p.warrantyMonths,
-      deliveryMethod: 'GIFT',
-      status: (p.stockQuantity ?? 1) > 0,
-      isFlashDeal: p.isFlashDeal || false,
-      isFeaturedDeal: p.isFeatured || false,
-      screenshots: p.screenshots || [p.coverImage]
-    }));
-  }, []);
-
-  // Fetch live products directly from Supabase PostgreSQL Database API
+  // Fetch live products in background directly from Supabase PostgreSQL Database API
   useEffect(() => {
     const fetchHomeProducts = () => {
-      setIsLoading(true);
-
-      fetch(`/api/products?t=${Date.now()}`, { cache: 'no-store' })
+      fetch(`/api/products?t=${Date.now()}`)
         .then((res) => res.json())
         .then((data) => {
           const apiProds = data.products && Array.isArray(data.products) 
@@ -67,15 +63,11 @@ export default function Home() {
           
           if (apiProds.length > 0) {
             setLiveProducts(apiProds);
-          } else {
-            setLiveProducts(DEFAULT_HOME_PRODUCTS);
           }
         })
         .catch((err) => {
-          console.error('Lỗi khi tải sản phẩm từ database:', err);
-          setLiveProducts(DEFAULT_HOME_PRODUCTS);
-        })
-        .finally(() => setIsLoading(false));
+          console.warn('Lỗi khi tải sản phẩm từ database, sử dụng dữ liệu mặc định:', err);
+        });
     };
 
     fetchHomeProducts();
@@ -84,7 +76,7 @@ export default function Home() {
       window.removeEventListener('storage', fetchHomeProducts);
       window.removeEventListener('ods_products_updated', fetchHomeProducts);
     };
-  }, [DEFAULT_HOME_PRODUCTS]);
+  }, []);
 
   const allProducts = liveProducts;
 

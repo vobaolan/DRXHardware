@@ -27,6 +27,7 @@ import { CouponManagementView } from '@/components/admin/CouponManagementView';
 import { PortalDropdown } from '@/components/ui/PortalDropdown';
 import { RevenueChartWidget } from '@/components/admin/RevenueChartWidget';
 import { SerialManagementSection } from '@/components/admin/SerialManagementSection';
+import { INITIAL_PRODUCTS } from '@/lib/hardware-data';
 
 function UserRoleButton({
   user,
@@ -369,7 +370,7 @@ export default function AdminDashboardPage() {
     serialsWarranty: 0,
   });
   const [last7Days, setLast7Days] = useState<any[]>([]);
-  const [products, setProducts] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>(INITIAL_PRODUCTS);
   const [orders, setOrders] = useState<any[]>([]);
   const [serials, setSerials] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
@@ -1619,6 +1620,15 @@ export default function AdminDashboardPage() {
                     placeholder="Tìm kiếm linh kiện, thương hiệu, mã SKU..."
                     className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-2 pl-9 pr-4 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:border-[#0284c7]"
                   />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-2.5 flex-wrap">
@@ -1630,6 +1640,17 @@ export default function AdminDashboardPage() {
                       placeholder="Lọc theo danh mục..."
                     />
                   </div>
+
+                  {/* Refresh Button */}
+                  <button
+                    type="button"
+                    onClick={() => fetchAllData(true)}
+                    disabled={isRefreshing}
+                    className="p-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl transition-all flex items-center justify-center cursor-pointer shrink-0 disabled:opacity-50"
+                    title="Đồng bộ danh sách sản phẩm từ cơ sở dữ liệu"
+                  >
+                    <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-[#0284c7]' : ''}`} />
+                  </button>
 
                   <button
                     onClick={handleOpenCreate}
@@ -1647,7 +1668,7 @@ export default function AdminDashboardPage() {
                   <table className="w-full text-left text-xs">
                     <thead>
                       <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 font-black uppercase text-[10px] tracking-wider">
-                        <th className="py-3 px-4 min-w-[240px]">Sản Phẩm Linh Kiện</th>
+                        <th className="py-3 px-4 min-w-[240px]">Sản Phẩm Linh Kiện ({filteredProducts.length})</th>
                         <th className="py-3 px-3">Danh Mục</th>
                         <th className="py-3 px-3">Thương Hiệu</th>
                         <th className="py-3 px-3">Giá Bán</th>
@@ -1657,74 +1678,118 @@ export default function AdminDashboardPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                      {filteredProducts.map((p) => (
-                        <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                          <td className="py-3.5 px-4 flex items-center gap-3 min-w-[240px]">
-                            <img 
-                              src={p.coverImage || 'https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?w=200'} 
-                              alt={p.name} 
-                              className="w-10 h-10 rounded-xl object-cover bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shrink-0" 
-                            />
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="font-bold text-slate-900 dark:text-white line-clamp-1" title={p.name}>
-                                  {p.name}
-                                </span>
-                                {p.createdAt && (new Date().getTime() - new Date(p.createdAt).getTime() < 48 * 60 * 60 * 1000) && (
-                                  <span className="px-1.5 py-0.2 rounded-md text-[8.5px] font-black uppercase bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-xs shrink-0">
-                                    MỚI
-                                  </span>
-                                )}
+                      {filteredProducts.length === 0 ? (
+                        <tr>
+                          <td colSpan={7} className="py-16 px-4 text-center">
+                            <div className="flex flex-col items-center justify-center max-w-md mx-auto space-y-3">
+                              <div className="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800/80 text-slate-400 flex items-center justify-center border border-slate-200 dark:border-slate-700">
+                                <Package className="w-7 h-7 text-slate-400" />
                               </div>
-                              <span className="text-[10px] text-slate-400 font-mono block mt-0.5">
-                                SKU: {p.modelCode || p.slug || p.id.slice(0, 8)}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="py-3.5 px-3 font-extrabold text-[#0284c7] text-[10.5px] uppercase whitespace-nowrap">
-                            {p.category}
-                          </td>
-                          <td className="py-3.5 px-3 font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">
-                            {p.brand}
-                          </td>
-                          <td className="py-3.5 px-3 font-black text-slate-900 dark:text-white whitespace-nowrap">
-                            {formatVND(p.price)}
-                          </td>
-                          <td className="py-3.5 px-3 text-center whitespace-nowrap">
-                            <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                              {p.stockQuantity ?? p.stockCount ?? 0} Món
-                            </span>
-                          </td>
-                          <td className="py-3.5 px-3 text-center whitespace-nowrap font-medium text-slate-600 dark:text-slate-400">
-                            {p.warrantyMonths || 36}T
-                          </td>
-                          <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                            <div className="flex items-center justify-end gap-1.5">
-                              <button
-                                onClick={() => handleOpenEdit(p)}
-                                className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 transition-all cursor-pointer"
-                                title="Chỉnh sửa sản phẩm"
-                              >
-                                <Edit2 className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                onClick={() => setViewingProduct(p)}
-                                className="p-1.5 rounded-lg bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 text-[#0284c7] dark:text-sky-300 border border-sky-200 dark:border-sky-800 transition-all cursor-pointer"
-                                title="Xem thông số kỹ thuật"
-                              >
-                                <Eye className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteProduct(p)}
-                                className="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 transition-all cursor-pointer"
-                                title="Xóa sản phẩm"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                              <div className="space-y-1">
+                                <h4 className="text-sm font-black text-slate-900 dark:text-white">
+                                  Không có sản phẩm nào
+                                </h4>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                  {searchQuery || selectedCategoryFilter !== 'ALL'
+                                    ? `Không tìm thấy linh kiện nào phù hợp với bộ lọc "${selectedCategoryFilter !== 'ALL' ? CATEGORY_NAMES[selectedCategoryFilter] || selectedCategoryFilter : ''}" ${searchQuery ? `hoặc từ khóa "${searchQuery}"` : ''}.`
+                                    : 'Kho linh kiện hiện chưa có sản phẩm nào.'}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2 pt-2">
+                                {(searchQuery || selectedCategoryFilter !== 'ALL') && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSearchQuery('');
+                                      setSelectedCategoryFilter('ALL');
+                                    }}
+                                    className="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
+                                  >
+                                    Xóa bộ lọc tìm kiếm
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={handleOpenCreate}
+                                  className="px-4 py-2 bg-gradient-to-r from-[#0284c7] to-[#38bdf8] text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                                >
+                                  <Plus className="w-3.5 h-3.5" />
+                                  <span>Thêm Linh Kiện Mới</span>
+                                </button>
+                              </div>
                             </div>
                           </td>
                         </tr>
-                      ))}
+                      ) : (
+                        filteredProducts.map((p) => (
+                          <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                            <td className="py-3.5 px-4 flex items-center gap-3 min-w-[240px]">
+                              <img 
+                                src={p.coverImage || 'https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?w=200'} 
+                                alt={p.name} 
+                                className="w-10 h-10 rounded-xl object-cover bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shrink-0" 
+                              />
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="font-bold text-slate-900 dark:text-white line-clamp-1" title={p.name}>
+                                    {p.name}
+                                  </span>
+                                  {p.createdAt && (new Date().getTime() - new Date(p.createdAt).getTime() < 48 * 60 * 60 * 1000) && (
+                                    <span className="px-1.5 py-0.2 rounded-md text-[8.5px] font-black uppercase bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-xs shrink-0">
+                                      MỚI
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="text-[10px] text-slate-400 font-mono block mt-0.5">
+                                  SKU: {p.modelCode || p.slug || p.id.slice(0, 8)}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="py-3.5 px-3 font-extrabold text-[#0284c7] text-[10.5px] uppercase whitespace-nowrap">
+                              {p.category}
+                            </td>
+                            <td className="py-3.5 px-3 font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                              {p.brand}
+                            </td>
+                            <td className="py-3.5 px-3 font-black text-slate-900 dark:text-white whitespace-nowrap">
+                              {formatVND(p.price)}
+                            </td>
+                            <td className="py-3.5 px-3 text-center whitespace-nowrap">
+                              <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                {p.stockQuantity ?? p.stockCount ?? 0} Món
+                              </span>
+                            </td>
+                            <td className="py-3.5 px-3 text-center whitespace-nowrap font-medium text-slate-600 dark:text-slate-400">
+                              {p.warrantyMonths || 36}T
+                            </td>
+                            <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  onClick={() => handleOpenEdit(p)}
+                                  className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 transition-all cursor-pointer"
+                                  title="Chỉnh sửa sản phẩm"
+                                >
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => setViewingProduct(p)}
+                                  className="p-1.5 rounded-lg bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 text-[#0284c7] dark:text-sky-300 border border-sky-200 dark:border-sky-800 transition-all cursor-pointer"
+                                  title="Xem thông số kỹ thuật"
+                                >
+                                  <Eye className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteProduct(p)}
+                                  className="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 transition-all cursor-pointer"
+                                  title="Xóa sản phẩm"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
