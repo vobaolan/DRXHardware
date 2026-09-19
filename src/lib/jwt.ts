@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import { NextResponse } from 'next/server';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'DRX_HARDWARE_ULTRA_SECURE_JWT_SECRET_2026_x89q2';
-const DEFAULT_EXPIRY = 60 * 60 * 24; // 24 hours
+const DEFAULT_EXPIRY = 60 * 60 * 24 * 30; // 30 days persistence
 
 // Base64URL encoding/decoding helpers
 function base64UrlEncode(str: string): string {

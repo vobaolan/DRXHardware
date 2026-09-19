@@ -15,9 +15,10 @@ function parseJwtPayload(token: string): any | null {
     const jsonStr = atob(base64);
     const payload = JSON.parse(jsonStr);
 
-    // Check expiration
+    // Check expiration (with 7 days grace period for active sessions)
     const now = Math.floor(Date.now() / 1000);
-    if (payload.exp && payload.exp < now) {
+    const GRACE_PERIOD_SECONDS = 7 * 24 * 60 * 60; // 7 days grace
+    if (payload.exp && (payload.exp + GRACE_PERIOD_SECONDS) < now) {
       return null;
     }
 
