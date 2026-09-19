@@ -749,6 +749,12 @@ export default function AdminDashboardPage() {
   };
 
   const handleOpenEdit = (p: any) => {
+    const prodSerials = serialsByProductId.get(p.id) || [];
+    const availCount = prodSerials.filter((s: any) => s.status === 'AVAILABLE').length;
+    const effectiveStock = (p.stockQuantity !== undefined && p.stockQuantity !== null)
+      ? Number(p.stockQuantity)
+      : (prodSerials.length > 0 ? availCount : (p.stockCount ?? 0));
+
     const formattedData: ProductFormData = {
       id: p.id,
       name: p.name,
@@ -758,7 +764,7 @@ export default function AdminDashboardPage() {
       price: Number(p.price) || 0,
       discountPrice: p.discountPrice ? Number(p.discountPrice) : undefined,
       costPrice: p.costPrice ? Number(p.costPrice) : undefined,
-      stockQuantity: p.stockQuantity ?? p.stockCount ?? 10,
+      stockQuantity: effectiveStock,
       warrantyMonths: p.warrantyMonths || 36,
       coverImage: p.coverImage || '',
       screenshots: Array.isArray(p.screenshots) ? p.screenshots : [p.coverImage].filter(Boolean),

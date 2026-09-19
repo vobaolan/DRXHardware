@@ -313,6 +313,49 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+function extractCompatibilityFromSpecs(specs?: Record<string, any>) {
+  if (!specs || typeof specs !== 'object') return { socket: '', ramType: '', wattage: '', formFactor: '' };
+  
+  let socket = '';
+  let ramType = '';
+  let wattage = '';
+  let formFactor = '';
+
+  for (const [key, val] of Object.entries(specs)) {
+    const k = key.toLowerCase().trim();
+    const v = String(val || '').trim();
+    if (!v) continue;
+
+    // Socket: LGA 1700, AM5, AM4, LGA1200, etc.
+    if (!socket && (k.includes('socket') || k === 'loại cpu' || k === 'cpu socket')) {
+      socket = v;
+    }
+
+    // RAM Type: DDR4, DDR5, LPDDR5, GDDR6, etc.
+    if (!ramType && (k.includes('ram') || k.includes('bộ nhớ') || k.includes('chuẩn memory') || k.includes('loại ram / bus ram'))) {
+      if (/ddr[345]|gddr[56]x?|lpddr[45]x?/i.test(v)) {
+        const match = v.match(/((?:lp)?ddr[345]|gddr[56]x?)/i);
+        ramType = match ? match[0].toUpperCase() : v;
+      } else {
+        ramType = v;
+      }
+    }
+
+    // Wattage (TDP / PSU Watt / Công Suất)
+    if (!wattage && (k.includes('công suất') || k.includes('tdp') || k.includes('điện năng') || k.includes('nguồn khuyến nghị'))) {
+      const match = v.match(/(\d+)\s*w?/i);
+      if (match) wattage = match[1];
+    }
+
+    // Form factor (ATX, Micro-ATX, Mini-ITX, etc.)
+    if (!formFactor && (k.includes('kích thước') || k.includes('form factor') || k.includes('bo mạch') || k.includes('chuẩn main') || k.includes('loại case'))) {
+      formFactor = v;
+    }
+  }
+
+  return { socket, ramType, wattage, formFactor };
+}
+
   useEffect(() => {
     if (isOpen) {
       if (mode === 'edit' && initialData) {
@@ -325,13 +368,14 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
         setDiscountPriceInput(formatCommas(initialData.discountPrice));
         setCostPriceInput(formatCommas(initialData.costPrice));
 
-        setStockQuantity(initialData.stockQuantity !== undefined ? initialData.stockQuantity : 15);
+        setStockQuantity(typeof initialData.stockQuantity === 'number' ? initialData.stockQuantity : (initialData.stockQuantity ? Number(initialData.stockQuantity) : 0));
         setWarrantyMonths(initialData.warrantyMonths || 36);
         
-        setSocket(initialData.socket || '');
-        setRamType(initialData.ramType || '');
-        setWattage(initialData.wattage ? String(initialData.wattage) : '');
-        setFormFactor(initialData.formFactor || '');
+        const extracted = extractCompatibilityFromSpecs(initialData.specs);
+        setSocket(initialData.socket || extracted.socket || '');
+        setRamType(initialData.ramType || extracted.ramType || '');
+        setWattage(initialData.wattage ? String(initialData.wattage) : (extracted.wattage || ''));
+        setFormFactor(initialData.formFactor || extracted.formFactor || '');
 
         setCoverImage(initialData.coverImage || '');
         setScreenshots(initialData.screenshots || (initialData.coverImage ? [initialData.coverImage] : []));
@@ -605,6 +649,19 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
         specsObj[s.key.trim()] = s.value.trim();
       }
     });
+
+    if (socket.trim() && !specsObj['Socket'] && !specsObj['Socket Tương Thích']) {
+      specsObj['Socket'] = socket.trim();
+    }
+    if (ramType.trim() && !specsObj['Chuẩn RAM'] && !specsObj['Chuẩn Bộ Nhớ'] && !specsObj['Loại Ram / Bus Ram']) {
+      specsObj['Chuẩn RAM'] = ramType.trim();
+    }
+    if (wattage && !specsObj['Công Suất'] && !specsObj['Công Suất Định Mức'] && !specsObj['TDP'] && !specsObj['Điện Năng Tiêu Thụ (TDP)']) {
+      specsObj['Công Suất (Watt)'] = `${wattage}W`;
+    }
+    if (formFactor.trim() && !specsObj['Kích Thước (Form Factor)'] && !specsObj['Kích Thước'] && !specsObj['Hỗ Trợ Bo Mạch']) {
+      specsObj['Kích Thước (Form Factor)'] = formFactor.trim();
+    }
 
     const payload: ProductFormData = {
       id: mode === 'edit' && initialData ? initialData.id : ('prod-' + Date.now()),
