@@ -93,7 +93,7 @@ export const Footer: React.FC = () => {
                 { label: 'Tra Cứu Bảo Hành E-Warranty', href: '/warranty' },
                 { label: 'Chính Sách 1-Đổi-1 36 Tháng', href: '/policies/warranty' },
                 { label: 'Hướng Dẫn Thanh Toán & Trả Góp', href: '/policies/guide' },
-                { label: 'Chính Sách Giao Hàng Toàn Quốc', href: '/policies/privacy' },
+                { label: 'Chính Sách Giao Hàng Toàn Quốc', href: '/policies/shipping' },
                 { label: 'Câu Hỏi Thường Gặp (FAQ)', href: '/policies/faq' },
                 { label: 'Điều Khoản Dịch Vụ', href: '/policies/terms' },
               ].map((item) => (

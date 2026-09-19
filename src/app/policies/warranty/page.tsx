@@ -1,10 +1,9 @@
-﻿'use client';
+'use client';
 
 import React from 'react';
 import Link from 'next/link';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
-import { CartProvider } from '@/context/CartContext';
 import { 
   ShieldCheck, RefreshCw, Clock, CheckCircle2, AlertTriangle, 
   HelpCircle, MessageSquare, ArrowRight, Shield, Zap, FileText, PhoneCall, Cpu, Wrench
@@ -12,8 +11,7 @@ import {
 
 export default function WarrantyPolicyPage() {
   return (
-    <CartProvider>
-      <div className="min-h-screen bg-slate-50 dark:bg-[#090d16] text-slate-900 dark:text-slate-100 flex flex-col antialiased tech-grid-pattern transition-colors duration-300">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#090d16] text-slate-900 dark:text-slate-100 flex flex-col antialiased tech-grid-pattern transition-colors duration-300">
         <Header />
 
         {/* HERO BANNER SECTION (CLEAN LIGHT MODE) */}
@@ -190,6 +188,5 @@ export default function WarrantyPolicyPage() {
 
         <Footer />
       </div>
-    </CartProvider>
   );
 }

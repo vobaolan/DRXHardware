@@ -1,138 +1,156 @@
-﻿'use client';
+'use client';
 
 import React from 'react';
 import Link from 'next/link';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
-import { CartDrawer } from '@/components/CartDrawer';
-import { CartProvider } from '@/context/CartContext';
 import { 
   ShieldCheck, Lock, CheckCircle2, Eye, Server, 
-  HelpCircle, MessageSquare, ArrowRight, ShieldAlert, Key
+  HelpCircle, ShieldAlert, Key, Database, UserCheck
 } from 'lucide-react';
 
 export default function PrivacyPolicyPage() {
   return (
-    <CartProvider>
-      <div className="min-h-screen bg-white text-black flex flex-col antialiased">
-        <Header />
+    <div className="min-h-screen bg-slate-50 dark:bg-[#090d16] text-slate-900 dark:text-slate-100 flex flex-col antialiased transition-colors duration-300">
+      <Header />
 
-        {/* HERO BANNER */}
-        <section className="relative overflow-hidden bg-zinc-950 py-16 text-white border-b border-zinc-800">
-          <div className="absolute inset-0 bg-gradient-to-r from-emerald-950/40 to-transparent pointer-events-none" />
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10 text-center space-y-4">
-            <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-3.5 py-1 text-xs font-bold text-emerald-400 uppercase tracking-widest mx-auto">
-              <Lock className="h-4 w-4" />
-              <span>Báº¢O Máº¬T Dá»® LIá»†U Tá»I ÄA</span>
-            </div>
-
-            <h1
-              className="font-heading text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-wider uppercase text-white"
-              style={{ lineHeight: '1.55' }}
-            >
-              CHÃNH SÃCH Báº¢O Máº¬T THÃ”NG TIN
-            </h1>
-
-            <p className="text-xs sm:text-sm text-zinc-400 font-light max-w-2xl mx-auto leading-relaxed">
-              DRX Hardware cam káº¿t báº£o vá»‡ tuyá»‡t Ä‘á»‘i thÃ´ng tin cÃ¡ nhÃ¢n vÃ  dá»¯ liá»‡u thanh toÃ¡n cá»§a khÃ¡ch hÃ ng theo cÃ¡c tiÃªu chuáº©n mÃ£ hÃ³a quá»‘c táº¿ cao nháº¥t.
-            </p>
+      {/* HERO BANNER */}
+      <section className="relative overflow-hidden bg-white dark:bg-slate-900 py-12 sm:py-16 border-b border-slate-200 dark:border-slate-800">
+        <div className="absolute inset-0 bg-gradient-to-r from-emerald-50 via-white to-sky-50/50 dark:from-slate-900 dark:via-[#072418] dark:to-slate-950 pointer-events-none" />
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10 text-center space-y-4">
+          <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 px-3.5 py-1 text-xs font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mx-auto shadow-2xs">
+            <Lock className="h-4 w-4" />
+            <span>BẢO MẬT DỮ LIỆU TỐI ĐA CHUẨN SSL 256-BIT</span>
           </div>
-        </section>
 
-        {/* BREADCRUMB */}
-        <div className="bg-DRX-surface border-b border-DRX-border py-3">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex items-center gap-2 text-xs text-DRX-textMuted">
-            <Link href="/" className="hover:text-black transition-colors">Trang chá»§</Link>
-            <span>/</span>
-            <span className="text-black font-bold">ChÃ­nh sÃ¡ch báº£o máº­t</span>
-          </div>
+          <h1
+            className="font-heading text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black uppercase text-slate-900 dark:text-white"
+            style={{ lineHeight: '1.25' }}
+          >
+            CHÍNH SÁCH BẢO MẬT THÔNG TIN
+          </h1>
+
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 font-normal max-w-2xl mx-auto leading-relaxed">
+            DRX Hardware cam kết bảo vệ tuyệt đối thông tin cá nhân và dữ liệu thanh toán của khách hàng theo các tiêu chuẩn an toàn bảo mật cao nhất.
+          </p>
         </div>
+      </section>
 
-        {/* MAIN CONTENT */}
-        <main className="flex-1 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-12 space-y-12">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 items-start">
-            <div className="lg:col-span-2 space-y-10">
-              {/* SECTION 1 */}
-              <section className="space-y-3">
-                <div className="flex items-center gap-3 border-b border-DRX-border pb-3">
-                  <span className="font-heading text-xl font-extrabold text-emerald-600">01.</span>
-                  <h2 className="font-heading text-lg font-extrabold uppercase text-black">
-                    Má»¤C ÄÃCH THU THáº¬P THÃ”NG TIN CÃ NHÃ‚N
-                  </h2>
-                </div>
-                <div className="space-y-3 text-xs text-DRX-textMuted leading-relaxed">
-                  <p>ChÃºng tÃ´i chá»‰ thu tháº­p cÃ¡c thÃ´ng tin tá»‘i thiá»ƒu cáº§n thiáº¿t Ä‘á»ƒ phá»¥c vá»¥ quÃ¡ trÃ¬nh xá»­ lÃ½ Ä‘Æ¡n hÃ ng cá»§a báº¡n bao gá»“m:</p>
-                  <ul className="space-y-2 pl-4 list-disc text-black font-medium">
-                    <li><strong>Äá»‹a chá»‰ Email:</strong> Äá»ƒ gá»­i thÃ´ng tin Key Game, hÃ³a Ä‘Æ¡n vÃ  khÃ´i phá»¥c máº­t kháº©u tÃ i khoáº£n.</li>
-                    <li><strong>Há» vÃ  tÃªn hiá»ƒn thá»‹:</strong> Äá»ƒ há»— trá»£ CSKH xÆ°ng hÃ´ lá»‹ch sá»± vÃ  xÃ¡c minh tÃ i khoáº£n khi báº£o hÃ nh.</li>
-                    <li><strong>Lá»‹ch sá»­ giao dá»‹ch:</strong> LÆ°u giá»¯ mÃ£ Key Game trong má»¥c Vault cÃ¡ nhÃ¢n Ä‘á»ƒ báº¡n cÃ³ thá»ƒ xem láº¡i báº¥t ká»³ lÃºc nÃ o.</li>
-                  </ul>
-                </div>
-              </section>
+      {/* BREADCRUMB */}
+      <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 py-3">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex items-center gap-2 text-xs text-slate-500">
+          <Link href="/" className="hover:text-[#0284c7] transition-colors">Trang Chủ</Link>
+          <span>/</span>
+          <span className="text-slate-900 dark:text-white font-bold">Chính Sách Bảo Mật</span>
+        </div>
+      </div>
 
-              {/* SECTION 2 */}
-              <section className="space-y-3">
-                <div className="flex items-center gap-3 border-b border-DRX-border pb-3">
-                  <span className="font-heading text-xl font-extrabold text-emerald-600">02.</span>
-                  <h2 className="font-heading text-lg font-extrabold uppercase text-black">
-                    CAM Káº¾T KHÃ”NG TIáº¾T Lá»˜ CHO BÃŠN THá»¨ BA
-                  </h2>
-                </div>
-                <div className="space-y-3 text-xs text-DRX-textMuted leading-relaxed">
-                  <p>DRX Hardware <strong>tuyá»‡t Ä‘á»‘i khÃ´ng trao Ä‘á»•i, bÃ¡n hoáº·c chia sáº»</strong> thÃ´ng tin cÃ¡ nhÃ¢n cá»§a khÃ¡ch hÃ ng cho báº¥t ká»³ bÃªn thá»© ba nÃ o vÃ¬ má»¥c Ä‘Ã­ch thÆ°Æ¡ng máº¡i hay quáº£ng cÃ¡o rÃ¡c.</p>
-                  <p>ThÃ´ng tin thanh toÃ¡n ngÃ¢n hÃ ng qua mÃ£ VietQR Ä‘Æ°á»£c xá»­ lÃ½ trá»±c tiáº¿p thÃ´ng qua cá»•ng thanh toÃ¡n báº£o máº­t cá»§a ngÃ¢n hÃ ng, DRX Hardware hoÃ n toÃ n khÃ´ng lÆ°u trá»¯ mÃ£ PIN hay máº­t kháº©u ngÃ¢n hÃ ng cá»§a báº¡n.</p>
-                </div>
-              </section>
+      {/* MAIN CONTENT */}
+      <main className="flex-1 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-12 space-y-12">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 items-start">
+          <div className="lg:col-span-2 space-y-8">
+            {/* SECTION 1 */}
+            <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 space-y-4 shadow-sm">
+              <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+                <span className="font-heading text-xl font-black text-[#0284c7]">01.</span>
+                <h2 className="font-heading text-base sm:text-lg font-black uppercase text-slate-900 dark:text-white">
+                  MỤC ĐÍCH THU THẬP THÔNG TIN CÁ NHÂN
+                </h2>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                DRX Hardware thu thập thông tin của quý khách khi đăng ký tài khoản, đặt mua linh kiện hoặc liên hệ hỗ trợ kỹ thuật bảo hành. Thông tin thu thập bao gồm:
+              </p>
+              <ul className="space-y-2 text-xs text-slate-700 dark:text-slate-300">
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                  <span>Họ và tên, số điện thoại liên hệ, email để gửi hóa đơn điện tử và mã tra cứu bảo hành SN.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                  <span>Địa chỉ nhận hàng chính xác phục vụ việc giao hàng hỏa tốc hoặc chuyển phát nhanh.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                  <span>Lịch sử đơn hàng và linh kiện PC để phục vụ kích hoạt bảo hành điện tử 1 đổi 1 trong 36 tháng.</span>
+                </li>
+              </ul>
+            </section>
 
-              {/* SECTION 3 */}
-              <section className="space-y-3">
-                <div className="flex items-center gap-3 border-b border-DRX-border pb-3">
-                  <span className="font-heading text-xl font-extrabold text-emerald-600">03.</span>
-                  <h2 className="font-heading text-lg font-extrabold uppercase text-black">
-                    CÃ”NG NGHá»† MÃƒ HÃ“A Báº¢O Vá»† Dá»® LIá»†U
-                  </h2>
-                </div>
-                <div className="bg-emerald-50 border border-emerald-200 rounded-DRX p-4 space-y-2 text-xs text-emerald-950">
-                  <div className="flex items-center gap-2 font-bold text-emerald-800 uppercase">
-                    <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                    <span>MÃ£ HÃ³a Chuáº©n SSL 256-Bit</span>
-                  </div>
-                  <p className="leading-relaxed text-emerald-900">
-                    ToÃ n bá»™ káº¿t ná»‘i giá»¯a trÃ¬nh duyá»‡t cá»§a báº¡n vÃ  há»‡ thá»‘ng mÃ¡y chá»§ DRX Hardware Ä‘á»u Ä‘Æ°á»£c mÃ£ hÃ³a báº±ng chá»©ng chá»‰ SSL (HTTPS) tiÃªu chuáº©n cao cáº¥p, ngÄƒn cháº·n tuyá»‡t Ä‘á»‘i cÃ¡c hÃ nh vi Ä‘Ã¡nh cáº¯p dá»¯ liá»‡u trÃªn Ä‘Æ°á»ng truyá»n.
-                  </p>
-                </div>
-              </section>
-            </div>
+            {/* SECTION 2 */}
+            <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 space-y-4 shadow-sm">
+              <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+                <span className="font-heading text-xl font-black text-[#0284c7]">02.</span>
+                <h2 className="font-heading text-base sm:text-lg font-black uppercase text-slate-900 dark:text-white">
+                  CAM KẾT AN TOÀN THANH TOÁN
+                </h2>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                Mọi giao dịch thanh toán chuyển khoản QR, thẻ tín dụng Visa/Mastercard hoặc ví điện tử trên website đều được chuyển tiếp qua cổng thanh toán bảo mật đối tác có chứng nhận quốc tế PCI-DSS Level 1.
+              </p>
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-400">
+                <strong className="text-slate-900 dark:text-white font-bold block mb-1">Lưu ý quan trọng:</strong>
+                DRX Hardware <strong>KHÔNG</strong> bao giờ lưu trữ số thẻ tín dụng, mã CVV/CVC của khách hàng trên hệ thống máy chủ.
+              </div>
+            </section>
 
-            {/* SIDEBAR */}
-            <div className="space-y-6">
-              <div className="rounded-DRX border border-DRX-border bg-DRX-surface p-6 space-y-4">
-                <div className="flex items-center gap-3 text-black">
-                  <Lock className="h-6 w-6 text-emerald-600" />
-                  <h3 className="font-heading text-sm font-extrabold uppercase">AN TÃ‚M TUYá»†T Äá»I</h3>
-                </div>
-                <p className="text-xs text-DRX-textMuted leading-relaxed">
-                  Báº¡n cÃ³ quyá»n yÃªu cáº§u xÃ³a vÄ©nh viá»…n dá»¯ liá»‡u tÃ i khoáº£n cÃ¡ nhÃ¢n báº¥t ká»³ lÃºc nÃ o báº±ng cÃ¡ch gá»­i yÃªu cáº§u tá»›i bá»™ pháº­n há»— trá»£.
-                </p>
+            {/* SECTION 3 */}
+            <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 space-y-4 shadow-sm">
+              <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+                <span className="font-heading text-xl font-black text-[#0284c7]">03.</span>
+                <h2 className="font-heading text-base sm:text-lg font-black uppercase text-slate-900 dark:text-white">
+                  KHÔNG CHIA SẺ THÔNG TIN CHO BÊN THỨ BA
+                </h2>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                DRX Hardware cam kết không bán, không cho thuê, không chia sẻ thông tin cá nhân của quý khách cho bất kỳ bên thứ ba nào vì mục đích quảng cáo thương mại ngoài phạm vi dịch vụ giao vận đơn hàng.
+              </p>
+            </section>
+          </div>
 
-                <div className="pt-2">
-                  <Link
-                    href="/policies/terms"
-                    className="w-full flex items-center justify-center gap-2 rounded-DRX bg-black text-white py-3 text-xs font-bold uppercase tracking-wider hover:bg-zinc-800 transition-all"
-                  >
-                    <Eye className="h-4 w-4" />
-                    <span>Xem Äiá»u Khoáº£n Dá»‹ch Vá»¥</span>
-                  </Link>
+          {/* SIDEBAR SUMMARY */}
+          <div className="space-y-6">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 space-y-4 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-emerald-50 dark:bg-slate-800 text-emerald-600 rounded-2xl">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <h3 className="font-heading text-sm font-black uppercase text-slate-900 dark:text-white">
+                  3 Trụ Cột Bảo Mật
+                </h3>
+              </div>
+
+              <div className="space-y-3 text-xs text-slate-600 dark:text-slate-400">
+                <div className="p-3 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800">
+                  <span className="font-bold text-slate-900 dark:text-white block mb-1">Mã Hóa 256-bit SSL</span>
+                  Dữ liệu truyền tải giữa trình duyệt và máy chủ luôn được mã hóa end-to-end.
+                </div>
+                <div className="p-3 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800">
+                  <span className="font-bold text-slate-900 dark:text-white block mb-1">Quyền Kiểm Soát Dữ Liệu</span>
+                  Quý khách có thể yêu cầu xóa hoặc cập nhật thông tin cá nhân bất cứ lúc nào.
+                </div>
+                <div className="p-3 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800">
+                  <span className="font-bold text-slate-900 dark:text-white block mb-1">Bảo Hành Minh Bạch</span>
+                  Mã serial linh kiện lưu trữ điện tử trọn đời, dễ dàng tra cứu 24/7.
                 </div>
               </div>
             </div>
-          </div>
-        </main>
 
-        <Footer />
-        <CartDrawer />
-      </div>
-    </CartProvider>
+            <div className="bg-sky-50 dark:bg-slate-900 border border-sky-200 dark:border-slate-800 rounded-3xl p-6 space-y-3">
+              <h4 className="font-heading text-xs font-black uppercase text-[#0284c7]">
+                Hỗ Trợ Quyền Riêng Tư
+              </h4>
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                Mọi thắc mắc về dữ liệu cá nhân, vui lòng liên hệ bộ phận an toàn thông tin DRX:
+              </p>
+              <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                Email: <span className="text-[#0284c7]">privacy@drxhardware.vn</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <Footer />
+    </div>
   );
 }
-

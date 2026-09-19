@@ -26,7 +26,7 @@ const config: Config = {
       },
       fontFamily: {
         sans: ["var(--font-be-vietnam)", "'Be Vietnam Pro'", "sans-serif"],
-        heading: ["var(--font-outfit)", "'Outfit'", "'Be Vietnam Pro'", "sans-serif"],
+        heading: ["var(--font-be-vietnam)", "'Be Vietnam Pro'", "sans-serif"],
         mono: ["'JetBrains Mono'", "monospace"],
       },
       borderRadius: {
