@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { INITIAL_PRODUCTS } from '@/lib/hardware-data';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -34,24 +35,28 @@ export async function GET(request: Request) {
     if (!isBypassCache && memoryCachedProducts && (now - lastCacheTimestamp < CACHE_TTL_MS)) {
       dbProducts = memoryCachedProducts;
     } else {
-      // 1. Fetch strictly from Supabase Live Database
-      const { data, error } = await supabase
-        .from('Product')
-        .select('*')
-        .order('createdAt', { ascending: false });
+      // 1. Fetch from Supabase Live Database
+      try {
+        const { data, error } = await supabase
+          .from('Product')
+          .select('*')
+          .order('createdAt', { ascending: false });
 
-      if (error) {
-        console.error('Lỗi khi truy vấn Supabase Product:', error);
-        if (memoryCachedProducts) {
-          dbProducts = memoryCachedProducts;
+        if (!error && data && Array.isArray(data) && data.length > 0) {
+          dbProducts = data;
+          memoryCachedProducts = data;
+          lastCacheTimestamp = now;
         } else {
-          return NextResponse.json({ message: 'Lỗi CSDL: ' + error.message }, { status: 500, headers });
+          dbProducts = memoryCachedProducts || INITIAL_PRODUCTS;
         }
-      } else {
-        dbProducts = data || [];
-        memoryCachedProducts = data || [];
-        lastCacheTimestamp = now;
+      } catch (e) {
+        console.warn('Supabase fetch error, fallback:', e);
+        dbProducts = memoryCachedProducts || INITIAL_PRODUCTS;
       }
+    }
+
+    if (!dbProducts || dbProducts.length === 0) {
+      dbProducts = INITIAL_PRODUCTS;
     }
 
     // Sort strictly newest first (by updatedAt or createdAt)
