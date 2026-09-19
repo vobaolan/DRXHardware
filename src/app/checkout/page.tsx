@@ -267,6 +267,9 @@ export default function CheckoutPage() {
       }
 
       setCreatedOrder(data.order);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('drx_orders_updated'));
+      }
       clearCart();
       showToast('Đặt hàng thành công! DRX Hardware đã ghi nhận đơn hàng.', 'success');
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -360,8 +363,8 @@ export default function CheckoutPage() {
                 <div className="flex flex-col sm:flex-row items-center gap-6">
                   <div className="bg-white p-3 rounded-2xl border border-sky-200 shadow-sm shrink-0">
                     <img
-                      src={`https://img.vietqr.io/image/970407-BAOLANN-compact2.png?amount=${createdOrder.totalAmount}&addInfo=${createdOrder.orderCode}&accountName=DRX%20Hardware`}
-                      alt="VietQR Techcombank DRX Hardware"
+                      src={`https://img.vietqr.io/image/970407-BAOLANN-compact2.png?amount=${createdOrder.totalAmount}&addInfo=${createdOrder.orderCode}&accountName=VO%20BAO%20LAN`}
+                      alt="VietQR Techcombank VO BAO LAN"
                       className="w-44 h-auto object-contain mx-auto"
                     />
                   </div>
@@ -386,7 +389,7 @@ export default function CheckoutPage() {
                     </div>
                     <div className="flex justify-between items-center py-1 border-b border-slate-200/60 dark:border-slate-700">
                       <span className="text-slate-500">Tên Thụ Hưởng:</span>
-                      <span className="font-black text-slate-900 dark:text-white uppercase">DRX Hardware</span>
+                      <span className="font-black text-slate-900 dark:text-white uppercase">VO BAO LAN</span>
                     </div>
                     <div className="flex justify-between items-center py-1 border-b border-slate-200/60 dark:border-slate-700">
                       <span className="text-slate-500">Số Tiền:</span>
@@ -1158,7 +1161,7 @@ export default function CheckoutPage() {
                         </div>
                       </div>
                       <div className="flex items-center justify-between pt-2 border-t border-sky-200/60 dark:border-slate-700/60 text-[10.5px]">
-                        <span className="font-bold text-[#0284c7] dark:text-sky-400">STK: BAOLANN • DRX Hardware</span>
+                        <span className="font-bold text-[#0284c7] dark:text-sky-400">STK: BAOLANN • VO BAO LAN</span>
                         <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
                           paymentMethod === 'QR_BANK' ? 'border-[#0284c7] bg-[#0284c7] text-white' : 'border-slate-300'
                         }`}>
@@ -1190,11 +1193,6 @@ export default function CheckoutPage() {
                             </p>
                           </div>
                         </div>
-
-                        <div className="flex items-center gap-1.5 self-start sm:self-auto text-[11px] font-bold text-slate-500 bg-white dark:bg-slate-800 px-3 py-1 rounded-full border border-slate-200 dark:border-slate-700">
-                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                          <span>Hệ thống tự động đối soát</span>
-                        </div>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
@@ -1202,8 +1200,8 @@ export default function CheckoutPage() {
                         <div className="md:col-span-5 flex flex-col items-center justify-center p-4 bg-white dark:bg-slate-950 rounded-2xl border border-sky-200/80 dark:border-slate-800 shadow-sm text-center space-y-2">
                           <div className="relative group">
                             <img
-                              src={`https://img.vietqr.io/image/970407-BAOLANN-compact2.png?amount=${netAmount}&addInfo=${draftOrderCode}&accountName=DRX%20Hardware`}
-                              alt="VietQR Techcombank DRX Hardware"
+                              src={`https://img.vietqr.io/image/970407-BAOLANN-compact2.png?amount=${netAmount}&addInfo=${draftOrderCode}&accountName=VO%20BAO%20LAN`}
+                              alt="VietQR Techcombank VO BAO LAN"
                               className="w-48 sm:w-56 h-auto object-contain mx-auto rounded-xl transition-transform group-hover:scale-105"
                             />
                           </div>
@@ -1245,7 +1243,7 @@ export default function CheckoutPage() {
                           <div className="p-3 bg-white dark:bg-slate-950 rounded-xl border border-slate-200/80 dark:border-slate-800 flex items-center justify-between">
                             <div>
                               <span className="text-[10px] uppercase font-bold text-slate-400 block">Tên Người Thụ Hưởng:</span>
-                              <span className="font-black text-slate-900 dark:text-white uppercase">DRX Hardware</span>
+                              <span className="font-black text-slate-900 dark:text-white uppercase">VO BAO LAN</span>
                             </div>
                             <ShieldCheck className="w-4 h-4 text-emerald-500" />
                           </div>
@@ -1287,7 +1285,7 @@ export default function CheckoutPage() {
                       <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-400/30 text-[11px] text-amber-900 dark:text-amber-200 flex items-start gap-2">
                         <span className="font-black text-amber-600 dark:text-amber-400 shrink-0">⚠️ Lưu ý:</span>
                         <span>
-                          Quý khách vui lòng giữ nguyên nội dung chuyển khoản <strong>{draftOrderCode}</strong> để nhân viên và hệ thống đối soát tự động duyệt đơn ngay trong 1-3 phút.
+                          Quý khách vui lòng giữ nguyên nội dung chuyển khoản <strong>{draftOrderCode}</strong> để nhân viên kiểm tra và duyệt đơn ngay trong 1-3 phút.
                         </span>
                       </div>
                     </div>

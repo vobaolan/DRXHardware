@@ -58,7 +58,7 @@ export default function FAQPolicyPage() {
       id: 'faq-5',
       category: 'payment',
       question: 'DRX Hardware hỗ trợ những hình thức thanh toán nào?',
-      answer: 'DRX Hardware hỗ trợ 2 hình thức thanh toán tiện lợi: Quét mã VietQR Techcombank 24/7 (STK: BAOLANN - Tên: DRX Hardware, hoàn toàn 0đ phí giao dịch, đối soát tự động) và Thanh toán tiền mặt khi nhận hàng (COD) tận nơi có hỗ trợ đồng kiểm linh kiện trước khi thanh toán.'
+      answer: 'DRX Hardware hỗ trợ 2 hình thức thanh toán tiện lợi: Quét mã VietQR Techcombank 24/7 (STK: BAOLANN - Tên: VO BAO LAN, hoàn toàn 0đ phí giao dịch, xác nhận nhanh) và Thanh toán tiền mặt khi nhận hàng (COD) tận nơi có hỗ trợ đồng kiểm linh kiện trước khi thanh toán.'
     },
     {
       id: 'faq-6',

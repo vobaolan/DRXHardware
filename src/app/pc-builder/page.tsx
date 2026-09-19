@@ -237,15 +237,13 @@ function PCBuilderContent() {
             }));
             setAllProducts(normalized);
 
-            // Auto-load preset if no saved build requested
+            // Only auto-load preset if explicitly requested via URL parameter (?preset=intel / ?preset=amd)
             const loadId = searchParams.get('loadBuildId');
             const presetParam = searchParams.get('preset');
-            if (!loadId) {
+            if (!loadId && presetParam) {
               if (presetParam === 'amd') {
                 applyPreset('amd', normalized);
-              } else if (presetParam === 'empty') {
-                applyPreset('empty', normalized);
-              } else {
+              } else if (presetParam === 'intel') {
                 applyPreset('intel', normalized);
               }
             }
@@ -575,21 +573,41 @@ function PCBuilderContent() {
           
           {/* Left Column: Component Selection Steps (8 cols) */}
           <div className="lg:col-span-8 space-y-5">
-            <div className="flex items-center justify-between pb-1">
+            <div className="flex items-center justify-between pb-1 flex-wrap gap-2">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4.5 h-4.5 text-[#0284c7]" />
                 <h2 className="text-sm sm:text-base font-heading font-black uppercase tracking-wider text-slate-900 dark:text-white">
                   Danh Sách Linh Kiện Cấu Hình ({selectedItemsCount}/9)
                 </h2>
               </div>
-              <button 
-                onClick={handleClearAll}
-                disabled={selectedItemsCount === 0}
-                className="text-xs text-rose-600 dark:text-rose-400 hover:text-rose-700 disabled:opacity-40 flex items-center gap-1.5 font-bold transition-colors cursor-pointer bg-rose-50 dark:bg-rose-950/40 px-3.5 py-2 rounded-xl border border-rose-200 dark:border-rose-900"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Làm Mới</span>
-              </button>
+              <div className="flex items-center gap-2 flex-wrap">
+                <button 
+                  type="button"
+                  onClick={() => applyPreset('intel')}
+                  className="text-xs text-sky-700 dark:text-sky-300 hover:text-sky-800 bg-sky-50 dark:bg-sky-950/50 hover:bg-sky-100 dark:hover:bg-sky-900/40 px-3 py-1.5 rounded-xl border border-sky-200 dark:border-sky-800 font-bold transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
+                  title="Nạp nhanh cấu hình mẫu Intel Core i5 + RTX 4060"
+                >
+                  <Zap className="w-3.5 h-3.5 text-[#0284c7]" />
+                  <span>Mẫu Intel</span>
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => applyPreset('amd')}
+                  className="text-xs text-orange-700 dark:text-orange-300 hover:text-orange-800 bg-orange-50 dark:bg-orange-950/50 hover:bg-orange-100 dark:hover:bg-orange-900/40 px-3 py-1.5 rounded-xl border border-orange-200 dark:border-orange-800 font-bold transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
+                  title="Nạp nhanh cấu hình mẫu AMD Ryzen 7 + RTX 4060"
+                >
+                  <Zap className="w-3.5 h-3.5 text-orange-500" />
+                  <span>Mẫu AMD</span>
+                </button>
+                <button 
+                  onClick={handleClearAll}
+                  disabled={selectedItemsCount === 0}
+                  className="text-xs text-rose-600 dark:text-rose-400 hover:text-rose-700 disabled:opacity-40 flex items-center gap-1.5 font-bold transition-colors cursor-pointer bg-rose-50 dark:bg-rose-950/40 px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-900 active:scale-95"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Làm Mới</span>
+                </button>
+              </div>
             </div>
 
             {/* List of Component Cards */}

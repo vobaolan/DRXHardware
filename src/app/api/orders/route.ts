@@ -21,22 +21,59 @@ export async function GET(request: Request) {
 
     // Direct fetch from Supabase Cloud Database (Fast Direct REST)
     try {
+      const orClauses: string[] = [];
+      if (userId) orClauses.push(`userId.eq.${userId}`);
+      if (email) orClauses.push(`customerEmail.eq.${email}`);
+      if (phone) orClauses.push(`customerPhone.eq.${phone}`);
+
       let query = supabase.from('Order').select('*');
-      if (userId) {
-        query = query.eq('userId', userId);
-      } else if (email) {
-        query = query.eq('customerEmail', email);
-      } else if (phone) {
-        query = query.eq('customerPhone', phone);
+      if (orClauses.length > 0) {
+        query = query.or(orClauses.join(','));
       }
 
       const { data: supaOrders, error: supaErr } = await query.order('createdAt', { ascending: false });
 
       if (!supaErr && supaOrders && Array.isArray(supaOrders)) {
         orders = supaOrders;
+      } else {
+        if (supaErr) console.warn('Supabase get orders warning, trying Prisma fallback:', supaErr);
+        const { PrismaClient } = await import('@prisma/client');
+        const prisma = new PrismaClient();
+        try {
+          const conditions: any[] = [];
+          if (userId) conditions.push({ userId });
+          if (email) conditions.push({ customerEmail: email });
+          if (phone) conditions.push({ customerPhone: phone });
+
+          orders = await prisma.order.findMany({
+            where: conditions.length > 0 ? { OR: conditions } : {},
+            orderBy: { createdAt: 'desc' },
+          });
+        } finally {
+          await prisma.$disconnect();
+        }
       }
     } catch (e) {
-      console.warn('Supabase get orders warning:', e);
+      console.warn('Supabase get orders warning, trying Prisma fallback:', e);
+      try {
+        const { PrismaClient } = await import('@prisma/client');
+        const prisma = new PrismaClient();
+        try {
+          const conditions: any[] = [];
+          if (userId) conditions.push({ userId });
+          if (email) conditions.push({ customerEmail: email });
+          if (phone) conditions.push({ customerPhone: phone });
+
+          orders = await prisma.order.findMany({
+            where: conditions.length > 0 ? { OR: conditions } : {},
+            orderBy: { createdAt: 'desc' },
+          });
+        } finally {
+          await prisma.$disconnect();
+        }
+      } catch (pe) {
+        console.error('Prisma fallback get orders error:', pe);
+      }
     }
 
     return NextResponse.json({ orders }, { status: 200 });
@@ -112,51 +149,90 @@ export async function POST(request: Request) {
 
     const combinedNotes = specialRequests.join('\n');
 
-    let createdOrder: any = null;
+    const resolvedMethod = (paymentMethod === 'QR_BANK' || paymentMethod === 'VIETQR') ? 'QR_BANK' : 'COD';
+
+    // Verify userId to satisfy Foreign Key constraint with User table
+    let validUserId: string | null = null;
+    if (userId) {
+      try {
+        const { data: userRow } = await supabase
+          .from('User')
+          .select('id')
+          .eq('id', userId)
+          .maybeSingle();
+        if (userRow?.id) {
+          validUserId = userRow.id;
+        } else if (customerEmail) {
+          const { data: userByEmail } = await supabase
+            .from('User')
+            .select('id')
+            .eq('email', customerEmail.trim().toLowerCase())
+            .maybeSingle();
+          if (userByEmail?.id) {
+            validUserId = userByEmail.id;
+          }
+        }
+      } catch (e) {}
+    } else if (customerEmail) {
+      try {
+        const { data: userByEmail } = await supabase
+          .from('User')
+          .select('id')
+          .eq('email', customerEmail.trim().toLowerCase())
+          .maybeSingle();
+        if (userByEmail?.id) {
+          validUserId = userByEmail.id;
+        }
+      } catch (e) {}
+    }
+
+    const orderPayloadData = {
+      id: orderId,
+      orderCode: orderCode,
+      userId: validUserId,
+      customerName: customerName.trim(),
+      customerPhone: customerPhone.trim(),
+      customerEmail: customerEmail?.trim() || null,
+      shippingAddress: fullAddress,
+      deliveryType: deliveryType,
+      notes: combinedNotes || null,
+      totalAmount: resolvedTotal,
+      discountAmount: resolvedDiscount,
+      netAmount: resolvedNet,
+      status: 'PENDING' as const,
+      paymentMethod: resolvedMethod as any,
+      paymentStatus: 'PENDING' as const,
+      paymentDetails: {
+        shippingMethod,
+        needInstallation,
+        isProxyRecipient,
+        proxyName: proxyName.trim(),
+        proxyPhone: proxyPhone.trim(),
+        technicalNotes: technicalNotes.trim(),
+        bankInfo: resolvedMethod === 'QR_BANK' ? {
+          bankName: 'Techcombank',
+          bankCode: 'TCB',
+          accountNumber: 'BAOLANN',
+          accountHolder: 'VO BAO LAN',
+          transferContent: orderCode,
+          amount: resolvedNet,
+        } : null,
+        items: cartItems.map((i: any) => ({
+          id: i.productId || i.id,
+          name: i.name,
+          price: i.discountPrice ?? i.price,
+          quantity: i.quantity || 1,
+          coverImage: i.coverImage,
+        }))
+      },
+    };
 
     // 1. Insert directly to Supabase Cloud Database (Fast Direct REST)
     try {
       const { data: supaNew, error: supaErr } = await supabase
         .from('Order')
         .insert([{
-          id: orderId,
-          orderCode: orderCode,
-          userId: userId || null,
-          customerName: customerName.trim(),
-          customerPhone: customerPhone.trim(),
-          customerEmail: customerEmail?.trim() || null,
-          shippingAddress: fullAddress,
-          deliveryType: deliveryType,
-          notes: combinedNotes || null,
-          totalAmount: resolvedTotal,
-          discountAmount: resolvedDiscount,
-          netAmount: resolvedNet,
-          status: 'PENDING',
-          paymentMethod: paymentMethod === 'QR_BANK' ? 'QR_BANK' : 'COD',
-          paymentStatus: 'PENDING',
-          paymentDetails: {
-            shippingMethod,
-            needInstallation,
-            isProxyRecipient,
-            proxyName: proxyName.trim(),
-            proxyPhone: proxyPhone.trim(),
-            technicalNotes: technicalNotes.trim(),
-            bankInfo: paymentMethod === 'QR_BANK' ? {
-              bankName: 'Techcombank',
-              bankCode: 'TCB',
-              accountNumber: 'BAOLANN',
-              accountHolder: 'DRX Hardware',
-              transferContent: orderCode,
-              amount: resolvedNet,
-            } : null,
-            items: cartItems.map((i: any) => ({
-              id: i.productId || i.id,
-              name: i.name,
-              price: i.discountPrice ?? i.price,
-              quantity: i.quantity || 1,
-              coverImage: i.coverImage,
-            }))
-          },
+          ...orderPayloadData,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         }])
@@ -165,32 +241,43 @@ export async function POST(request: Request) {
 
       if (!supaErr && supaNew) {
         createdOrder = supaNew;
+      } else {
+        if (supaErr) console.warn('Supabase create order error, trying Prisma fallback:', supaErr);
+        const { PrismaClient } = await import('@prisma/client');
+        const prisma = new PrismaClient();
+        try {
+          const prismaCreated = await prisma.order.create({
+            data: orderPayloadData,
+          });
+          if (prismaCreated) {
+            createdOrder = prismaCreated;
+          }
+        } finally {
+          await prisma.$disconnect();
+        }
       }
     } catch (supaErr: any) {
-      console.warn('Supabase create order notice:', supaErr);
+      console.warn('Supabase insert exception, trying Prisma fallback:', supaErr);
+      try {
+        const { PrismaClient } = await import('@prisma/client');
+        const prisma = new PrismaClient();
+        try {
+          const prismaCreated = await prisma.order.create({
+            data: orderPayloadData,
+          });
+          if (prismaCreated) {
+            createdOrder = prismaCreated;
+          }
+        } finally {
+          await prisma.$disconnect();
+        }
+      } catch (pe) {
+        console.error('Prisma order create error:', pe);
+      }
     }
 
     const finalOrder = createdOrder || {
-      id: orderId,
-      orderCode: orderCode,
-      customerName: customerName.trim(),
-      customerPhone: customerPhone.trim(),
-      shippingAddress: fullAddress,
-      deliveryType: deliveryType,
-      totalAmount: resolvedNet,
-      paymentMethod: paymentMethod === 'QR_BANK' ? 'QR_BANK' : 'COD',
-      paymentStatus: 'PENDING',
-      paymentDetails: {
-        bankInfo: paymentMethod === 'QR_BANK' ? {
-          bankName: 'Techcombank',
-          bankCode: 'TCB',
-          accountNumber: 'BAOLANN',
-          accountHolder: 'DRX Hardware',
-          transferContent: orderCode,
-          amount: resolvedNet,
-        } : null,
-      },
-      status: 'PENDING',
+      ...orderPayloadData,
       createdAt: new Date().toISOString(),
     };
 
@@ -218,7 +305,7 @@ export async function POST(request: Request) {
         id: 'notif-' + Date.now(),
         type: 'NEW_ORDER',
         title: `Đơn Hàng Mới ${orderCode}`,
-        message: `Khách hàng ${customerName} vừa đặt đơn ${orderCode} (${resolvedNet.toLocaleString('vi-VN')} đ - COD).`,
+        message: `Khách hàng ${customerName} vừa đặt đơn ${orderCode} (${resolvedNet.toLocaleString('vi-VN')} đ - ${resolvedMethod === 'QR_BANK' ? 'Quét QR Techcombank' : 'COD'}).`,
         data: { orderId: finalOrder.id, orderCode },
         isRead: false,
         createdAt: new Date().toISOString(),
@@ -233,11 +320,16 @@ export async function POST(request: Request) {
         orderCode: finalOrder.orderCode || orderCode,
         customerName: finalOrder.customerName,
         customerPhone: finalOrder.customerPhone,
+        customerEmail: finalOrder.customerEmail,
         shippingAddress: finalOrder.shippingAddress,
         deliveryType: finalOrder.deliveryType,
         totalAmount: resolvedNet,
-        paymentMethod: 'COD',
-        status: 'PENDING',
+        discountAmount: resolvedDiscount,
+        netAmount: resolvedNet,
+        paymentMethod: finalOrder.paymentMethod || resolvedMethod,
+        paymentStatus: finalOrder.paymentStatus || 'PENDING',
+        paymentDetails: finalOrder.paymentDetails,
+        status: finalOrder.status || 'PENDING',
         createdAt: finalOrder.createdAt || new Date().toISOString(),
       },
     }, { status: 201 });

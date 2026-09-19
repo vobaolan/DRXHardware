@@ -453,8 +453,8 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
             {showQrPreview && (
               <div className="p-4 bg-white dark:bg-slate-950 rounded-2xl border border-sky-200 dark:border-slate-800 flex flex-col sm:flex-row items-center gap-5">
                 <img
-                  src={`https://img.vietqr.io/image/970407-BAOLANN-compact2.png?amount=${order.netAmount || order.totalAmount}&addInfo=${orderDisplayCode}&accountName=DRX%20Hardware`}
-                  alt="VietQR Techcombank DRX Hardware"
+                  src={`https://img.vietqr.io/image/970407-BAOLANN-compact2.png?amount=${order.netAmount || order.totalAmount}&addInfo=${orderDisplayCode}&accountName=VO%20BAO%20LAN`}
+                  alt="VietQR Techcombank VO BAO LAN"
                   className="w-40 h-auto object-contain rounded-xl border border-slate-200"
                 />
                 <div className="space-y-1.5 text-xs flex-1">
@@ -468,7 +468,7 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
                     Số tài khoản: <strong className="font-mono text-[#0284c7] text-sm">BAOLANN</strong>
                   </p>
                   <p className="text-slate-600 dark:text-slate-300">
-                    Tên thụ hưởng: <strong>DRX Hardware</strong>
+                    Tên thụ hưởng: <strong>VO BAO LAN</strong>
                   </p>
                   <p className="text-slate-600 dark:text-slate-300">
                     Nội dung chuyển khoản chuẩn: <strong className="font-mono text-[#0284c7]">{orderDisplayCode}</strong>

@@ -51,6 +51,7 @@ enum PaymentStatus {
 
 enum PaymentMethod {
   VIETQR        // Mã QR Chuyển khoản ngân hàng tự động
+  QR_BANK       // Quét mã QR Ngân hàng (Techcombank)
   COD           // Thanh toán khi nhận hàng
   PAYOS         // Cổng thanh toán PayOS
   MOMO          // Ví MoMo

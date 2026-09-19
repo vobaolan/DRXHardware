@@ -172,7 +172,7 @@ export default function GuidePolicyPage() {
                   Quét Mã VietQR Techcombank
                 </h3>
                 <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                  Quét mã QR tự động điền STK: <strong>BAOLANN</strong>, Tên: <strong>DRX Hardware</strong>, số tiền và mã đơn hàng chính xác.
+                  Quét mã QR tự động điền STK: <strong>BAOLANN</strong>, Tên: <strong>VO BAO LAN</strong>, số tiền và mã đơn hàng chính xác.
                 </p>
                 <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800 pt-3 space-y-1">
                   <div>✓ Miễn phí 100% phí chuyển khoản</div>

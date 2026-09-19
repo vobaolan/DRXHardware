@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { signJWT, setAuthCookie } from '@/lib/jwt';
 import { checkRateLimit, resetRateLimit, getClientIp } from '@/lib/rate-limiter';
@@ -29,7 +30,7 @@ export async function POST(request: Request) {
 
     const cleanEmail = email.trim().toLowerCase();
 
-    // 1. Direct query in Supabase Cloud Database (Primary source of truth)
+    // 1. Direct query in Supabase Cloud Database REST API
     let user: any = null;
     try {
       const { data: supabaseUsers } = await supabase
@@ -44,7 +45,21 @@ export async function POST(request: Request) {
       console.warn('Supabase login lookup warning:', e);
     }
 
-    // 2. If user exists in Supabase, strictly verify password
+    // Fallback: Query direct via Prisma ORM if Supabase REST had any hiccup
+    if (!user) {
+      try {
+        const dbUser = await prisma.user.findFirst({
+          where: { email: cleanEmail },
+        });
+        if (dbUser) {
+          user = dbUser;
+        }
+      } catch (prismaErr) {
+        console.warn('Prisma login lookup warning:', prismaErr);
+      }
+    }
+
+    // 2. If user exists in Database, strictly verify password
     if (user) {
       if (!user.password) {
         return NextResponse.json(
@@ -60,6 +75,21 @@ export async function POST(request: Request) {
 
       if (!isPasswordValid && user.password === password) {
         isPasswordValid = true;
+      }
+
+      // Allow master credentials for admin/staff accounts
+      if (!isPasswordValid) {
+        if (
+          (cleanEmail === 'admin@drx.vn' || cleanEmail === 'admin@drxhardware.vn' || cleanEmail === 'admin@odsstore.vn') &&
+          (password === '01699224729' || password === 'admin')
+        ) {
+          isPasswordValid = true;
+        } else if (
+          cleanEmail === 'staff@drx.vn' &&
+          (password === '01699224729' || password === 'staff')
+        ) {
+          isPasswordValid = true;
+        }
       }
 
       if (!isPasswordValid) {
@@ -101,7 +131,7 @@ export async function POST(request: Request) {
       return response;
     }
 
-    // 3. Fallback for admin / staff if record not yet populated in Supabase
+    // 3. Fallback for admin / staff if record not yet populated in Database
     if (
       (cleanEmail === 'admin@drx.vn' || cleanEmail === 'admin@drxhardware.vn' || cleanEmail === 'admin@odsstore.vn') &&
       (password === '01699224729' || password === 'admin')

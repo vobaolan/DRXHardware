@@ -18,9 +18,33 @@ export async function GET(request: Request) {
 
       if (!supaErr && supaOrders && Array.isArray(supaOrders)) {
         orders = supaOrders;
+      } else {
+        if (supaErr) console.warn('Supabase get all orders warning, trying Prisma fallback:', supaErr);
+        const { PrismaClient } = await import('@prisma/client');
+        const prisma = new PrismaClient();
+        try {
+          orders = await prisma.order.findMany({
+            orderBy: { createdAt: 'desc' },
+          });
+        } finally {
+          await prisma.$disconnect();
+        }
       }
     } catch (e) {
-      console.warn('Supabase get all orders warning:', e);
+      console.warn('Supabase get all orders warning, trying Prisma fallback:', e);
+      try {
+        const { PrismaClient } = await import('@prisma/client');
+        const prisma = new PrismaClient();
+        try {
+          orders = await prisma.order.findMany({
+            orderBy: { createdAt: 'desc' },
+          });
+        } finally {
+          await prisma.$disconnect();
+        }
+      } catch (pe) {
+        console.error('Prisma fallback get orders error:', pe);
+      }
     }
 
     return NextResponse.json({ orders }, { status: 200 });

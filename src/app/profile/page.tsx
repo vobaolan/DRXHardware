@@ -236,12 +236,7 @@ function ProfileContent() {
           ? { ...sessionUser, provider: 'google' }
           : sessionUser;
 
-        setCurrentUser(prev => {
-          if (prev && prev.id === resolvedSessionUser.id && prev.email === resolvedSessionUser.email && prev.name === resolvedSessionUser.name) {
-            return prev;
-          }
-          return resolvedSessionUser;
-        });
+        setCurrentUser(resolvedSessionUser);
 
         if (!isFormDirtyRef.current) {
           setProfileName(resolvedSessionUser.name || '');
@@ -261,9 +256,7 @@ function ProfileContent() {
             if (!isFormDirtyRef.current) {
               setProfileName(resolvedVerified.name || '');
               setProfilePhone(resolvedVerified.phone || '');
-              if (!hasLoadedAddressRef.current) {
-                applyAddressToForm(resolvedVerified.address);
-              }
+              applyAddressToForm(resolvedVerified.address, true);
             }
             setIsLoggedIn(true);
           }
@@ -279,9 +272,7 @@ function ProfileContent() {
             if (!isFormDirtyRef.current) {
               setProfileName(resolvedVerified.name || '');
               setProfilePhone(resolvedVerified.phone || '');
-              if (!hasLoadedAddressRef.current) {
-                applyAddressToForm(resolvedVerified.address);
-              }
+              applyAddressToForm(resolvedVerified.address, true);
             }
             setIsLoggedIn(true);
           }
@@ -358,8 +349,13 @@ function ProfileContent() {
       console.warn('Lỗi đọc cấu hình PC đã lưu:', e);
     }
 
+    window.addEventListener('storage', fetchOrders);
+    window.addEventListener('drx_orders_updated', fetchOrders);
+
     return () => {
       isSubscribed = false;
+      window.removeEventListener('storage', fetchOrders);
+      window.removeEventListener('drx_orders_updated', fetchOrders);
     };
   }, [currentUser?.id]);
 
@@ -559,6 +555,7 @@ function ProfileContent() {
         setProfileName(updated.name || '');
         setProfilePhone(updated.phone || '');
         setProfileAddress(updated.address || '');
+        applyAddressToForm(updated.address, true);
         showToast('Cập nhật thông tin cá nhân lên hệ thống thành công!', 'success');
       } else {
         showToast('Không thể lưu thông tin vào cơ sở dữ liệu. Vui lòng thử lại!', 'error');

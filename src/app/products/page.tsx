@@ -1896,32 +1896,6 @@ function ProductsCatalogContent() {
                   ══════════════════════════════════════════════════════════════ */}
               {isLaptop && (
                 <>
-                  {/* Nhu Cầu Sử Dụng */}
-                  <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
-                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
-                      Nhu Cầu Sử Dụng
-                    </span>
-                    <div className="space-y-1">
-                      {['Học Tập - Văn Phòng', 'Đồ Họa - Kỹ Thuật', 'Gaming Hiệu Năng Cao', 'Mỏng Nhẹ Doanh Nhân'].map((u) => {
-                        const isSelected = selectedUsage === u;
-                        return (
-                          <button
-                            key={u}
-                            type="button"
-                            onClick={() => setSelectedUsage(isSelected ? 'ALL' : u)}
-                            className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-medium text-left transition-colors cursor-pointer ${
-                              isSelected
-                                ? 'bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] dark:text-sky-300 font-bold'
-                                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
-                            }`}
-                          >
-                            <span>{u}</span>
-                            {isSelected && <Check className="w-3.5 h-3.5 text-[#0284c7]" />}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
 
                   {/* Dòng Chip CPU */}
                   <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
