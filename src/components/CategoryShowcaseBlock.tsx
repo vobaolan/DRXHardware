@@ -195,11 +195,11 @@ export default function CategoryShowcaseBlock({
         {/* SHOWCASE BODY: LEFT BANNER + RIGHT PRODUCT CAROUSEL */}
         <div className="p-4 sm:p-5 grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
           
-          {/* 1. LEFT FEATURED BANNER POSTER (Uncropped Full Native Ratio) */}
+          {/* 1. LEFT FEATURED BANNER POSTER */}
           <div className="lg:col-span-3 flex items-center justify-center">
             <Link
               href={currentTab?.viewAllLink || viewAllLink}
-              className={`w-full h-full rounded-2xl border ${themeStyles.bannerBorder} overflow-hidden group relative flex items-center justify-center bg-white dark:bg-slate-900 shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer p-0`}
+              className={`w-full h-full max-h-[500px] aspect-[1/2] rounded-2xl border ${themeStyles.bannerBorder} overflow-hidden group relative flex items-center justify-center bg-white dark:bg-slate-900 shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer p-0`}
             >
               <img
                 src={bannerImage}
@@ -213,37 +213,43 @@ export default function CategoryShowcaseBlock({
           </div>
 
           {/* 2. RIGHT PRODUCTS SLIDER / GRID (Col 12 -> Col 9) */}
-          <div className="lg:col-span-9 relative flex flex-col justify-between">
+          <div className="lg:col-span-9 flex flex-col justify-center relative min-w-0">
             
-            {/* Navigation Arrows Controls */}
-            <div className="hidden sm:flex items-center justify-end gap-1.5 mb-2">
-              <button
-                onClick={scrollLeft}
-                className="p-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-[#0284c7] hover:text-white transition-all shadow-xs cursor-pointer"
-                title="Sản phẩm trước"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <button
-                onClick={scrollRight}
-                className="p-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-[#0284c7] hover:text-white transition-all shadow-xs cursor-pointer"
-                title="Sản phẩm tiếp"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
+            {/* Top Controls Row */}
+            <div className="hidden sm:flex items-center justify-between gap-2 mb-2.5">
+              <div className="text-xs font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                <Sparkles className="h-3.5 w-3.5 text-[#0284c7]" />
+                <span>Sản phẩm nổi bật ({filteredProducts.length})</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={scrollLeft}
+                  className="p-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-[#0284c7] hover:text-white transition-all shadow-xs cursor-pointer"
+                  title="Sản phẩm trước"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={scrollRight}
+                  className="p-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-[#0284c7] hover:text-white transition-all shadow-xs cursor-pointer"
+                  title="Sản phẩm tiếp"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
             </div>
 
             {/* Scrollable Products Row */}
             <div
               ref={scrollContainerRef}
-              className="flex items-stretch gap-4 overflow-x-auto no-scrollbar scroll-smooth pb-1 pt-1 select-none"
+              className="flex items-stretch gap-4 overflow-x-auto no-scrollbar scroll-smooth pb-1 pt-0.5 select-none"
               style={{
                 scrollbarWidth: 'none',
                 msOverflowStyle: 'none',
               }}
             >
               {filteredProducts.length === 0 ? (
-                <div className="w-full py-16 text-center text-xs text-slate-400">
+                <div className="w-full py-20 text-center text-xs text-slate-400">
                   Đang cập nhật sản phẩm thuộc mục này...
                 </div>
               ) : (
@@ -256,24 +262,17 @@ export default function CategoryShowcaseBlock({
                   return (
                     <div
                       key={product.id}
-                      className={`min-w-[215px] sm:min-w-[235px] max-w-[235px] rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 shadow-xs hover:shadow-xl ${themeStyles.accentBorder} transition-all duration-300 flex flex-col justify-between group relative shrink-0`}
+                      className={`min-w-[235px] sm:min-w-[255px] max-w-[255px] rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-xs hover:shadow-xl ${themeStyles.accentBorder} transition-all duration-300 flex flex-col justify-between group relative shrink-0`}
                     >
                       <Link href={`/products/${product.slug}`} className="flex flex-col h-full">
                         {/* Image Box - Pure White & Crisp Sharp Rendering */}
-                        <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-slate-50/70 dark:bg-slate-800/40 p-3 mb-2.5 flex items-center justify-center group-hover:bg-slate-100/70 dark:group-hover:bg-slate-800/60 transition-colors">
+                        <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-slate-50/70 dark:bg-slate-800/40 p-4 mb-3 flex items-center justify-center group-hover:bg-slate-100/70 dark:group-hover:bg-slate-800/60 transition-colors">
                           {/* Top-Right: Discount Badge */}
                           {hasDiscount && (
-                            <div className="absolute top-2 right-2 z-20 inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md bg-gradient-to-r from-red-600 to-rose-500 text-white text-[9.5px] font-black tracking-tight shadow-sm shadow-rose-500/20">
+                            <div className="absolute top-2.5 right-2.5 z-20 inline-flex items-center gap-0.5 px-2.5 py-0.5 rounded-lg bg-gradient-to-r from-red-600 to-rose-500 text-white text-[10px] font-black tracking-tight shadow-sm shadow-rose-500/20">
                               <Percent className="w-2.5 h-2.5 stroke-[2.5]" />
                               <span>-{discountPercent}%</span>
                             </div>
-                          )}
-
-                          {/* Top-Left: Brand Tag */}
-                          {product.brand && (
-                            <span className="absolute top-2 left-2 z-20 px-2 py-0.5 rounded-md bg-white/95 dark:bg-slate-900/95 text-slate-700 dark:text-slate-300 text-[9px] font-black uppercase tracking-wider border border-slate-200/80 dark:border-slate-700 shadow-2xs backdrop-blur-xs">
-                              {product.brand}
-                            </span>
                           )}
 
                           {/* Main Hardware Image - Sharp & High-DPI optimized */}
@@ -292,7 +291,7 @@ export default function CategoryShowcaseBlock({
                         </div>
 
                         {/* Title & Info */}
-                        <div className="space-y-1.5 flex-1 flex flex-col justify-between">
+                        <div className="space-y-2 flex-1 flex flex-col justify-between">
                           <h4 
                             title={product.name}
                             style={{
@@ -300,55 +299,55 @@ export default function CategoryShowcaseBlock({
                               WebkitLineClamp: 2,
                               WebkitBoxOrient: 'vertical',
                               overflow: 'hidden',
-                              height: '36px',
-                              lineHeight: '18px',
+                              height: '40px',
+                              lineHeight: '20px',
                             }}
-                            className="font-heading font-bold text-[12.5px] text-slate-900 dark:text-slate-100 group-hover:text-[#0284c7] dark:group-hover:text-[#38bdf8] transition-colors"
+                            className="font-heading font-bold text-[13px] text-slate-900 dark:text-slate-100 group-hover:text-[#0284c7] dark:group-hover:text-[#38bdf8] transition-colors"
                           >
                             {product.name}
                           </h4>
 
                           {/* Specs Pills Row */}
-                          <div className="flex flex-wrap gap-1 text-[9px] font-mono-tech">
+                          <div className="flex flex-wrap gap-1 text-[9.5px] font-mono-tech">
                             {product.socket && (
-                              <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded font-semibold">
+                              <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-md font-semibold">
                                 {product.socket}
                               </span>
                             )}
                             {product.ramType && (
-                              <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded font-semibold">
+                              <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-md font-semibold">
                                 {product.ramType}
                               </span>
                             )}
                             {product.specs?.["Tốc độ"] && (
-                              <span className="bg-slate-100 dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded font-semibold">
+                              <span className="bg-slate-100 dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-md font-semibold">
                                 {product.specs["Tốc độ"]}
                               </span>
                             )}
                           </div>
 
                           {/* Price Tag */}
-                          <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80">
+                          <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800/80">
                             {hasDiscount ? (
                               <>
-                                <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
-                                  <span className="text-[10.5px] text-slate-400 line-through font-mono-tech">
+                                <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                                  <span className="text-[11px] text-slate-400 line-through font-mono-tech">
                                     {formatCurrency(product.price)}
                                   </span>
-                                  <span className="text-[10px] font-bold text-rose-500">
+                                  <span className="text-[10.5px] font-bold text-rose-500">
                                     Tiết kiệm {formatCurrency(product.price - activePrice)}
                                   </span>
                                 </div>
-                                <span className="font-heading font-black text-[16px] text-rose-600 dark:text-rose-400 block tracking-tight">
+                                <span className="font-heading font-black text-[17px] text-rose-600 dark:text-rose-400 block tracking-tight">
                                   {formatCurrency(activePrice)}
                                 </span>
                               </>
                             ) : (
                               <>
-                                <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block mb-0.5">
-                                  Giá bán
+                                <span className="text-[9.5px] text-slate-400 font-bold uppercase tracking-wider block mb-1">
+                                  Giá bán chính hãng
                                 </span>
-                                <span className="font-heading font-black text-[16px] text-slate-900 dark:text-white block tracking-tight">
+                                <span className="font-heading font-black text-[17px] text-slate-900 dark:text-white block tracking-tight">
                                   {formatCurrency(activePrice)}
                                 </span>
                               </>
@@ -358,7 +357,7 @@ export default function CategoryShowcaseBlock({
                       </Link>
 
                       {/* Action Buttons Row: Cart Icon + MUA NGAY */}
-                      <div className="flex items-center gap-1.5 pt-2 mt-2 border-t border-slate-100 dark:border-slate-800">
+                      <div className="flex items-center gap-2 pt-3 mt-2.5 border-t border-slate-100 dark:border-slate-800">
                         <button
                           onClick={(e) => {
                             e.preventDefault();
@@ -376,15 +375,15 @@ export default function CategoryShowcaseBlock({
                             setAddedId(product.id);
                             setTimeout(() => setAddedId(null), 1500);
                           }}
-                          className="p-2 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/80 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-600 hover:text-white transition-all shadow-2xs cursor-pointer shrink-0"
+                          className="p-2.5 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/80 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-600 hover:text-white transition-all shadow-2xs cursor-pointer shrink-0"
                           title="Thêm vào giỏ hàng"
                         >
-                          {isJustAdded ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <ShoppingCart className="h-3.5 w-3.5" />}
+                          {isJustAdded ? <Check className="h-4 w-4 text-emerald-500" /> : <ShoppingCart className="h-4 w-4" />}
                         </button>
 
                         <button
                           onClick={(e) => handleBuyNow(product, e)}
-                          className={`flex-1 flex items-center justify-center gap-1.5 rounded-xl px-2.5 py-2 text-xs font-heading font-black transition-all active:scale-95 shadow-sm shadow-rose-500/25 bg-gradient-to-r from-rose-600 via-rose-500 to-red-600 hover:from-rose-500 hover:to-red-500 text-white cursor-pointer`}
+                          className={`flex-1 flex items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-heading font-black transition-all active:scale-95 shadow-sm shadow-rose-500/25 bg-gradient-to-r from-rose-600 via-rose-500 to-red-600 hover:from-rose-500 hover:to-red-500 text-white cursor-pointer`}
                         >
                           <Zap className="h-3.5 w-3.5 fill-amber-300 text-amber-300" />
                           <span>MUA NGAY</span>
