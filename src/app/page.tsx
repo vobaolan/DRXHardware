@@ -567,12 +567,12 @@ export default function Home() {
                     ]}
                   />
 
-                  {/* SHOWCASE 5: GAMING GEAR */}
+                  {/* SHOWCASE 5: GAMING GEAR (BANNER HÌNH 2 MỚI) */}
                   <CategoryShowcaseBlock
                     title="GAMING GEAR"
                     subtitle="HÀNG CHẤT GIÁ MỀM"
                     badgeText="HÀNG BÁN CHẠY"
-                    bannerImage="https://images.unsplash.com/photo-1595225476474-87563907a212?w=600&q=80"
+                    bannerImage="/banners/banner-showcase-gear.webp"
                     theme="amber"
                     viewAllLink="/products?category=GEAR"
                     products={liveProducts.filter(isGearProduct)}
