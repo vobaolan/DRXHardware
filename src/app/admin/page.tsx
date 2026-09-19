@@ -28,7 +28,6 @@ import { CouponManagementView } from '@/components/admin/CouponManagementView';
 import { PortalDropdown } from '@/components/ui/PortalDropdown';
 import { RevenueChartWidget } from '@/components/admin/RevenueChartWidget';
 import { SerialManagementSection } from '@/components/admin/SerialManagementSection';
-import { INITIAL_PRODUCTS } from '@/lib/hardware-data';
 
 function UserRoleButton({
   user,
@@ -371,7 +370,7 @@ export default function AdminDashboardPage() {
     serialsWarranty: 0,
   });
   const [last7Days, setLast7Days] = useState<any[]>([]);
-  const [products, setProducts] = useState<any[]>(INITIAL_PRODUCTS);
+  const [products, setProducts] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [serials, setSerials] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
@@ -639,7 +638,6 @@ export default function AdminDashboardPage() {
         } else if (payload.eventType === 'DELETE' && payload.old) {
           setProducts(prev => prev.filter(p => p.id !== payload.old.id));
         }
-        fetchAllData();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'ProductSerial' }, () => fetchAllData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'User' }, () => fetchAllData())
@@ -768,19 +766,19 @@ export default function AdminDashboardPage() {
       cancelText: 'Hủy Bỏ',
       variant: 'danger',
       onConfirm: async () => {
+        // 1. Optimistic Realtime UI Update: xóa ngay lập tức khỏi giao diện
+        setProducts(prev => prev.filter(x => x.id !== p.id));
+        showToast(`Đã xóa sản phẩm "${p.name}" thành công!`, 'success');
+
+        // 2. Gửi lệnh xóa vĩnh viễn lên Supabase qua API
         try {
           const res = await authFetch(`/api/admin/products?id=${p.id}`, { method: 'DELETE' });
-          if (res.ok) {
-            setProducts(prev => prev.filter(x => x.id !== p.id));
-            showToast(`Đã xóa sản phẩm "${p.name}" thành công!`, 'success');
-            setTimeout(() => {
-              fetchAllData(false);
-            }, 300);
-          } else {
-            showToast('Không thể xóa sản phẩm lúc này.', 'error');
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            showToast(data.message || 'Lỗi khi xóa sản phẩm trên cơ sở dữ liệu.', 'error');
           }
         } catch (e) {
-          showToast('Lỗi khi xóa sản phẩm!', 'error');
+          showToast('Lỗi kết nối khi xóa sản phẩm!', 'error');
         }
       }
     });
@@ -1667,17 +1665,6 @@ export default function AdminDashboardPage() {
                     />
                   </div>
 
-                  {/* Refresh Button */}
-                  <button
-                    type="button"
-                    onClick={() => fetchAllData(true)}
-                    disabled={isRefreshing}
-                    className="p-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl transition-all flex items-center justify-center cursor-pointer shrink-0 disabled:opacity-50"
-                    title="Đồng bộ danh sách sản phẩm từ cơ sở dữ liệu"
-                  >
-                    <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-[#0284c7]' : ''}`} />
-                  </button>
-
                   <button
                     onClick={handleOpenCreate}
                     className="px-4 py-2.5 bg-gradient-to-r from-[#0284c7] to-[#38bdf8] hover:from-[#0369a1] hover:to-[#0284c7] text-white text-xs font-bold uppercase rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-sm shadow-sky-500/20 shrink-0"
@@ -1709,14 +1696,20 @@ export default function AdminDashboardPage() {
                           <td colSpan={7} className="py-16 px-4 text-center">
                             <div className="flex flex-col items-center justify-center max-w-md mx-auto space-y-3">
                               <div className="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800/80 text-slate-400 flex items-center justify-center border border-slate-200 dark:border-slate-700">
-                                <Package className="w-7 h-7 text-slate-400" />
+                                {isRefreshing && products.length === 0 ? (
+                                  <RefreshCw className="w-7 h-7 text-[#0284c7] animate-spin" />
+                                ) : (
+                                  <Package className="w-7 h-7 text-slate-400" />
+                                )}
                               </div>
                               <div className="space-y-1">
                                 <h4 className="text-sm font-black text-slate-900 dark:text-white">
-                                  Không có sản phẩm nào
+                                  {isRefreshing && products.length === 0 ? 'Đang tải danh sách linh kiện...' : 'Không có sản phẩm nào'}
                                 </h4>
                                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                                  {searchQuery || selectedCategoryFilter !== 'ALL'
+                                  {isRefreshing && products.length === 0
+                                    ? 'Đang kết nối cơ sở dữ liệu thời gian thực...'
+                                    : searchQuery || selectedCategoryFilter !== 'ALL'
                                     ? `Không tìm thấy linh kiện nào phù hợp với bộ lọc "${selectedCategoryFilter !== 'ALL' ? CATEGORY_NAMES[selectedCategoryFilter] || selectedCategoryFilter : ''}" ${searchQuery ? `hoặc từ khóa "${searchQuery}"` : ''}.`
                                     : 'Kho linh kiện hiện chưa có sản phẩm nào.'}
                                 </p>
@@ -2634,7 +2627,6 @@ export default function AdminDashboardPage() {
                 return [savedProd, ...prev];
               });
             }
-            fetchAllData(false);
           }}
         />
       )}

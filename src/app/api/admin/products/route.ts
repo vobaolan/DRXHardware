@@ -19,23 +19,35 @@ export async function GET(request: Request) {
   try {
     let dbProducts: any[] = [];
     try {
-      const { data: supaProds, error: supaErr } = await supabase
-        .from('Product')
-        .select('*')
-        .order('createdAt', { ascending: false });
+      // Parallel range fetching avoids Supabase statement timeouts due to large image payloads
+      const [r1, r2, r3, r4] = await Promise.all([
+        supabase.from('Product').select('*').order('createdAt', { ascending: false }).range(0, 49),
+        supabase.from('Product').select('*').order('createdAt', { ascending: false }).range(50, 99),
+        supabase.from('Product').select('*').order('createdAt', { ascending: false }).range(100, 149),
+        supabase.from('Product').select('*').order('createdAt', { ascending: false }).range(150, 249),
+      ]);
 
-      if (!supaErr && supaProds && Array.isArray(supaProds) && supaProds.length > 0) {
-        dbProducts = supaProds;
+      const chunked = [
+        ...(r1.data && Array.isArray(r1.data) ? r1.data : []),
+        ...(r2.data && Array.isArray(r2.data) ? r2.data : []),
+        ...(r3.data && Array.isArray(r3.data) ? r3.data : []),
+        ...(r4.data && Array.isArray(r4.data) ? r4.data : []),
+      ];
+
+      if (chunked.length > 0) {
+        dbProducts = chunked;
       } else {
-        dbProducts = INITIAL_PRODUCTS;
+        const { data: supaProds, error: supaErr } = await supabase
+          .from('Product')
+          .select('*')
+          .order('createdAt', { ascending: false });
+
+        if (!supaErr && supaProds && Array.isArray(supaProds)) {
+          dbProducts = supaProds;
+        }
       }
     } catch (e) {
-      console.warn('Supabase products fetch warning, using fallback:', e);
-      dbProducts = INITIAL_PRODUCTS;
-    }
-
-    if (!dbProducts || dbProducts.length === 0) {
-      dbProducts = INITIAL_PRODUCTS;
+      console.warn('Supabase products fetch warning in admin:', e);
     }
 
     // Sort strictly newest first (by updatedAt or createdAt)
@@ -48,7 +60,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ products: sortedProducts }, { status: 200, headers });
   } catch (error: any) {
     console.error('Lỗi khi lấy danh sách sản phẩm admin:', error);
-    return NextResponse.json({ products: INITIAL_PRODUCTS }, { status: 200, headers });
+    return NextResponse.json({ products: [] }, { status: 200, headers });
   }
 }
 

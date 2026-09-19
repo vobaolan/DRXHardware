@@ -377,7 +377,6 @@ export default function StaffWarehousePortalPage() {
         } else if (payload.eventType === 'DELETE' && payload.old) {
           setProducts(prev => prev.filter(p => p.id !== payload.old.id));
         }
-        fetchAllStaffData();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'ProductSerial' }, () => fetchAllStaffData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'Order' }, () => fetchAllStaffData())
@@ -472,14 +471,15 @@ export default function StaffWarehousePortalPage() {
       cancelText: 'Hủy Bỏ',
       variant: 'danger',
       onConfirm: async () => {
+        // Optimistic realtime deletion
+        setProducts(prev => prev.filter(x => x.id !== p.id));
+        showToast(`Đã xóa linh kiện "${p.name}" thành công!`, 'success');
+
         try {
           const res = await authFetch(`/api/admin/products?id=${p.id}`, { method: 'DELETE' });
-          if (res.ok) {
-            setProducts(prev => prev.filter(x => x.id !== p.id));
-            showToast(`Đã xóa linh kiện "${p.name}" thành công!`, 'success');
-            fetchAllStaffData();
-          } else {
-            showToast('Không thể xóa sản phẩm lúc này.', 'error');
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            showToast(data.message || 'Không thể xóa sản phẩm lúc này.', 'error');
           }
         } catch (e) {
           showToast('Lỗi khi xóa sản phẩm!', 'error');

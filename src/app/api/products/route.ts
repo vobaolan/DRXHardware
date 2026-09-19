@@ -37,17 +37,37 @@ export async function GET(request: Request) {
     } else {
       // 1. Fetch from Supabase Live Database
       try {
-        const { data, error } = await supabase
-          .from('Product')
-          .select('*')
-          .order('createdAt', { ascending: false });
+        const [r1, r2, r3, r4] = await Promise.all([
+          supabase.from('Product').select('*').order('createdAt', { ascending: false }).range(0, 49),
+          supabase.from('Product').select('*').order('createdAt', { ascending: false }).range(50, 99),
+          supabase.from('Product').select('*').order('createdAt', { ascending: false }).range(100, 149),
+          supabase.from('Product').select('*').order('createdAt', { ascending: false }).range(150, 249),
+        ]);
 
-        if (!error && data && Array.isArray(data) && data.length > 0) {
-          dbProducts = data;
-          memoryCachedProducts = data;
+        const chunked = [
+          ...(r1.data && Array.isArray(r1.data) ? r1.data : []),
+          ...(r2.data && Array.isArray(r2.data) ? r2.data : []),
+          ...(r3.data && Array.isArray(r3.data) ? r3.data : []),
+          ...(r4.data && Array.isArray(r4.data) ? r4.data : []),
+        ];
+
+        if (chunked.length > 0) {
+          dbProducts = chunked;
+          memoryCachedProducts = chunked;
           lastCacheTimestamp = now;
         } else {
-          dbProducts = memoryCachedProducts || INITIAL_PRODUCTS;
+          const { data, error } = await supabase
+            .from('Product')
+            .select('*')
+            .order('createdAt', { ascending: false });
+
+          if (!error && data && Array.isArray(data)) {
+            dbProducts = data;
+            memoryCachedProducts = data;
+            lastCacheTimestamp = now;
+          } else {
+            dbProducts = memoryCachedProducts || INITIAL_PRODUCTS;
+          }
         }
       } catch (e) {
         console.warn('Supabase fetch error, fallback:', e);
