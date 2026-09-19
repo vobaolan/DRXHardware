@@ -270,6 +270,8 @@ export default function CategoryShowcaseBlock({
                           <img
                             src={product.coverImage}
                             alt={product.name}
+                            loading="lazy"
+                            decoding="async"
                             className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
                           />
                         </div>

@@ -17,12 +17,10 @@ export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
     const categoryFilter = url.searchParams.get('category')?.toUpperCase();
-    const now = Date.now();
+    const isBypassCache = url.searchParams.has('t') || url.searchParams.has('nocache');
 
-    let dbProducts: any[] = [];
-
-    // Check memory cache first
-    if (memoryCachedProducts && (now - lastCacheTimestamp < CACHE_TTL_MS)) {
+    // Check memory cache first (unless cache-busting query is passed)
+    if (!isBypassCache && memoryCachedProducts && (now - lastCacheTimestamp < CACHE_TTL_MS)) {
       dbProducts = memoryCachedProducts;
     } else {
       // 1. Fetch from Supabase with timeout/safety

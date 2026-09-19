@@ -593,10 +593,11 @@ export default function AdminDashboardPage() {
           const role = String(user.role || '').toUpperCase();
           
           // Strict Role Policy: Only ADMIN can access DRX Admin Portal (/admin)
-          // STAFF and regular USER are strictly forbidden from /admin
           if (role === 'ADMIN' || email === 'admin@drx.vn' || (email.includes('admin') && !email.includes('staff'))) {
             setIsAdmin(true);
-            await fetchAllData();
+            setIsAuthChecking(false); // Render dashboard shell instantly (< 20ms)!
+            fetchAllData(false); // Fetch live database in background
+            return;
           } else {
             setIsAdmin(false);
           }

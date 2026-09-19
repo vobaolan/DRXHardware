@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import fs from 'fs';
-import path from 'path';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,9 +34,9 @@ export async function POST(request: Request) {
 
     let uploadedUrl: string | null = null;
 
-    // 1. TRY SUPABASE STORAGE BUCKET ('products' or 'images')
+    // 1. DIRECT SUPABASE CLOUD STORAGE UPLOAD ('products' or 'images')
     try {
-      // Try 'products' bucket first
+      // Try 'products' bucket
       const { data: uploadData, error: uploadErr } = await supabase.storage
         .from('products')
         .upload(fileName, buffer, {
@@ -52,6 +50,7 @@ export async function POST(request: Request) {
           uploadedUrl = publicUrlData.publicUrl;
         }
       } else {
+        if (uploadErr) console.warn('Upload to products bucket warning:', uploadErr.message);
         // Try 'images' bucket fallback
         const { data: imgData, error: imgErr } = await supabase.storage
           .from('images')
@@ -65,27 +64,19 @@ export async function POST(request: Request) {
           if (publicUrlData?.publicUrl) {
             uploadedUrl = publicUrlData.publicUrl;
           }
+        } else if (imgErr) {
+          console.error('Upload to images bucket error:', imgErr.message);
         }
       }
-    } catch (supaErr) {
-      console.warn('Supabase storage upload attempt error:', supaErr);
+    } catch (supaErr: any) {
+      console.error('Supabase storage upload exception:', supaErr);
     }
 
-    // 2. LOCAL / EMBEDDED FALLBACK IF SUPABASE BUCKET WAS NOT CONFIGURED
     if (!uploadedUrl) {
-      try {
-        const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
-        if (!fs.existsSync(uploadsDir)) {
-          fs.mkdirSync(uploadsDir, { recursive: true });
-        }
-        const filePath = path.join(uploadsDir, fileName);
-        fs.writeFileSync(filePath, buffer);
-        uploadedUrl = `/uploads/${fileName}`;
-      } catch (fsErr) {
-        // Fallback to optimized base64 Data URI if disk write is restricted on serverless
-        const base64Data = buffer.toString('base64');
-        uploadedUrl = `data:${file.type || 'image/png'};base64,${base64Data}`;
-      }
+      return NextResponse.json(
+        { message: 'Không thể tải ảnh lên Supabase Cloud Storage. Vui lòng kiểm tra quyền bucket "products" trên Supabase!' },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({
