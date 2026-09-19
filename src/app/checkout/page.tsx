@@ -7,7 +7,7 @@ import {
   ShoppingBag, ArrowLeft, ArrowRight, ShieldCheck, CheckCircle2, 
   Truck, Building2, Wrench, UserCheck, MessageSquare, 
   Trash2, Plus, Minus, DollarSign, Check, Sparkles,
-  PackageCheck, User, MapPin
+  PackageCheck, User, MapPin, QrCode, Copy
 } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { Header } from '@/components/Header';
@@ -24,6 +24,23 @@ export default function CheckoutPage() {
 
   // 3-Step Checkout State: 1 = Check Giỏ Hàng, 2 = Thông Tin Giao Hàng, 3 = Xác Nhận Đơn Hàng
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
+
+  // Payment Method State: 'COD' | 'QR_BANK'
+  const [paymentMethod, setPaymentMethod] = useState<'COD' | 'QR_BANK'>('COD');
+  const [draftOrderCode, setDraftOrderCode] = useState<string>('');
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  useEffect(() => {
+    const random5Digits = Math.floor(10000 + Math.random() * 90000);
+    setDraftOrderCode(`DRX-${random5Digits}`);
+  }, []);
+
+  const handleCopyText = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedField(label);
+    showToast(`Đã sao chép ${label}!`, 'success');
+    setTimeout(() => setCopiedField(null), 2000);
+  };
 
   // Form State for Step 2
   const [shippingInfo, setShippingInfo] = useState({
@@ -239,7 +256,7 @@ export default function CheckoutPage() {
           totalAmount: subtotal,
           discountAmount: discountAmount,
           netAmount: netAmount,
-          paymentMethod: 'COD',
+          paymentMethod: paymentMethod,
         }),
       });
 
@@ -311,13 +328,100 @@ export default function CheckoutPage() {
               </div>
               <div className="flex justify-between border-b border-slate-200/60 dark:border-slate-700/60 pb-2">
                 <span className="text-slate-500 font-bold">Hình thức thanh toán:</span>
-                <span className="font-extrabold text-amber-600">💵 COD - Thu tiền khi nhận hàng</span>
+                <span className={`font-extrabold ${createdOrder.paymentMethod === 'QR_BANK' ? 'text-[#0284c7]' : 'text-amber-600'}`}>
+                  {createdOrder.paymentMethod === 'QR_BANK' ? '⚡ Quét Mã QR VietQR (Techcombank)' : '💵 COD - Thu tiền khi nhận hàng'}
+                </span>
               </div>
               <div className="flex justify-between pt-1 text-sm font-black">
-                <span className="text-slate-900 dark:text-white">Tổng tiền cần thanh toán:</span>
+                <span className="text-slate-900 dark:text-white">
+                  {createdOrder.paymentMethod === 'QR_BANK' ? 'Tổng tiền chuyển khoản QR:' : 'Tổng tiền cần thanh toán:'}
+                </span>
                 <span className="text-rose-600 dark:text-rose-400 font-mono text-base">{formatCurrency(createdOrder.totalAmount)}</span>
               </div>
             </div>
+
+            {/* HIỂN THỊ MÃ QR KHI THANH TOÁN QR_BANK */}
+            {createdOrder.paymentMethod === 'QR_BANK' && (
+              <div className="bg-gradient-to-br from-sky-50 via-white to-blue-50/50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 rounded-2xl p-5 border-2 border-sky-300 dark:border-sky-800 text-left space-y-4">
+                <div className="flex items-center gap-2.5 border-b border-sky-100 dark:border-slate-700 pb-3">
+                  <div className="p-2 rounded-xl bg-[#0284c7] text-white">
+                    <QrCode className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="font-heading text-xs font-black uppercase text-slate-900 dark:text-white">
+                      Mã QR Thanh Toán Techcombank (DRX Hardware)
+                    </h4>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Mở app ngân hàng quét mã hoặc chuyển khoản theo thông tin bên dưới:
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center gap-6">
+                  <div className="bg-white p-3 rounded-2xl border border-sky-200 shadow-sm shrink-0">
+                    <img
+                      src={`https://img.vietqr.io/image/970407-BAOLANN-compact2.png?amount=${createdOrder.totalAmount}&addInfo=${createdOrder.orderCode}&accountName=DRX%20Hardware`}
+                      alt="VietQR Techcombank DRX Hardware"
+                      className="w-44 h-auto object-contain mx-auto"
+                    />
+                  </div>
+
+                  <div className="space-y-2 text-xs flex-1 w-full">
+                    <div className="flex justify-between items-center py-1 border-b border-slate-200/60 dark:border-slate-700">
+                      <span className="text-slate-500">Ngân Hàng:</span>
+                      <span className="font-extrabold text-slate-900 dark:text-white">Techcombank (Ngân hàng Kỹ Thương)</span>
+                    </div>
+                    <div className="flex justify-between items-center py-1 border-b border-slate-200/60 dark:border-slate-700">
+                      <span className="text-slate-500">Số Tài Khoản:</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-black text-[#0284c7] text-sm">BAOLANN</span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyText('BAOLANN', 'Số tài khoản')}
+                          className="px-2 py-1 rounded bg-sky-100 dark:bg-sky-950 text-[#0284c7] font-bold text-[10px] hover:bg-[#0284c7] hover:text-white transition-colors cursor-pointer"
+                        >
+                          Sao chép
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center py-1 border-b border-slate-200/60 dark:border-slate-700">
+                      <span className="text-slate-500">Tên Thụ Hưởng:</span>
+                      <span className="font-black text-slate-900 dark:text-white uppercase">DRX Hardware</span>
+                    </div>
+                    <div className="flex justify-between items-center py-1 border-b border-slate-200/60 dark:border-slate-700">
+                      <span className="text-slate-500">Số Tiền:</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-black text-rose-600 dark:text-rose-400">{formatCurrency(createdOrder.totalAmount)}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyText(String(createdOrder.totalAmount), 'Số tiền')}
+                          className="px-2 py-1 rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold text-[10px] hover:bg-slate-200 transition-colors cursor-pointer"
+                        >
+                          Sao chép
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center py-1">
+                      <span className="text-slate-500">Nội Dung:</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-black text-[#0284c7]">{createdOrder.orderCode}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyText(createdOrder.orderCode, 'Nội dung')}
+                          className="px-2 py-1 rounded bg-[#0284c7] text-white font-bold text-[10px] hover:bg-[#0369a1] transition-colors cursor-pointer"
+                        >
+                          Sao chép
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-400/30 text-[11px] text-emerald-900 dark:text-emerald-200">
+                  ✓ Bộ phận kế toán &amp; kỹ thuật DRX sẽ kiểm tra biến động số dư và tiến hành xuất kho linh kiện ngay khi nhận được thanh toán.
+                </div>
+              </div>
+            )}
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
               <Link
@@ -975,40 +1079,219 @@ export default function CheckoutPage() {
                 animate={{ opacity: 1, y: 0 }}
                 className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xs space-y-8"
               >
-                {/* 3.1 CHỌN PHƯƠNG THỨC THANH TOÁN (DUY NHẤT 1 LÀ COD) */}
+                {/* 3.1 CHỌN PHƯƠNG THỨC THANH TOÁN (COD HOẶC QUÉT MÃ QR VIETQR) */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
-                    <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 border border-amber-200 dark:border-amber-800">
+                    <div className="p-2 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] border border-sky-200 dark:border-sky-800">
                       <DollarSign className="w-4 h-4" />
                     </div>
                     <div>
                       <h2 className="font-heading text-sm sm:text-base font-black uppercase text-slate-900 dark:text-white">
                         3.1 Phương Thức Thanh Toán
                       </h2>
-                      <p className="text-[11px] text-slate-400">Hình thức thanh toán an toàn, kiểm tra hàng trước khi trả tiền.</p>
+                      <p className="text-[11px] text-slate-400">Chọn hình thức thanh toán COD hoặc Chuyển khoản QR ngân hàng.</p>
                     </div>
                   </div>
 
-                  {/* COD OPTION CARD (DUY NHẤT 1) */}
-                  <div className="p-4 rounded-2xl bg-amber-50/70 dark:bg-amber-950/40 border-2 border-amber-500 ring-2 ring-amber-400/30 flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center font-black text-sm shrink-0 shadow-xs">
-                        💵
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    {/* OPTION 1: COD */}
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod('COD')}
+                      className={`p-4 rounded-2xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between gap-3 ${
+                        paymentMethod === 'COD'
+                          ? 'border-amber-500 bg-amber-50/70 dark:bg-amber-950/40 ring-2 ring-amber-400/30 shadow-xs'
+                          : 'border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40 hover:border-slate-300'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center font-black text-sm shrink-0 shadow-xs">
+                            💵
+                          </div>
+                          <div>
+                            <span className="font-heading text-xs font-black uppercase text-slate-900 dark:text-white block">
+                              COD - Thu Tiền Khi Nhận Hàng
+                            </span>
+                            <p className="text-[11px] text-slate-600 dark:text-slate-400 font-normal mt-0.5 leading-relaxed">
+                              Thanh toán tiền mặt hoặc chuyển khoản cho bưu tá khi nhận và kiểm tra linh kiện.
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <span className="font-heading text-xs font-black uppercase text-slate-900 dark:text-white block">
-                          COD - Thu Tiền Khi Nhận Hàng (Cash On Delivery)
+                      <div className="flex items-center justify-between pt-2 border-t border-amber-200/60 dark:border-slate-700/60 text-[10.5px]">
+                        <span className="font-bold text-amber-700 dark:text-amber-400">Được quyền đồng kiểm</span>
+                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                          paymentMethod === 'COD' ? 'border-amber-500 bg-amber-500 text-white' : 'border-slate-300'
+                        }`}>
+                          {paymentMethod === 'COD' && <Check className="w-3 h-3 stroke-[3]" />}
+                        </div>
+                      </div>
+                    </button>
+
+                    {/* OPTION 2: QR BANK TECHCOMBANK */}
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod('QR_BANK')}
+                      className={`p-4 rounded-2xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between gap-3 ${
+                        paymentMethod === 'QR_BANK'
+                          ? 'border-[#0284c7] bg-sky-50/70 dark:bg-sky-950/50 ring-2 ring-sky-400/30 shadow-xs'
+                          : 'border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40 hover:border-slate-300'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#0284c7] to-blue-600 text-white flex items-center justify-center font-black text-sm shrink-0 shadow-xs">
+                            <QrCode className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <span className="font-heading text-xs font-black uppercase text-slate-900 dark:text-white flex items-center gap-1.5">
+                              <span>Quét Mã QR Ngân Hàng</span>
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                                Khuyên Dùng
+                              </span>
+                            </span>
+                            <p className="text-[11px] text-slate-600 dark:text-slate-400 font-normal mt-0.5 leading-relaxed">
+                              VietQR 24/7 tự động qua <strong>Techcombank</strong>. Duyệt đơn &amp; chuẩn bị linh kiện nhanh nhất.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between pt-2 border-t border-sky-200/60 dark:border-slate-700/60 text-[10.5px]">
+                        <span className="font-bold text-[#0284c7] dark:text-sky-400">STK: BAOLANN • DRX Hardware</span>
+                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                          paymentMethod === 'QR_BANK' ? 'border-[#0284c7] bg-[#0284c7] text-white' : 'border-slate-300'
+                        }`}>
+                          {paymentMethod === 'QR_BANK' && <Check className="w-3 h-3 stroke-[3]" />}
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+
+                  {/* KHUNG QUÉT MÃ QR CHI TIẾT KHI CHỌN QR_BANK */}
+                  {paymentMethod === 'QR_BANK' && (
+                    <div className="bg-gradient-to-br from-white via-sky-50/40 to-blue-50/30 dark:from-slate-900 dark:via-slate-800/80 dark:to-slate-900 p-5 sm:p-6 rounded-3xl border-2 border-sky-200 dark:border-sky-800 shadow-md space-y-5">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-sky-100 dark:border-slate-800 pb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2.5 rounded-2xl bg-[#0284c7] text-white shadow-sm">
+                            <QrCode className="w-6 h-6" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-heading text-sm sm:text-base font-black uppercase text-slate-900 dark:text-white">
+                                QUÉT MÃ QR VIETQR (TECHCOMBANK)
+                              </h3>
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-sky-100 text-[#0284c7] dark:bg-sky-950 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
+                                24/7 Tức Thì
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                              Sử dụng ứng dụng bất kỳ (Techcombank, Vietcombank, MB, BIDV, MoMo...) để quét mã
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 self-start sm:self-auto text-[11px] font-bold text-slate-500 bg-white dark:bg-slate-800 px-3 py-1 rounded-full border border-slate-200 dark:border-slate-700">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                          <span>Hệ thống tự động đối soát</span>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+                        {/* QR CODE CONTAINER */}
+                        <div className="md:col-span-5 flex flex-col items-center justify-center p-4 bg-white dark:bg-slate-950 rounded-2xl border border-sky-200/80 dark:border-slate-800 shadow-sm text-center space-y-2">
+                          <div className="relative group">
+                            <img
+                              src={`https://img.vietqr.io/image/970407-BAOLANN-compact2.png?amount=${netAmount}&addInfo=${draftOrderCode}&accountName=DRX%20Hardware`}
+                              alt="VietQR Techcombank DRX Hardware"
+                              className="w-48 sm:w-56 h-auto object-contain mx-auto rounded-xl transition-transform group-hover:scale-105"
+                            />
+                          </div>
+                          <span className="text-[10.5px] font-bold text-[#0284c7] uppercase tracking-wider block">
+                            Mã QR Tự Động Điền STK &amp; Số Tiền
+                          </span>
+                        </div>
+
+                        {/* BANK TRANSFER DETAILS WITH COPY BUTTONS */}
+                        <div className="md:col-span-7 space-y-2.5 text-xs">
+                          {/* 1. NGÂN HÀNG */}
+                          <div className="p-3 bg-white dark:bg-slate-950 rounded-xl border border-slate-200/80 dark:border-slate-800 flex items-center justify-between">
+                            <div>
+                              <span className="text-[10px] uppercase font-bold text-slate-400 block">Ngân Hàng Thụ Hưởng:</span>
+                              <span className="font-extrabold text-slate-900 dark:text-white">Techcombank (Ngân hàng Kỹ Thương)</span>
+                            </div>
+                            <span className="px-2 py-1 rounded-lg bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300 font-mono font-black text-[10px] border border-red-200 dark:border-red-800">
+                              TCB
+                            </span>
+                          </div>
+
+                          {/* 2. SỐ TÀI KHOẢN */}
+                          <div className="p-3 bg-white dark:bg-slate-950 rounded-xl border border-slate-200/80 dark:border-slate-800 flex items-center justify-between">
+                            <div>
+                              <span className="text-[10px] uppercase font-bold text-slate-400 block">Số Tài Khoản (STK):</span>
+                              <span className="font-mono font-black text-[#0284c7] text-base tracking-wider">BAOLANN</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleCopyText('BAOLANN', 'Số tài khoản')}
+                              className="px-3 py-1.5 rounded-lg bg-sky-50 dark:bg-sky-950/60 hover:bg-[#0284c7] text-[#0284c7] hover:text-white dark:text-sky-300 font-bold text-[11px] transition-all flex items-center gap-1.5 cursor-pointer"
+                            >
+                              <Copy className="w-3.5 h-3.5" />
+                              <span>{copiedField === 'Số tài khoản' ? 'Đã chép!' : 'Sao chép STK'}</span>
+                            </button>
+                          </div>
+
+                          {/* 3. TÊN CHỦ TÀI KHOẢN */}
+                          <div className="p-3 bg-white dark:bg-slate-950 rounded-xl border border-slate-200/80 dark:border-slate-800 flex items-center justify-between">
+                            <div>
+                              <span className="text-[10px] uppercase font-bold text-slate-400 block">Tên Người Thụ Hưởng:</span>
+                              <span className="font-black text-slate-900 dark:text-white uppercase">DRX Hardware</span>
+                            </div>
+                            <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                          </div>
+
+                          {/* 4. SỐ TIỀN */}
+                          <div className="p-3 bg-white dark:bg-slate-950 rounded-xl border border-slate-200/80 dark:border-slate-800 flex items-center justify-between">
+                            <div>
+                              <span className="text-[10px] uppercase font-bold text-slate-400 block">Số Tiền Thanh Toán:</span>
+                              <span className="font-mono font-black text-rose-600 dark:text-rose-400 text-base">{formatCurrency(netAmount)}</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleCopyText(String(netAmount), 'Số tiền')}
+                              className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 font-bold text-[11px] transition-all flex items-center gap-1.5 cursor-pointer"
+                            >
+                              <Copy className="w-3.5 h-3.5" />
+                              <span>{copiedField === 'Số tiền' ? 'Đã chép!' : 'Sao chép số tiền'}</span>
+                            </button>
+                          </div>
+
+                          {/* 5. NỘI DUNG CHUYỂN KHOẢN */}
+                          <div className="p-3 bg-sky-50 dark:bg-slate-950 rounded-xl border-2 border-sky-300 dark:border-sky-800 flex items-center justify-between">
+                            <div>
+                              <span className="text-[10px] uppercase font-bold text-[#0284c7] block">Nội Dung Chuyển Khoản:</span>
+                              <span className="font-mono font-black text-[#0284c7] text-base">{draftOrderCode}</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleCopyText(draftOrderCode, 'Nội dung')}
+                              className="px-3 py-1.5 rounded-lg bg-[#0284c7] text-white hover:bg-[#0369a1] font-bold text-[11px] transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+                            >
+                              <Copy className="w-3.5 h-3.5" />
+                              <span>{copiedField === 'Nội dung' ? 'Đã chép!' : 'Sao chép nội dung'}</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-400/30 text-[11px] text-amber-900 dark:text-amber-200 flex items-start gap-2">
+                        <span className="font-black text-amber-600 dark:text-amber-400 shrink-0">⚠️ Lưu ý:</span>
+                        <span>
+                          Quý khách vui lòng giữ nguyên nội dung chuyển khoản <strong>{draftOrderCode}</strong> để nhân viên và hệ thống đối soát tự động duyệt đơn ngay trong 1-3 phút.
                         </span>
-                        <p className="text-[11px] text-slate-600 dark:text-slate-300 font-normal mt-0.5 leading-relaxed">
-                          Thanh toán bằng tiền mặt hoặc chuyển khoản trực tiếp cho nhân viên giao hàng khi nhận và kiểm tra linh kiện máy tính.
-                        </p>
                       </div>
                     </div>
-
-                    <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
-                      Khuyên Dùng
-                    </span>
-                  </div>
+                  )}
                 </div>
 
                 {/* 3.2 TỔNG HỢP CHI TIẾT ĐƠN HÀNG */}
@@ -1055,10 +1338,17 @@ export default function CheckoutPage() {
                       <span className="font-extrabold text-emerald-600">Vận chuyển tiêu chuẩn (Miễn phí)</span>
                     </div>
 
+                    <div className="flex justify-between border-b border-slate-200/60 dark:border-slate-700/60 pb-2">
+                      <span className="text-slate-500 font-bold">Phương thức thanh toán:</span>
+                      <span className={`font-extrabold ${paymentMethod === 'QR_BANK' ? 'text-[#0284c7]' : 'text-amber-600'}`}>
+                        {paymentMethod === 'QR_BANK' ? '⚡ Quét Mã QR VietQR (Techcombank)' : '💵 COD - Thu tiền khi nhận hàng'}
+                      </span>
+                    </div>
+
                     {shippingInfo.needInstallation && (
                       <div className="flex justify-between border-b border-slate-200/60 dark:border-slate-700/60 pb-2 text-[#0284c7]">
                         <span className="font-bold">Yêu cầu lắp ráp:</span>
-                        <span className="font-extrabold">Hỗ trợ lắp đặt & test máy</span>
+                        <span className="font-extrabold">Hỗ trợ lắp đặt &amp; test máy</span>
                       </div>
                     )}
 
@@ -1077,7 +1367,9 @@ export default function CheckoutPage() {
                     )}
 
                     <div className="flex justify-between pt-1 text-sm font-black">
-                      <span className="text-slate-900 dark:text-white">Tổng tiền thu COD:</span>
+                      <span className="text-slate-900 dark:text-white">
+                        {paymentMethod === 'QR_BANK' ? 'Tổng tiền thanh toán QR:' : 'Tổng tiền thu COD:'}
+                      </span>
                       <span className="text-rose-600 dark:text-rose-400 font-mono text-base">{formatCurrency(netAmount)}</span>
                     </div>
                   </div>
@@ -1098,10 +1390,19 @@ export default function CheckoutPage() {
                     type="button"
                     disabled={isSubmitting}
                     onClick={handleConfirmOrder}
-                    className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-emerald-600 text-white font-black text-xs sm:text-sm uppercase tracking-wider shadow-lg shadow-emerald-500/25 transition-all cursor-pointer disabled:opacity-50"
+                    className={`inline-flex items-center gap-2 px-8 py-4 rounded-xl text-white font-black text-xs sm:text-sm uppercase tracking-wider shadow-lg transition-all cursor-pointer disabled:opacity-50 ${
+                      paymentMethod === 'QR_BANK'
+                        ? 'bg-gradient-to-r from-[#0284c7] to-blue-600 hover:from-[#0369a1] hover:to-blue-700 shadow-sky-500/25'
+                        : 'bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-emerald-600 shadow-emerald-500/25'
+                    }`}
                   >
                     {isSubmitting ? (
                       <span>Đang Ghi Nhận Đơn Hàng...</span>
+                    ) : paymentMethod === 'QR_BANK' ? (
+                      <>
+                        <QrCode className="w-4 h-4 stroke-[2.5]" />
+                        <span>Xác Nhận Đặt Hàng &amp; Đã Chuyển Khoản QR</span>
+                      </>
                     ) : (
                       <>
                         <Check className="w-4 h-4 stroke-[3]" />
@@ -1159,7 +1460,9 @@ export default function CheckoutPage() {
 
                 <div className="flex justify-between text-slate-500">
                   <span>Phương thức:</span>
-                  <span className="font-bold text-amber-600">COD (Thu tiền tận nơi)</span>
+                  <span className={`font-bold ${paymentMethod === 'QR_BANK' ? 'text-[#0284c7]' : 'text-amber-600'}`}>
+                    {paymentMethod === 'QR_BANK' ? 'Quét QR (Techcombank)' : 'COD (Thu tiền tận nơi)'}
+                  </span>
                 </div>
 
                 <div className="flex justify-between pt-3 border-t border-slate-200 dark:border-slate-700 text-sm sm:text-base font-black">

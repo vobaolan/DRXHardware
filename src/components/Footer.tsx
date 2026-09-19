@@ -92,7 +92,7 @@ export const Footer: React.FC = () => {
               {[
                 { label: 'Tra Cứu Bảo Hành E-Warranty', href: '/warranty' },
                 { label: 'Chính Sách 1-Đổi-1 36 Tháng', href: '/policies/warranty' },
-                { label: 'Hướng Dẫn Thanh Toán & Trả Góp', href: '/policies/guide' },
+                { label: 'Hướng Dẫn Mua Hàng & Thanh Toán', href: '/policies/guide' },
                 { label: 'Chính Sách Giao Hàng Toàn Quốc', href: '/policies/shipping' },
                 { label: 'Câu Hỏi Thường Gặp (FAQ)', href: '/policies/faq' },
                 { label: 'Điều Khoản Dịch Vụ', href: '/policies/terms' },
@@ -120,11 +120,11 @@ export const Footer: React.FC = () => {
             <div className="grid grid-cols-3 gap-2">
               {[
                 { name: 'VietQR', text: 'VIETQR' },
-                { name: 'MoMo', text: 'MOMO' },
-                { name: 'ZaloPay', text: 'ZALOPAY' },
-                { name: 'Visa', text: 'VISA' },
-                { name: 'Mastercard', text: 'MASTER' },
-                { name: 'Trả góp', text: 'TRẢ GÓP' },
+                { name: 'Techcombank', text: 'TCB 24/7' },
+                { name: 'COD', text: 'TIỀN MẶT COD' },
+                { name: 'Napas247', text: 'NAPAS 24/7' },
+                { name: 'Showroom', text: 'SHOWROOM' },
+                { name: 'E-Warranty', text: 'E-SERIAL' },
               ].map((pay) => (
                 <div
                   key={pay.name}

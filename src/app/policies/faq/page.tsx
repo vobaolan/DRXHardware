@@ -57,8 +57,8 @@ export default function FAQPolicyPage() {
     {
       id: 'faq-5',
       category: 'payment',
-      question: 'DRX Hardware hỗ trợ những hình thức thanh toán và trả góp nào?',
-      answer: 'DRX hỗ trợ chuyển khoản ngân hàng tự động qua mã VietQR 24/7 (miễn phí), thanh toán tiền mặt khi nhận hàng (COD), quẹt thẻ POS tại showroom và đặc biệt là chương trình TRẢ GÓP 0% LÃI SUẤT qua thẻ tín dụng của hơn 25 ngân hàng hoặc trả góp qua CCCD duyệt hồ sơ online 15 phút.'
+      question: 'DRX Hardware hỗ trợ những hình thức thanh toán nào?',
+      answer: 'DRX Hardware hỗ trợ 2 hình thức thanh toán tiện lợi: Quét mã VietQR Techcombank 24/7 (STK: BAOLANN - Tên: DRX Hardware, hoàn toàn 0đ phí giao dịch, đối soát tự động) và Thanh toán tiền mặt khi nhận hàng (COD) tận nơi có hỗ trợ đồng kiểm linh kiện trước khi thanh toán.'
     },
     {
       id: 'faq-6',
@@ -103,7 +103,7 @@ export default function FAQPolicyPage() {
           </h1>
 
           <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 font-normal max-w-2xl mx-auto leading-relaxed">
-            Tổng hợp các thắc mắc phổ biến về chính sách bảo hành 1 đổi 1, quy trình giao hàng, tương thích linh kiện PC và trả góp.
+            Tổng hợp các thắc mắc phổ biến về chính sách bảo hành 1 đổi 1, quy trình giao hàng, tương thích linh kiện PC và thanh toán.
           </p>
 
           {/* SEARCH INPUT */}
@@ -113,7 +113,7 @@ export default function FAQPolicyPage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Tìm câu hỏi bạn đang quan tâm (Ví dụ: 1 đổi 1, trả góp, giao hàng...)"
+                placeholder="Tìm câu hỏi bạn đang quan tâm (Ví dụ: 1 đổi 1, VietQR, giao hàng, COD...)"
                 className="w-full bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-xs sm:text-sm font-semibold placeholder-slate-400 rounded-2xl pl-11 pr-4 py-3.5 border border-slate-200 dark:border-slate-800 focus:outline-none focus:border-[#0284c7] focus:ring-4 focus:ring-sky-500/10 transition-all"
               />
               <Search className="w-4 h-4 text-slate-400 absolute left-4 top-4" />
@@ -141,7 +141,7 @@ export default function FAQPolicyPage() {
             { key: 'warranty', label: 'Bảo Hành & Đổi Trả', icon: ShieldCheck },
             { key: 'shipping', label: 'Giao Hàng & Đồng Kiểm', icon: Truck },
             { key: 'buildpc', label: 'Linh Kiện & Ráp PC', icon: Cpu },
-            { key: 'payment', label: 'Thanh Toán & Trả Góp', icon: CreditCard },
+            { key: 'payment', label: 'Thanh Toán & Hóa Đơn', icon: CreditCard },
           ].map((cat) => {
             const Icon = cat.icon;
             const isSelected = activeCategory === cat.key;

@@ -20,7 +20,8 @@ import {
   Copy, 
   ExternalLink,
   ShieldCheck,
-  RotateCcw
+  RotateCcw,
+  QrCode
 } from 'lucide-react';
 import { showToast } from '@/components/Toast';
 import { authFetch } from '@/lib/auth-client';
@@ -83,6 +84,10 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
   const [currentStatus, setCurrentStatus] = useState<string>(order.status || 'PENDING');
   const [currentPaymentStatus, setCurrentPaymentStatus] = useState<string>(order.paymentStatus || 'PENDING');
 
+  const [showQrPreview, setShowQrPreview] = useState(false);
+  const isQrPayment = order.paymentMethod === 'QR_BANK';
+  const isPaid = currentPaymentStatus === 'PAID';
+
   const orderDisplayCode = (() => {
     let raw = String(order.orderCode || order.id || 'DRX-83921').toUpperCase();
     raw = raw.replace(/^#/, '').replace(/^ORD-/, '');
@@ -96,6 +101,26 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
     setCopiedCode(true);
     showToast(`Đã sao chép mã đơn #${orderDisplayCode}`, 'success');
     setTimeout(() => setCopiedCode(false), 2000);
+  };
+
+  // Confirm Techcombank payment received
+  const handleConfirmPaymentReceived = async () => {
+    setIsUpdating(true);
+    try {
+      const updatedChecklist = {
+        ...checklist,
+        check_collected_cod: true,
+      };
+      setChecklist(updatedChecklist);
+      setCurrentPaymentStatus('PAID');
+
+      await saveOrderChanges(currentStatus, 'PAID', updatedChecklist);
+      showToast(`Đã xác nhận tiền vào Techcombank (STK: BAOLANN) cho đơn #${orderDisplayCode}!`, 'success');
+    } catch (err: any) {
+      showToast('Lỗi khi xác nhận thanh toán!', 'error');
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   // Handle Checklist Item Toggle
@@ -370,6 +395,114 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
         )}
 
         {/* ─────────────────────────────────────────────────────────────
+            BANK TRANSFER VERIFICATION BOX (TECHCOMBANK - BAOLANN)
+           ───────────────────────────────────────────────────────────── */}
+        {isQrPayment && (
+          <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-sky-50 via-white to-blue-50/60 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 border-2 border-sky-300 dark:border-sky-700 shadow-sm space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-sky-100 dark:border-slate-700 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-[#0284c7] text-white">
+                  <QrCode className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h4 className="font-heading text-xs font-black uppercase text-slate-900 dark:text-white">
+                      THANH TOÁN VIETQR: TECHCOMBANK - STK: BAOLANN
+                    </h4>
+                    {isPaid ? (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200">
+                        ✓ ĐÃ NHẬN TIỀN
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 animate-pulse">
+                        ⏳ CHỜ ĐỐI SOÁT BIẾN ĐỘNG SỐ DƯ
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    Khách chọn thanh toán chuyển khoản quét mã QR tự động qua Techcombank.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => setShowQrPreview(!showQrPreview)}
+                  className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-sky-200 dark:border-slate-700 text-[#0284c7] hover:bg-sky-50 font-bold text-xs transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+                >
+                  <QrCode className="w-3.5 h-3.5" />
+                  <span>{showQrPreview ? 'Ẩn Mã QR' : 'Xem Mã QR Khách Quét'}</span>
+                </button>
+
+                {!isPaid && (
+                  <button
+                    type="button"
+                    disabled={isUpdating}
+                    onClick={handleConfirmPaymentReceived}
+                    className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-md shadow-emerald-600/25 active:scale-95 disabled:opacity-50"
+                  >
+                    <Check className="w-3.5 h-3.5 stroke-[3]" />
+                    <span>Xác Nhận Tiền Đã Vào</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* EXPANDABLE QR PREVIEW */}
+            {showQrPreview && (
+              <div className="p-4 bg-white dark:bg-slate-950 rounded-2xl border border-sky-200 dark:border-slate-800 flex flex-col sm:flex-row items-center gap-5">
+                <img
+                  src={`https://img.vietqr.io/image/970407-BAOLANN-compact2.png?amount=${order.netAmount || order.totalAmount}&addInfo=${orderDisplayCode}&accountName=DRX%20Hardware`}
+                  alt="VietQR Techcombank DRX Hardware"
+                  className="w-40 h-auto object-contain rounded-xl border border-slate-200"
+                />
+                <div className="space-y-1.5 text-xs flex-1">
+                  <div className="font-heading font-black text-slate-900 dark:text-white uppercase">
+                    Thông Tin Tài Khoản Thụ Hưởng DRX:
+                  </div>
+                  <p className="text-slate-600 dark:text-slate-300">
+                    Ngân hàng: <strong>Techcombank (TCB)</strong>
+                  </p>
+                  <p className="text-slate-600 dark:text-slate-300">
+                    Số tài khoản: <strong className="font-mono text-[#0284c7] text-sm">BAOLANN</strong>
+                  </p>
+                  <p className="text-slate-600 dark:text-slate-300">
+                    Tên thụ hưởng: <strong>DRX Hardware</strong>
+                  </p>
+                  <p className="text-slate-600 dark:text-slate-300">
+                    Nội dung chuyển khoản chuẩn: <strong className="font-mono text-[#0284c7]">{orderDisplayCode}</strong>
+                  </p>
+                  <p className="text-slate-600 dark:text-slate-300">
+                    Số tiền cần nhận: <strong className="font-mono text-rose-600 text-sm">{formatVND(order.netAmount || order.totalAmount)}</strong>
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* DETAILS BAR */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+              <div className="p-2.5 bg-white/80 dark:bg-slate-950/60 rounded-xl border border-slate-200/80 dark:border-slate-800">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block">Ngân Hàng:</span>
+                <span className="font-extrabold text-slate-800 dark:text-slate-200">Techcombank</span>
+              </div>
+              <div className="p-2.5 bg-white/80 dark:bg-slate-950/60 rounded-xl border border-slate-200/80 dark:border-slate-800">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block">STK Thụ Hưởng:</span>
+                <span className="font-mono font-black text-[#0284c7]">BAOLANN</span>
+              </div>
+              <div className="p-2.5 bg-white/80 dark:bg-slate-950/60 rounded-xl border border-slate-200/80 dark:border-slate-800">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block">Nội Dung CK:</span>
+                <span className="font-mono font-black text-[#0284c7]">{orderDisplayCode}</span>
+              </div>
+              <div className="p-2.5 bg-white/80 dark:bg-slate-950/60 rounded-xl border border-slate-200/80 dark:border-slate-800">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block">Số Tiền:</span>
+                <span className="font-mono font-black text-rose-600 dark:text-rose-400">{formatVND(order.netAmount || order.totalAmount)}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ─────────────────────────────────────────────────────────────
             1. CHECKLIST TIẾN ĐỘ VẬN HÀNH 5 BƯỚC (REDESIGNED FIGURE 2)
            ───────────────────────────────────────────────────────────── */}
         <div className="space-y-3 bg-gradient-to-br from-sky-50/60 via-slate-50 to-blue-50/40 dark:from-slate-800/60 dark:via-slate-900 dark:to-slate-800/40 p-4 sm:p-5 rounded-2xl border border-sky-200/80 dark:border-slate-700 shadow-xs">
@@ -535,7 +668,7 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
               </div>
             </div>
 
-            {/* STEP 5: THU TIỀN COD & HOÀN TẤT */}
+            {/* STEP 5: THU TIỀN COD / CHECK TIỀN QR & HOÀN TẤT */}
             <div 
               onClick={() => handleToggleCheck('check_collected_cod')}
               className={`p-3 rounded-2xl border transition-all cursor-pointer flex items-start justify-between gap-3 ${
@@ -557,11 +690,15 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
                   <div className="flex items-center gap-2 flex-wrap">
                     <BadgeDollarSign className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                     <span className="font-heading text-xs font-black">
-                      5. Đã thu tiền COD ({formatVND(order.netAmount || order.totalAmount)}) &amp; Hoàn tất
+                      {isQrPayment 
+                        ? `5. Đã check tiền vào Techcombank STK BAOLANN (${formatVND(order.netAmount || order.totalAmount)})`
+                        : `5. Đã thu tiền COD (${formatVND(order.netAmount || order.totalAmount)}) & Hoàn tất`}
                     </span>
                   </div>
                   <p className="text-[11px] opacity-75 leading-relaxed">
-                    Khách đã kiểm tra, nhận đủ linh kiện và thanh toán thành công. Tự động chuyển COMPLETED &amp; PAID.
+                    {isQrPayment
+                      ? 'Đã đối soát biến động số dư Techcombank đúng số tiền và nội dung. Tự động chuyển COMPLETED & PAID.'
+                      : 'Khách đã kiểm tra, nhận đủ linh kiện và thanh toán thành công. Tự động chuyển COMPLETED & PAID.'}
                   </p>
                 </div>
               </div>
@@ -707,11 +844,13 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
         </div>
 
         {/* ─────────────────────────────────────────────────────────────
-            FOOTER: TOTAL COD & ACTIONS
+            FOOTER: TOTAL & ACTIONS
            ───────────────────────────────────────────────────────────── */}
         <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-baseline gap-2 w-full sm:w-auto">
-            <span className="text-xs font-bold text-slate-500 uppercase">Tổng tiền COD:</span>
+            <span className="text-xs font-bold text-slate-500 uppercase">
+              {isQrPayment ? 'Tổng tiền QR Bank:' : 'Tổng tiền COD:'}
+            </span>
             <span className="font-heading font-black text-lg text-rose-600 dark:text-rose-400">
               {formatVND(order.netAmount || order.totalAmount)}
             </span>

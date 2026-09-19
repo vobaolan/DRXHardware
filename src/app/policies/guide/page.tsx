@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 
 export default function GuidePolicyPage() {
-  const [activeTab, setActiveTab] = useState<'order' | 'payment' | 'installment'>('order');
+  const [activeTab, setActiveTab] = useState<'order' | 'payment' | 'verification'>('order');
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#090d16] text-slate-900 dark:text-slate-100 flex flex-col antialiased transition-colors duration-300">
@@ -30,11 +30,11 @@ export default function GuidePolicyPage() {
             className="font-heading text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black uppercase text-slate-900 dark:text-white"
             style={{ lineHeight: '1.25' }}
           >
-            HƯỚNG DẪN THANH TOÁN & TRẢ GÓP 0%
+            HƯỚNG DẪN MUA HÀNG & THANH TOÁN
           </h1>
 
           <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 font-normal max-w-2xl mx-auto leading-relaxed">
-            Các bước đơn giản để chọn linh kiện, thanh toán an toàn bảo mật và hướng dẫn mua máy tính trả góp 0% lãi suất tại DRX Hardware.
+            Các bước đơn giản để chọn linh kiện, tự ráp PC với công cụ DRX PC Builder và thanh toán an toàn qua VietQR Techcombank hoặc COD.
           </p>
         </div>
       </section>
@@ -44,7 +44,7 @@ export default function GuidePolicyPage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex items-center gap-2 text-xs text-slate-500">
           <Link href="/" className="hover:text-[#0284c7] transition-colors">Trang Chủ</Link>
           <span>/</span>
-          <span className="text-slate-900 dark:text-white font-bold">Hướng Dẫn Thanh Toán & Trả Góp</span>
+          <span className="text-slate-900 dark:text-white font-bold">Hướng Dẫn Mua Hàng & Thanh Toán</span>
         </div>
       </div>
 
@@ -78,15 +78,15 @@ export default function GuidePolicyPage() {
           </button>
 
           <button
-            onClick={() => setActiveTab('installment')}
+            onClick={() => setActiveTab('verification')}
             className={`px-5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
-              activeTab === 'installment'
+              activeTab === 'verification'
                 ? 'bg-[#0284c7] text-white shadow-md shadow-sky-500/25'
                 : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
-            <Percent className="w-4 h-4" />
-            <span>3. Hướng Dẫn Trả Góp 0%</span>
+            <ShieldCheck className="w-4 h-4" />
+            <span>3. Quy Trình Kiểm Tra & Giao Nhận 5 Bước</span>
           </button>
         </div>
 
@@ -113,19 +113,19 @@ export default function GuidePolicyPage() {
                 {
                   step: '02',
                   title: 'Thêm Vào Giỏ Hàng',
-                  desc: 'Kiểm tra kỹ thông số kỹ thuật, số lượng và áp dụng mã khuyến mãi hoặc mã giảm giá nếu có.',
-                  badge: 'Ưu Đãi Sốc'
+                  desc: 'Kiểm tra kỹ thông số kỹ thuật, số lượng và áp dụng các mã voucher DRX (DRX10, WELCOMEPC, GAMING50K).',
+                  badge: 'Mã Giảm Giá'
                 },
                 {
                   step: '03',
                   title: 'Điền Thông Tin Giao Hàng',
-                  desc: 'Nhập chính xác họ tên, số điện thoại và địa chỉ nhận hàng để nhân viên gọi xác nhận và lên mã vận đơn.',
+                  desc: 'Nhập chính xác họ tên, số điện thoại và địa chỉ nhận hàng hoặc chọn nhận tại Showroom DRX Hardware.',
                   badge: 'Bảo Mật Tuyệt Đối'
                 },
                 {
                   step: '04',
                   title: 'Thanh Toán & Nhận Hàng',
-                  desc: 'Chọn thanh toán chuyển khoản QR, COD hoặc trả góp 0%. Hàng hóa được đóng gói xốp chống sốc và bảo hiểm 100%.',
+                  desc: 'Chọn thanh toán quét mã QR Techcombank hoặc thanh toán COD khi nhận hàng. Đóng gói 3 lớp xốp an toàn tuyệt đối.',
                   badge: 'Giao Toàn Quốc'
                 }
               ].map((item, idx) => (
@@ -159,7 +159,7 @@ export default function GuidePolicyPage() {
                 CÁC PHƯƠNG THỨC THANH TOÁN AN TOÀN
               </h2>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
-                DRX Hardware áp dụng hệ thống bảo mật SSL 256-bit và cổng thanh toán tự động 24/7
+                DRX Hardware áp dụng hệ thống bảo mật SSL và thanh toán đối soát trực tiếp 24/7
               </p>
             </div>
 
@@ -169,75 +169,75 @@ export default function GuidePolicyPage() {
                   <QrCode className="w-6 h-6" />
                 </div>
                 <h3 className="font-heading text-base font-black text-slate-900 dark:text-white uppercase">
-                  Chuyển Khoản Ngân Hàng QR 24/7
+                  Quét Mã VietQR Techcombank
                 </h3>
                 <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                  Tự động tạo mã QR VietQR kèm nội dung đơn hàng. Tiền được cộng tức thì và kích hoạt đơn hàng trong 3 giây.
+                  Quét mã QR tự động điền STK: <strong>BAOLANN</strong>, Tên: <strong>DRX Hardware</strong>, số tiền và mã đơn hàng chính xác.
                 </p>
                 <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800 pt-3 space-y-1">
                   <div>✓ Miễn phí 100% phí chuyển khoản</div>
-                  <div>✓ Hỗ trợ tất cả ngân hàng Việt Nam</div>
+                  <div>✓ Hỗ trợ tất cả ứng dụng ngân hàng & ví điện tử</div>
                 </div>
               </div>
 
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 space-y-4 shadow-sm">
                 <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-slate-800 flex items-center justify-center text-emerald-600">
-                  <CreditCard className="w-6 h-6" />
-                </div>
-                <h3 className="font-heading text-base font-black text-slate-900 dark:text-white uppercase">
-                  Thẻ Tín Dụng & Visa / Mastercard
-                </h3>
-                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                  Hỗ trợ thanh toán bảo mật 3D-Secure qua cổng PayOS / OnePay, chấp nhận thẻ nội địa ATM và quốc tế.
-                </p>
-                <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800 pt-3 space-y-1">
-                  <div>✓ Hỗ trợ thẻ ATM 40+ ngân hàng</div>
-                  <div>✓ Chuẩn bảo mật quốc tế PCI DSS</div>
-                </div>
-              </div>
-
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 space-y-4 shadow-sm">
-                <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-slate-800 flex items-center justify-center text-amber-600">
                   <Truck className="w-6 h-6" />
                 </div>
                 <h3 className="font-heading text-base font-black text-slate-900 dark:text-white uppercase">
                   Thanh Toán Khi Nhận Hàng (COD)
                 </h3>
                 <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                  Khách hàng kiểm tra hàng đúng mã linh kiện, nguyên vẹn tem niêm phong trước khi thanh toán tiền mặt cho bưu tá.
+                  Khách hàng kiểm tra hàng đúng mã linh kiện, nguyên vẹn tem niêm phong trước khi thanh toán tiền mặt cho bưu tá giao hàng.
                 </p>
                 <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800 pt-3 space-y-1">
                   <div>✓ Đồng kiểm thoải mái trước khi nhận</div>
                   <div>✓ Áp dụng đơn hàng toàn quốc</div>
                 </div>
               </div>
+
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 space-y-4 shadow-sm">
+                <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-slate-800 flex items-center justify-center text-amber-600">
+                  <Building2 className="w-6 h-6" />
+                </div>
+                <h3 className="font-heading text-base font-black text-slate-900 dark:text-white uppercase">
+                  Nhận Tại Showroom DRX Hardware
+                </h3>
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                  Đến nhận máy trực tiếp tại Showroom DRX, được kỹ thuật viên hỗ trợ test máy, cài đặt phần mềm và bàn giao tận tay.
+                </p>
+                <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800 pt-3 space-y-1">
+                  <div>✓ Nhận ngay sau khi lắp ráp xong</div>
+                  <div>✓ Miễn phí hoàn toàn phí vận chuyển</div>
+                </div>
+              </div>
             </div>
           </div>
         )}
 
-        {/* TAB 3: TRẢ GÓP 0% */}
-        {activeTab === 'installment' && (
+        {/* TAB 3: QUY TRÌNH KIỂM TRA & GIAO NHẬN 5 BƯỚC */}
+        {activeTab === 'verification' && (
           <div className="space-y-8 animate-fadeIn">
             <div className="text-center space-y-2 max-w-xl mx-auto">
               <h2 className="font-heading text-xl sm:text-2xl font-black uppercase text-slate-900 dark:text-white">
-                CHÍNH SÁCH MUA LINH KIỆN & PC TRẢ GÓP 0%
+                QUY TRÌNH KIỂM TRA & XÁC THỰC ĐƠN HÀNG 5 BƯỚC
               </h2>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
-                Sở hữu ngay cấu hình mơ ước chỉ từ 0đ trả trước với thủ tục xét duyệt online 15 phút
+                Mọi đơn hàng tại DRX Hardware đều được kiểm tra qua 5 bước nghiêm ngặt trước khi đến tay quý khách
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Hình thức 1 */}
+              {/* Bước 1-3 */}
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 space-y-5 shadow-sm">
                 <div className="flex items-center gap-3">
                   <div className="p-3 bg-sky-50 dark:bg-slate-800 text-[#0284c7] rounded-2xl">
-                    <CreditCard className="w-6 h-6" />
+                    <ShieldCheck className="w-6 h-6" />
                   </div>
                   <div>
-                    <span className="text-[11px] font-bold text-[#0284c7] uppercase tracking-wider block">Hình Thức 1</span>
+                    <span className="text-[11px] font-bold text-[#0284c7] uppercase tracking-wider block">Giai đoạn 1</span>
                     <h3 className="font-heading text-base font-black text-slate-900 dark:text-white">
-                      Trả Góp 0% Qua Thẻ Tín Dụng
+                      Xác Nhận & Lắp Ráp Kỹ Thuật
                     </h3>
                   </div>
                 </div>
@@ -245,33 +245,29 @@ export default function GuidePolicyPage() {
                 <ul className="space-y-3 text-xs text-slate-600 dark:text-slate-300">
                   <li className="flex items-start gap-2.5">
                     <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                    <span>Hỗ trợ thẻ tín dụng của hơn <strong>25+ ngân hàng</strong> (Vietcombank, Techcombank, VPBank, TPBank, HSBC...).</span>
+                    <span><strong>1. Gọi điện xác nhận đơn hàng:</strong> Nhân viên CSKH gọi điện kiểm tra chính xác họ tên, số điện thoại, địa chỉ và linh kiện đặt mua.</span>
                   </li>
                   <li className="flex items-start gap-2.5">
                     <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                    <span>Lãi suất <strong>0%</strong> trong suốt kỳ hạn (3, 6, 9, hoặc 12 tháng).</span>
+                    <span><strong>2. Gán Serial & Test Full-load:</strong> Xuất kho linh kiện chính hãng, gán mã Serial Number điện tử và test nhiệt độ, hiệu năng 100%.</span>
                   </li>
                   <li className="flex items-start gap-2.5">
                     <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                    <span>Không cần chứng minh thu nhập, không gọi điện người thân xác minh.</span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                    <span>Thời gian hoàn tất thủ tục online chỉ <strong>3 phút</strong>.</span>
+                    <span><strong>3. Đóng gói 3 lớp xốp:</strong> Bọc xốp chống va đập, dán tem niêm phong bảo hành DRX Hardware và chụp ảnh kiện hàng trước khi xuất kho.</span>
                   </li>
                 </ul>
               </div>
 
-              {/* Hình thức 2 */}
+              {/* Bước 4-5 */}
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 space-y-5 shadow-sm">
                 <div className="flex items-center gap-3">
                   <div className="p-3 bg-emerald-50 dark:bg-slate-800 text-emerald-600 rounded-2xl">
-                    <Building2 className="w-6 h-6" />
+                    <Truck className="w-6 h-6" />
                   </div>
                   <div>
-                    <span className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider block">Hình Thức 2</span>
+                    <span className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider block">Giai đoạn 2</span>
                     <h3 className="font-heading text-base font-black text-slate-900 dark:text-white">
-                      Trả Góp Qua Căn Cước Công Dân (CCCD)
+                      Bàn Giao & Hoàn Tất Thanh Toán
                     </h3>
                   </div>
                 </div>
@@ -279,19 +275,11 @@ export default function GuidePolicyPage() {
                 <ul className="space-y-3 text-xs text-slate-600 dark:text-slate-300">
                   <li className="flex items-start gap-2.5">
                     <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                    <span>Liên kết các đối tác tài chính uy tín: <strong>HD Saison, FE Credit, Mirae Asset, Home Credit</strong>.</span>
+                    <span><strong>4. Bàn giao vận chuyển / Quầy Showroom:</strong> Kiện hàng được bàn giao đơn vị vận chuyển tiêu chuẩn hoặc sẵn sàng tại quầy Showroom.</span>
                   </li>
                   <li className="flex items-start gap-2.5">
                     <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                    <span>Điều kiện: Công dân Việt Nam từ <strong>18 đến 60 tuổi</strong> có thẻ CCCD gắn chip còn hiệu lực.</span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                    <span>Trả trước linh hoạt từ <strong>10% - 30%</strong> giá trị đơn hàng linh kiện / PC.</span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                    <span>Duyệt hồ sơ nhanh chóng qua Zalo / điện thoại trong <strong>15 - 30 phút</strong>.</span>
+                    <span><strong>5. Đối soát thanh toán & Kích hoạt bảo hành:</strong> Đối soát chuyển khoản VietQR Techcombank hoặc thu COD thành công, tự động kích hoạt bảo hành điện tử E-Warranty.</span>
                   </li>
                 </ul>
               </div>
@@ -302,10 +290,10 @@ export default function GuidePolicyPage() {
         {/* CTA CONTACT SUPPORT */}
         <div className="bg-gradient-to-r from-sky-50 to-blue-50 dark:from-slate-900 dark:to-slate-800 border border-sky-200 dark:border-slate-700 rounded-3xl p-8 text-center space-y-4 shadow-sm">
           <h3 className="text-xl font-black font-heading text-slate-900 dark:text-white uppercase">
-            CẦN TƯ VẤN CẤU HÌNH PC HOẶC HƯỚNG DẪN TRẢ GÓP CHI TIẾT?
+            CẦN TƯ VẤN CẤU HÌNH PC HOẶC HỖ TRỢ ĐẶT HÀNG?
           </h3>
           <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-xl mx-auto leading-relaxed">
-            Đội ngũ chuyên viên kỹ thuật DRX Hardware sẵn sàng hỗ trợ bạn tính toán số tiền trả góp hàng tháng và chọn linh kiện tối ưu nhất.
+            Đội ngũ chuyên viên kỹ thuật DRX Hardware sẵn sàng hỗ trợ bạn lựa chọn linh kiện tương thích tối ưu và mức giá tốt nhất.
           </p>
           <div className="pt-2 flex flex-wrap items-center justify-center gap-4">
             <Link

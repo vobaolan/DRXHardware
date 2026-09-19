@@ -132,7 +132,7 @@ export async function POST(request: Request) {
           discountAmount: resolvedDiscount,
           netAmount: resolvedNet,
           status: 'PENDING',
-          paymentMethod: 'COD',
+          paymentMethod: paymentMethod === 'QR_BANK' ? 'QR_BANK' : 'COD',
           paymentStatus: 'PENDING',
           paymentDetails: {
             shippingMethod,
@@ -141,6 +141,14 @@ export async function POST(request: Request) {
             proxyName: proxyName.trim(),
             proxyPhone: proxyPhone.trim(),
             technicalNotes: technicalNotes.trim(),
+            bankInfo: paymentMethod === 'QR_BANK' ? {
+              bankName: 'Techcombank',
+              bankCode: 'TCB',
+              accountNumber: 'BAOLANN',
+              accountHolder: 'DRX Hardware',
+              transferContent: orderCode,
+              amount: resolvedNet,
+            } : null,
             items: cartItems.map((i: any) => ({
               id: i.productId || i.id,
               name: i.name,
@@ -170,7 +178,18 @@ export async function POST(request: Request) {
       shippingAddress: fullAddress,
       deliveryType: deliveryType,
       totalAmount: resolvedNet,
-      paymentMethod: 'COD',
+      paymentMethod: paymentMethod === 'QR_BANK' ? 'QR_BANK' : 'COD',
+      paymentStatus: 'PENDING',
+      paymentDetails: {
+        bankInfo: paymentMethod === 'QR_BANK' ? {
+          bankName: 'Techcombank',
+          bankCode: 'TCB',
+          accountNumber: 'BAOLANN',
+          accountHolder: 'DRX Hardware',
+          transferContent: orderCode,
+          amount: resolvedNet,
+        } : null,
+      },
       status: 'PENDING',
       createdAt: new Date().toISOString(),
     };

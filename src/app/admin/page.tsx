@@ -1241,7 +1241,7 @@ export default function AdminDashboardPage() {
       <div className="flex-1 flex flex-col md:flex-row min-w-0">
         
         {/* SIDEBAR TABS */}
-        <aside className="w-full md:w-64 bg-white dark:bg-slate-900 border-r border-slate-200/80 dark:border-slate-800 p-3 sm:p-4 space-y-1.5 shrink-0 shadow-xs">
+        <aside className="w-full md:w-72 bg-white dark:bg-slate-900 border-r border-slate-200/80 dark:border-slate-800 p-3 sm:p-4 space-y-1.5 shrink-0 shadow-xs">
           <button
             onClick={() => setActiveTab('overview')}
             className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
@@ -1250,11 +1250,11 @@ export default function AdminDashboardPage() {
                 : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
-            <div className="flex items-center gap-2.5">
-              <LayoutDashboard className="w-4 h-4" />
-              <span>Báo Cáo Doanh Thu</span>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <LayoutDashboard className="w-4 h-4 shrink-0" />
+              <span className="whitespace-nowrap">Báo Cáo Doanh Thu</span>
             </div>
-            {activeTab === 'overview' && <ChevronRight className="w-4 h-4" />}
+            {activeTab === 'overview' && <ChevronRight className="w-4 h-4 shrink-0" />}
           </button>
 
           <button
@@ -1265,11 +1265,11 @@ export default function AdminDashboardPage() {
                 : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
-            <div className="flex items-center gap-2.5">
-              <Package className="w-4 h-4" />
-              <span>Kho Linh Kiện</span>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <Package className="w-4 h-4 shrink-0" />
+              <span className="whitespace-nowrap">Kho Linh Kiện</span>
             </div>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-white/20 dark:bg-slate-800 text-current">
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-white/20 dark:bg-slate-800 text-current shrink-0 ml-2">
               {products.length}
             </span>
           </button>
@@ -1282,11 +1282,11 @@ export default function AdminDashboardPage() {
                 : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
-            <div className="flex items-center gap-2.5">
-              <ShoppingCart className="w-4 h-4" />
-              <span>Đơn Hàng & Vận Chuyển</span>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <ShoppingCart className="w-4 h-4 shrink-0" />
+              <span className="whitespace-nowrap">Đơn Hàng & Vận Chuyển</span>
             </div>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-white/20 dark:bg-slate-800 text-current">
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-white/20 dark:bg-slate-800 text-current shrink-0 ml-2">
               {orders.length}
             </span>
           </button>
@@ -1299,11 +1299,11 @@ export default function AdminDashboardPage() {
                 : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
-            <div className="flex items-center gap-2.5">
-              <Boxes className="w-4 h-4" />
-              <span>Quản Lý Serial (SN)</span>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <Boxes className="w-4 h-4 shrink-0" />
+              <span className="whitespace-nowrap">Quản Lý Serial (SN)</span>
             </div>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-white/20 dark:bg-slate-800 text-current">
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-white/20 dark:bg-slate-800 text-current shrink-0 ml-2">
               {serials.length}
             </span>
           </button>
@@ -1316,11 +1316,11 @@ export default function AdminDashboardPage() {
                 : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
-            <div className="flex items-center gap-2.5">
-              <Users className="w-4 h-4" />
-              <span>Khách Hàng & Quyền</span>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <Users className="w-4 h-4 shrink-0" />
+              <span className="whitespace-nowrap">Khách Hàng & Quyền</span>
             </div>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-white/20 dark:bg-slate-800 text-current">
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-white/20 dark:bg-slate-800 text-current shrink-0 ml-2">
               {users.length}
             </span>
           </button>
@@ -1333,11 +1333,11 @@ export default function AdminDashboardPage() {
                 : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
-            <div className="flex items-center gap-2.5">
-              <Tag className="w-4 h-4" />
-              <span>Mã Giảm Giá</span>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <Tag className="w-4 h-4 shrink-0" />
+              <span className="whitespace-nowrap">Mã Giảm Giá</span>
             </div>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-white/20 dark:bg-slate-800 text-current">
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-white/20 dark:bg-slate-800 text-current shrink-0 ml-2">
               {coupons.length}
             </span>
           </button>
@@ -2074,9 +2074,24 @@ export default function AdminDashboardPage() {
                               </span>
                             </td>
                             <td className="py-3.5 px-3 whitespace-nowrap">
-                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
-                                💵 {o.paymentMethod || 'COD'}
-                              </span>
+                              {o.paymentMethod === 'QR_BANK' ? (
+                                <div className="inline-flex flex-col gap-0.5">
+                                  <span className="px-2 py-0.5 rounded text-[10px] font-black bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 inline-flex items-center gap-1">
+                                    ⚡ QR Techcombank
+                                  </span>
+                                  <span className={`text-[9.5px] font-bold ${
+                                    o.paymentStatus === 'PAID' 
+                                      ? 'text-emerald-600 dark:text-emerald-400' 
+                                      : 'text-amber-600 dark:text-amber-400'
+                                  }`}>
+                                    {o.paymentStatus === 'PAID' ? '✓ Đã nhận tiền' : '⏳ Chờ check tiền'}
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                                  💵 {o.paymentMethod || 'COD'}
+                                </span>
+                              )}
                             </td>
                             <td className="py-3.5 px-3 font-black text-slate-900 dark:text-white whitespace-nowrap">
                               {formatVND(o.netAmount || o.totalAmount)}
@@ -2632,10 +2647,11 @@ export default function AdminDashboardPage() {
                       type="button"
                       onClick={() => {
                         const selectedProd = products.find(p => p.id === selectedProductIdForSn);
-                        const rawPrefix = selectedProd?.modelCode || `${selectedProd?.brand || 'DRX'}-${selectedProd?.category || 'PART'}`;
-                        const cleanPrefix = rawPrefix.toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 16);
-                        const rand = Math.floor(100000 + Math.random() * 900000);
-                        const newSn = `${cleanPrefix}-${rand}`;
+                        const cleanBrand = (selectedProd?.brand || 'DRX').toUpperCase().replace(/[^A-Z0-9]/g, '') || 'DRX';
+                        const cleanCategory = (Array.isArray(selectedProd?.category) ? selectedProd?.category[0] : (selectedProd?.category || 'PART')).toUpperCase().replace(/[^A-Z0-9]/g, '') || 'PART';
+                        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+                        const rand = Array.from({ length: 6 }, () => chars.charAt(Math.floor(Math.random() * chars.length))).join('');
+                        const newSn = `${cleanBrand}-${cleanCategory}-${rand}`;
                         setInputSerialsText(prev => prev.trim() ? `${prev.trim()}\n${newSn}` : newSn);
                       }}
                       className="px-2 py-0.5 rounded-lg bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 text-[#0284c7] text-[10px] font-bold border border-sky-200 dark:border-sky-800 transition-colors cursor-pointer"
@@ -2646,9 +2662,11 @@ export default function AdminDashboardPage() {
                       type="button"
                       onClick={() => {
                         const selectedProd = products.find(p => p.id === selectedProductIdForSn);
-                        const rawPrefix = selectedProd?.modelCode || `${selectedProd?.brand || 'DRX'}-${selectedProd?.category || 'PART'}`;
-                        const cleanPrefix = rawPrefix.toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 16);
-                        const list = Array.from({ length: 5 }, () => `${cleanPrefix}-${Math.floor(100000 + Math.random() * 900000)}`).join('\n');
+                        const cleanBrand = (selectedProd?.brand || 'DRX').toUpperCase().replace(/[^A-Z0-9]/g, '') || 'DRX';
+                        const cleanCategory = (Array.isArray(selectedProd?.category) ? selectedProd?.category[0] : (selectedProd?.category || 'PART')).toUpperCase().replace(/[^A-Z0-9]/g, '') || 'PART';
+                        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+                        const genCode = () => Array.from({ length: 6 }, () => chars.charAt(Math.floor(Math.random() * chars.length))).join('');
+                        const list = Array.from({ length: 5 }, () => `${cleanBrand}-${cleanCategory}-${genCode()}`).join('\n');
                         setInputSerialsText(prev => prev.trim() ? `${prev.trim()}\n${list}` : list);
                       }}
                       className="px-2 py-0.5 rounded-lg bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 text-[#0284c7] text-[10px] font-bold border border-sky-200 dark:border-sky-800 transition-colors cursor-pointer"

@@ -8,6 +8,35 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 
+/**
+ * Tự động phát sinh mã Serial Number theo đúng chuẩn: HÃNG-DANH MỤC-MÃ NGẪU NHIÊN
+ * Ví dụ: ASUS-VGA-8K92FN, MSI-MAINBOARD-3M7X2P, INTEL-CPU-9V4C7D
+ */
+function generateSerialCode(brand?: string, category?: any): string {
+  const cleanBrand = (brand || 'DRX')
+    .trim()
+    .toUpperCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^A-Z0-9]/g, '') || 'DRX';
+
+  const catStr = Array.isArray(category) ? category[0] : (category || 'PART');
+  const cleanCategory = String(catStr)
+    .trim()
+    .toUpperCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^A-Z0-9]/g, '') || 'PART';
+
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let randomCode = '';
+  for (let i = 0; i < 6; i++) {
+    randomCode += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+
+  return `${cleanBrand}-${cleanCategory}-${randomCode}`;
+}
+
 export async function GET(request: Request) {
   const headers = {
     'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
@@ -157,6 +186,40 @@ export async function POST(request: Request) {
 
     const finalProduct = savedProduct || productData;
 
+    // Tự động sinh mã SN (Serial Number) theo format: HÃNG-DANH MỤC-MÃ NGẪU NHIÊN
+    try {
+      const qty = Math.max(0, Number(finalProduct.stockQuantity || 0));
+      if (qty > 0) {
+        const serialsToInsert: any[] = [];
+        const usedCodes = new Set<string>();
+        
+        while (serialsToInsert.length < qty) {
+          const sn = generateSerialCode(finalProduct.brand, finalProduct.category);
+          if (!usedCodes.has(sn)) {
+            usedCodes.add(sn);
+            serialsToInsert.push({
+              id: crypto.randomUUID(),
+              productId: finalProduct.id,
+              serialNumber: sn,
+              status: 'AVAILABLE',
+              createdAt: new Date().toISOString(),
+            });
+          }
+        }
+
+        if (serialsToInsert.length > 0) {
+          const { error: snErr } = await supabase
+            .from('ProductSerial')
+            .insert(serialsToInsert);
+          if (snErr) {
+            console.warn('Lỗi tự động sinh mã serial khi tạo sản phẩm:', snErr);
+          }
+        }
+      }
+    } catch (snErr) {
+      console.warn('Tự động sinh serial khi tạo sản phẩm warning:', snErr);
+    }
+
     invalidateProductsCache();
     revalidatePath('/', 'layout');
     revalidatePath('/products', 'layout');
@@ -281,6 +344,51 @@ export async function PUT(request: Request) {
         return NextResponse.json({ message: 'Lỗi lưu sản phẩm vào CSDL: ' + upsertErr.message }, { status: 500 });
       }
       updatedProduct = upsertRes;
+    }
+
+    // Tự động phát sinh thêm mã SN nếu số lượng tồn kho (nhập kho thêm) lớn hơn số serial sẵn có
+    try {
+      const targetStock = Math.max(0, Number(stockQuantity !== undefined ? stockQuantity : (updatedProduct?.stockQuantity || 0)));
+      const { count: availableSnCount } = await supabase
+        .from('ProductSerial')
+        .select('*', { count: 'exact', head: true })
+        .eq('productId', id)
+        .eq('status', 'AVAILABLE');
+
+      const currentAvailable = availableSnCount || 0;
+      if (targetStock > currentAvailable) {
+        const diff = targetStock - currentAvailable;
+        const serialsToInsert: any[] = [];
+        const usedCodes = new Set<string>();
+
+        while (serialsToInsert.length < diff) {
+          const sn = generateSerialCode(
+            updatedProduct?.brand || updatedData.brand || brand,
+            updatedProduct?.category || updatedData.category || category
+          );
+          if (!usedCodes.has(sn)) {
+            usedCodes.add(sn);
+            serialsToInsert.push({
+              id: crypto.randomUUID(),
+              productId: id,
+              serialNumber: sn,
+              status: 'AVAILABLE',
+              createdAt: new Date().toISOString(),
+            });
+          }
+        }
+
+        if (serialsToInsert.length > 0) {
+          const { error: snErr } = await supabase
+            .from('ProductSerial')
+            .insert(serialsToInsert);
+          if (snErr) {
+            console.warn('Lỗi tự động phát sinh serial khi cập nhật tồn kho:', snErr);
+          }
+        }
+      }
+    } catch (snErr) {
+      console.warn('Tự động phát sinh serial khi sửa sản phẩm warning:', snErr);
     }
 
     invalidateProductsCache();

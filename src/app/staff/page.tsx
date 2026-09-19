@@ -859,7 +859,7 @@ export default function StaffWarehousePortalPage() {
       <div className="flex-1 flex flex-col md:flex-row min-w-0">
         
         {/* SIDEBAR NAVIGATION TABS */}
-        <aside className="w-full md:w-64 bg-white dark:bg-slate-900 border-r border-slate-200/80 dark:border-slate-800 p-3 sm:p-4 space-y-1.5 shrink-0 shadow-xs">
+        <aside className="w-full md:w-72 bg-white dark:bg-slate-900 border-r border-slate-200/80 dark:border-slate-800 p-3 sm:p-4 space-y-1.5 shrink-0 shadow-xs">
           <button
             onClick={() => setActiveTab('products')}
             className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
@@ -868,11 +868,11 @@ export default function StaffWarehousePortalPage() {
                 : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
-            <div className="flex items-center gap-2.5">
-              <Package className="w-4 h-4" />
-              <span>Quản Lý Linh Kiện</span>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <Package className="w-4 h-4 shrink-0" />
+              <span className="whitespace-nowrap">Quản Lý Linh Kiện</span>
             </div>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-white/20 dark:bg-slate-800 text-current">
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-white/20 dark:bg-slate-800 text-current shrink-0 ml-2">
               {products.length}
             </span>
           </button>
@@ -885,11 +885,11 @@ export default function StaffWarehousePortalPage() {
                 : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
-            <div className="flex items-center gap-2.5">
-              <Boxes className="w-4 h-4" />
-              <span>Kho Mã Serial (SN)</span>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <Boxes className="w-4 h-4 shrink-0" />
+              <span className="whitespace-nowrap">Kho Mã Serial (SN)</span>
             </div>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-white/20 dark:bg-slate-800 text-current">
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-white/20 dark:bg-slate-800 text-current shrink-0 ml-2">
               {serials.length}
             </span>
           </button>
@@ -902,11 +902,11 @@ export default function StaffWarehousePortalPage() {
                 : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
-            <div className="flex items-center gap-2.5">
-              <Wrench className="w-4 h-4" />
-              <span>Tiến Độ Lắp Ráp PC</span>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <Wrench className="w-4 h-4 shrink-0" />
+              <span className="whitespace-nowrap">Tiến Độ Lắp Ráp PC</span>
             </div>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-white/20 dark:bg-slate-800 text-current">
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-white/20 dark:bg-slate-800 text-current shrink-0 ml-2">
               {orders.length}
             </span>
           </button>
@@ -919,11 +919,11 @@ export default function StaffWarehousePortalPage() {
                 : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
-            <div className="flex items-center gap-2.5">
-              <SearchCode className="w-4 h-4" />
-              <span>Tra Cứu Bảo Hành SN</span>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <SearchCode className="w-4 h-4 shrink-0" />
+              <span className="whitespace-nowrap">Tra Cứu Bảo Hành SN</span>
             </div>
-            {activeTab === 'warranty' && <ChevronRight className="w-4 h-4" />}
+            {activeTab === 'warranty' && <ChevronRight className="w-4 h-4 shrink-0" />}
           </button>
 
           <button
@@ -1252,9 +1252,20 @@ export default function StaffWarehousePortalPage() {
                                 </span>
                               </>
                             )}
-                            <span className="px-2 py-0.5 rounded-md text-[9.5px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
-                              💵 COD
-                            </span>
+                            {ord.paymentMethod === 'QR_BANK' ? (
+                              <span className={`px-2 py-0.5 rounded-md text-[9.5px] font-black flex items-center gap-1 border ${
+                                ord.paymentStatus === 'PAID'
+                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300'
+                                  : 'bg-indigo-50 text-indigo-700 border-indigo-300 dark:bg-indigo-950/60 dark:text-indigo-300'
+                              }`}>
+                                <span>⚡ QR Techcombank</span>
+                                <span>{ord.paymentStatus === 'PAID' ? '(✓ Đã nhận tiền)' : '(⏳ Chờ check)'}</span>
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded-md text-[9.5px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                                💵 COD
+                              </span>
+                            )}
                           </div>
 
                           {/* Prominent Cancellation Reason Display */}
@@ -1603,10 +1614,11 @@ export default function StaffWarehousePortalPage() {
                       type="button"
                       onClick={() => {
                         const selectedProd = products.find(p => p.id === selectedProductIdForSn);
-                        const rawPrefix = selectedProd?.modelCode || `${selectedProd?.brand || 'DRX'}-${selectedProd?.category || 'PART'}`;
-                        const cleanPrefix = rawPrefix.toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 16);
-                        const rand = Math.floor(100000 + Math.random() * 900000);
-                        const newSn = `${cleanPrefix}-${rand}`;
+                        const cleanBrand = (selectedProd?.brand || 'DRX').toUpperCase().replace(/[^A-Z0-9]/g, '') || 'DRX';
+                        const cleanCategory = (Array.isArray(selectedProd?.category) ? selectedProd?.category[0] : (selectedProd?.category || 'PART')).toUpperCase().replace(/[^A-Z0-9]/g, '') || 'PART';
+                        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+                        const rand = Array.from({ length: 6 }, () => chars.charAt(Math.floor(Math.random() * chars.length))).join('');
+                        const newSn = `${cleanBrand}-${cleanCategory}-${rand}`;
                         setInputSerialsText(prev => prev.trim() ? `${prev.trim()}\n${newSn}` : newSn);
                       }}
                       className="px-2 py-0.5 rounded-lg bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 text-[#0284c7] text-[10px] font-bold border border-sky-200 dark:border-sky-800 transition-colors cursor-pointer"
@@ -1617,9 +1629,11 @@ export default function StaffWarehousePortalPage() {
                       type="button"
                       onClick={() => {
                         const selectedProd = products.find(p => p.id === selectedProductIdForSn);
-                        const rawPrefix = selectedProd?.modelCode || `${selectedProd?.brand || 'DRX'}-${selectedProd?.category || 'PART'}`;
-                        const cleanPrefix = rawPrefix.toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 16);
-                        const list = Array.from({ length: 5 }, () => `${cleanPrefix}-${Math.floor(100000 + Math.random() * 900000)}`).join('\n');
+                        const cleanBrand = (selectedProd?.brand || 'DRX').toUpperCase().replace(/[^A-Z0-9]/g, '') || 'DRX';
+                        const cleanCategory = (Array.isArray(selectedProd?.category) ? selectedProd?.category[0] : (selectedProd?.category || 'PART')).toUpperCase().replace(/[^A-Z0-9]/g, '') || 'PART';
+                        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+                        const genCode = () => Array.from({ length: 6 }, () => chars.charAt(Math.floor(Math.random() * chars.length))).join('');
+                        const list = Array.from({ length: 5 }, () => `${cleanBrand}-${cleanCategory}-${genCode()}`).join('\n');
                         setInputSerialsText(prev => prev.trim() ? `${prev.trim()}\n${list}` : list);
                       }}
                       className="px-2 py-0.5 rounded-lg bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 text-[#0284c7] text-[10px] font-bold border border-sky-200 dark:border-sky-800 transition-colors cursor-pointer"
