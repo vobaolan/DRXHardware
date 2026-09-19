@@ -195,41 +195,19 @@ export default function CategoryShowcaseBlock({
         {/* SHOWCASE BODY: LEFT BANNER + RIGHT PRODUCT CAROUSEL */}
         <div className="p-4 sm:p-5 grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
           
-          {/* 1. LEFT FEATURED BANNER POSTER (Col 12 -> Col 3/4) */}
-          <div className={`lg:col-span-3 rounded-2xl border ${themeStyles.bannerBorder} bg-gradient-to-br ${themeStyles.bgBanner} p-5 flex flex-col justify-between relative overflow-hidden group min-h-[300px]`}>
-            {/* Background Glow Mesh */}
-            <div className="absolute -top-12 -right-12 w-40 h-40 bg-white/20 dark:bg-white/5 rounded-full blur-2xl pointer-events-none" />
-
-            {/* Banner Header Info */}
-            <div className="relative z-10 space-y-1">
-              <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border ${themeStyles.badgeBg} inline-block mb-1`}>
-                DRX SPECIAL FEATURE
-              </span>
-              <h3 className="font-heading font-black text-xl sm:text-2xl uppercase leading-tight text-slate-900 dark:text-slate-100">
-                {title}
-              </h3>
-              <p className={`font-heading text-xs font-extrabold uppercase tracking-wide ${themeStyles.titleText}`}>
-                {subtitle}
-              </p>
-            </div>
-
-            {/* Banner Illustration Image */}
-            <div className="my-4 relative z-10 flex justify-center items-center py-2">
-              <img
-                src={bannerImage}
-                alt={title}
-                className="w-full max-h-48 object-contain rounded-xl drop-shadow-xl group-hover:scale-105 transition-transform duration-500"
-              />
-            </div>
-
-            {/* Bottom Badge Tag */}
-            <div className="relative z-10">
-              <div className="inline-flex items-center gap-1.5 bg-slate-950/90 text-white dark:bg-white/90 dark:text-slate-950 px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase shadow-md">
-                <Flame className="h-3 w-3 text-rose-500 fill-rose-500 animate-pulse" />
-                <span>{badgeText}</span>
-              </div>
-            </div>
-          </div>
+          {/* 1. LEFT FEATURED BANNER POSTER (Full Poster Banner Card) */}
+          <Link
+            href={currentTab?.viewAllLink || viewAllLink}
+            className={`lg:col-span-3 rounded-2xl border ${themeStyles.bannerBorder} overflow-hidden group relative flex flex-col justify-center items-center shadow-md hover:shadow-2xl transition-all duration-300 min-h-[340px] sm:min-h-[380px] bg-slate-50 dark:bg-slate-900 cursor-pointer`}
+          >
+            <img
+              src={bannerImage}
+              alt={title}
+              className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500 ease-out"
+            />
+            {/* Subtle glow / sheen overlay on hover */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+          </Link>
 
           {/* 2. RIGHT PRODUCTS SLIDER / GRID (Col 12 -> Col 9) */}
           <div className="lg:col-span-9 relative flex flex-col justify-between">
