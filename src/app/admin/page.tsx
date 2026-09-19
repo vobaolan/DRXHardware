@@ -464,89 +464,6 @@ export default function AdminDashboardPage() {
     return result;
   }, [orders, last7Days]);
 
-  // Live 30-Day Chart Data (Tháng) linked directly to live orders state
-  const activeLast30Days = useMemo(() => {
-    const now = new Date();
-    const getVnDateStr = (date: Date | string) => {
-      try {
-        const d = typeof date === 'string' ? new Date(date) : date;
-        return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(d);
-      } catch (e) {
-        return new Date(date).toISOString().split('T')[0];
-      }
-    };
-
-    const result: { day: string; date: string; fullDate: string; revenue: number; orders: number }[] = [];
-
-    for (let i = 29; i >= 0; i--) {
-      const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-      const dateStr = getVnDateStr(d);
-      const dayDisplay = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
-
-      let dayRevenue = 0;
-      let dayOrderCount = 0;
-
-      orders.forEach((o) => {
-        if (!o.createdAt) return;
-        const orderDateStr = getVnDateStr(o.createdAt);
-        if (orderDateStr === dateStr && o.status !== 'CANCELLED') {
-          dayOrderCount++;
-          if (o.status === 'COMPLETED' || o.paymentStatus === 'PAID') {
-            dayRevenue += Number(o.netAmount || o.totalAmount || 0);
-          }
-        }
-      });
-
-      result.push({
-        day: dayDisplay,
-        date: dateStr,
-        fullDate: d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }),
-        revenue: dayRevenue,
-        orders: dayOrderCount,
-      });
-    }
-
-    return result;
-  }, [orders]);
-
-  // Live 12-Month Chart Data (Năm) linked directly to live orders state
-  const active12Months = useMemo(() => {
-    const now = new Date();
-    const currentYear = now.getFullYear();
-
-    const result: { day: string; date: string; fullDate: string; revenue: number; orders: number }[] = [];
-
-    for (let m = 0; m < 12; m++) {
-      const monthNumber = m + 1;
-      const monthPrefix = `${currentYear}-${String(monthNumber).padStart(2, '0')}`;
-
-      let monthRevenue = 0;
-      let monthOrderCount = 0;
-
-      orders.forEach((o) => {
-        if (!o.createdAt) return;
-        try {
-          const d = new Date(o.createdAt);
-          if (d.getFullYear() === currentYear && d.getMonth() === m && o.status !== 'CANCELLED') {
-            monthOrderCount++;
-            if (o.status === 'COMPLETED' || o.paymentStatus === 'PAID') {
-              monthRevenue += Number(o.netAmount || o.totalAmount || 0);
-            }
-          }
-        } catch (e) {}
-      });
-
-      result.push({
-        day: `T${monthNumber}`,
-        date: monthPrefix,
-        fullDate: `Tháng ${monthNumber}/${currentYear}`,
-        revenue: monthRevenue,
-        orders: monthOrderCount,
-      });
-    }
-
-    return result;
-  }, [orders]);
 
   // Search & Filter States
   const [searchQuery, setSearchQuery] = useState('');
@@ -832,6 +749,11 @@ export default function AdminDashboardPage() {
       coverImage: p.coverImage || '',
       screenshots: Array.isArray(p.screenshots) ? p.screenshots : [p.coverImage].filter(Boolean),
       specs: (p.specs as any) || {},
+      description: p.description || '',
+      socket: p.socket,
+      ramType: p.ramType,
+      wattage: p.wattage,
+      formFactor: p.formFactor,
       isFlashDeal: Boolean(p.isFlashDeal),
       isFeatured: Boolean(p.isFeatured || p.isBestSeller),
       isPrebuilt: Boolean(p.isPrebuilt),
@@ -1502,13 +1424,11 @@ export default function AdminDashboardPage() {
               {/* CHARTS & RECENT ACTIVITY */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 
-                {/* REVENUE KPI CHART (8 COLS) - TUẦN / THÁNG / NĂM */}
+                {/* REVENUE KPI CHART (8 COLS) - THEO TUẦN & CHỌN KHOẢNG NGÀY */}
                 <div className="lg:col-span-8">
                   <RevenueChartWidget 
+                    orders={orders}
                     data={activeLast7Days} 
-                    weekData={activeLast7Days}
-                    monthData={activeLast30Days}
-                    yearData={active12Months}
                     formatVND={formatVND} 
                   />
                 </div>
