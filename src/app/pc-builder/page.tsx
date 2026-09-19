@@ -422,19 +422,11 @@ function PCBuilderContent() {
 
     try {
       addMultipleToCart(cartPayload, false);
-      showToast(`Đã thêm ${itemsToBuy.length} linh kiện vào giỏ hàng! Đang chuyển đến trang Thanh Toán...`, 'success');
-      
-      // Reliable navigation across all browsers
-      if (typeof window !== 'undefined') {
-        window.location.href = '/checkout';
-      } else {
-        router.push('/checkout');
-      }
+      showToast(`Đã thêm ${itemsToBuy.length} linh kiện vào giỏ hàng!`, 'success');
+      router.push('/checkout');
     } catch (e) {
       console.error('Error during handleBuyAll:', e);
-      if (typeof window !== 'undefined') {
-        window.location.href = '/checkout';
-      }
+      router.push('/checkout');
     }
   };
 
@@ -581,24 +573,6 @@ function PCBuilderContent() {
                 </h2>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
-                <button 
-                  type="button"
-                  onClick={() => applyPreset('intel')}
-                  className="text-xs text-sky-700 dark:text-sky-300 hover:text-sky-800 bg-sky-50 dark:bg-sky-950/50 hover:bg-sky-100 dark:hover:bg-sky-900/40 px-3 py-1.5 rounded-xl border border-sky-200 dark:border-sky-800 font-bold transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
-                  title="Nạp nhanh cấu hình mẫu Intel Core i5 + RTX 4060"
-                >
-                  <Zap className="w-3.5 h-3.5 text-[#0284c7]" />
-                  <span>Mẫu Intel</span>
-                </button>
-                <button 
-                  type="button"
-                  onClick={() => applyPreset('amd')}
-                  className="text-xs text-orange-700 dark:text-orange-300 hover:text-orange-800 bg-orange-50 dark:bg-orange-950/50 hover:bg-orange-100 dark:hover:bg-orange-900/40 px-3 py-1.5 rounded-xl border border-orange-200 dark:border-orange-800 font-bold transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
-                  title="Nạp nhanh cấu hình mẫu AMD Ryzen 7 + RTX 4060"
-                >
-                  <Zap className="w-3.5 h-3.5 text-orange-500" />
-                  <span>Mẫu AMD</span>
-                </button>
                 <button 
                   onClick={handleClearAll}
                   disabled={selectedItemsCount === 0}

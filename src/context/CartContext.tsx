@@ -66,38 +66,67 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.removeItem('ods_cart');
     } catch (e) {}
 
-    if (user && (user.id || user.email)) {
+    let targetUser = user;
+    if (!targetUser) {
+      try {
+        const raw = localStorage.getItem('drx_user_profile') || localStorage.getItem('drx_user');
+        if (raw) targetUser = JSON.parse(raw);
+      } catch (e) {}
+    }
+
+    if (targetUser && (targetUser.id || targetUser.email)) {
       // 1. LOGGED-IN USERS: Cart is connected directly to user account
-      const userKey = getUserCartKey(user);
+      const userKey = getUserCartKey(targetUser);
       if (userKey) {
         try {
           const savedUserCart = localStorage.getItem(userKey);
           if (savedUserCart) {
-            return JSON.parse(savedUserCart);
+            const parsed = JSON.parse(savedUserCart);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              return parsed;
+            }
           }
         } catch (e) {
           console.error('Failed to parse user cart data', e);
         }
       }
-      return [];
-    } else {
-      // 2. GUESTS (Khách): Stored in sessionStorage & localStorage
-      try {
-        const guestCart = sessionStorage.getItem('drx_guest_cart') || localStorage.getItem('drx_guest_cart');
-        if (guestCart) {
-          return JSON.parse(guestCart);
-        }
-      } catch (e) {
-        console.error('Failed to parse guest cart data', e);
-      }
-      return [];
     }
+
+    // 2. GUESTS / FALLBACK: Check guest cart in sessionStorage and localStorage
+    try {
+      const guestCart = sessionStorage.getItem('drx_guest_cart') || localStorage.getItem('drx_guest_cart');
+      if (guestCart) {
+        const parsed = JSON.parse(guestCart);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // If user is logged in, synchronize to their user cart key too
+          if (targetUser && (targetUser.id || targetUser.email)) {
+            const userKey = getUserCartKey(targetUser);
+            if (userKey) {
+              try {
+                localStorage.setItem(userKey, JSON.stringify(parsed));
+              } catch (e) {}
+            }
+          }
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.error('Failed to parse guest cart data', e);
+    }
+
+    return [];
   };
 
   // Helper to persist cart changes
   const persistCart = (items: CartItem[], user?: any) => {
     if (typeof window === 'undefined') return;
-    const targetUser = user !== undefined ? user : currentUser;
+    let targetUser = user !== undefined ? user : currentUser;
+    if (!targetUser) {
+      try {
+        const raw = localStorage.getItem('drx_user_profile') || localStorage.getItem('drx_user');
+        if (raw) targetUser = JSON.parse(raw);
+      } catch (e) {}
+    }
 
     if (targetUser && (targetUser.id || targetUser.email)) {
       // Save directly to user's persistent cart
@@ -107,13 +136,13 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
           localStorage.setItem(userKey, JSON.stringify(items));
         } catch (e) {}
       }
-    } else {
-      // Save to guest session storage & localStorage for guaranteed continuity
-      try {
-        sessionStorage.setItem('drx_guest_cart', JSON.stringify(items));
-        localStorage.setItem('drx_guest_cart', JSON.stringify(items));
-      } catch (e) {}
     }
+
+    // ALWAYS also mirror to guest session storage & localStorage for guaranteed continuity
+    try {
+      sessionStorage.setItem('drx_guest_cart', JSON.stringify(items));
+      localStorage.setItem('drx_guest_cart', JSON.stringify(items));
+    } catch (e) {}
   };
 
   // Initialize cart on mount & listen for Auth state changes
@@ -144,7 +173,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (newUser && !activeUser) {
           let guestItems: CartItem[] = [];
           try {
-            const guestRaw = sessionStorage.getItem('drx_guest_cart');
+            const guestRaw = sessionStorage.getItem('drx_guest_cart') || localStorage.getItem('drx_guest_cart');
             if (guestRaw) guestItems = JSON.parse(guestRaw);
           } catch (e) {}
 
@@ -160,7 +189,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (guestItems.length > 0) {
             const merged = [...userItems];
             for (const gItem of guestItems) {
-              const existIdx = merged.findIndex((i) => i.id === gItem.id);
+              const existIdx = merged.findIndex((i) => i.id === gItem.id || (i.productId && i.productId === gItem.productId));
               if (existIdx >= 0) {
                 merged[existIdx].quantity += gItem.quantity;
               } else {
@@ -170,7 +199,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (userKey) {
               localStorage.setItem(userKey, JSON.stringify(merged));
             }
-            sessionStorage.removeItem('drx_guest_cart');
             setCartItems(merged);
             activeUser = newUser;
             setCurrentUser(newUser);
@@ -200,19 +228,33 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const addToCart = (product: Omit<CartItem, 'quantity'>, openDrawer: boolean = true) => {
-    setCartItems((prev) => {
-      const existingItem = prev.find((item) => item.id === product.id);
-      let updatedItems: CartItem[];
-      if (existingItem) {
-        updatedItems = prev.map((item) =>
-          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
-        );
-      } else {
-        updatedItems = [...prev, { ...product, quantity: 1 }];
-      }
-      persistCart(updatedItems, currentUser);
-      return updatedItems;
-    });
+    let activeUser = currentUser;
+    if (!activeUser && typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('drx_user_profile') || localStorage.getItem('drx_user');
+        if (raw) activeUser = JSON.parse(raw);
+      } catch (e) {}
+    }
+
+    const currentList = cartItems.length > 0 ? cartItems : loadActiveCart(activeUser);
+    const existingIdx = currentList.findIndex((item) => item.id === product.id || (item.productId && item.productId === product.productId));
+    let updatedItems: CartItem[];
+    if (existingIdx >= 0) {
+      updatedItems = currentList.map((item, idx) =>
+        idx === existingIdx ? { ...item, quantity: item.quantity + 1 } : item
+      );
+    } else {
+      updatedItems = [...currentList, { ...product, quantity: 1 }];
+    }
+
+    persistCart(updatedItems, activeUser);
+    setCartItems(updatedItems);
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new Event('drx_cart_updated'));
+    }
+
     if (openDrawer) {
       setCartOpen(true);
     }
@@ -220,25 +262,40 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const addMultipleToCart = (products: Array<Omit<CartItem, 'quantity'>>, openDrawer: boolean = false) => {
     if (!products || products.length === 0) return;
-    setCartItems((prev) => {
-      const merged = [...prev];
-      for (const prod of products) {
-        const existIdx = merged.findIndex((item) => item.id === prod.id);
-        if (existIdx >= 0) {
-          merged[existIdx] = {
-            ...merged[existIdx],
-            quantity: merged[existIdx].quantity + 1,
-          };
-        } else {
-          merged.push({
-            ...prod,
-            quantity: 1,
-          });
-        }
+
+    let activeUser = currentUser;
+    if (!activeUser && typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('drx_user_profile') || localStorage.getItem('drx_user');
+        if (raw) activeUser = JSON.parse(raw);
+      } catch (e) {}
+    }
+
+    const currentList = cartItems.length > 0 ? cartItems : loadActiveCart(activeUser);
+    const merged = [...currentList];
+    for (const prod of products) {
+      const existIdx = merged.findIndex((item) => item.id === prod.id || (item.productId && item.productId === prod.productId));
+      if (existIdx >= 0) {
+        merged[existIdx] = {
+          ...merged[existIdx],
+          quantity: merged[existIdx].quantity + 1,
+        };
+      } else {
+        merged.push({
+          ...prod,
+          quantity: 1,
+        });
       }
-      persistCart(merged, currentUser);
-      return merged;
-    });
+    }
+
+    persistCart(merged, activeUser);
+    setCartItems(merged);
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new Event('drx_cart_updated'));
+    }
+
     if (openDrawer) {
       setCartOpen(true);
     }
@@ -269,11 +326,25 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const clearCart = () => {
     setCartItems([]);
     setCoupon(null);
-    persistCart([], currentUser);
-    if (!currentUser) {
+    let activeUser = currentUser;
+    if (!activeUser && typeof window !== 'undefined') {
       try {
-        sessionStorage.removeItem('drx_guest_cart');
+        const raw = localStorage.getItem('drx_user_profile') || localStorage.getItem('drx_user');
+        if (raw) activeUser = JSON.parse(raw);
       } catch (e) {}
+    }
+    persistCart([], activeUser);
+    try {
+      sessionStorage.removeItem('drx_guest_cart');
+      localStorage.removeItem('drx_guest_cart');
+      if (activeUser) {
+        const userKey = getUserCartKey(activeUser);
+        if (userKey) localStorage.removeItem(userKey);
+      }
+    } catch (e) {}
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new Event('drx_cart_updated'));
     }
   };
 
