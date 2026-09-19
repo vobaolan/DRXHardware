@@ -4,12 +4,30 @@ import React, { useState, useRef } from 'react';
 import Link from 'next/link';
 import { 
   ShoppingCart, ArrowRight, ChevronLeft, ChevronRight, Zap, 
-  Flame, Shield, Cpu, Sparkles, Check, Percent 
+  Flame, Shield, Cpu, Sparkles, Check, Percent, Eye 
 } from 'lucide-react';
 import { HardwareProduct } from '@/lib/hardware-data';
 import { formatCurrency, calculateDiscountPercent } from '@/lib/utils';
 import { useCart } from '@/context/CartContext';
 import { motion, AnimatePresence } from 'framer-motion';
+
+function getBrandName(name?: string, brand?: string): string {
+  if (brand && brand !== 'DRX' && brand !== 'OTHER' && brand !== 'GENERIC') {
+    return brand;
+  }
+  const n = name || '';
+  const knownBrands = [
+    'Kingbank', 'Asus', 'ROG', 'TUF', 'MSI', 'Gigabyte', 'Aorus', 'Corsair',
+    'Intel', 'AMD', 'Ryzen', 'Samsung', 'Kingston', 'TeamGroup', 'G.Skill',
+    'AOC', 'ViewSonic', 'Dell', 'Acer', 'Predator', 'Lenovo', 'Legion',
+    'HP', 'Omen', 'Thermalright', 'Deepcool', 'NZXT', 'Cooler Master',
+    'Lian Li', 'Antec', 'Xigmatek', 'Mik', 'DareU', 'Akko', 'Keychron',
+    'Logitech', 'Razer', 'SteelSeries', 'HyperX', 'Zotac', 'Palit', 'Colorful',
+    'Crucial', 'Western Digital', 'WD', 'Seagate', 'MacBook', 'Apple'
+  ];
+  const found = knownBrands.find(b => new RegExp(`\\b${b}\\b`, 'i').test(n));
+  return found ? found.toUpperCase() : (brand || 'CHÍNH HÃNG');
+}
 
 export interface SubTab {
   id: string;
@@ -51,9 +69,11 @@ export default function CategoryShowcaseBlock({
       activeTab: 'bg-[#0284c7] text-white shadow-md shadow-cyan-500/20',
       titleText: 'text-[#0284c7] dark:text-[#38bdf8]',
       btnBg: 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white',
-      accentBorder: 'hover:border-cyan-500',
+      accentBorder: 'hover:border-cyan-500 hover:shadow-cyan-500/15',
       badgeBg: 'bg-[#0284c7]/10 text-[#0284c7] border-[#0284c7]/20 dark:bg-cyan-500/20 dark:text-cyan-300',
       subTabActiveText: 'text-[#0284c7] border-[#0284c7]',
+      glow: 'from-cyan-500/25 via-sky-400/15 to-transparent',
+      brandDot: 'bg-cyan-500',
     },
     amber: {
       bgBanner: 'from-amber-500/10 via-amber-500/5 to-orange-500/10 dark:from-amber-950/40 dark:to-slate-900',
@@ -61,9 +81,11 @@ export default function CategoryShowcaseBlock({
       activeTab: 'bg-amber-500 text-white shadow-md shadow-amber-500/20',
       titleText: 'text-amber-600 dark:text-amber-400',
       btnBg: 'bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white',
-      accentBorder: 'hover:border-amber-500',
+      accentBorder: 'hover:border-amber-500 hover:shadow-amber-500/15',
       badgeBg: 'bg-amber-500/10 text-amber-600 border-amber-500/20 dark:bg-amber-500/20 dark:text-amber-300',
       subTabActiveText: 'text-amber-600 border-amber-500',
+      glow: 'from-amber-500/25 via-orange-400/15 to-transparent',
+      brandDot: 'bg-amber-500',
     },
     emerald: {
       bgBanner: 'from-emerald-500/10 via-emerald-500/5 to-teal-500/10 dark:from-emerald-950/40 dark:to-slate-900',
@@ -71,9 +93,11 @@ export default function CategoryShowcaseBlock({
       activeTab: 'bg-emerald-600 text-white shadow-md shadow-emerald-500/20',
       titleText: 'text-emerald-600 dark:text-emerald-400',
       btnBg: 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white',
-      accentBorder: 'hover:border-emerald-500',
+      accentBorder: 'hover:border-emerald-500 hover:shadow-emerald-500/15',
       badgeBg: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:bg-emerald-500/20 dark:text-emerald-300',
       subTabActiveText: 'text-emerald-600 border-emerald-500',
+      glow: 'from-emerald-500/25 via-teal-400/15 to-transparent',
+      brandDot: 'bg-emerald-500',
     },
     rose: {
       bgBanner: 'from-rose-500/10 via-rose-500/5 to-red-500/10 dark:from-rose-950/40 dark:to-slate-900',
@@ -81,9 +105,11 @@ export default function CategoryShowcaseBlock({
       activeTab: 'bg-rose-600 text-white shadow-md shadow-rose-500/20',
       titleText: 'text-rose-600 dark:text-rose-400',
       btnBg: 'bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white',
-      accentBorder: 'hover:border-rose-500',
+      accentBorder: 'hover:border-rose-500 hover:shadow-rose-500/15',
       badgeBg: 'bg-rose-500/10 text-rose-600 border-rose-500/20 dark:bg-rose-500/20 dark:text-rose-300',
       subTabActiveText: 'text-rose-600 border-rose-500',
+      glow: 'from-rose-500/25 via-red-400/15 to-transparent',
+      brandDot: 'bg-rose-500',
     },
     purple: {
       bgBanner: 'from-purple-500/10 via-purple-500/5 to-indigo-500/10 dark:from-purple-950/40 dark:to-slate-900',
@@ -91,9 +117,11 @@ export default function CategoryShowcaseBlock({
       activeTab: 'bg-purple-600 text-white shadow-md shadow-purple-500/20',
       titleText: 'text-purple-600 dark:text-purple-400',
       btnBg: 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white',
-      accentBorder: 'hover:border-purple-500',
+      accentBorder: 'hover:border-purple-500 hover:shadow-purple-500/15',
       badgeBg: 'bg-purple-500/10 text-purple-600 border-purple-500/20 dark:bg-purple-500/20 dark:text-purple-300',
       subTabActiveText: 'text-purple-600 border-purple-500',
+      glow: 'from-purple-500/25 via-indigo-400/15 to-transparent',
+      brandDot: 'bg-purple-500',
     },
     blue: {
       bgBanner: 'from-blue-500/10 via-blue-500/5 to-cyan-500/10 dark:from-blue-950/40 dark:to-slate-900',
@@ -101,9 +129,11 @@ export default function CategoryShowcaseBlock({
       activeTab: 'bg-blue-600 text-white shadow-md shadow-blue-500/20',
       titleText: 'text-blue-600 dark:text-blue-400',
       btnBg: 'bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white',
-      accentBorder: 'hover:border-blue-500',
+      accentBorder: 'hover:border-blue-500 hover:shadow-blue-500/15',
       badgeBg: 'bg-blue-500/10 text-blue-600 border-blue-500/20 dark:bg-blue-500/20 dark:text-blue-300',
       subTabActiveText: 'text-blue-600 border-blue-500',
+      glow: 'from-blue-500/25 via-cyan-400/15 to-transparent',
+      brandDot: 'bg-blue-500',
     }
   }[theme];
 
@@ -258,21 +288,62 @@ export default function CategoryShowcaseBlock({
                   const activePrice = product.discountPrice ?? product.price;
                   const discountPercent = hasDiscount ? calculateDiscountPercent(product.price, product.discountPrice!) : 0;
                   const isJustAdded = addedId === product.id;
+                  const brandLabel = getBrandName(product.name, product.brand);
 
                   return (
                     <div
                       key={product.id}
-                      className={`min-w-[220px] sm:min-w-[240px] max-w-[240px] rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 shadow-xs hover:shadow-xl ${themeStyles.accentBorder} transition-all duration-300 flex flex-col justify-between group relative shrink-0`}
+                      className={`min-w-[220px] sm:min-w-[240px] max-w-[240px] rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 shadow-xs hover:shadow-2xl ${themeStyles.accentBorder} transition-all duration-300 flex flex-col justify-between group relative shrink-0`}
                     >
                       <Link href={`/products/${product.slug}`} className="flex flex-col h-full">
-                        {/* Image Box */}
-                        <div className="relative aspect-[4/3] w-full rounded-xl overflow-hidden bg-slate-50 dark:bg-slate-950 p-2 mb-2.5 flex items-center justify-center border border-slate-100 dark:border-slate-800">
+                        {/* Image Box - Studio Hardware Showroom */}
+                        <div className="relative aspect-[4/3] w-full rounded-2xl overflow-hidden bg-gradient-to-b from-slate-50 via-slate-100/50 to-slate-100/90 dark:from-slate-950 dark:via-[#0c1424] dark:to-slate-950 p-2.5 mb-2.5 flex items-center justify-center border border-slate-100 dark:border-slate-800/90 group/media">
+                          {/* 1. Theme-Aware Ambient Radial Glow behind hardware */}
+                          <div className={`absolute inset-0 m-auto w-4/5 h-4/5 rounded-full bg-gradient-to-tr ${themeStyles.glow} blur-2xl pointer-events-none group-hover:scale-125 transition-all duration-700 opacity-70 dark:opacity-85`} />
+
+                          {/* 2. Hardware Pedestal Drop-Shadow */}
+                          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-3/5 h-2 bg-slate-900/10 dark:bg-black/40 rounded-full blur-sm pointer-events-none group-hover:w-4/5 group-hover:scale-110 transition-all duration-500" />
+
+                          {/* 3. Cyber Glass Light Sweep Shimmer on Hover */}
+                          <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out bg-gradient-to-r from-transparent via-white/40 dark:via-sky-400/15 to-transparent pointer-events-none skew-x-12 z-20" />
+
+                          {/* 4. Top-Left: Brand Chip */}
+                          <div className="absolute top-2 left-2 z-20 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/80 dark:border-slate-700/80 text-[9px] font-black tracking-wider text-slate-800 dark:text-slate-200 shadow-xs uppercase font-mono">
+                            <span className={`w-1.5 h-1.5 rounded-full ${themeStyles.brandDot} animate-pulse`} />
+                            <span>{brandLabel}</span>
+                          </div>
+
+                          {/* 5. Top-Right: Discount Badge or Warranty Tag */}
+                          {hasDiscount ? (
+                            <div className="absolute top-2 right-2 z-20 inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-gradient-to-r from-rose-500 via-red-500 to-amber-500 text-white text-[9.5px] font-black tracking-tight shadow-md shadow-rose-500/25">
+                              <Percent className="w-2 h-2 stroke-[2.5]" />
+                              <span>-{discountPercent}%</span>
+                            </div>
+                          ) : (
+                            <div className="absolute top-2 right-2 z-20 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-slate-900/75 dark:bg-slate-800/80 backdrop-blur-md text-[8.5px] font-extrabold text-sky-400 dark:text-sky-300 border border-sky-500/30 shadow-xs">
+                              <Shield className="w-2.5 h-2.5 text-sky-400" />
+                              <span>BH {product.warrantyMonths || 36}T</span>
+                            </div>
+                          )}
+
+                          {/* 6. Bottom-Left: Stock Status Pill */}
+                          <div className="absolute bottom-2 left-2 z-20 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-white/90 dark:bg-slate-900/90 backdrop-blur-md text-[8.5px] font-bold text-slate-700 dark:text-slate-300 border border-slate-200/70 dark:border-slate-800 shadow-2xs">
+                            <span className={`w-1.5 h-1.5 rounded-full ${product.status !== false ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
+                            <span>{product.status !== false ? 'Sẵn hàng' : 'Hết hàng'}</span>
+                          </div>
+
+                          {/* 7. Bottom-Right: Quick Preview Eye button appearing on hover */}
+                          <div className="absolute bottom-2 right-2 z-20 p-1 rounded-md bg-white/95 dark:bg-slate-900/95 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700 shadow-sm opacity-0 group-hover:opacity-100 transform translate-y-1 group-hover:translate-y-0 transition-all duration-300 pointer-events-none">
+                            <Eye className="w-3 h-3 text-[#0284c7]" />
+                          </div>
+
+                          {/* 8. Main Hardware Image with Physical Drop-Shadow & 3D Lift Scale */}
                           <img
                             src={product.coverImage}
                             alt={product.name}
                             loading="lazy"
                             decoding="async"
-                            className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
+                            className="w-full h-full object-contain p-2 z-10 relative filter drop-shadow-[0_8px_16px_rgba(0,0,0,0.12)] dark:drop-shadow-[0_10px_20px_rgba(2,132,199,0.28)] group-hover:scale-110 group-hover:-translate-y-1.5 transition-all duration-500 ease-out"
                           />
                         </div>
 
