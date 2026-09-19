@@ -317,26 +317,31 @@ export class LiveDatabaseKnowledge {
         else score -= 100;
       }
 
-      // ─── GENERATION & SPEC FILTERING (DDR5 vs DDR4 vs DDR3) ───
-      const prodHasDdr5 = nameNoTone.includes('ddr5') || (p.ramType && p.ramType.toLowerCase().includes('ddr5')) || specsStr.includes('ddr5');
-      const prodHasDdr4 = nameNoTone.includes('ddr4') || (p.ramType && p.ramType.toLowerCase().includes('ddr4')) || specsStr.includes('ddr4');
-      const prodHasDdr3 = nameNoTone.includes('ddr3') || (p.ramType && p.ramType.toLowerCase().includes('ddr3')) || specsStr.includes('ddr3');
+      // ─── SPECIFIC MODEL CODE / NUMBERS / CAPACITY FILTERING (e.g. 4090 vs 4080 vs 4060, 24GB vs 16GB) ───
+      const specificTokens = noToneQ.match(/\b(?:\d+[a-z]+|[a-z]+\d+|\d{3,5}(?:ti|super|xt|xtx|k|f|kf|x|x3d)?)\b/gi) || [];
+      const isSpecificModelSearch = specificTokens.length > 0;
 
-      if (wantDdr5) {
-        if (prodHasDdr5) score += 120;
-        if (prodHasDdr4 || prodHasDdr3) score -= 200; // Strictly eliminate mismatched generation
-      } else if (wantDdr4) {
-        if (prodHasDdr4) score += 120;
-        if (prodHasDdr5 || prodHasDdr3) score -= 200;
-      } else if (wantDdr3) {
-        if (prodHasDdr3) score += 120;
-        if (prodHasDdr5 || prodHasDdr4) score -= 200;
+      for (const token of specificTokens) {
+        const tLower = token.toLowerCase();
+        const hasInName = nameNoTone.includes(tLower);
+        const hasInSpecs = specsStr.includes(tLower);
+        
+        if (hasInName) {
+          score += 250; // Huge boost for matching exact model/capacity number (e.g. 4090, 24gb, 14600k)
+        } else if (hasInSpecs) {
+          score += 100;
+        } else {
+          // If the token looks like a GPU series (4090, 4080, 4070, 4060, 3060) or CPU generation (14900, 14700, 14600, 13400, 7800x3d)
+          if (/^(4090|4080|4070|4060|3090|3080|3070|3060|7900|7800|7700|7600|14900|14700|14600|13900|13700|13600|13400|12400|12100|7800x3d|7950x|5600x)/i.test(tLower)) {
+            score -= 350; // Heavy penalty if product is a different model series
+          }
+        }
       }
 
       // Exact phrase match in Name
-      if (nameNoTone.includes(noToneQ)) score += 100;
-      if (noToneQ.includes(nameNoTone)) score += 80;
-      if (brandNoTone && noToneQ.includes(brandNoTone)) score += 40;
+      if (nameNoTone.includes(noToneQ)) score += 200;
+      if (noToneQ.includes(nameNoTone)) score += 150;
+      if (brandNoTone && noToneQ.includes(brandNoTone)) score += 50;
 
       // Keyword matches
       let matchedKwCount = 0;
@@ -360,7 +365,7 @@ export class LiveDatabaseKnowledge {
 
       // Bonus if all query keywords match the product
       if (effectiveKeywords.length > 1 && matchedKwCount >= effectiveKeywords.length) {
-        score += 50;
+        score += 80;
       }
 
       return { product: p, score };
@@ -370,8 +375,19 @@ export class LiveDatabaseKnowledge {
     if (validMatches.length === 0) return [];
 
     const topScore = validMatches[0].score;
+    const secondScore = validMatches[1]?.score || 0;
+
+    // Strict single-product isolation:
+    // If the top product has a dominant score (or matched specific model tokens, or topScore is much higher than 2nd product), return ONLY that 1 product
+    const isDominantMatch = (topScore >= 200 && topScore >= secondScore * 1.5) || (topScore >= 350);
+    const isAskingPriceOrStock = noToneQ.includes('gia') || noToneQ.includes('bao nhieu') || noToneQ.includes('bao tien') || noToneQ.includes('con hang') || noToneQ.includes('thong so');
+
+    if ((isDominantMatch || isAskingPriceOrStock) && topScore >= 120) {
+      return [validMatches[0].product];
+    }
+
     const filtered = validMatches
-      .filter(item => item.score >= Math.max(30, topScore * 0.45))
+      .filter(item => item.score >= Math.max(50, topScore * 0.65))
       .map(item => item.product);
 
     return filtered.slice(0, limit);
