@@ -257,10 +257,26 @@ export function CouponManagementView({ canEdit = true }: { canEdit?: boolean }) 
       .on('postgres_changes', { event: '*', schema: 'public', table: 'Coupon' }, () => {
         fetchCoupons();
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'Order' }, () => {
+        fetchCoupons();
+      })
       .subscribe();
+
+    const handleWindowOrderUpdate = () => {
+      fetchCoupons();
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('drx_orders_updated', handleWindowOrderUpdate);
+      window.addEventListener('ods_coupons_updated', handleWindowOrderUpdate);
+    }
 
     return () => {
       supabase.removeChannel(channel);
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('drx_orders_updated', handleWindowOrderUpdate);
+        window.removeEventListener('ods_coupons_updated', handleWindowOrderUpdate);
+      }
     };
   }, [fetchCoupons]);
 

@@ -1,5 +1,5 @@
 import { Logger } from './Logger';
-import { liveDatabaseKnowledge, LiveProduct, removeVietnameseTones } from './LiveDatabaseKnowledge';
+import { liveDatabaseKnowledge, LiveProduct, LiveCoupon, removeVietnameseTones } from './LiveDatabaseKnowledge';
 
 export class DeepSeekClient {
   /**
@@ -13,7 +13,47 @@ export class DeepSeekClient {
 
       Logger.info(`[Realtime AI Engine] Processing query with Live Supabase DB: "${userText}"`);
 
-      // 1. Check if query is asking for PC Build Consultation (Tư vấn Build PC / Cấu hình máy tính)
+      // 1. Check if query is asking for Discount Codes / Coupons / Vouchers / Promotions
+      const isCouponInquiry = 
+        userTextNoTone.includes('ma giam') ||
+        userTextNoTone.includes('voucher') ||
+        userTextNoTone.includes('coupon') ||
+        userTextNoTone.includes('khuyen mai') ||
+        userTextNoTone.includes('uu dai') ||
+        userTextNoTone.includes('code giam') ||
+        userTextNoTone.includes('ma sale') ||
+        userTextNoTone.includes('chiet khau') ||
+        userTextNoTone.includes('co ma giam') ||
+        userTextNoTone.includes('xin ma giam') ||
+        userTextNoTone.includes('xin voucher') ||
+        userTextNoTone.includes('ma freeship') ||
+        userTextNoTone.includes('ma van chuyen') ||
+        (userTextNoTone.includes('giam gia') && !userTextNoTone.includes('vga') && !userTextNoTone.includes('ram') && !userTextNoTone.includes('cpu') && !userTextNoTone.includes('ssd'));
+
+      if (isCouponInquiry) {
+        Logger.info(`[Coupon AI] Detected coupon/voucher inquiry: "${userText}"`);
+        const liveCoupons = await liveDatabaseKnowledge.getLiveCoupons();
+        const liveContext = await liveDatabaseKnowledge.buildLiveStoreContext(userText);
+
+        // Try LLM API first
+        const aiReply = await this.callLLMWithContext(messages, liveContext);
+        if (aiReply) {
+          return {
+            role: 'assistant',
+            content: aiReply,
+            matchedProducts: [],
+          };
+        }
+
+        // Direct high-precision fallback for coupons
+        return {
+          role: 'assistant',
+          content: this.formatCouponsResponse(liveCoupons),
+          matchedProducts: [],
+        };
+      }
+
+      // 2. Check if query is asking for PC Build Consultation (Tư vấn Build PC / Cấu hình máy tính)
       const isBuildInquiry = 
         userTextNoTone.includes('build pc') ||
         userTextNoTone.includes('rap pc') ||
@@ -54,14 +94,14 @@ export class DeepSeekClient {
         };
       }
 
-      // 2. Fetch live products from Supabase matching the user's inquiry
+      // 3. Fetch live products from Supabase matching the user's inquiry
       const matchedProducts = await liveDatabaseKnowledge.searchLiveProducts(userText, 5);
       const allLiveProducts = await liveDatabaseKnowledge.getAllLiveProducts();
 
-      // 3. Build live store context
+      // 4. Build live store context
       const liveContext = await liveDatabaseKnowledge.buildLiveStoreContext(userText);
 
-      // 4. Try Calling External LLM API (Groq -> DeepSeek) with Live Database context
+      // 5. Try Calling External LLM API (Groq -> DeepSeek) with Live Database context
       const aiReply = await this.callLLMWithContext(messages, liveContext);
       if (aiReply) {
         return {
@@ -71,7 +111,7 @@ export class DeepSeekClient {
         };
       }
 
-      // 5. Robust Real-time Fallback Engine using Live Supabase Data
+      // 6. Robust Real-time Fallback Engine using Live Supabase Data
       return this.generateLiveRuleBasedResponse(userText, matchedProducts, allLiveProducts);
 
     } catch (error: any) {
@@ -86,23 +126,70 @@ export class DeepSeekClient {
   }
 
   /**
+   * Format coupon response clearly and beautifully (Antigravity standard, no excessive dots)
+   */
+  private formatCouponsResponse(coupons: LiveCoupon[]): string {
+    const formatVND = (num: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(num);
+
+    if (!coupons || coupons.length === 0) {
+      return `### 🎁 **Chương Trình Khuyến Mãi & Ưu Đãi DRX Hardware**
+
+Hiện tại các mã giảm giá số lượng có hạn đã được khách hàng nhận hết. Tuy nhiên, DRX Hardware đang áp dụng **giá Flash Sale chiết khấu trực tiếp** trên từng sản phẩm và **miễn phí công lắp ráp trọn gói**!
+
+👉 Bạn có thể duyệt xem các linh kiện đang giảm giá tại [**Danh mục Sản phẩm**](/products) hoặc tự phối cấu hình tại [**DRX PC Builder**](/pc-builder) nhé!`;
+    }
+
+    const couponItems = coupons.map((c) => {
+      const discountText = c.discountType === 'PERCENT'
+        ? `Giảm **${c.discountValue}%**${c.maxDiscount ? ` (Tối đa **${formatVND(c.maxDiscount)}**)` : ''}`
+        : `Giảm trực tiếp **${formatVND(c.discountValue)}**`;
+      
+      const conditionText = c.minOrderValue > 0
+        ? `Đơn hàng từ **${formatVND(c.minOrderValue)}**`
+        : 'Áp dụng cho mọi đơn hàng';
+
+      return `🎫 **Mã: \`${c.code}\`**
+- **Ưu đãi**: ${discountText}
+- **Điều kiện**: ${conditionText}`;
+    }).join('\n\n');
+
+    return `### 🎁 **Danh Sách Mã Giảm Giá Đang Hoạt Động Tại DRX Hardware**
+
+Hiện tại shop đang có các mã ưu đãi độc quyền sẵn sàng sử dụng:
+
+${couponItems}
+
+---
+📌 **Cách áp dụng mã giảm giá:**
+1. Chọn sản phẩm hoặc cấu hình PC bạn cần mua và tiến hành Đặt Hàng.
+2. Tại màn hình Thanh Toán, nhập mã vào ô **"Mã Giảm Giá"** và bấm **Áp Dụng**.
+3. Hệ thống sẽ tự động trừ trực tiếp số tiền ưu đãi vào đơn hàng của bạn.
+
+👉 [**Khám phá sản phẩm DRX Hardware**](/products) | [**Tự Build PC chuẩn tương thích**](/pc-builder)`;
+  }
+
+  /**
    * Call Groq or DeepSeek API with live context
    */
   private async callLLMWithContext(messages: any[], liveContext: string, isBuild = false): Promise<string | null> {
     const groqKey = process.env.GROQ_API_KEY;
     const deepseekKey = process.env.DEEPSEEK_API_KEY;
 
-    const systemPromptWithLiveDB = `Bạn là DRX CyberBot AI 🤖⚡ - Chuyên gia công nghệ phần cứng & tư vấn DRX Build PC tại DRX Hardware (chuẩn thông minh như Google Antigravity).
+    const systemPromptWithLiveDB = `Bạn là DRX CyberBot AI 🤖⚡ - Trợ lý công nghệ phần cứng thông minh đẳng cấp Google Antigravity & Gemini tại DRX Hardware.
 
 DỮ LIỆU KHO HÀNG & THÔNG TIN THỰC TẾ TRÊN HỆ THỐNG SUPABASE:
 ${liveContext}
 
-QUY TẮC TRẢ LỜI:
-1. TRẢ LỜI CHÍNH XÁC, CHUẨN KỸ THUẬT: Sử dụng dữ liệu giá bán, khuyến mãi, tình trạng kho và bảo hành từ hệ thống.
-2. DẪN LINK NHANH TỚI SẢN PHẨM: Khi nhắc đến sản phẩm, luôn gắn link markdown dạng [Tên sản phẩm](/products/slug-san-pham). Nếu tư vấn build PC, luôn dẫn link [DRX PC Builder](/pc-builder) để khách tùy biến.
-3. NẾU KHÁCH HỎI TƯ VẤN BUILD PC: Trình bày bảng chi tiết linh kiện (CPU, Mainboard, RAM, VGA, SSD, Nguồn, Case, Tản nhiệt), tổng chi phí, bảo hành, đánh giá hiệu năng FPS thực tế và độ tương thích linh kiện.
-4. NẾU KHÁCH HỎI GIÁ SẢN PHẨM: Báo giá niêm yết và giá khuyến mãi (VND), bảo hành bao nhiêu tháng và tình trạng còn hàng.
-5. Giọng điệu chuyên nghiệp, am hiểu sâu sắc phần cứng, lịch sự và hỗ trợ tận tâm.`;
+QUY TẮC ĐÀO TẠO & PHẢN HỒI (CHUẨN GEMINI / GOOGLE ANTIGRAVITY):
+1. TRẢ LỜI ĐÚNG TRỌNG TÂM, THÔNG MINH, TINH TẾ:
+   - Khi khách hỏi mã giảm giá/voucher/khuyến mãi: Liệt kê rõ ràng danh sách mã giảm giá từ dữ liệu Supabase, mức giảm (%), điều kiện đơn tối thiểu và hướng dẫn nhập mã tại bước thanh toán. TUYỆT ĐỐI không trả lời lan man sang linh kiện không liên quan.
+   - Khi khách hỏi tìm linh kiện: Đưa thông tin chính xác giá niêm yết, giá khuyến mãi (VND), bảo hành, tình trạng còn hàng và dẫn link markdown dạng [Tên sản phẩm](/products/slug).
+   - Khi khách hỏi tư vấn cấu hình PC: Lập bảng linh kiện tương thích 100%, chi phí ưu đãi, đánh giá hiệu năng FPS thực tế và dẫn link [DRX PC Builder](/pc-builder).
+2. ĐỊNH DẠNG ĐẸP, THOÁNG ĐÃNG, KHÔNG LẠM DỤNG DẤU CHẤM TRÒN (•):
+   - Tránh việc đặt liên tiếp hàng chục dấu chấm tròn (•) dính chùm.
+   - Sử dụng tiêu đề rõ ràng (###, ####), in đậm key points, bảng markdown hoặc gạch đầu dòng ngắn gọn (-).
+   - Định dạng tiền tệ chuẩn tiếng Việt (ví dụ: 2.399.000 ₫).
+3. PHONG THÁI CHUYÊN NGHIỆP, TỰ NHIÊN, AM HIỂU PHẦN CỨNG: Thân thiện, tôn trọng khách hàng, ngôn từ hiện đại, chuẩn xác 100% tiếng Việt.`;
 
     const chatHistory = messages.map(m => ({
       role: m.role === 'user' ? 'user' : m.role === 'assistant' ? 'assistant' : 'system',
@@ -124,8 +211,8 @@ QUY TẮC TRẢ LỜI:
               { role: 'system', content: systemPromptWithLiveDB },
               ...chatHistory.slice(-6),
             ],
-            temperature: 0.4,
-            max_tokens: isBuild ? 800 : 400,
+            temperature: 0.3,
+            max_tokens: isBuild ? 800 : 500,
           }),
         });
 
@@ -154,8 +241,8 @@ QUY TẮC TRẢ LỜI:
               { role: 'system', content: systemPromptWithLiveDB },
               ...chatHistory.slice(-6),
             ],
-            temperature: 0.4,
-            max_tokens: isBuild ? 800 : 400,
+            temperature: 0.3,
+            max_tokens: isBuild ? 800 : 500,
           }),
         });
 
@@ -188,11 +275,12 @@ QUY TẮC TRẢ LỜI:
         
         return {
           role: 'assistant',
-          content: `Dạ, DRX Hardware hiện có sẵn sản phẩm **${p.name}** chính hãng:
-• **Giá ưu đãi**: ${discFormatted ? `**${discFormatted}** (giá gốc ~~${priceFormatted}~~)` : `**${priceFormatted}**`}
-• **Bảo hành**: **${p.warrantyMonths} Tháng chính hãng (1 đổi 1)**
-• **Tình trạng kho**: ${p.inStock ? `📦 **Còn hàng** (${p.stockQuantity} sản phẩm sẵn có)` : '🚫 **Tạm hết hàng**'}
-• **Giao hàng**: Miễn phí vận chuyển COD toàn quốc, đồng kiểm trước khi nhận.
+          content: `Dạ, DRX Hardware hiện có sẵn **[${p.name}](/products/${p.slug})** chính hãng:
+
+💰 **Giá ưu đãi**: ${discFormatted ? `**${discFormatted}** *(Giá gốc ~~${priceFormatted}~~)*` : `**${priceFormatted}**`}
+🛡️ **Bảo hành**: **${p.warrantyMonths} Tháng chính hãng (1 đổi 1)**
+📦 **Tình trạng kho**: ${p.inStock ? `Còn ${p.stockQuantity} sản phẩm sẵn sàng giao ngay` : 'Tạm hết hàng'}
+🚚 **Giao hàng**: Miễn phí vận chuyển COD toàn quốc, đồng kiểm trước khi nhận
 
 👉 Mời bạn xem chi tiết thông số và đặt hàng nhanh qua thẻ sản phẩm bên dưới:`,
           matchedProducts: [p],
@@ -218,7 +306,9 @@ QUY TẮC TRẢ LỜI:
 
       return {
         role: 'assistant',
-        content: `Dạ, DRX Hardware hiện có **${matchedProducts.length} ${categoryHeader}** chính hãng sẵn hàng tại kho, bảo hành 36 tháng 1 đổi 1.\n\n👉 Bạn có thể bấm trực tiếp vào từng thẻ bên dưới để xem thông số chi tiết, kiểm tra tồn kho và đặt mua nhanh nhé:`,
+        content: `Dạ, DRX Hardware hiện có **${matchedProducts.length} ${categoryHeader}** chính hãng sẵn hàng tại kho, bảo hành 36 tháng 1 đổi 1:
+
+👉 Mời bạn bấm trực tiếp vào từng thẻ bên dưới để xem chi tiết thông số, tình trạng tồn kho và đặt mua:`,
         matchedProducts: topProducts,
       };
     }
@@ -227,39 +317,65 @@ QUY TẮC TRẢ LỜI:
     if (qNoTone.includes('bao hanh') || qNoTone.includes('serial') || qNoTone.includes('sn')) {
       return {
         role: 'assistant',
-        content: '🛡️ **Chính Sách Bảo Hành 36 Tháng Chính Hãng Tại DRX Hardware**:\n• 1 đổi 1 trong 30 ngày đầu tiên nếu phát sinh lỗi phần cứng.\n• Bảo hành theo mã Serial (SN) điện tử chính xác, không lo mất hóa đơn.\n• Bạn có thể tra cứu nhanh tại: [**Trang Tra Cứu Bảo Hành SN**](/warranty).',
-        matchedProducts: allProducts.slice(0, 2),
+        content: `### 🛡️ **Chính Sách Bảo Hành Chính Hãng Tại DRX Hardware**
+
+- **Cam kết vàng**: Bảo hành **36 Tháng chính hãng 1 đổi 1** trong 30 ngày đầu tiên nếu phát sinh lỗi từ nhà sản xuất.
+- **Tra cứu điện tử**: Quản lý bảo hành thông minh theo mã Serial (SN) thiết bị, không lo rách tem hay thất lạc hóa đơn giấy.
+
+👉 Bạn có thể tra cứu hạn bảo hành nhanh tại: [**Trang Tra Cứu Bảo Hành SN**](/warranty)`,
+        matchedProducts: [],
       };
     }
 
     if (qNoTone.includes('giao hang') || qNoTone.includes('ship') || qNoTone.includes('van chuyen') || qNoTone.includes('dia chi') || qNoTone.includes('showroom')) {
       return {
         role: 'assistant',
-        content: '🚚 **Giao Hàng & Showroom DRX Hardware**:\n• **Showroom**: 128 Nguyễn Trãi, Q.1, TP. Hồ Chí Minh (Mở cửa 08:00 - 21:30 hàng ngày).\n• **Giao hàng**: Toàn quốc qua bưu cục hỏa tốc (1-3 ngày), hỗ trợ kiểm tra hàng trước khi thanh toán COD.\n• **Hotline hỗ trợ**: 1900.88.99.77.',
-        matchedProducts: allProducts.slice(0, 2),
+        content: `### 🚚 **Giao Hàng & Showroom DRX Hardware**
+
+- **Địa chỉ Showroom**: 128 Nguyễn Trãi, Q.1, TP. Hồ Chí Minh *(Mở cửa 08:00 - 21:30 tất cả các ngày trong tuần)*.
+- **Vận chuyển hỏa tốc**: Giao hàng toàn quốc 1-3 ngày làm việc, hỗ trợ mở hộp đồng kiểm trước khi thanh toán (COD).
+- **Hotline tư vấn**: **1900.88.99.77** (Miễn phí cuộc gọi).`,
+        matchedProducts: [],
       };
     }
 
     if (qNoTone.includes('thanh toan') || qNoTone.includes('cod') || qNoTone.includes('tra tien') || qNoTone.includes('vietqr')) {
       return {
         role: 'assistant',
-        content: '💵 **Phương Thức Thanh Toán Linh Hoạt & An Toàn**:\n• Thanh toán khi nhận hàng (COD) tận nhà.\n• Chuyển khoản VietQR / NAPAS 24/7 tức thì.\n• Miễn phí hoàn toàn phí giao dịch.',
-        matchedProducts: allProducts.slice(0, 2),
+        content: `### 💵 **Phương Thức Thanh Toán Linh Hoạt & Bảo Mật**
+
+- **Thanh toán khi nhận hàng (COD)**: Kiểm tra hàng an tâm trước khi thanh toán.
+- **Chuyển khoản VietQR 24/7**: Tự động xác nhận giao dịch tức thì, 0% phụ phí.
+- **Hóa đơn & Chứng từ**: Xuất VAT điện tử đầy đủ theo yêu cầu của doanh nghiệp & cá nhân.`,
+        matchedProducts: [],
       };
     }
 
     if (qNoTone.includes('lap rap') || qNoTone.includes('rap may') || qNoTone.includes('cai win') || qNoTone.includes('di day')) {
       return {
         role: 'assistant',
-        content: '🛠️ **Dịch Vụ Lắp Ráp & Kỹ Thuật Miễn Phí**:\n• Miễn phí 100% công lắp ráp máy, đi dây giấu nguồn thẩm mỹ cao.\n• Cài đặt sẵn Windows 11 bản quyền, Driver phần cứng và các phần mềm văn phòng/gaming cơ bản.\n• Chạy Stress Test FurMark & Cinebench kiểm tra nhiệt độ full-load ổn định trước khi đóng gói giao hàng!',
-        matchedProducts: allProducts.slice(0, 2),
+        content: `### 🛠️ **Dịch Vụ Lắp Ráp & Cài Đặt Miễn Phí Trọn Gói**
+
+- **Lắp ráp chuẩn chuyên nghiệp**: Miễn phí 100% công lắp đặt, đi dây nghệ thuật giấu nguồn thẩm mỹ cao.
+- **Cài đặt sẵn hệ điều hành**: Tặng bản quyền Windows 11, cài full Driver và các tiện ích văn phòng/gaming.
+- **Kiểm định nghiêm ngặt**: Chạy Stress Test FurMark & Cinebench kiểm tra nhiệt độ full-load 100% ổn định trước khi bàn giao!
+
+👉 [**Tự phối cấu hình PC ngay trên DRX PC Builder**](/pc-builder)`,
+        matchedProducts: [],
       };
     }
 
     // 3. Fallback greeting
     return {
       role: 'assistant',
-      content: `Xin chào! Mình là **DRX CyberBot AI** 🤖⚡ — Trợ lý AI phần cứng tại DRX Hardware.\n\nBạn có thể hỏi mình bất kỳ câu hỏi nào như:\n• *"Giá VGA RTX 4060 bao nhiêu?"*\n• *"Tư vấn cấu hình PC Gaming 20 triệu chơi Valorant, Black Myth Wukong"*\n• *"Cấu hình 15 triệu làm đồ họa Premiere"* hoặc mở trực tiếp [**DRX PC Builder**](/pc-builder) nhé!`,
+      content: `Xin chào! Mình là **DRX CyberBot AI** 🤖⚡ — Trợ lý AI phần cứng tại DRX Hardware.
+
+Bạn có thể hỏi mình bất kỳ câu hỏi nào như:
+- *"Shop đang có mã giảm giá gì?"*
+- *"Tư vấn cấu hình PC Gaming 20 triệu chơi Valorant, Black Myth Wukong"*
+- *"Giá Card màn hình RTX 4060 bao nhiêu?"*
+
+Hoặc bấm vào [**DRX PC Builder**](/pc-builder) để tự tay thiết kế bộ PC theo ý thích nhé!`,
       matchedProducts: allProducts.slice(0, 2),
     };
   }
@@ -270,4 +386,5 @@ QUY TẮC TRẢ LỜI:
 }
 
 export const deepSeekClient = new DeepSeekClient();
+
 

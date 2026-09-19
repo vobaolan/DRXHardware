@@ -22,6 +22,19 @@ export interface LiveProduct {
   createdAt: string;
 }
 
+export interface LiveCoupon {
+  id: string;
+  code: string;
+  discountType: 'PERCENT' | 'FIXED';
+  discountValue: number;
+  minOrderValue: number;
+  maxDiscount: number | null;
+  expiresAt: string;
+  maxUses: number | null;
+  usedCount: number;
+  status?: string | boolean;
+}
+
 export function removeVietnameseTones(str: string): string {
   if (!str) return '';
   let clean = str.toLowerCase();
@@ -38,6 +51,47 @@ export function removeVietnameseTones(str: string): string {
 }
 
 export class LiveDatabaseKnowledge {
+  /**
+   * Fetch all live active coupons directly from Supabase Cloud Database
+   */
+  async getLiveCoupons(): Promise<LiveCoupon[]> {
+    try {
+      const { data, error } = await supabase
+        .from('Coupon')
+        .select('*')
+        .order('createdAt', { ascending: false });
+
+      if (!error && data && Array.isArray(data)) {
+        const now = new Date();
+        return data
+          .filter((c: any) => {
+            // Check inactive status
+            if (c.status === 'INACTIVE' || c.status === 'DISABLED' || c.status === false) return false;
+            // Check expiry
+            if (c.expiresAt && new Date(c.expiresAt) < now) return false;
+            // Check usage limit
+            if (c.maxUses && Number(c.usedCount || 0) >= Number(c.maxUses)) return false;
+            return true;
+          })
+          .map((c: any) => ({
+            id: c.id || c.code,
+            code: String(c.code).toUpperCase().trim(),
+            discountType: c.discountType === 'FIXED' ? 'FIXED' : 'PERCENT',
+            discountValue: Number(c.discountValue || 0),
+            minOrderValue: Number(c.minOrderValue || 0),
+            maxDiscount: c.maxDiscount ? Number(c.maxDiscount) : null,
+            expiresAt: c.expiresAt,
+            maxUses: c.maxUses ? Number(c.maxUses) : null,
+            usedCount: Number(c.usedCount || 0),
+            status: c.status,
+          }));
+      }
+    } catch (e) {
+      console.warn('Supabase getLiveCoupons notice:', e);
+    }
+    return [];
+  }
+
   /**
    * Fetch all live products directly from Supabase Cloud Database
    * with strict newest-first sorting and fallback to INITIAL_PRODUCTS.
@@ -113,7 +167,34 @@ export class LiveDatabaseKnowledge {
     const noToneQ = removeVietnameseTones(cleanQ);
     if (!cleanQ) return all.slice(0, limit);
 
-    // 1. Detect Explicit Category / Intent
+    // 1. Detect Non-Product Intent (Coupon, Policies, General FAQs)
+    const isCouponInquiry = 
+      noToneQ.includes('ma giam') ||
+      noToneQ.includes('voucher') ||
+      noToneQ.includes('coupon') ||
+      noToneQ.includes('khuyen mai') ||
+      noToneQ.includes('uu dai') ||
+      noToneQ.includes('code giam') ||
+      noToneQ.includes('chiet khau') ||
+      (noToneQ.includes('giam gia') && !noToneQ.includes('vga') && !noToneQ.includes('ram') && !noToneQ.includes('cpu') && !noToneQ.includes('ssd'));
+
+    const isPolicyInquiry = 
+      noToneQ.includes('bao hanh') ||
+      noToneQ.includes('tra cuu sn') ||
+      noToneQ.includes('serial') ||
+      noToneQ.includes('giao hang') ||
+      noToneQ.includes('van chuyen') ||
+      noToneQ.includes('phi ship') ||
+      noToneQ.includes('thanh toan') ||
+      noToneQ.includes('chuyen khoan') ||
+      noToneQ.includes('lap rap') ||
+      noToneQ.includes('cai win') ||
+      noToneQ.includes('dia chi') ||
+      noToneQ.includes('showroom') ||
+      noToneQ.includes('hotline') ||
+      noToneQ.includes('lien he');
+
+    // 2. Detect Hardware Categories
     const isRamInquiry = noToneQ.includes('ram') || noToneQ.includes('bo nho') || noToneQ.includes('sodimm') || noToneQ.includes('so-dimm') || noToneQ.includes('u-dimm');
     const isLaptopRam = isRamInquiry && (noToneQ.includes('laptop') || noToneQ.includes('sodimm') || noToneQ.includes('so-dimm') || noToneQ.includes('xach tay'));
     const isPcRam = isRamInquiry && (noToneQ.includes('pc') || noToneQ.includes('may ban') || noToneQ.includes('desktop') || noToneQ.includes('u-dimm'));
@@ -129,22 +210,36 @@ export class LiveDatabaseKnowledge {
     const isMonitorInquiry = noToneQ.includes('man hinh') || noToneQ.includes('monitor');
     const isPrebuiltInquiry = noToneQ.includes('pc dong bo') || noToneQ.includes('pc san') || noToneQ.includes('may bo');
 
-    // 2. Generation & Spec Specificity
+    const hasSpecificHardwareTarget = isRamInquiry || isLaptopMachine || isCpuInquiry || isVgaInquiry || isMainboardInquiry || isStorageInquiry || isPsuInquiry || isCaseInquiry || isCoolingInquiry || isMonitorInquiry || isPrebuiltInquiry;
+
+    // Strict guard: If user is asking for coupons, store policies, or warranty without naming hardware, DO NOT falsely match products
+    if ((isCouponInquiry || isPolicyInquiry) && !hasSpecificHardwareTarget) {
+      return [];
+    }
+
+    // 3. Generation & Spec Specificity
     const wantDdr5 = noToneQ.includes('ddr5') || noToneQ.includes('d5');
     const wantDdr4 = noToneQ.includes('ddr4') || noToneQ.includes('d4');
     const wantDdr3 = noToneQ.includes('ddr3') || noToneQ.includes('d3');
 
-    // Vietnamese common stop words
+    // Vietnamese common stop words & non-product noise words
     const STOP_WORDS = new Set([
       'dang', 'ban', 'gia', 'nhieu', 'bao', 'mua', 'co', 'khong', 'cho', 'hoi',
       'la', 'gi', 'o', 'dau', 'nay', 'duoc', 'nao', 'voi', 'va', 'cua', 'minh', 'ban',
       'shop', 'ad', 'a', 'oi', 'nha', 'nhe', 'tim', 'kiem', 'xem', 'hang', 'con', 'het',
       'tu', 'van', 'can', 'muon', 'giup', 'em', 'anh', 'chi', 'mau', 'loai', 'cai', 'the',
-      'nhung', 'cac'
+      'nhung', 'cac', 'ma', 'giam', 'voucher', 'coupon', 'code', 'uu', 'dai', 'sale',
+      'chiet', 'khau', 'chinh', 'sach', 'hotline', 'sdt', 'dia', 'chi', 'show', 'room'
     ]);
 
     const rawKeywords = noToneQ.split(/[\s,.\-_\/]+/).filter(w => w.length > 1);
     const keywords = rawKeywords.filter(w => !STOP_WORDS.has(w));
+    
+    // If all words are stop words and no specific hardware target was found, return empty to prevent false matches
+    if (keywords.length === 0 && !hasSpecificHardwareTarget) {
+      return [];
+    }
+
     const effectiveKeywords = keywords.length > 0 ? keywords : rawKeywords;
 
     const scored = all.map(p => {
@@ -490,11 +585,11 @@ export class LiveDatabaseKnowledge {
 
     let performanceHighlights = '';
     if (budget < 15000000) {
-      performanceHighlights = `• **FPS Valorant / CS2 / LOL**: 180 - 250+ FPS (1080p High)\n• **GTA V / PUBG / FO4**: 80 - 120+ FPS Mượt mà\n• **Nhiệt độ**: Mát mẻ 60-68°C full-load`;
+      performanceHighlights = `> **FPS Valorant / CS2 / LOL**: 180 - 250+ FPS (1080p High)\n> **GTA V / PUBG / FO4**: 80 - 120+ FPS Mượt mà\n> **Nhiệt độ hoạt động**: Mát mẻ 60-68°C full-load`;
     } else if (budget < 28000000) {
-      performanceHighlights = `• **FPS Valorant / CS2**: 300 - 450+ FPS Cực mượt (1080p/2K)\n• **Black Myth Wukong / Cyberpunk 2077**: 75 - 110+ FPS (DLSS 3 Frame Gen)\n• **Premiere Pro / Photoshop**: Render video 2K/4K tốc độ cao`;
+      performanceHighlights = `> **FPS Valorant / CS2**: 300 - 450+ FPS Cực mượt (1080p/2K)\n> **Black Myth Wukong / Cyberpunk 2077**: 75 - 110+ FPS (DLSS 3 Frame Gen)\n> **Premiere Pro / Photoshop**: Render video 2K/4K tốc độ cao`;
     } else {
-      performanceHighlights = `• **Gaming AAA 2K / 4K Max Settings**: 100 - 165+ FPS Ray Tracing On\n• **Valorant / CS2**: 450 - 600+ FPS (Sẵn sàng màn 240Hz / 360Hz)\n• **3ds Max / Blender / AI Training**: Xử lý mượt mà, bộ nhớ lớn`;
+      performanceHighlights = `> **Gaming AAA 2K / 4K Max Settings**: 100 - 165+ FPS Ray Tracing On\n> **Valorant / CS2**: 450 - 600+ FPS (Sẵn sàng màn 240Hz / 360Hz)\n> **3ds Max / Blender / AI Training**: Xử lý mượt mà, bộ nhớ lớn`;
     }
 
     const summaryMarkdown = `### 🖥️ **Tư Vấn Cấu Hình: ${buildTitle}**
@@ -505,13 +600,14 @@ Dựa trên ngân sách **${budgetFormatted}** và nhu cầu **${purposeLabel}**
 ${tableRows}
 
 ---
-💰 **TỔNG CHI PHÍ ƯU ĐÃI**: **${formatVND(totalDiscountPrice)}** *(Tiết kiệm ${formatVND(totalPrice - totalDiscountPrice)})*
-🛡️ **BẢO HÀNH**: 36 Tháng 1 Đổi 1 Chính Hãng DRX.
+💰 **Tổng chi phí ưu đãi**: **${formatVND(totalDiscountPrice)}** *(Tiết kiệm ${formatVND(totalPrice - totalDiscountPrice)})*
+🛡️ **Bảo hành**: 36 Tháng 1 Đổi 1 Chính Hãng DRX.
 
-⚡ **ĐÁNH GIÁ HIỆU NĂNG & TƯƠNG THÍCH**:
+⚡ **Đánh giá hiệu năng & Tương thích**:
 ${performanceHighlights}
-• **Tương thích phần cứng**: Socket ${requiredSocket} chuẩn đồng bộ, RAM ${isDDR5 ? 'DDR5' : 'DDR4'} bus cao, Nguồn công suất thực đủ tải an toàn và dư địa nâng cấp.
-• **Khuyến mãi đi kèm**: Miễn phí công lắp ráp, đi dây nghệ thuật, tra keo tản nhiệt cao cấp và cài đặt Windows/Driver trọn gói!
+
+- **Tương thích phần cứng**: Socket ${requiredSocket} chuẩn đồng bộ, RAM ${isDDR5 ? 'DDR5' : 'DDR4'} bus cao, Nguồn công suất thực đủ tải an toàn và dư địa nâng cấp.
+- **Đặc quyền đi kèm**: Miễn phí công lắp ráp, đi dây giấu nguồn thẩm mỹ, tra keo tản nhiệt cao cấp và cài đặt Windows/Driver trọn gói.
 
 👉 [**Tùy biến cấu hình này trên DRX PC Builder**](/pc-builder) | [**Khám phá thêm linh kiện khác**](/products)`;
 
@@ -533,6 +629,7 @@ ${performanceHighlights}
   async buildLiveStoreContext(userQuery: string): Promise<string> {
     const allProducts = await this.getAllLiveProducts();
     const matched = await this.searchLiveProducts(userQuery, 5);
+    const coupons = await this.getLiveCoupons();
 
     // Format top matching products
     const matchedStr = matched.length > 0 
@@ -541,12 +638,26 @@ ${performanceHighlights}
           const discFormatted = p.discountPrice ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(p.discountPrice) : null;
           const specsEntries = Object.entries(p.specs).slice(0, 4).map(([k, v]) => `${k}: ${v}`).join(' | ');
 
-          return `- [${p.category}] **${p.name}** (Hãng: ${p.brand})\n  * Giá bán: ${discFormatted ? `${discFormatted} (Giá gốc ${priceFormatted})` : priceFormatted}\n  * Tồn kho: ${p.inStock ? `Còn ${p.stockQuantity} món` : 'Tạm hết hàng'}\n  * Bảo hành: ${p.warrantyMonths} Tháng chính hãng\n  * Đường dẫn xem mua: /products/${p.slug}\n  * Thông số: ${specsEntries || 'Chính hãng 100%'}`;
+          return `- [${p.category}] **${p.name}** (Hãng: ${p.brand})\n  * Giá bán: ${discFormatted ? `${discFormatted} (Giá gốc ${priceFormatted})` : priceFormatted}\n  * Tồn kho: ${p.inStock ? `Còn ${p.stockQuantity} món` : 'Tạm hết hàng'}\n  * Bảo hành: ${p.warrantyMonths} Tháng chính hãng\n  * Link sản phẩm: /products/${p.slug}\n  * Thông số: ${specsEntries || 'Chính hãng 100%'}`;
         }).join('\n\n')
       : 'Không có sản phẩm nào trùng khớp trực tiếp với từ khóa này.';
 
+    // Format active coupons
+    const couponsStr = coupons.length > 0
+      ? coupons.map(c => {
+          const discountDesc = c.discountType === 'PERCENT'
+            ? `Giảm ${c.discountValue}%${c.maxDiscount ? ` (Tối đa ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(c.maxDiscount)})` : ''}`
+            : `Giảm ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(c.discountValue)}`;
+          const minDesc = c.minOrderValue > 0 ? `Đơn tối thiểu ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(c.minOrderValue)}` : 'Mọi đơn hàng';
+          return `- Mã: **${c.code}** | ${discountDesc} | Áp dụng: ${minDesc}`;
+        }).join('\n')
+      : 'Hiện tại chưa có mã giảm giá đang hoạt động.';
+
     return `=== DỮ LIỆU THỜI GIAN THỰC TỪ CƠ SỞ DỮ LIỆU STORE DRX HARDWARE (SUPABASE) ===
 Tổng số sản phẩm trong kho: ${allProducts.length} sản phẩm chính hãng.
+
+[MÃ GIẢM GIÁ & VOUCHER ĐANG HOẠT ĐỘNG TRÊN SUPABASE]:
+${couponsStr}
 
 [SẢN PHẨM KHỚP TRỰC TIẾP VỚI CÂU HỎI KHÁCH HÀNG]:
 ${matchedStr}
@@ -555,13 +666,13 @@ ${matchedStr}
 CPU, VGA (Card màn hình), MAINBOARD (Bo mạch chủ), RAM, STORAGE (SSD/HDD), PSU (Nguồn), CASE (Vỏ máy), COOLING (Tản nhiệt), MONITOR (Màn hình), GAMING GEAR (Bàn phím, Chuột, Tai nghe), LAPTOP, PREBUILT PC.
 
 [CHÍNH SÁCH BÁN HÀNG & DỊCH VỤ DRX HARDWARE]:
-• Showroom: 128 Nguyễn Trãi, Q.1, TP. Hồ Chí Minh.
-• Hotline tư vấn: 1900.88.99.77.
-• Giao hàng COD toàn quốc (1-3 ngày, kiểm tra hàng trước khi thanh toán).
-• Bảo hành 36 tháng chính hãng (1 đổi 1 trong 30 ngày đầu nếu lỗi).
-• Miễn phí công lắp ráp PC, cài đặt Windows 11 bản quyền/Driver và test ổn định 100%.
-• Link trang tự build PC: /pc-builder
-• Link tra cứu bảo hành SN: /warranty`;
+- Showroom: 128 Nguyễn Trãi, Q.1, TP. Hồ Chí Minh.
+- Hotline tư vấn: 1900.88.99.77.
+- Giao hàng COD toàn quốc (1-3 ngày, kiểm tra hàng trước khi thanh toán).
+- Bảo hành 36 tháng chính hãng (1 đổi 1 trong 30 ngày đầu nếu lỗi).
+- Miễn phí công lắp ráp PC, cài đặt Windows 11 bản quyền/Driver và test ổn định 100%.
+- Link trang tự build PC: /pc-builder
+- Link tra cứu bảo hành SN: /warranty`;
   }
 }
 

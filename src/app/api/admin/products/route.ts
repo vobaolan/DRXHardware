@@ -346,16 +346,17 @@ export async function PUT(request: Request) {
       updatedProduct = upsertRes;
     }
 
-    // Tự động phát sinh thêm mã SN nếu số lượng tồn kho (nhập kho thêm) lớn hơn số serial sẵn có
+    // Tự động đồng bộ số lượng mã Serial (SN) theo tồn kho thực tế
     try {
       const targetStock = Math.max(0, Number(stockQuantity !== undefined ? stockQuantity : (updatedProduct?.stockQuantity || 0)));
-      const { count: availableSnCount } = await supabase
+      const { data: availSerials } = await supabase
         .from('ProductSerial')
-        .select('*', { count: 'exact', head: true })
+        .select('id, serialNumber')
         .eq('productId', id)
-        .eq('status', 'AVAILABLE');
+        .eq('status', 'AVAILABLE')
+        .order('createdAt', { ascending: false });
 
-      const currentAvailable = availableSnCount || 0;
+      const currentAvailable = availSerials?.length || 0;
       if (targetStock > currentAvailable) {
         const diff = targetStock - currentAvailable;
         const serialsToInsert: any[] = [];
@@ -383,12 +384,25 @@ export async function PUT(request: Request) {
             .from('ProductSerial')
             .insert(serialsToInsert);
           if (snErr) {
-            console.warn('Lỗi tự động phát sinh serial khi cập nhật tồn kho:', snErr);
+            console.warn('Lỗi tự động phát sinh serial khi tăng tồn kho:', snErr);
+          }
+        }
+      } else if (targetStock < currentAvailable && availSerials && availSerials.length > 0) {
+        // Tồn kho giảm: tự động thu hồi/xóa các mã SN thừa chưa bán để số lượng đồng nhất 100%
+        const excessCount = currentAvailable - targetStock;
+        const idsToDelete = availSerials.slice(0, excessCount).map((s: any) => s.id);
+        if (idsToDelete.length > 0) {
+          const { error: delSnErr } = await supabase
+            .from('ProductSerial')
+            .delete()
+            .in('id', idsToDelete);
+          if (delSnErr) {
+            console.warn('Lỗi thu hồi serial thừa khi giảm tồn kho:', delSnErr);
           }
         }
       }
     } catch (snErr) {
-      console.warn('Tự động phát sinh serial khi sửa sản phẩm warning:', snErr);
+      console.warn('Tự động đồng bộ serial khi sửa sản phẩm warning:', snErr);
     }
 
     invalidateProductsCache();

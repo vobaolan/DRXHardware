@@ -1828,15 +1828,34 @@ export default function AdminDashboardPage() {
                             <td className="py-3.5 px-3 font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">
                               {p.brand}
                             </td>
-                            <td className="py-3.5 px-3 font-black text-slate-900 dark:text-white whitespace-nowrap">
-                              {formatVND(p.price)}
+                            <td className="py-3.5 px-3 whitespace-nowrap">
+                              {p.discountPrice && Number(p.discountPrice) < Number(p.price) ? (
+                                <div className="flex flex-col">
+                                  <span className="font-black text-emerald-600 dark:text-emerald-400 text-xs">
+                                    {formatVND(p.discountPrice)}
+                                  </span>
+                                  <div className="flex items-center gap-1 mt-0.5">
+                                    <span className="text-[10px] text-slate-400 line-through">
+                                      {formatVND(p.price)}
+                                    </span>
+                                    <span className="text-[9px] font-black text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 px-1 rounded border border-rose-200/80 dark:border-rose-800">
+                                      -{Math.round(((Number(p.price) - Number(p.discountPrice)) / Number(p.price)) * 100)}%
+                                    </span>
+                                  </div>
+                                </div>
+                              ) : (
+                                <span className="font-black text-slate-900 dark:text-white">
+                                  {formatVND(p.price)}
+                                </span>
+                              )}
                             </td>
                             <td className="py-3.5 px-3 text-center whitespace-nowrap">
                               {(() => {
                                 const prodSerials = serialsByProductId.get(p.id) || [];
-                                const hasSerials = prodSerials.length > 0;
                                 const availCount = prodSerials.filter((s: any) => s.status === 'AVAILABLE').length;
-                                const effectiveStock = hasSerials ? availCount : (p.stockQuantity ?? p.stockCount ?? 0);
+                                const effectiveStock = p.stockQuantity !== undefined && p.stockQuantity !== null 
+                                  ? Number(p.stockQuantity) 
+                                  : (prodSerials.length > 0 ? availCount : (p.stockCount ?? 0));
 
                                 if (effectiveStock > 0) {
                                   return (
