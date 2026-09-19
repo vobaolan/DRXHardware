@@ -22,7 +22,7 @@ export async function GET(request: Request) {
     // Query real reviews from Supabase Review table
     const { data: dbReviews, error } = await supabase
       .from('Review')
-      .select('id, productId, userId, rating, comment, createdAt, user:User(id, name, email, avatar)')
+      .select('id, productId, userId, rating, comment, createdAt, user:User(id, name, email, image)')
       .eq('productId', productId)
       .order('createdAt', { ascending: false });
 
@@ -106,25 +106,34 @@ export async function POST(request: Request) {
       createdAt: nowIso
     };
 
-    const { data, error } = await supabase.from('Review').insert(newReviewData).select('id, productId, userId, rating, comment, createdAt, user:User(id, name, email, avatar)').single();
+    // Insert into Supabase Review table
+    const { data, error } = await supabase
+      .from('Review')
+      .insert(newReviewData)
+      .select('id, productId, userId, rating, comment, createdAt, user:User(id, name, email, image)')
+      .single();
 
     if (error) {
       console.error('Supabase review insert error:', error);
-      return NextResponse.json({ error: 'Không thể lưu đánh giá vào database' }, { status: 500 });
+      // Fallback simple insert if foreign join has issue
+      const fallback = await supabase.from('Review').insert(newReviewData);
+      if (fallback.error) {
+        return NextResponse.json({ error: fallback.error.message || 'Không thể lưu đánh giá vào database' }, { status: 500 });
+      }
     }
 
-    const user = data.user || {};
+    const user = data?.user || {};
     const formattedAuthor = authorName || user.name || user.email?.split('@')[0] || 'Khách Hàng DRX';
 
     const formattedReview = {
-      id: data.id,
-      productId: data.productId,
-      userId: data.userId,
+      id: data?.id || newReviewId,
+      productId: data?.productId || productId,
+      userId: data?.userId || finalUserId,
       author: formattedAuthor,
-      rating: data.rating,
-      comment: data.comment,
-      date: new Date(data.createdAt).toLocaleDateString('vi-VN'),
-      createdAt: data.createdAt,
+      rating: data?.rating || newReviewData.rating,
+      comment: data?.comment || newReviewData.comment,
+      date: new Date(data?.createdAt || nowIso).toLocaleDateString('vi-VN'),
+      createdAt: data?.createdAt || nowIso,
       isVerified: true
     };
 
