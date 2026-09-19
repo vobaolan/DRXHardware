@@ -1,15 +1,14 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import { INITIAL_PRODUCTS } from '@/lib/hardware-data';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 
-// High-speed In-Memory Cache with 10s TTL
+// High-speed In-Memory Cache with 3s TTL
 let memoryCachedProducts: any[] | null = null;
 let lastCacheTimestamp = 0;
-const CACHE_TTL_MS = 10 * 1000; // 10 seconds
+const CACHE_TTL_MS = 3 * 1000;
 
 export function invalidateProductsCache() {
   memoryCachedProducts = null;
@@ -35,30 +34,24 @@ export async function GET(request: Request) {
     if (!isBypassCache && memoryCachedProducts && (now - lastCacheTimestamp < CACHE_TTL_MS)) {
       dbProducts = memoryCachedProducts;
     } else {
-      // 1. Fetch from Supabase with safety
-      try {
-        const { data, error } = await supabase
-          .from('Product')
-          .select('*')
-          .order('createdAt', { ascending: false });
+      // 1. Fetch strictly from Supabase Live Database
+      const { data, error } = await supabase
+        .from('Product')
+        .select('*')
+        .order('createdAt', { ascending: false });
 
-        if (!error && data && Array.isArray(data) && data.length > 0) {
-          dbProducts = data;
-          memoryCachedProducts = data;
-          lastCacheTimestamp = now;
-        } else if (memoryCachedProducts) {
+      if (error) {
+        console.error('Lỗi khi truy vấn Supabase Product:', error);
+        if (memoryCachedProducts) {
           dbProducts = memoryCachedProducts;
         } else {
-          dbProducts = INITIAL_PRODUCTS;
+          return NextResponse.json({ message: 'Lỗi CSDL: ' + error.message }, { status: 500, headers });
         }
-      } catch (e) {
-        console.warn('Supabase product fetch warning, using fallback:', e);
-        dbProducts = memoryCachedProducts || INITIAL_PRODUCTS;
+      } else {
+        dbProducts = data || [];
+        memoryCachedProducts = data || [];
+        lastCacheTimestamp = now;
       }
-    }
-
-    if (!dbProducts || dbProducts.length === 0) {
-      dbProducts = INITIAL_PRODUCTS;
     }
 
     // Sort strictly newest first (by updatedAt or createdAt)

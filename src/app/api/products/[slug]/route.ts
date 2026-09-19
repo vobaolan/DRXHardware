@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import { INITIAL_PRODUCTS } from '@/lib/hardware-data';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -37,13 +36,13 @@ export async function GET(
 
     let matchedProduct: any = null;
 
-    // 1. Primary: Query Supabase Database
+    // 1. Direct query from Supabase Live Database
     try {
-      const { data: supabaseProducts } = await supabase
+      const { data: supabaseProducts, error: supaErr } = await supabase
         .from('Product')
         .select('*');
 
-      if (supabaseProducts && supabaseProducts.length > 0) {
+      if (!supaErr && supabaseProducts && supabaseProducts.length > 0) {
         // Exact match slug or id
         matchedProduct = supabaseProducts.find((p: any) => 
           (p.slug && p.slug.toLowerCase() === decodedSlug) || 
@@ -69,12 +68,9 @@ export async function GET(
     }
 
     if (!matchedProduct) {
-      matchedProduct = INITIAL_PRODUCTS.find((p: any) => 
-        (p.slug && p.slug.toLowerCase() === decodedSlug) || 
-        p.id === decodedSlug || 
-        p.id === rawSlug ||
-        cleanSlug(p.slug) === normalizedTarget ||
-        cleanSlug(p.name) === normalizedTarget
+      return NextResponse.json(
+        { message: 'Không tìm thấy linh kiện hoặc sản phẩm đã bị xóa khỏi hệ thống!' },
+        { status: 404, headers }
       );
     }
 

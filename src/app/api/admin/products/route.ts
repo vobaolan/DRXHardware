@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { supabase } from '@/lib/supabase';
-import { INITIAL_PRODUCTS } from '@/lib/hardware-data';
 import { invalidateProductsCache } from '@/app/api/products/route';
 
 export const dynamic = 'force-dynamic';
@@ -17,30 +16,23 @@ export async function GET() {
   };
 
   try {
-    let dbProducts: any[] = [];
+    // 1. Direct query strictly from Supabase Cloud Database (Live REST - No Stale Fallback)
+    const { data: supaProds, error: supaErr } = await supabase
+      .from('Product')
+      .select('*')
+      .order('createdAt', { ascending: false });
 
-    // 1. Direct query from Supabase Cloud Database (Live REST)
-    try {
-      const { data: supaProds, error: supaErr } = await supabase
-        .from('Product')
-        .select('*')
-        .order('createdAt', { ascending: false });
-
-      if (!supaErr && supaProds && Array.isArray(supaProds) && supaProds.length > 0) {
-        dbProducts = supaProds;
-      } else {
-        dbProducts = INITIAL_PRODUCTS;
-      }
-    } catch (e) {
-      console.warn('Supabase products fetch warning, using fallback:', e);
-      dbProducts = INITIAL_PRODUCTS;
+    if (supaErr) {
+      console.error('Supabase products query error:', supaErr);
+      return NextResponse.json(
+        { message: 'Lỗi tải danh sách sản phẩm từ CSDL: ' + supaErr.message },
+        { status: 500, headers }
+      );
     }
 
-    if (!dbProducts || dbProducts.length === 0) {
-      dbProducts = INITIAL_PRODUCTS;
-    }
+    const dbProducts = supaProds || [];
 
-    // Sort validDbProducts strictly newest first (by updatedAt or createdAt)
+    // Sort strictly newest first (by updatedAt or createdAt)
     const sortedProducts = [...dbProducts].sort((a, b) => {
       const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime();
       const timeB = new Date(b.updatedAt || b.createdAt || 0).getTime();
@@ -50,7 +42,10 @@ export async function GET() {
     return NextResponse.json({ products: sortedProducts }, { status: 200, headers });
   } catch (error: any) {
     console.error('Lỗi khi lấy danh sách sản phẩm admin:', error);
-    return NextResponse.json({ products: INITIAL_PRODUCTS }, { status: 200, headers });
+    return NextResponse.json(
+      { message: 'Lỗi máy chủ khi lấy danh sách sản phẩm: ' + error.message },
+      { status: 500, headers }
+    );
   }
 }
 
