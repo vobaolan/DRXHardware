@@ -4,12 +4,21 @@ import { supabase } from '@/lib/supabase';
 import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
+
+const noCacheHeaders = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+  'Pragma': 'no-cache',
+  'Expires': '0',
+  'Surrogate-Control': 'no-store',
+};
 
 export async function GET(request: Request) {
   try {
     const authUser = getAuthUserFromRequest(request);
     if (!authUser) {
-      return NextResponse.json({ message: 'Chưa đăng nhập' }, { status: 401 });
+      return NextResponse.json({ message: 'Chưa đăng nhập' }, { status: 401, headers: noCacheHeaders });
     }
 
     let userBalance = 0;
@@ -116,14 +125,14 @@ export async function GET(request: Request) {
         user: finalUser,
         token,
       },
-      { status: 200 }
+      { status: 200, headers: noCacheHeaders }
     );
 
     setAuthCookie(response, token);
     return response;
   } catch (error: any) {
     console.error('Lỗi xác thực GET /api/auth/me:', error);
-    return NextResponse.json({ message: 'Lỗi xác thực: ' + error.message }, { status: 500 });
+    return NextResponse.json({ message: 'Lỗi xác thực: ' + error.message }, { status: 500, headers: noCacheHeaders });
   }
 }
 
@@ -280,7 +289,7 @@ export async function PUT(request: Request) {
         },
         token: newToken,
       },
-      { status: 200 }
+      { status: 200, headers: noCacheHeaders }
     );
 
     setAuthCookie(response, newToken);
