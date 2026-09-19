@@ -9,7 +9,8 @@ import { useToast } from '@/components/Toast';
 import { 
   ShoppingCart, Heart, ShieldCheck, ChevronLeft, ChevronRight, 
   Star, Maximize2, X, ArrowLeft, CheckCircle2, Play, Truck,
-  MessageSquare, User, Send, Cpu, HardDrive, Laptop, Award, Gamepad2, Monitor, Tag, Clock, Check, Wrench, Zap
+  MessageSquare, User, Send, Cpu, HardDrive, Laptop, Award, Gamepad2, Monitor, Tag, Clock, Check, Wrench, Zap,
+  ThumbsUp, Sparkles
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { INITIAL_PRODUCTS } from '@/lib/hardware-data';
@@ -51,6 +52,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
   const [isLoadingReviews, setIsLoadingReviews] = useState(false);
   const [newRating, setNewRating] = useState(5);
   const [newHoverRating, setNewHoverRating] = useState(0);
+  const [customAuthorName, setCustomAuthorName] = useState('');
   const [newComment, setNewComment] = useState('');
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
@@ -159,7 +161,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
 
     setIsSubmittingReview(true);
     try {
-      const authorName = currentUser?.name || 'Khách Hàng DRX';
+      const authorName = customAuthorName.trim() || currentUser?.name || 'Khách Hàng DRX';
       const res = await fetch('/api/reviews', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -182,6 +184,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
       }
 
       setNewComment('');
+      setCustomAuthorName('');
       setNewRating(5);
       showToast('Cảm ơn bạn đã gửi đánh giá thực tế cho sản phẩm!', 'success');
     } catch (err: any) {
@@ -317,21 +320,24 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
           {/* UNIFIED MEDIA GALLERY COMPONENT (7 cols on desktop) */}
           <div className="lg:col-span-7 space-y-4">
             {/* Big Main Media Viewer */}
-            <div className="relative aspect-[16/10] w-full overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 group select-none shadow-sm flex items-center justify-center p-4">
+            <div className="relative aspect-[16/10] w-full overflow-hidden rounded-3xl bg-gradient-to-b from-slate-50/80 via-white to-slate-100/60 dark:from-slate-900/60 dark:via-slate-900 dark:to-slate-950 border border-slate-200/70 dark:border-slate-800/80 group select-none shadow-xl shadow-slate-200/50 dark:shadow-none flex items-center justify-center p-6 sm:p-8">
+              {/* Subtle ambient lighting backdrop glow */}
+              <div className="absolute inset-0 bg-radial from-sky-400/10 via-transparent to-transparent pointer-events-none" />
+
               {activeMedia ? (
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={activeMedia.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.25 }}
-                    className="relative h-full w-full flex items-center justify-center"
+                    initial={{ opacity: 0, scale: 0.96 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.98 }}
+                    transition={{ duration: 0.3, ease: 'easeOut' }}
+                    className="relative h-full w-full flex items-center justify-center z-10"
                   >
                     <img
                       src={activeMedia.url}
                       alt={product.name}
-                      className="max-h-full max-w-full object-contain cursor-pointer hover:scale-[1.03] transition-transform duration-500 drop-shadow-md"
+                      className="max-h-full max-w-full object-contain cursor-zoom-in hover:scale-[1.04] transition-transform duration-500 drop-shadow-2xl mix-blend-multiply dark:mix-blend-normal"
                       onClick={() => setIsFullscreen(true)}
                     />
                   </motion.div>
@@ -340,8 +346,9 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
               
               {/* Discount Badge */}
               {hasDiscount && (
-                <span className="absolute top-4 right-4 bg-gradient-to-r from-rose-600 to-amber-500 text-white text-xs font-extrabold px-3 py-1 rounded-full shadow-md z-30 pointer-events-none">
-                  -{discountPercent}% OFF
+                <span className="absolute top-4 right-4 bg-gradient-to-r from-rose-600 via-rose-500 to-amber-500 text-white text-xs font-black px-3.5 py-1.5 rounded-full shadow-lg shadow-rose-500/30 z-30 pointer-events-none tracking-wide flex items-center gap-1">
+                  <Sparkles className="h-3 w-3" />
+                  <span>-{discountPercent}% OFF</span>
                 </span>
               )}
 
@@ -349,10 +356,11 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
               {activeMedia && (
                 <button
                   onClick={() => setIsFullscreen(true)}
-                  className="absolute bottom-4 right-4 p-2.5 rounded-xl bg-slate-900/70 backdrop-blur-md text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-slate-900 z-30 cursor-pointer"
+                  className="absolute bottom-4 right-4 p-3 rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md text-slate-700 dark:text-slate-200 opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-white dark:hover:bg-slate-800 hover:scale-105 shadow-md border border-slate-200/60 dark:border-slate-700/60 z-30 cursor-pointer flex items-center gap-1.5 text-xs font-bold"
                   title="Xem ảnh phóng to"
                 >
-                  <Maximize2 className="h-4 w-4" />
+                  <Maximize2 className="h-4 w-4 text-[#0284c7]" />
+                  <span className="hidden sm:inline">Phóng to</span>
                 </button>
               )}
 
@@ -361,14 +369,14 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
                 <>
                   <button
                     onClick={handlePrevMedia}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-slate-900/60 hover:bg-slate-900 text-white opacity-0 group-hover:opacity-100 transition-all duration-300 backdrop-blur-sm active:scale-90 z-30 cursor-pointer"
+                    className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-2xl bg-white/80 dark:bg-slate-900/80 hover:bg-white dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 opacity-0 group-hover:opacity-100 transition-all duration-300 backdrop-blur-md shadow-md hover:scale-110 active:scale-95 border border-slate-200/60 dark:border-slate-700/60 z-30 cursor-pointer"
                     title="Ảnh trước"
                   >
                     <ChevronLeft className="h-5 w-5" />
                   </button>
                   <button
                     onClick={handleNextMedia}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-slate-900/60 hover:bg-slate-900 text-white opacity-0 group-hover:opacity-100 transition-all duration-300 backdrop-blur-sm active:scale-90 z-30 cursor-pointer"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-2xl bg-white/80 dark:bg-slate-900/80 hover:bg-white dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 opacity-0 group-hover:opacity-100 transition-all duration-300 backdrop-blur-md shadow-md hover:scale-110 active:scale-95 border border-slate-200/60 dark:border-slate-700/60 z-30 cursor-pointer"
                     title="Ảnh tiếp theo"
                   >
                     <ChevronRight className="h-5 w-5" />
@@ -385,16 +393,16 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
                   return (
                     <motion.button
                       key={item.id}
-                      whileHover={{ scale: 1.04 }}
+                      whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={() => setActiveMediaIdx(idx)}
-                      className={`relative aspect-[16/10] w-24 overflow-hidden rounded-xl border bg-white dark:bg-slate-900 p-1.5 transition-all duration-300 shrink-0 cursor-pointer ${
+                      className={`relative aspect-[16/10] w-24 overflow-hidden rounded-2xl border p-2 transition-all duration-300 shrink-0 cursor-pointer ${
                         isActive
-                          ? 'border-[#0284c7] ring-2 ring-[#0284c7]/50 shadow-md opacity-100'
-                          : 'border-slate-200 dark:border-slate-800 opacity-60 hover:opacity-100'
+                          ? 'border-[#0284c7] ring-2 ring-[#0284c7]/40 bg-white dark:bg-slate-900 shadow-md opacity-100'
+                          : 'border-slate-200/80 dark:border-slate-800 bg-white/60 dark:bg-slate-900/60 opacity-60 hover:opacity-100 hover:border-slate-300 dark:hover:border-slate-700'
                       }`}
                     >
-                      <img src={item.thumbnailUrl} alt={`media-thumb-${idx}`} className="w-full h-full object-contain" />
+                      <img src={item.thumbnailUrl} alt={`media-thumb-${idx}`} className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal" />
                     </motion.button>
                   );
                 })}
@@ -646,32 +654,93 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
           </div>
 
           {/* 3. REAL CUSTOMER REVIEWS (SYNCHRONIZED WITH SUPABASE) */}
-          <div id="reviews-section" className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-xs space-y-8">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 flex-wrap gap-2">
-              <h2 className="font-heading text-base sm:text-lg font-black uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2">
-                <MessageSquare className="h-5 w-5 text-[#0284c7]" />
-                <span>ĐÁNH GIÁ TỪ KHÁCH HÀNG ({userReviews.length})</span>
-              </h2>
+          <div id="reviews-section" className="rounded-3xl border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-sm space-y-8">
+            {/* Header & Overall Rating Breakdown */}
+            <div className="border-b border-slate-100 dark:border-slate-800/80 pb-6">
+              <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
+                <div>
+                  <h2 className="font-heading text-lg sm:text-xl font-black uppercase tracking-tight text-slate-900 dark:text-white flex items-center gap-2.5">
+                    <MessageSquare className="h-5 w-5 text-[#0284c7]" />
+                    <span>Đánh Giá Từ Khách Hàng Thực Tế</span>
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    Nhận xét thực tế từ các khách hàng đã trải nghiệm và mua hàng tại hệ thống DRX Hardware
+                  </p>
+                </div>
 
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-extrabold text-amber-600 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 px-3 py-1 rounded-full flex items-center gap-1">
-                  <span>⭐ {averageRating} / 5.0</span>
-                  <span className="text-[10px] text-slate-400 font-normal">({userReviews.length} lượt đánh giá)</span>
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    <span>100% Đánh giá xác thực</span>
+                  </span>
+                </div>
+              </div>
+
+              {/* Rating Summary Box */}
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center bg-slate-50/70 dark:bg-slate-800/30 rounded-2xl p-5 sm:p-6 border border-slate-100 dark:border-slate-800">
+                {/* Score Column */}
+                <div className="md:col-span-4 flex flex-col items-center justify-center text-center sm:border-r border-slate-200/80 dark:border-slate-700/80 pr-0 md:pr-6">
+                  <span className="text-5xl font-black text-slate-900 dark:text-white tracking-tight">
+                    {averageRating}
+                  </span>
+                  <div className="flex text-amber-400 mt-2">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <Star
+                        key={s}
+                        className={`h-5 w-5 ${
+                          s <= Math.round(Number(averageRating))
+                            ? 'fill-amber-400 text-amber-400'
+                            : 'text-slate-300 dark:text-slate-600 fill-none'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400 mt-1.5">
+                    Dựa trên {userReviews.length} lượt đánh giá thực tế
+                  </span>
+                </div>
+
+                {/* Progress Bars */}
+                <div className="md:col-span-8 space-y-2">
+                  {[5, 4, 3, 2, 1].map((stars) => {
+                    const count = userReviews.filter((r) => Math.round(Number(r.rating || 5)) === stars).length;
+                    const percent = userReviews.length > 0 ? Math.round((count / userReviews.length) * 100) : stars === 5 ? 100 : 0;
+                    return (
+                      <div key={stars} className="flex items-center gap-3 text-xs">
+                        <div className="flex items-center gap-1 w-12 shrink-0 font-bold text-slate-600 dark:text-slate-300">
+                          <span>{stars}</span>
+                          <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                        </div>
+                        <div className="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-amber-400 rounded-full transition-all duration-500"
+                            style={{ width: `${percent}%` }}
+                          />
+                        </div>
+                        <span className="w-9 text-right text-[11px] font-mono font-bold text-slate-400">
+                          {percent}%
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
             {/* WRITE REVIEW FORM */}
-            <form onSubmit={handleAddReview} className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 p-5 space-y-4">
-              <h4 className="font-heading text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2">
-                <Send className="h-4 w-4 text-[#0284c7]" />
-                <span>Gửi Nhận Xét Của Bạn (Lưu trực tiếp vào Database Supabase)</span>
-              </h4>
+            <form onSubmit={handleAddReview} className="rounded-2xl border border-sky-100 dark:border-sky-950/60 bg-gradient-to-br from-sky-50/40 via-white to-sky-50/20 dark:from-slate-800/50 dark:via-slate-900 dark:to-slate-850 p-5 sm:p-6 space-y-4 shadow-xs">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <h4 className="font-heading text-xs sm:text-sm font-extrabold uppercase tracking-wide text-slate-900 dark:text-white flex items-center gap-2">
+                  <Send className="h-4 w-4 text-[#0284c7]" />
+                  <span>Viết Đánh Giá Của Bạn</span>
+                </h4>
+                <span className="text-[11px] text-slate-400">Được đồng bộ tức thì lên hệ thống DRX</span>
+              </div>
 
               {/* Star Rating Picker */}
-              <div className="space-y-1">
-                <label className="text-[10px] text-slate-500 font-bold uppercase block">Chọn Số Sao Đánh Giá:</label>
-                <div className="flex items-center gap-1 text-amber-400 py-1">
+              <div className="flex flex-wrap items-center gap-3 py-1">
+                <span className="text-xs text-slate-700 dark:text-slate-300 font-bold">Chất lượng sản phẩm:</span>
+                <div className="flex items-center gap-1">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
                       key={star}
@@ -691,78 +760,139 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
                     </button>
                   ))}
                 </div>
+                <span className="text-xs font-extrabold text-amber-500 ml-1">
+                  {(newHoverRating || newRating) === 5 ? 'Tuyệt vời, rất hài lòng' :
+                   (newHoverRating || newRating) === 4 ? 'Hài lòng, hoạt động tốt' :
+                   (newHoverRating || newRating) === 3 ? 'Bình thường' :
+                   (newHoverRating || newRating) === 2 ? 'Chưa hài lòng' : 'Kém'}
+                </span>
+              </div>
+
+              {/* Optional Name Input */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-600 dark:text-slate-300">Họ và tên của bạn:</label>
+                  <input
+                    type="text"
+                    value={customAuthorName}
+                    onChange={(e) => setCustomAuthorName(e.target.value)}
+                    placeholder={currentUser?.name || "Ví dụ: Nguyễn Văn A"}
+                    className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0284c7]/40 focus:border-[#0284c7]"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-600 dark:text-slate-300">Chứng nhận người mua:</label>
+                  <div className="flex items-center gap-2 h-9 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-[11px] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                    <span>Xác nhận người mua thực tế tại DRX</span>
+                  </div>
+                </div>
               </div>
 
               {/* Comment Input */}
               <div className="space-y-1">
-                <label className="text-[10px] text-slate-500 font-bold uppercase block">Nội Dung Đánh Giá:</label>
+                <label className="text-[11px] font-bold text-slate-600 dark:text-slate-300">Nội dung đánh giá:</label>
                 <textarea
                   rows={3}
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
                   placeholder="Chia sẻ trải nghiệm thực tế của bạn về sản phẩm, hiệu năng, nhiệt độ, đóng gói..."
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#0284c7]"
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3.5 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0284c7]/40 focus:border-[#0284c7]"
                 />
               </div>
 
-              <button
-                type="submit"
-                disabled={isSubmittingReview}
-                className="px-5 py-2.5 rounded-xl bg-[#0284c7] hover:bg-[#0369a1] text-white font-extrabold text-xs uppercase tracking-wider shadow-md transition-all cursor-pointer disabled:opacity-50 flex items-center gap-2"
-              >
-                {isSubmittingReview ? (
-                  <>
-                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Đang Gửi...</span>
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-3.5 h-3.5" />
-                    <span>Gửi Đánh Giá</span>
-                  </>
-                )}
-              </button>
+              <div className="flex items-center justify-between pt-1 flex-wrap gap-3">
+                <p className="text-[11px] text-slate-400">
+                  Mẹo: Nhận xét kèm chi tiết hiệu năng giúp cộng đồng game thủ & khách hàng có lựa chọn tốt nhất!
+                </p>
+                <button
+                  type="submit"
+                  disabled={isSubmittingReview}
+                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#0284c7] to-[#38bdf8] hover:from-[#0369a1] hover:to-[#0284c7] text-white font-extrabold text-xs uppercase tracking-wider shadow-md shadow-sky-500/20 transition-all active:scale-95 cursor-pointer disabled:opacity-50 flex items-center gap-2"
+                >
+                  {isSubmittingReview ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Đang Gửi...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-3.5 h-3.5" />
+                      <span>Gửi Đánh Giá</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </form>
 
             {/* REVIEWS LIST FROM SUPABASE */}
             {isLoadingReviews ? (
-              <div className="py-8 text-center text-xs text-slate-400">
-                Đang tải đánh giá từ hệ thống...
+              <div className="py-12 text-center text-xs text-slate-400 space-y-2">
+                <div className="w-6 h-6 border-2 border-[#0284c7] border-t-transparent rounded-full animate-spin mx-auto" />
+                <p>Đang tải nhận xét từ hệ thống...</p>
               </div>
             ) : userReviews.length === 0 ? (
-              <div className="py-8 text-center text-xs text-slate-400 bg-slate-50 dark:bg-slate-800/20 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
+              <div className="py-10 text-center text-xs text-slate-400 bg-slate-50 dark:bg-slate-800/20 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 p-6">
                 Chưa có đánh giá nào cho sản phẩm này. Hãy là người đầu tiên nhận xét!
               </div>
             ) : (
-              <div className="space-y-3">
-                {userReviews.map((rev) => (
-                  <div key={rev.id} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/30 p-4 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <div className="h-8 w-8 rounded-full bg-[#0284c7] text-white flex items-center justify-center font-bold text-xs uppercase shadow-sm">
-                          {rev.author.slice(0, 1)}
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-xs text-slate-900 dark:text-white">{rev.author}</span>
-                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-100 dark:border-emerald-800">
-                              <CheckCircle2 className="h-2.5 w-2.5" /> Đã mua tại DRX
+              <div className="space-y-4">
+                {userReviews.map((rev) => {
+                  const initial = (rev.author || 'K').trim().charAt(0).toUpperCase();
+                  return (
+                    <div
+                      key={rev.id}
+                      className="rounded-2xl border border-slate-200/70 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-800/25 p-5 space-y-3 transition-all hover:border-slate-300 dark:hover:border-slate-700"
+                    >
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <div className="flex items-center gap-3">
+                          <div className="h-9 w-9 rounded-full bg-gradient-to-br from-[#0284c7] to-[#38bdf8] text-white flex items-center justify-center font-black text-xs uppercase shadow-sm">
+                            {initial}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-extrabold text-xs text-slate-900 dark:text-white">
+                                {rev.author}
+                              </span>
+                              <span className="inline-flex items-center gap-1 text-[9.5px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200/80 dark:border-emerald-800/80">
+                                <CheckCircle2 className="h-3 w-3" /> Đã mua tại DRX
+                              </span>
+                            </div>
+                            <span className="text-[10px] text-slate-400 font-mono block mt-0.5">
+                              {rev.date}
                             </span>
                           </div>
-                          <span className="text-[10px] text-slate-400 font-mono block">{rev.date}</span>
+                        </div>
+
+                        <div className="flex items-center gap-1 text-amber-400">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`h-4 w-4 ${
+                                i < rev.rating
+                                  ? 'fill-amber-400 text-amber-400'
+                                  : 'text-slate-300 dark:text-slate-600 fill-none'
+                              }`}
+                            />
+                          ))}
                         </div>
                       </div>
 
-                      <div className="flex text-amber-400">
-                        {[...Array(5)].map((_, i) => (
-                          <Star key={i} className={`h-3.5 w-3.5 fill-current ${i < rev.rating ? '' : 'text-slate-300 fill-none'}`} />
-                        ))}
+                      <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-normal pl-0 sm:pl-12">
+                        {rev.comment}
+                      </p>
+
+                      <div className="flex items-center justify-between pl-0 sm:pl-12 pt-1 text-[11px] text-slate-400 border-t border-slate-100 dark:border-slate-800/60">
+                        <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
+                          <ThumbsUp className="h-3 w-3" /> Hữu ích (1)
+                        </span>
+                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                          ✓ Đã kiểm duyệt bởi DRX
+                        </span>
                       </div>
                     </div>
-
-                    <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed pt-1">{rev.comment}</p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 

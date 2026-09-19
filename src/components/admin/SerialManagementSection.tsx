@@ -6,7 +6,8 @@ import {
   Search, Plus, Boxes, Trash2, Copy, ChevronDown, ChevronUp, 
   LayoutGrid, List, Check, ExternalLink, ShieldCheck, Tag, 
   Layers, Package, CheckCircle2, ChevronLeft, ChevronRight, X,
-  Clock, Hash, Sparkles, Filter, RefreshCw, Eye, ShoppingCart, User
+  Clock, Hash, Sparkles, Filter, RefreshCw, Eye, ShoppingCart, User,
+  AlertCircle
 } from 'lucide-react';
 import { showToast, showConfirm } from '@/components/Toast';
 import { ModernSelect, SelectOption } from '@/components/ui/ModernSelect';
@@ -45,7 +46,7 @@ export function SerialStatusButton({
         <span className={`w-1.5 h-1.5 rounded-full ${
           status === 'AVAILABLE' ? 'bg-emerald-500' : status === 'SOLD' ? 'bg-slate-400' : 'bg-amber-500'
         }`}></span>
-        <span>{status === 'AVAILABLE' ? 'Trong Kho' : status === 'SOLD' ? 'Đã Xuất Bán' : 'Bảo Hành'}</span>
+        <span>{status === 'AVAILABLE' ? 'Trong Kho' : status === 'SOLD' ? 'Đã Bán' : 'Bảo Hành'}</span>
         <ChevronDown className={`w-3 h-3 ml-0.5 opacity-60 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
@@ -135,7 +136,7 @@ export function SerialStatusButton({
   );
 }
 
-// Category options matching Kho Linh Kiện
+// Category options matching Kho Linh Kiện exactly
 export const CATEGORY_NAMES: Record<string, string> = {
   ALL: 'Tất Cả Danh Mục',
   CPU: 'Bộ Vi Xử Lý (CPU)',
@@ -153,7 +154,6 @@ export const CATEGORY_NAMES: Record<string, string> = {
   LAPTOP: 'Laptop Văn Phòng',
   LAPTOP_GAMING: 'Laptop Gaming & Đồ Họa',
   PREBUILT_PC: 'PC Lắp Sẵn DRX',
-  ACCESSORY: 'Phụ Kiện Máy Tính',
 };
 
 export const CATEGORY_FILTER_OPTIONS: SelectOption[] = Object.entries(CATEGORY_NAMES).map(([key, label]) => ({
@@ -168,6 +168,11 @@ export const SERIAL_STATUS_FILTER_OPTIONS: SelectOption[] = [
   { value: 'SOLD', label: 'Đã Xuất Bán (SOLD)', badge: 'ĐÃ BÁN' },
   { value: 'WARRANTY', label: 'Đang Bảo Hành (WARRANTY)', badge: 'BẢO HÀNH' },
 ];
+
+const formatVND = (num: number | string | null | undefined) => {
+  const n = Number(num) || 0;
+  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
+};
 
 interface SerialManagementSectionProps {
   products: any[];
@@ -195,7 +200,7 @@ export function SerialManagementSection({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
-  const [expandedProductIds, setExpandedProductIds] = useState<Set<string>>(new Set());
+  const [selectedProductForDetail, setSelectedProductForDetail] = useState<any | null>(null);
   const [isSoldSerialsModalOpen, setIsSoldSerialsModalOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -209,34 +214,12 @@ export function SerialManagementSection({
   const FLAT_PAGE_SIZE = 15;
   const PRODUCT_PAGE_SIZE = 12;
 
-  // Copy to clipboard helper
+  // Copy helper
   const handleCopy = (text: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     if (navigator?.clipboard?.writeText) {
       navigator.clipboard.writeText(text);
       showToast(`Đã sao chép: ${text}`, 'success');
-    }
-  };
-
-  // Toggle single product expansion
-  const toggleProductExpand = (productId: string) => {
-    setExpandedProductIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(productId)) {
-        next.delete(productId);
-      } else {
-        next.add(productId);
-      }
-      return next;
-    });
-  };
-
-  // Expand / Collapse all
-  const handleExpandAll = (expand: boolean, allIds: string[]) => {
-    if (expand) {
-      setExpandedProductIds(new Set(allIds));
-    } else {
-      setExpandedProductIds(new Set());
     }
   };
 
@@ -266,7 +249,7 @@ export function SerialManagementSection({
     }).length;
   }, [products, serialsByProductId]);
 
-  // Helper to check category match
+  // Helper category match
   const checkCategoryMatch = (prodCategory: string | undefined, filterCategory: string) => {
     if (!filterCategory || filterCategory === 'ALL') return true;
     if (!prodCategory) return false;
@@ -278,7 +261,7 @@ export function SerialManagementSection({
     return false;
   };
 
-  // 1. Grouped by Product data list
+  // 1. Grouped by Product data list (Synchronized strictly with Kho Linh Kiện)
   const productSerialGroups = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
 
@@ -295,7 +278,7 @@ export function SerialManagementSection({
         matchingSerials = matchingSerials.filter((s) => s.status === statusFilter);
       }
 
-      // Check search match
+      // Check search match (product name, brand, SKU, serial number)
       const matchesProductText =
         !q ||
         (prod.name && prod.name.toLowerCase().includes(q)) ||
@@ -330,10 +313,10 @@ export function SerialManagementSection({
       };
     }).filter((g) => g.isVisible);
 
-    // Sort: products with serials first, then by name
+    // Sort: Products with serials first or having stock, then by name
     return groups.sort((a, b) => {
-      if (a.totalCount > 0 && b.totalCount === 0) return -1;
-      if (a.totalCount === 0 && b.totalCount > 0) return 1;
+      if (a.availableCount > 0 && b.availableCount === 0) return -1;
+      if (a.availableCount === 0 && b.availableCount > 0) return 1;
       return (a.product.name || '').localeCompare(b.product.name || '');
     });
   }, [products, serialsByProductId, searchQuery, selectedCategory, statusFilter]);
@@ -373,10 +356,16 @@ export function SerialManagementSection({
     return filteredFlatSerials.slice(start, start + FLAT_PAGE_SIZE);
   }, [filteredFlatSerials, flatPage]);
 
+  // Serials for the currently inspected product in Detail Modal
+  const inspectedProductSerials = useMemo(() => {
+    if (!selectedProductForDetail) return [];
+    return serialsByProductId.get(selectedProductForDetail.id) || [];
+  }, [selectedProductForDetail, serialsByProductId]);
+
   return (
     <div className="space-y-5">
       {/* ============================================================ */}
-      {/* 1. TOP KPI METRIC CARDS                                      */}
+      {/* 1. TOP KPI METRIC CARDS (Clean, Elegant & Modern)            */}
       {/* ============================================================ */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
         {/* Card 1: Total Serials */}
@@ -419,11 +408,11 @@ export function SerialManagementSection({
           </div>
         </div>
 
-        {/* Card 3: Sold Serials (Clickable to view details & linked orders) */}
+        {/* Card 3: Sold Serials (Clickable to view linked orders) */}
         <div 
           onClick={() => setIsSoldSerialsModalOpen(true)}
           className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center justify-between cursor-pointer hover:border-[#0284c7] hover:shadow-md transition-all group active:scale-[0.98]"
-          title="Click để xem chi tiết 2 mã SN đã xuất bán và thông tin đơn hàng / khách hàng"
+          title="Click để xem chi tiết mã SN đã xuất bán và thông tin đơn hàng / khách hàng"
         >
           <div className="space-y-1">
             <div className="flex items-center gap-1.5">
@@ -431,14 +420,14 @@ export function SerialManagementSection({
                 Đã Xuất Bán
               </span>
               <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] border border-sky-200 dark:border-sky-800">
-                Click xem
+                Xem Đơn
               </span>
             </div>
             <div className="flex items-baseline gap-2">
               <span className="text-2xl font-black font-heading text-slate-800 dark:text-slate-200 group-hover:text-[#0284c7] transition-colors">
                 {soldSerialsCount}
               </span>
-              <span className="text-[10px] font-bold text-slate-400">Theo đơn hàng</span>
+              <span className="text-[10px] font-bold text-slate-400">Theo đơn</span>
             </div>
             <p className="text-[10px] text-slate-400 flex items-center gap-1">
               <span>Xem thông tin đơn & khách</span>
@@ -471,11 +460,11 @@ export function SerialManagementSection({
       </div>
 
       {/* ============================================================ */}
-      {/* 2. TOOLBAR: SEARCH, CATEGORY DROPDOWN, STATUS DROPDOWN, VIEW MODE */}
+      {/* 2. TOOLBAR: EXACT STYLING FROM KHO LINH KIỆN                 */}
       {/* ============================================================ */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
-        {/* Search Input */}
-        <div className="relative flex-1 min-w-[240px] max-w-md">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+        {/* Search Bar matching Kho Linh Kiện */}
+        <div className="relative flex-1 max-w-md">
           <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
@@ -485,27 +474,28 @@ export function SerialManagementSection({
               setProductPage(1);
               setFlatPage(1);
             }}
-            placeholder="Tìm theo Serial SN, tên linh kiện, SKU, hãng, mã đơn..."
+            placeholder="Tìm kiếm linh kiện, thương hiệu, mã SKU, serial SN..."
             className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-2 pl-9 pr-8 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:border-[#0284c7]"
           />
           {searchQuery && (
             <button
+              type="button"
               onClick={() => {
                 setSearchQuery('');
                 setProductPage(1);
                 setFlatPage(1);
               }}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
 
-        {/* Filters & Actions Group */}
+        {/* Filters & Mode & Add SN Button */}
         <div className="flex items-center gap-2.5 flex-wrap">
-          {/* Category Dropdown (Same as Kho Linh Kiện) */}
-          <div className="w-56 sm:w-64">
+          {/* Category Dropdown (Identical to Kho Linh Kiện) */}
+          <div className="w-52 sm:w-60">
             <ModernSelect
               options={CATEGORY_FILTER_OPTIONS}
               value={selectedCategory}
@@ -519,7 +509,7 @@ export function SerialManagementSection({
           </div>
 
           {/* Status Dropdown */}
-          <div className="w-56 sm:w-64">
+          <div className="w-48 sm:w-56">
             <ModernSelect
               options={SERIAL_STATUS_FILTER_OPTIONS}
               value={statusFilter}
@@ -542,10 +532,10 @@ export function SerialManagementSection({
                   ? 'bg-white dark:bg-slate-900 text-[#0284c7] shadow-xs'
                   : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
-              title="Xem danh sách nhóm theo sản phẩm"
+              title="Xem bảng linh kiện đồng bộ Kho Linh Kiện"
             >
               <LayoutGrid className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Theo Sản Phẩm</span>
+              <span className="hidden md:inline">Theo Linh Kiện</span>
             </button>
             <button
               type="button"
@@ -555,17 +545,17 @@ export function SerialManagementSection({
                   ? 'bg-white dark:bg-slate-900 text-[#0284c7] shadow-xs'
                   : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
-              title="Xem bảng chi tiết tất cả Serial"
+              title="Xem bảng chi tiết từng mã Serial"
             >
               <List className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Tất Cả SN</span>
+              <span className="hidden md:inline">Tất Cả Mã SN</span>
             </button>
           </div>
 
-          {/* New Serial Button */}
+          {/* New Serial Action Button matching Kho Linh Kiện */}
           <button
             onClick={() => onOpenAddSerialModal()}
-            className="px-4 py-2 bg-gradient-to-r from-[#0284c7] to-[#38bdf8] hover:from-[#0369a1] hover:to-[#0284c7] text-white text-xs font-bold uppercase rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-sm shadow-sky-500/20 shrink-0"
+            className="px-4 py-2.5 bg-gradient-to-r from-[#0284c7] to-[#38bdf8] hover:from-[#0369a1] hover:to-[#0284c7] text-white text-xs font-bold uppercase rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-sm shadow-sky-500/20 shrink-0"
           >
             <Plus className="w-4 h-4" />
             <span>Nhập Mã SN Mới</span>
@@ -574,321 +564,233 @@ export function SerialManagementSection({
       </div>
 
       {/* ============================================================ */}
-      {/* 3. MODE 1: GROUPED BY PRODUCT VIEW (PRIMARY)                 */}
+      {/* 3. MODE 1: PRODUCT-CENTRIC TABLE (IDENTICAL TO KHO LINH KIỆN) */}
       {/* ============================================================ */}
       {viewMode === 'by_product' && (
         <div className="space-y-4">
-          {productSerialGroups.length === 0 ? (
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-12 text-center">
-              <div className="w-14 h-14 rounded-2xl bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] flex items-center justify-center mx-auto border border-sky-200 dark:border-sky-800 shadow-sm mb-3">
-                <Boxes className="w-7 h-7" />
-              </div>
-              <h4 className="font-heading font-black text-sm text-slate-900 dark:text-white">
-                Không Tìm Thấy Sản Phẩm Phù Hợp
-              </h4>
-              <p className="text-xs text-slate-400 max-w-md mx-auto mt-1 mb-4">
-                Không có linh kiện nào khớp với từ khóa tìm kiếm hoặc bộ lọc danh mục/trạng thái Serial hiện tại.
-              </p>
-              <button
-                onClick={() => {
-                  setSearchQuery('');
-                  setSelectedCategory('ALL');
-                  setStatusFilter('ALL');
-                }}
-                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl transition-all cursor-pointer inline-flex items-center gap-1.5"
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-                <span>Đặt Lại Bộ Lọc</span>
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {paginatedProductGroups.map((group) => {
-                const { product, serials: itemSerials, availableCount, soldCount, warrantyCount, totalCount } = group;
-                const isExpanded = expandedProductIds.has(product.id);
-                const sku = product.modelCode || '';
-
-                return (
-                  <div
-                    key={product.id}
-                    className={`bg-white dark:bg-slate-900 rounded-2xl border transition-all overflow-hidden ${
-                      isExpanded
-                        ? 'border-[#0284c7]/50 shadow-md ring-1 ring-sky-500/10'
-                        : 'border-slate-200/80 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-xs'
-                    }`}
-                  >
-                    {/* Card Header Row */}
-                    <div
-                      onClick={() => toggleProductExpand(product.id)}
-                      className="p-4 flex flex-col lg:flex-row lg:items-center justify-between gap-3 cursor-pointer select-none bg-slate-50/50 hover:bg-slate-50 dark:bg-slate-800/20 dark:hover:bg-slate-800/40 transition-colors"
-                    >
-                      {/* Left: Product Thumbnail & Title */}
-                      <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                        {product.coverImage ? (
-                          <img
-                            src={product.coverImage}
-                            alt={product.name}
-                            className="w-12 h-12 rounded-xl object-contain bg-white dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700 shrink-0"
-                          />
-                        ) : (
-                          <div className="w-12 h-12 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] flex items-center justify-center shrink-0 border border-sky-200 dark:border-sky-800">
-                            <Boxes className="w-6 h-6" />
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-hidden shadow-xs">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 font-black uppercase text-[10px] tracking-wider">
+                    <th className="py-3 px-4 min-w-[240px]">Sản Phẩm Linh Kiện ({productSerialGroups.length})</th>
+                    <th className="py-3 px-3">Danh Mục</th>
+                    <th className="py-3 px-3">Thương Hiệu</th>
+                    <th className="py-3 px-3">Giá Bán</th>
+                    <th className="py-3 px-3 text-center">Tồn Kho (SN Sẵn Có)</th>
+                    <th className="py-3 px-4 min-w-[250px]">Mã Serial (SN) Trong Kho</th>
+                    <th className="py-3 px-4 text-right">Thao Tác</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {paginatedProductGroups.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-16 px-4 text-center">
+                        <div className="flex flex-col items-center justify-center max-w-md mx-auto space-y-3">
+                          <div className="w-14 h-14 rounded-2xl bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] flex items-center justify-center border border-sky-200 dark:border-sky-800 shadow-sm">
+                            <Boxes className="w-7 h-7" />
                           </div>
-                        )}
+                          <div className="space-y-1">
+                            <h4 className="text-sm font-black text-slate-900 dark:text-white">
+                              Không Tìm Thấy Sản Phẩm Linh Kiện
+                            </h4>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                              {searchQuery || selectedCategory !== 'ALL' || statusFilter !== 'ALL'
+                                ? 'Không có linh kiện nào khớp với bộ lọc hoặc từ khóa tìm kiếm.'
+                                : 'Kho hiện chưa có sản phẩm linh kiện nào.'}
+                            </p>
+                          </div>
+                          {(searchQuery || selectedCategory !== 'ALL' || statusFilter !== 'ALL') && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSearchQuery('');
+                                setSelectedCategory('ALL');
+                                setStatusFilter('ALL');
+                              }}
+                              className="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
+                            >
+                              Đặt Lại Bộ Lọc
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    paginatedProductGroups.map((group) => {
+                      const { product: p, serials: itemSerials, availableCount, soldCount, warrantyCount, totalCount } = group;
+                      const sku = p.modelCode || p.slug || p.id.slice(0, 8);
 
-                        <div className="min-w-0 flex-1 space-y-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] border border-sky-200 dark:border-sky-800">
-                              {product.category || 'PART'}
+                      return (
+                        <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                          {/* COLUMN 1: PRODUCT INFO (Matching Kho Linh Kiện) */}
+                          <td className="py-3.5 px-4 flex items-center gap-3 min-w-[240px]">
+                            {p.coverImage ? (
+                              <img 
+                                src={p.coverImage} 
+                                alt={p.name} 
+                                className="w-10 h-10 rounded-xl object-contain bg-white dark:bg-slate-800 p-0.5 border border-slate-200 dark:border-slate-700 shrink-0" 
+                              />
+                            ) : (
+                              <div className="w-10 h-10 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] flex items-center justify-center border border-sky-200 dark:border-sky-800 shrink-0">
+                                <Boxes className="w-5 h-5" />
+                              </div>
+                            )}
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="font-bold text-slate-900 dark:text-white line-clamp-1 text-xs" title={p.name}>
+                                  {p.name}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <button
+                                  type="button"
+                                  onClick={(e) => handleCopy(sku, e)}
+                                  className="group inline-flex items-center gap-1 text-[10px] text-slate-400 font-mono hover:text-[#0284c7]"
+                                  title="Click để sao chép SKU"
+                                >
+                                  <span>SKU: {sku}</span>
+                                  <Copy className="w-2.5 h-2.5 opacity-60 group-hover:opacity-100" />
+                                </button>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* COLUMN 2: CATEGORY */}
+                          <td className="py-3.5 px-3 font-extrabold text-[#0284c7] text-[10.5px] uppercase whitespace-nowrap">
+                            <span className="px-2 py-0.5 rounded bg-sky-50 dark:bg-sky-950/60 border border-sky-200 dark:border-sky-800">
+                              {p.category || 'LINH KIỆN'}
                             </span>
-                            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
-                              {product.brand || 'DRX'}
+                          </td>
+
+                          {/* COLUMN 3: BRAND */}
+                          <td className="py-3.5 px-3 font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                            {p.brand || 'DRX'}
+                          </td>
+
+                          {/* COLUMN 4: PRICE & WARRANTY */}
+                          <td className="py-3.5 px-3 whitespace-nowrap">
+                            <span className="font-black text-slate-900 dark:text-white block">
+                              {formatVND(p.price)}
                             </span>
-                            {sku && (
+                            <span className="text-[10px] text-slate-400 font-medium">
+                              BH: {p.warrantyMonths || 36} Tháng
+                            </span>
+                          </td>
+
+                          {/* COLUMN 5: STOCK QUANTITY (SYNCHRONIZED WITH SERIALS) */}
+                          <td className="py-3.5 px-3 text-center whitespace-nowrap">
+                            {availableCount > 0 ? (
+                              <span className="inline-flex items-center justify-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                <span>{availableCount} Món Có Sẵn</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center justify-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800">
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                                <span>0 Món (Hết SN)</span>
+                              </span>
+                            )}
+                            <span className="text-[9.5px] font-mono text-slate-400 block mt-0.5">
+                              Tổng: {totalCount} SN
+                              {soldCount > 0 && ` • Đã bán: ${soldCount}`}
+                            </span>
+                          </td>
+
+                          {/* COLUMN 6: SERIAL CHIPS (CLEAN, ELEGANT & INTERACTIVE) */}
+                          <td className="py-3.5 px-4 min-w-[250px]">
+                            {itemSerials.length === 0 ? (
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-slate-400 italic">Chưa có mã SN nào</span>
+                                <button
+                                  type="button"
+                                  onClick={() => onOpenAddSerialModal(p.id)}
+                                  className="text-[10px] font-bold text-[#0284c7] hover:underline cursor-pointer inline-flex items-center gap-0.5"
+                                >
+                                  <Plus className="w-2.5 h-2.5" /> Thêm ngay
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                {itemSerials.slice(0, 3).map((s) => {
+                                  const isAvail = s.status === 'AVAILABLE';
+                                  const isSold = s.status === 'SOLD';
+                                  return (
+                                    <div
+                                      key={s.id}
+                                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg font-mono text-[10.5px] border shadow-2xs ${
+                                        isAvail
+                                          ? 'bg-emerald-50/80 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                                          : isSold
+                                          ? 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
+                                          : 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800'
+                                      }`}
+                                    >
+                                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                        isAvail ? 'bg-emerald-500' : isSold ? 'bg-slate-400' : 'bg-amber-500'
+                                      }`} />
+                                      <span className="font-bold">{s.serialNumber}</span>
+                                      <button
+                                        type="button"
+                                        onClick={(e) => handleCopy(s.serialNumber, e)}
+                                        className="p-0.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer"
+                                        title="Sao chép Serial"
+                                      >
+                                        <Copy className="w-2.5 h-2.5" />
+                                      </button>
+                                    </div>
+                                  );
+                                })}
+
+                                {itemSerials.length > 3 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedProductForDetail(p)}
+                                    className="px-2 py-0.5 rounded-lg bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 dark:hover:bg-sky-900/60 text-[#0284c7] font-bold text-[10px] border border-sky-200 dark:border-sky-800 cursor-pointer transition-colors"
+                                    title="Click để xem toàn bộ danh sách mã SN của linh kiện này"
+                                  >
+                                    +{itemSerials.length - 3} mã khác...
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                          </td>
+
+                          {/* COLUMN 7: ACTIONS */}
+                          <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                            <div className="flex items-center justify-end gap-1.5">
+                              {/* Quick Add Serial button */}
                               <button
                                 type="button"
-                                onClick={(e) => handleCopy(sku, e)}
-                                className="group inline-flex items-center gap-1 font-mono text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:border-[#0284c7]"
-                                title="Click để copy SKU"
+                                onClick={() => onOpenAddSerialModal(p.id)}
+                                className="px-2.5 py-1.5 rounded-xl bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 text-[#0284c7] dark:text-sky-300 border border-sky-200 dark:border-sky-800 text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1 shadow-2xs"
+                                title="Nhập thêm mã Serial cho sản phẩm này"
                               >
-                                <span>SKU: {sku}</span>
-                                <Copy className="w-2.5 h-2.5 opacity-60 group-hover:opacity-100 text-[#0284c7]" />
+                                <Plus className="w-3.5 h-3.5" />
+                                <span>Nhập SN</span>
                               </button>
-                            )}
-                          </div>
-                          <h4 className="font-heading font-black text-slate-900 dark:text-white text-xs sm:text-sm line-clamp-1">
-                            {product.name}
-                          </h4>
-                        </div>
-                      </div>
 
-                      {/* Right: Metrics Badges & Action Buttons */}
-                      <div className="flex items-center gap-2.5 flex-wrap justify-between lg:justify-end shrink-0">
-                        {/* Status Count Badges */}
-                        <div className="flex items-center gap-1.5">
-                          <span
-                            className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[11px] font-bold flex items-center gap-1"
-                            title="Số Serial có sẵn trong kho"
-                          >
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                            <span>{availableCount} Trong kho</span>
-                          </span>
-
-                          {soldCount > 0 && (
-                            <span
-                              className="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-[11px] font-semibold"
-                              title="Số Serial đã xuất bán theo đơn"
-                            >
-                              {soldCount} Đã bán
-                            </span>
-                          )}
-
-                          {warrantyCount > 0 && (
-                            <span
-                              className="px-2 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 text-[11px] font-semibold"
-                              title="Số Serial đang bảo hành"
-                            >
-                              {warrantyCount} BH
-                            </span>
-                          )}
-
-                          <span className="text-xs font-mono font-bold text-slate-400 pl-1">
-                            Tổng: {totalCount} SN
-                          </span>
-                        </div>
-
-                        {/* Quick Add Button */}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onOpenAddSerialModal(product.id);
-                          }}
-                          className="px-3 py-1.5 bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 text-[#0284c7] dark:text-sky-300 text-xs font-bold rounded-xl border border-sky-200 dark:border-sky-800 transition-all flex items-center gap-1 cursor-pointer shrink-0"
-                          title="Thêm nhanh mã Serial cho sản phẩm này"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                          <span>+ Nhập SN</span>
-                        </button>
-
-                        {/* Expand Accordion Button */}
-                        <button
-                          type="button"
-                          className="p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition-colors"
-                        >
-                          {isExpanded ? (
-                            <ChevronUp className="w-4 h-4" />
-                          ) : (
-                            <ChevronDown className="w-4 h-4" />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Preview Serial Badges (When not expanded or for quick copy) */}
-                    <div className="px-4 py-2.5 border-t border-slate-100 dark:border-slate-800/80 bg-white dark:bg-slate-900 flex items-center gap-1.5 flex-wrap">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase mr-1">
-                        Mã SN:
-                      </span>
-                      {itemSerials.length === 0 ? (
-                        <span className="text-xs text-slate-400 italic">Chưa có mã serial nào trong kho</span>
-                      ) : (
-                        itemSerials.slice(0, 6).map((s) => {
-                          const isAvail = s.status === 'AVAILABLE';
-                          const isSold = s.status === 'SOLD';
-                          return (
-                            <button
-                              key={s.id}
-                              type="button"
-                              onClick={(e) => handleCopy(s.serialNumber, e)}
-                              className={`group inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-mono text-[11px] border transition-all cursor-pointer active:scale-95 ${
-                                isAvail
-                                  ? 'bg-emerald-50/70 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100'
-                                  : isSold
-                                  ? 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
-                                  : 'bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800'
-                              }`}
-                              title={`Click để copy SN: ${s.serialNumber} (${s.status})`}
-                            >
-                              <span
-                                className={`w-1.5 h-1.5 rounded-full ${
-                                  isAvail ? 'bg-emerald-500' : isSold ? 'bg-slate-400' : 'bg-amber-500'
-                                }`}></span>
-                              <span className="font-bold">{s.serialNumber}</span>
-                              <Copy className="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 text-slate-400 transition-opacity" />
-                            </button>
-                          );
-                        })
-                      )}
-                      {itemSerials.length > 6 && (
-                        <button
-                          type="button"
-                          onClick={() => toggleProductExpand(product.id)}
-                          className="text-[11px] font-bold text-[#0284c7] hover:underline cursor-pointer ml-1"
-                        >
-                          +{itemSerials.length - 6} mã khác...
-                        </button>
-                      )}
-                    </div>
-
-                    {/* EXPANDED ACCORDION: FULL SERIAL TABLE FOR THIS PRODUCT */}
-                    {isExpanded && (
-                      <div className="border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 p-4">
-                        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 overflow-hidden shadow-xs">
-                          <div className="overflow-x-auto">
-                            <table className="w-full text-left text-xs">
-                              <thead>
-                                <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 font-black uppercase text-[10px] tracking-wider">
-                                  <th className="py-2.5 px-3.5">Mã Serial Number (SN)</th>
-                                  <th className="py-2.5 px-3 text-center">Trạng Thái Kho</th>
-                                  <th className="py-2.5 px-3">Ngày Nhập Kho</th>
-                                  <th className="py-2.5 px-3">Đơn Hàng Xuất Bán</th>
-                                  <th className="py-2.5 px-3 text-right">Thao Tác</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                                {itemSerials.length === 0 ? (
-                                  <tr>
-                                    <td colSpan={5} className="py-6 text-center text-slate-400 text-xs">
-                                      Chưa có mã serial nào. Click "+ Nhập SN" ở trên để gán mã vào kho.
-                                    </td>
-                                  </tr>
-                                ) : (
-                                  itemSerials.map((s) => {
-                                    const ord = s.order;
-                                    return (
-                                      <tr
-                                        key={s.id}
-                                        className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
-                                      >
-                                        {/* SERIAL WITH COPY */}
-                                        <td className="py-3 px-3.5 font-mono whitespace-nowrap">
-                                          <div className="inline-flex items-center gap-1.5">
-                                            <span className="font-black text-slate-900 dark:text-white px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs">
-                                              {s.serialNumber}
-                                            </span>
-                                            <button
-                                              type="button"
-                                              onClick={() => handleCopy(s.serialNumber)}
-                                              className="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors cursor-pointer"
-                                              title="Sao chép Serial"
-                                            >
-                                              <Copy className="w-3.5 h-3.5" />
-                                            </button>
-                                          </div>
-                                        </td>
-
-                                        {/* STATUS QUICK TOGGLE */}
-                                        <td className="py-3 px-3 text-center whitespace-nowrap">
-                                          <SerialStatusButton
-                                            serial={s}
-                                            onUpdateStatus={onUpdateSerialStatus}
-                                          />
-                                        </td>
-
-                                        {/* IMPORT / SOLD DATE */}
-                                        <td className="py-3 px-3 text-slate-500 whitespace-nowrap font-mono text-[11px]">
-                                          <div>{new Date(s.createdAt).toLocaleDateString('vi-VN')}</div>
-                                          {s.soldDate && (
-                                            <div className="text-[10px] text-slate-400">
-                                              Xuất: {new Date(s.soldDate).toLocaleDateString('vi-VN')}
-                                            </div>
-                                          )}
-                                        </td>
-
-                                        {/* LINKED ORDER */}
-                                        <td className="py-3 px-3 whitespace-nowrap text-xs">
-                                          {ord ? (
-                                            <button
-                                              type="button"
-                                              onClick={() => {
-                                                const fullOrder = orders.find((o) => o.id === ord.id) || ord;
-                                                onViewOrder(fullOrder);
-                                              }}
-                                              className="text-left group cursor-pointer"
-                                            >
-                                              <span className="font-mono font-bold text-[#0284c7] group-hover:underline block">
-                                                {formatOrderDisplayCode(ord)}
-                                              </span>
-                                              {(ord.customerName || ord.customerPhone) && (
-                                                <span className="text-[10px] text-slate-400 block truncate max-w-[140px]">
-                                                  {ord.customerName || ord.customerPhone}
-                                                </span>
-                                              )}
-                                            </button>
-                                          ) : (
-                                            <span className="text-slate-400 font-mono">-</span>
-                                          )}
-                                        </td>
-
-                                        {/* ACTIONS */}
-                                        <td className="py-3 px-3 text-right whitespace-nowrap">
-                                          <button
-                                            type="button"
-                                            onClick={() => onDeleteSerial(s.id)}
-                                            className="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 transition-all cursor-pointer"
-                                            title="Xóa Serial"
-                                          >
-                                            <Trash2 className="w-3.5 h-3.5" />
-                                          </button>
-                                        </td>
-                                      </tr>
-                                    );
-                                  })
-                                )}
-                              </tbody>
-                            </table>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+                              {/* Manage / View all serials modal button */}
+                              <button
+                                type="button"
+                                onClick={() => setSelectedProductForDetail(p)}
+                                className="p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer"
+                                title="Xem và quản lý tất cả mã Serial"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
             </div>
-          )}
+          </div>
 
-          {/* Product View Pagination */}
+          {/* Pagination for Product-centric Table */}
           {totalProductPages > 1 && (
             <div className="flex items-center justify-between pt-2 px-1 text-xs">
               <span className="text-slate-400">
@@ -1111,7 +1013,224 @@ export function SerialManagementSection({
       )}
 
       {/* ============================================================ */}
-      {/* 5. MODAL: CHI TIẾT SERIAL ĐÃ XUẤT BÁN & ĐƠN HÀNG LIÊN KẾT     */}
+      {/* 5. MODAL: QUẢN LÝ TOÀN BỘ SERIAL CỦA 1 SẢN PHẨM               */}
+      {/* ============================================================ */}
+      {mounted && selectedProductForDetail && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div 
+            className="fixed inset-0" 
+            onClick={() => setSelectedProductForDetail(null)}
+          />
+          <div className="relative w-full max-w-3xl max-h-[90vh] bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden z-10 animate-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/50">
+              <div className="flex items-center gap-3 min-w-0">
+                {selectedProductForDetail.coverImage ? (
+                  <img
+                    src={selectedProductForDetail.coverImage}
+                    alt={selectedProductForDetail.name}
+                    className="w-11 h-11 rounded-2xl object-contain bg-white dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700 shrink-0"
+                  />
+                ) : (
+                  <div className="w-11 h-11 rounded-2xl bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] flex items-center justify-center border border-sky-200 dark:border-sky-800 shrink-0">
+                    <Boxes className="w-6 h-6" />
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] border border-sky-200 dark:border-sky-800">
+                      {selectedProductForDetail.category}
+                    </span>
+                    <span className="text-xs font-bold text-slate-500">
+                      {selectedProductForDetail.brand}
+                    </span>
+                  </div>
+                  <h3 className="text-sm font-black text-slate-900 dark:text-white line-clamp-1 mt-0.5">
+                    {selectedProductForDetail.name}
+                  </h3>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setSelectedProductForDetail(null)}
+                className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/60 dark:hover:text-rose-400 text-slate-500 transition-colors flex items-center justify-center cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Subheader Summary & Quick Actions */}
+            <div className="px-6 py-3 bg-sky-50/40 dark:bg-sky-950/20 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-3 text-xs">
+                <span className="text-slate-500">
+                  Tổng cộng: <strong className="text-slate-800 dark:text-slate-200 font-mono font-bold">{inspectedProductSerials.length}</strong> SN
+                </span>
+                <span className="text-slate-300">•</span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                  {inspectedProductSerials.filter((s) => s.status === 'AVAILABLE').length} Trong kho
+                </span>
+                <span className="text-slate-300">•</span>
+                <span className="text-slate-500">
+                  {inspectedProductSerials.filter((s) => s.status === 'SOLD').length} Đã xuất
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {/* Copy all available SNs */}
+                {inspectedProductSerials.filter((s) => s.status === 'AVAILABLE').length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const avail = inspectedProductSerials
+                        .filter((s) => s.status === 'AVAILABLE')
+                        .map((s) => s.serialNumber)
+                        .join('\n');
+                      handleCopy(avail);
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs font-bold transition-all inline-flex items-center gap-1 cursor-pointer shadow-2xs"
+                  >
+                    <Copy className="w-3 h-3 text-[#0284c7]" />
+                    <span>Copy tất cả SN trong kho</span>
+                  </button>
+                )}
+
+                {/* Add SN Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    onOpenAddSerialModal(selectedProductForDetail.id);
+                  }}
+                  className="px-3 py-1 bg-gradient-to-r from-[#0284c7] to-[#38bdf8] text-white text-xs font-bold rounded-lg shadow-xs flex items-center gap-1 cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>+ Nhập Thêm SN</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body Table */}
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-180px)]">
+              {inspectedProductSerials.length === 0 ? (
+                <div className="text-center py-12 space-y-3">
+                  <Package className="w-12 h-12 text-slate-300 dark:text-slate-700 mx-auto" />
+                  <p className="text-sm font-bold text-slate-500">Linh kiện này chưa có mã serial nào trong kho</p>
+                  <button
+                    type="button"
+                    onClick={() => onOpenAddSerialModal(selectedProductForDetail.id)}
+                    className="px-4 py-2 bg-[#0284c7] text-white text-xs font-bold rounded-xl shadow-xs inline-flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Nhập mã Serial ngay
+                  </button>
+                </div>
+              ) : (
+                <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-[10px] font-black uppercase text-slate-400">
+                        <th className="py-2.5 px-3 text-center w-12">STT</th>
+                        <th className="py-2.5 px-3">Mã Serial SN</th>
+                        <th className="py-2.5 px-3 text-center">Trạng Thái</th>
+                        <th className="py-2.5 px-3">Ngày Nhập / Xuất</th>
+                        <th className="py-2.5 px-3">Đơn Hàng</th>
+                        <th className="py-2.5 px-3 text-right">Xóa</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                      {inspectedProductSerials.map((s, idx) => {
+                        const ord = s.order;
+                        return (
+                          <tr key={s.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                            <td className="py-2.5 px-3 text-center font-mono text-slate-400">
+                              {idx + 1}
+                            </td>
+                            <td className="py-2.5 px-3 font-mono font-bold whitespace-nowrap">
+                              <div className="flex items-center gap-1.5">
+                                <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700">
+                                  {s.serialNumber}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => handleCopy(s.serialNumber, e)}
+                                  className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer"
+                                  title="Sao chép"
+                                >
+                                  <Copy className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </td>
+                            <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                              <SerialStatusButton
+                                serial={s}
+                                onUpdateStatus={onUpdateSerialStatus}
+                              />
+                            </td>
+                            <td className="py-2.5 px-3 font-mono text-[11px] text-slate-500 whitespace-nowrap">
+                              <div>{new Date(s.createdAt).toLocaleDateString('vi-VN')}</div>
+                              {s.soldDate && (
+                                <div className="text-[10px] text-slate-400">Xuất: {new Date(s.soldDate).toLocaleDateString('vi-VN')}</div>
+                              )}
+                            </td>
+                            <td className="py-2.5 px-3 whitespace-nowrap">
+                              {ord ? (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedProductForDetail(null);
+                                    const fullOrder = orders.find((o) => o.id === ord.id) || ord;
+                                    onViewOrder(fullOrder);
+                                  }}
+                                  className="text-left group cursor-pointer"
+                                >
+                                  <span className="font-mono font-bold text-[#0284c7] group-hover:underline block">
+                                    {formatOrderDisplayCode(ord)}
+                                  </span>
+                                  {(ord.customerName || ord.customerPhone) && (
+                                    <span className="text-[10px] text-slate-400 block truncate max-w-[120px]">
+                                      {ord.customerName || ord.customerPhone}
+                                    </span>
+                                  )}
+                                </button>
+                              ) : (
+                                <span className="text-slate-400 font-mono">-</span>
+                              )}
+                            </td>
+                            <td className="py-2.5 px-3 text-right whitespace-nowrap">
+                              <button
+                                type="button"
+                                onClick={() => onDeleteSerial(s.id)}
+                                className="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 transition-all cursor-pointer"
+                                title="Xóa Serial này"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-3.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end bg-slate-50/50 dark:bg-slate-900/50">
+              <button
+                type="button"
+                onClick={() => setSelectedProductForDetail(null)}
+                className="px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs transition-colors cursor-pointer"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* ============================================================ */}
+      {/* 6. MODAL: CHI TIẾT SERIAL ĐÃ XUẤT BÁN & ĐƠN HÀNG LIÊN KẾT     */}
       {/* ============================================================ */}
       {mounted && isSoldSerialsModalOpen && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
@@ -1170,9 +1289,9 @@ export function SerialManagementSection({
                           {/* Row 1: Serial + Product Info */}
                           <div className="flex flex-wrap items-start justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
                             <div className="flex items-center gap-3">
-                              {s.product?.thumbnail ? (
+                              {s.product?.coverImage ? (
                                 <img
-                                  src={s.product.thumbnail}
+                                  src={s.product.coverImage}
                                   alt={s.product.name}
                                   className="w-12 h-12 rounded-xl object-contain bg-slate-50 dark:bg-slate-800/60 p-1 border border-slate-200 dark:border-slate-700"
                                 />
@@ -1191,10 +1310,10 @@ export function SerialManagementSection({
                                       {s.product.brand}
                                     </span>
                                   )}
-                                  {s.product?.sku && (
+                                  {s.product?.modelCode && (
                                     <>
                                       <span>•</span>
-                                      <span className="font-mono text-slate-400">SKU: {s.product.sku}</span>
+                                      <span className="font-mono text-slate-400">SKU: {s.product.modelCode}</span>
                                     </>
                                   )}
                                 </div>
@@ -1235,7 +1354,7 @@ export function SerialManagementSection({
                                   </span>
                                 </div>
                                 <div className="text-[11px] text-slate-500 pl-5 space-y-0.5">
-                                  <div>Tổng giá trị: <strong className="text-slate-800 dark:text-slate-200 font-bold">{fullOrder.totalAmount?.toLocaleString('vi-VN')} đ</strong></div>
+                                  <div>Tổng giá trị: <strong className="text-slate-800 dark:text-slate-200 font-bold">{formatVND(fullOrder.totalAmount)}</strong></div>
                                   <div>Trạng thái: <span className="font-semibold text-emerald-600 dark:text-emerald-400">{fullOrder.status || 'Hoàn tất'}</span></div>
                                 </div>
                               </div>

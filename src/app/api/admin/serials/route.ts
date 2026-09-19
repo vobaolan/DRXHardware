@@ -65,10 +65,32 @@ export async function POST(request: Request) {
       } catch (e) {}
     }
 
-    // Increment product stock
-    try {
-      await supabase.rpc('increment_stock', { p_id: productId, count: createdSerials.length || snList.length });
-    } catch (e) {}
+// Helper to accurately sync Product.stockQuantity with AVAILABLE serial count
+async function syncProductStock(productId: string) {
+  if (!productId) return;
+  try {
+    const { count: availCount } = await supabase
+      .from('ProductSerial')
+      .select('*', { count: 'exact', head: true })
+      .eq('productId', productId)
+      .eq('status', 'AVAILABLE');
+
+    if (availCount !== null && availCount !== undefined) {
+      await supabase
+        .from('Product')
+        .update({ 
+          stockQuantity: availCount,
+          updatedAt: new Date().toISOString()
+        })
+        .eq('id', productId);
+    }
+  } catch (err) {
+    console.warn('Lỗi khi đồng bộ tồn kho sản phẩm từ serial:', err);
+  }
+}
+
+    // Auto sync product stock with available serial count in database
+    await syncProductStock(productId);
 
     return NextResponse.json({ 
       success: true, 
@@ -117,6 +139,11 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ message: 'Lỗi cập nhật Serial: ' + error.message }, { status: 500 });
     }
 
+    // Auto sync product stock when serial status changes
+    if (data?.productId) {
+      await syncProductStock(data.productId);
+    }
+
     return NextResponse.json({ success: true, serial: data }, { status: 200 });
   } catch (error: any) {
     return NextResponse.json({ message: error.message }, { status: 500 });
@@ -132,9 +159,21 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ message: 'Thiếu ID serial' }, { status: 400 });
     }
 
+    // Get productId before deleting to sync stock
+    const { data: targetSerial } = await supabase
+      .from('ProductSerial')
+      .select('productId')
+      .eq('id', id)
+      .maybeSingle();
+
     const { error } = await supabase.from('ProductSerial').delete().eq('id', id);
     if (error) {
       return NextResponse.json({ message: 'Lỗi xóa serial: ' + error.message }, { status: 500 });
+    }
+
+    // Auto sync product stock after serial deletion
+    if (targetSerial?.productId) {
+      await syncProductStock(targetSerial.productId);
     }
 
     return NextResponse.json({ success: true, message: 'Đã xóa Serial thành công!' }, { status: 200 });
