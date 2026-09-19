@@ -929,8 +929,8 @@ export default function StaffWarehousePortalPage() {
             }`}
           >
             <div className="flex items-center gap-2.5 min-w-0">
-              <Wrench className="w-4 h-4 shrink-0" />
-              <span className="whitespace-nowrap">Tiến Độ Lắp Ráp PC</span>
+              <Truck className="w-4 h-4 shrink-0" />
+              <span className="whitespace-nowrap">Đơn Hàng &amp; Vận Chuyển</span>
             </div>
             <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-white/20 dark:bg-slate-800 text-current shrink-0 ml-2">
               {orders.length}
