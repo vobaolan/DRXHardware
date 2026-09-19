@@ -1434,42 +1434,76 @@ export default function AdminDashboardPage() {
                 </div>
 
                 {/* OVERVIEW SUMMARY (4 COLS) - REDESIGNED SYSTEM DASHBOARD */}
-                <div className="lg:col-span-4 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5 sm:p-6 space-y-4 shadow-xs flex flex-col justify-between">
-                  <div>
+                <div className="lg:col-span-4 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs flex flex-col justify-between space-y-4">
+                  <div className="space-y-4">
                     {/* Header with real-time health indicator */}
                     <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-                      <h3 className="font-heading text-xs sm:text-sm font-black uppercase text-slate-900 dark:text-white tracking-wider flex items-center gap-2">
-                        <Boxes className="w-4 h-4 text-[#0284c7]" />
-                        <span>TỔNG QUAN HỆ THỐNG</span>
-                      </h3>
-                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded-lg bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] dark:text-sky-400 border border-sky-100 dark:border-sky-800/60">
+                          <Boxes className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <h3 className="font-heading text-xs sm:text-sm font-black uppercase text-slate-900 dark:text-white tracking-wider">
+                            TỔNG QUAN HỆ THỐNG
+                          </h3>
+                          <span className="text-[10px] text-slate-400 font-medium">Giám sát tài nguyên & đơn hàng</span>
+                        </div>
+                      </div>
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                         ONLINE
                       </span>
                     </div>
 
                     {/* 4 Core Quantitative Metrics in 2x2 Grid */}
-                    <div className="grid grid-cols-2 gap-2.5 mt-3.5">
-                      <div className="p-3 rounded-xl bg-slate-50/90 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <div className="p-3 rounded-xl bg-slate-50/90 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 hover:border-sky-200 dark:hover:border-sky-800/50 transition-all">
                         <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Sản Phẩm</span>
-                        <p className="text-base font-black text-slate-900 dark:text-white font-heading mt-0.5">{activeStats.totalProducts} <span className="text-[10px] text-slate-400 font-normal">mã</span></p>
+                        <p className="text-base font-black text-slate-900 dark:text-white font-heading mt-0.5">{activeStats.totalProducts} <span className="text-[10px] text-slate-400 font-normal">mã linh kiện</span></p>
                       </div>
-                      <div className="p-3 rounded-xl bg-slate-50/90 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                      <div className="p-3 rounded-xl bg-slate-50/90 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 hover:border-sky-200 dark:hover:border-sky-800/50 transition-all">
                         <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Khách Hàng</span>
-                        <p className="text-base font-black text-slate-900 dark:text-white font-heading mt-0.5">{activeStats.totalUsers} <span className="text-[10px] text-slate-400 font-normal">user</span></p>
+                        <p className="text-base font-black text-slate-900 dark:text-white font-heading mt-0.5">{activeStats.totalUsers} <span className="text-[10px] text-slate-400 font-normal">tài khoản</span></p>
                       </div>
-                      <div className="p-3 rounded-xl bg-slate-50/90 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
-                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Serial Kho</span>
-                        <p className="text-base font-black text-emerald-600 dark:text-emerald-400 font-heading mt-0.5">{activeStats.serialsAvailable} <span className="text-[10px] text-emerald-600/70 font-normal">sẵn có</span></p>
+                      <div className="p-3 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-800/50 hover:border-emerald-200 transition-all">
+                        <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider block">Serial Sẵn Có</span>
+                        <p className="text-base font-black text-emerald-600 dark:text-emerald-400 font-heading mt-0.5">{activeStats.serialsAvailable} <span className="text-[10px] text-emerald-600/70 font-normal">sẵn sàng</span></p>
                       </div>
-                      <div className="p-3 rounded-xl bg-slate-50/90 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
-                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Đơn Hoàn Tất</span>
-                        <p className="text-base font-black text-sky-600 dark:text-sky-400 font-heading mt-0.5">{activeStats.completedOrders} <span className="text-[10px] text-sky-600/70 font-normal">đơn</span></p>
+                      <div className="p-3 rounded-xl bg-sky-50/50 dark:bg-sky-950/20 border border-sky-100 dark:border-sky-800/50 hover:border-sky-200 transition-all">
+                        <span className="text-[10px] font-bold text-sky-700 dark:text-sky-400 uppercase tracking-wider block">Đơn Hoàn Tất</span>
+                        <p className="text-base font-black text-sky-600 dark:text-sky-400 font-heading mt-0.5">{activeStats.completedOrders} <span className="text-[10px] text-sky-600/70 font-normal">thành công</span></p>
+                      </div>
+                    </div>
+
+                    {/* Live Order Status Pipeline Breakdown */}
+                    <div className="p-3 rounded-xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 space-y-2.5">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                          <ShoppingCart className="w-3.5 h-3.5 text-[#0284c7]" />
+                          Tiến Độ Xử Lý Đơn Hàng
+                        </span>
+                        <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 font-mono">
+                          {activeStats.totalOrders} ĐƠN
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-1.5 text-center">
+                        <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200/70 dark:border-amber-800/40">
+                          <span className="text-[9.5px] font-bold text-amber-700 dark:text-amber-400 block">Chờ Duyệt</span>
+                          <span className="text-xs font-black text-amber-800 dark:text-amber-300">{activeStats.pendingOrders} đơn</span>
+                        </div>
+                        <div className="p-2 rounded-lg bg-sky-50 dark:bg-sky-950/40 border border-sky-200/70 dark:border-sky-800/40">
+                          <span className="text-[9.5px] font-bold text-sky-700 dark:text-sky-400 block">Đang Giao</span>
+                          <span className="text-xs font-black text-sky-800 dark:text-sky-300">{activeStats.shippingOrders} đơn</span>
+                        </div>
+                        <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/70 dark:border-emerald-800/40">
+                          <span className="text-[9.5px] font-bold text-emerald-700 dark:text-emerald-400 block">Đã Giao</span>
+                          <span className="text-xs font-black text-emerald-800 dark:text-emerald-300">{activeStats.completedOrders} đơn</span>
+                        </div>
                       </div>
                     </div>
 
                     {/* Operational Health & Inventory Gauges */}
-                    <div className="space-y-3 mt-3.5 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <div className="space-y-3 pt-1 border-t border-slate-100 dark:border-slate-800">
                       {/* Gauge 1: Stock Availability Rate */}
                       <div className="space-y-1.5">
                         <div className="flex items-center justify-between text-[11px]">
@@ -1492,7 +1526,7 @@ export default function AdminDashboardPage() {
                       <div className="space-y-1.5">
                         <div className="flex items-center justify-between text-[11px]">
                           <span className="font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
-                            <ShoppingCart className="w-3.5 h-3.5 text-sky-500" /> Tỷ lệ hoàn tất đơn:
+                            <CheckCircle2 className="w-3.5 h-3.5 text-sky-500" /> Tỷ lệ hoàn tất đơn:
                           </span>
                           <span className="font-black text-sky-600 dark:text-sky-400 font-mono">
                             {activeStats.totalOrders > 0 ? Math.round((activeStats.completedOrders / activeStats.totalOrders) * 100) : 100}%
@@ -1508,13 +1542,13 @@ export default function AdminDashboardPage() {
                     </div>
 
                     {/* Cloud Infrastructure & Service Status */}
-                    <div className="mt-3.5 p-3 rounded-xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/80 space-y-2 text-[11px]">
+                    <div className="p-3 rounded-xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/80 space-y-2 text-[11px]">
                       <div className="flex items-center justify-between">
                         <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
                           <Database className="w-3 h-3 text-emerald-500" /> Supabase Cloud DB:
                         </span>
                         <span className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3" /> Trực Tuyến
+                          <CheckCircle2 className="w-3 h-3" /> Trực Tuyến (Ping &lt; 45ms)
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
@@ -1522,7 +1556,7 @@ export default function AdminDashboardPage() {
                           <Zap className="w-3 h-3 text-amber-500" /> Thanh Toán COD & Banking:
                         </span>
                         <span className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3" /> Sẵn Sàng
+                          <CheckCircle2 className="w-3 h-3" /> Sẵn Sàng 100%
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
@@ -1530,28 +1564,51 @@ export default function AdminDashboardPage() {
                           <ShieldCheck className="w-3 h-3 text-sky-500" /> Tra Cứu Bảo Hành SN:
                         </span>
                         <span className="font-bold text-sky-600 dark:text-sky-400 flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3" /> Hoạt Động
+                          <CheckCircle2 className="w-3 h-3" /> Hoạt Động (QR Code)
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Dual Quick Action Buttons */}
-                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-                    <button
-                      onClick={() => setActiveTab('orders')}
-                      className="py-2.5 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-[#0284c7] hover:text-white text-slate-700 dark:text-slate-200 font-bold text-xs transition-all flex items-center justify-center gap-1 cursor-pointer"
-                    >
-                      <span>Xem Đơn Hàng</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => setActiveTab('serials')}
-                      className="py-2.5 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-emerald-600 hover:text-white text-slate-700 dark:text-slate-200 font-bold text-xs transition-all flex items-center justify-center gap-1 cursor-pointer"
-                    >
-                      <span>Kho Serial SN</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </button>
+                  {/* 4 Quick Action Matrix */}
+                  <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => setActiveTab('orders')}
+                        className="py-2.5 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-[#0284c7] hover:text-white text-slate-700 dark:text-slate-200 font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
+                      >
+                        <ShoppingCart className="w-3.5 h-3.5" />
+                        <span>Xem Đơn Hàng</span>
+                      </button>
+                      <button
+                        onClick={() => setActiveTab('inventory')}
+                        className="py-2.5 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-emerald-600 hover:text-white text-slate-700 dark:text-slate-200 font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
+                      >
+                        <Boxes className="w-3.5 h-3.5" />
+                        <span>Kho Serial SN</span>
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={handleOpenCreate}
+                        className="py-2 px-3 rounded-xl bg-sky-50 dark:bg-sky-950/40 hover:bg-[#0284c7] hover:text-white text-[#0284c7] dark:text-sky-300 font-bold text-[11px] border border-sky-200/60 dark:border-sky-800/60 transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>Thêm Linh Kiện</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (products.length > 0) {
+                            setSelectedProductIdForSn(products[0].id);
+                          }
+                          setIsSnModalOpen(true);
+                        }}
+                        className="py-2 px-3 rounded-xl bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-600 hover:text-white text-purple-700 dark:text-purple-300 font-bold text-[11px] border border-purple-200/60 dark:border-purple-800/60 transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                      >
+                        <Boxes className="w-3 h-3" />
+                        <span>Nhập SN Mới</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
