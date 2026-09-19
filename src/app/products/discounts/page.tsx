@@ -6,27 +6,49 @@ import { Header } from '@/components/Header';
 import { ProductCard, ProductProps } from '@/components/ProductCard';
 import { Footer } from '@/components/Footer';
 import { Search, SlidersHorizontal, Tag, ArrowLeft } from 'lucide-react';
+import { INITIAL_PRODUCTS } from '@/lib/hardware-data';
+
+const INITIAL_DISCOUNT_PRODUCTS: ProductProps[] = INITIAL_PRODUCTS.map(p => ({
+  id: p.id,
+  name: p.name,
+  slug: p.slug,
+  description: p.description,
+  price: p.price,
+  discountPrice: p.discountPrice || null,
+  coverImage: p.coverImage,
+  category: [p.category],
+  platform: p.brand,
+  type: p.category,
+  brand: p.brand,
+  socket: p.socket,
+  ramType: p.ramType,
+  wattage: p.wattage,
+  warrantyMonths: p.warrantyMonths,
+  deliveryMethod: 'GIFT',
+  status: (p.stockQuantity ?? 1) > 0,
+  isFlashDeal: p.isFlashDeal || false,
+  isFeaturedDeal: p.isFeatured || false,
+  screenshots: p.screenshots || [p.coverImage]
+}));
 
 export default function DiscountsPage() {
   const [selectedPlatform, setSelectedPlatform] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [sortBy, setSortBy] = useState<string>('FEATURED');
 
-  const [liveProducts, setLiveProducts] = useState<ProductProps[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [liveProducts, setLiveProducts] = useState<ProductProps[]>(INITIAL_DISCOUNT_PRODUCTS);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Load products from database
   useEffect(() => {
-    setIsLoading(true);
-    fetch('/api/products')
+    fetch(`/api/products?t=${Date.now()}`)
       .then((res) => res.json())
       .then((data) => {
-        if (data.products && Array.isArray(data.products)) {
+        if (data.products && Array.isArray(data.products) && data.products.length > 0) {
           setLiveProducts(data.products);
         }
       })
-      .catch((err) => console.error('Lỗi khi tải sản phẩm:', err))
-      .finally(() => setIsLoading(false));
+      .catch((err) => console.error('Lỗi khi tải sản phẩm:', err));
   }, []);
 
   // Filter discounted products

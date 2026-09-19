@@ -15,6 +15,30 @@ import {
   IconVga, IconRam, IconStorage, IconCase, IconHeadset, 
   IconMonitor, IconKeyboard, IconMouse 
 } from '@/components/icons/HardwareIcons';
+import { INITIAL_PRODUCTS } from '@/lib/hardware-data';
+
+const INITIAL_CATALOG_PRODUCTS: ProductProps[] = INITIAL_PRODUCTS.map(p => ({
+  id: p.id,
+  name: p.name,
+  slug: p.slug,
+  description: p.description,
+  price: p.price,
+  discountPrice: p.discountPrice || null,
+  coverImage: p.coverImage,
+  category: [p.category],
+  platform: p.brand,
+  type: p.category,
+  brand: p.brand,
+  socket: p.socket,
+  ramType: p.ramType,
+  wattage: p.wattage,
+  warrantyMonths: p.warrantyMonths,
+  deliveryMethod: 'GIFT',
+  status: (p.stockQuantity ?? 1) > 0,
+  isFlashDeal: p.isFlashDeal || false,
+  isFeaturedDeal: p.isFeatured || false,
+  screenshots: p.screenshots || [p.coverImage]
+}));
 
 // Category definitions with Title Case
 const CATEGORY_DEFINITIONS: Record<string, { title: string; iconName: string }> = {
@@ -171,9 +195,9 @@ function ProductsCatalogContent() {
   const [selectedWattage, setSelectedWattage] = useState<string>('ALL');
 
   const [showMobileFilters, setShowMobileFilters] = useState<boolean>(false);
-  const [liveProducts, setLiveProducts] = useState<ProductProps[]>([]);
+  const [liveProducts, setLiveProducts] = useState<ProductProps[]>(INITIAL_CATALOG_PRODUCTS);
   const [recentlyViewed, setRecentlyViewed] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   // Sync state with query parameters
   useEffect(() => {
@@ -185,16 +209,15 @@ function ProductsCatalogContent() {
   // Load products directly from Supabase PostgreSQL Database API
   useEffect(() => {
     const loadProducts = () => {
-      setIsLoading(true);
-
       fetch(`/api/products?t=${Date.now()}`, { cache: 'no-store' })
         .then((res) => res.json())
         .then((data) => {
           const apiProds = data.products && Array.isArray(data.products) ? data.products : [];
-          setLiveProducts(apiProds);
+          if (apiProds.length > 0) {
+            setLiveProducts(apiProds);
+          }
         })
-        .catch((err) => console.error('Lỗi khi tải sản phẩm từ database:', err))
-        .finally(() => setIsLoading(false));
+        .catch((err) => console.error('Lỗi khi tải sản phẩm từ database:', err));
     };
 
     loadProducts();

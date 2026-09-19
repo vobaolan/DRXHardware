@@ -25,8 +25,19 @@ interface MediaItem {
 export default function ProductDetailPage({ params }: { params: { slug: string } }) {
   const { showToast } = useToast();
   const { addToCart, setCartOpen } = useCart();
-  const [realProduct, setRealProduct] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  
+  const initialFallbackProduct = useMemo(() => {
+    const decodedSlug = decodeURIComponent(params?.slug || '').trim().toLowerCase();
+    return INITIAL_PRODUCTS.find(p => 
+      p.slug.toLowerCase() === decodedSlug || 
+      p.id === decodedSlug ||
+      decodedSlug.includes(p.slug.toLowerCase()) ||
+      p.slug.toLowerCase().includes(decodedSlug)
+    ) || null;
+  }, [params?.slug]);
+
+  const [realProduct, setRealProduct] = useState<any>(initialFallbackProduct);
+  const [isLoading, setIsLoading] = useState(!initialFallbackProduct);
 
   const [activeMediaIdx, setActiveMediaIdx] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -69,7 +80,6 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
 
   // Fetch real product from database API with fallback
   useEffect(() => {
-    setIsLoading(true);
     const decodedSlug = decodeURIComponent(params.slug || '').trim().toLowerCase();
 
     fetch(`/api/products/${encodeURIComponent(decodedSlug)}?t=${Date.now()}`, { cache: 'no-store' })
@@ -80,26 +90,10 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
       .then((data) => {
         if (data && data.product) {
           setRealProduct(data.product);
-        } else {
-          // Fallback to local hardware data
-          const fallback = INITIAL_PRODUCTS.find(p => 
-            p.slug.toLowerCase() === decodedSlug || 
-            p.id === decodedSlug ||
-            decodedSlug.includes(p.slug.toLowerCase()) ||
-            p.slug.toLowerCase().includes(decodedSlug)
-          );
-          if (fallback) setRealProduct(fallback);
         }
       })
       .catch(() => {
-        // Direct local fallback on error
-        const fallback = INITIAL_PRODUCTS.find(p => 
-          p.slug.toLowerCase() === decodedSlug || 
-          p.id === decodedSlug ||
-          decodedSlug.includes(p.slug.toLowerCase()) ||
-          p.slug.toLowerCase().includes(decodedSlug)
-        );
-        if (fallback) setRealProduct(fallback);
+        // Keep initialFallbackProduct if available
       })
       .finally(() => setIsLoading(false));
   }, [params.slug]);

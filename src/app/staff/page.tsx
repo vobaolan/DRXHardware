@@ -347,7 +347,9 @@ export default function StaffWarehousePortalPage() {
             email.includes('admin')
           ) {
             setIsAuthorizedStaff(true);
-            await fetchAllStaffData();
+            setIsAuthChecking(false);
+            fetchAllStaffData(false);
+            return;
           } else {
             setIsAuthorizedStaff(false);
           }

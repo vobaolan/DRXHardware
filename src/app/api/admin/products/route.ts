@@ -4,10 +4,12 @@ import { supabase } from '@/lib/supabase';
 import { INITIAL_PRODUCTS } from '@/lib/hardware-data';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
 
 export async function GET() {
   const headers = {
-    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
     'Pragma': 'no-cache',
     'Expires': '0',
     'Surrogate-Control': 'no-store'
