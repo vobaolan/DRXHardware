@@ -31,8 +31,24 @@ const INITIAL_BEST_SELLER_PRODUCTS: ProductProps[] = INITIAL_PRODUCTS.map(p => (
   screenshots: p.screenshots || [p.coverImage]
 }));
 
+const HARDWARE_CATEGORIES = [
+  { id: 'ALL', label: 'TẤT CẢ' },
+  { id: 'CPU', label: 'CPU / VI XỬ LÝ' },
+  { id: 'VGA', label: 'VGA / CARD ĐỒ HỌA' },
+  { id: 'MAINBOARD', label: 'BO MẠCH CHỦ' },
+  { id: 'RAM', label: 'BỘ NHỚ RAM' },
+  { id: 'STORAGE', label: 'SSD / HDD' },
+  { id: 'PSU', label: 'NGUỒN PSU' },
+  { id: 'CASE', label: 'VỎ CASE' },
+  { id: 'COOLING', label: 'TẢN NHIỆT' },
+  { id: 'MONITOR', label: 'MÀN HÌNH' },
+  { id: 'GEAR', label: 'GAMING GEAR' },
+  { id: 'LAPTOP', label: 'LAPTOP' },
+  { id: 'PREBUILT_PC', label: 'PC ĐỒNG BỘ' },
+];
+
 export default function BestSellersPage() {
-  const [selectedPlatform, setSelectedPlatform] = useState<string>('ALL');
+  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [sortBy, setSortBy] = useState<string>('FEATURED');
 
@@ -62,9 +78,19 @@ export default function BestSellersPage() {
       list = liveProducts.slice(0, 12);
     }
 
-    // Filter by Platform
-    if (selectedPlatform !== 'ALL') {
-      list = list.filter((p) => p.platform === selectedPlatform);
+    // Filter by Category
+    if (selectedCategory !== 'ALL') {
+      list = list.filter((p) => {
+        const catStr = Array.isArray(p.category) ? p.category.join(' ') : String(p.category || p.type || '');
+        const normCat = catStr.toUpperCase();
+        if (selectedCategory === 'LAPTOP') {
+          return normCat.includes('LAPTOP');
+        }
+        if (selectedCategory === 'GEAR') {
+          return normCat.includes('GEAR') || normCat.includes('KEYBOARD') || normCat.includes('HEADSET') || normCat.includes('MOUSE');
+        }
+        return normCat.includes(selectedCategory);
+      });
     }
 
     // Filter by Search Query
@@ -89,7 +115,7 @@ export default function BestSellersPage() {
       if (sortBy === 'PRICE_DESC') return bPrice - aPrice;
       return 0;
     });
-  }, [liveProducts, selectedPlatform, searchQuery, sortBy]);
+  }, [liveProducts, selectedCategory, searchQuery, sortBy]);
 
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col antialiased">
@@ -117,32 +143,10 @@ export default function BestSellersPage() {
           </div>
 
           {/* CONTROLS STRIP */}
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-8 bg-slate-50/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl shadow-2xs">
-            <div className="flex items-center gap-2 flex-wrap">
-              <button
-                onClick={() => setSelectedPlatform('ALL')}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold uppercase transition-all cursor-pointer ${
-                  selectedPlatform === 'ALL'
-                    ? 'bg-[#0284c7] text-white shadow-sm'
-                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-[#0284c7]'
-                }`}
-              >
-                TẤT CẢ
-              </button>
-              <button
-                onClick={() => setSelectedPlatform('HARDWARE')}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold uppercase transition-all cursor-pointer ${
-                  selectedPlatform === 'HARDWARE'
-                    ? 'bg-[#0284c7] text-white shadow-sm'
-                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-[#0284c7]'
-                }`}
-              >
-                LINH KIỆN PC
-              </button>
-            </div>
-
-            <div className="flex items-center gap-3 w-full md:w-auto">
-              <div className="relative w-full sm:w-64">
+          <div className="flex flex-col gap-4 mb-8 bg-slate-50/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl shadow-2xs">
+            {/* Search and Sort Bar */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 w-full border-b border-slate-200/80 dark:border-slate-800 pb-3">
+              <div className="relative w-full sm:w-80">
                 <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
                 <input
                   type="text"
@@ -153,7 +157,7 @@ export default function BestSellersPage() {
                 />
               </div>
 
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
                 <SlidersHorizontal className="h-4 w-4 text-slate-400" />
                 <select
                   value={sortBy}
@@ -165,6 +169,26 @@ export default function BestSellersPage() {
                   <option value="PRICE_DESC">Giá Cao ➔ Thấp</option>
                 </select>
               </div>
+            </div>
+
+            {/* Categorized Filter Pills */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {HARDWARE_CATEGORIES.map((cat) => {
+                const isActive = selectedCategory === cat.id;
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => setSelectedCategory(cat.id)}
+                    className={`px-3 py-1.5 rounded-xl text-[11px] font-bold uppercase transition-all cursor-pointer whitespace-nowrap ${
+                      isActive
+                        ? 'bg-[#0284c7] text-white shadow-sm ring-2 ring-[#0284c7]/30 scale-[1.02]'
+                        : 'bg-white dark:bg-slate-800/90 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 hover:border-[#0284c7] hover:text-[#0284c7]'
+                    }`}
+                  >
+                    {cat.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
 

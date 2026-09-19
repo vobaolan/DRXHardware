@@ -213,7 +213,7 @@ export default function ChatbotWidget() {
                         <ReactMarkdown
                           components={{
                             a: ({ href, children }) => {
-                              if (href && (href.startsWith('/products/') || href.startsWith('/pc-builder') || href.startsWith('/warranty'))) {
+                              if (href && (href.startsWith('/products/') || href.startsWith('/pc-builder') || href.startsWith('/warranty') || href.startsWith('/'))) {
                                 return (
                                   <button
                                     type="button"
@@ -233,6 +233,23 @@ export default function ChatbotWidget() {
                                 </a>
                               );
                             },
+                            table: ({ children }) => (
+                              <div className="overflow-x-auto my-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50">
+                                <table className="w-full text-left text-[11px] border-collapse">
+                                  {children}
+                                </table>
+                              </div>
+                            ),
+                            th: ({ children }) => (
+                              <th className="bg-sky-50 dark:bg-slate-800/80 p-2 font-bold text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-700">
+                                {children}
+                              </th>
+                            ),
+                            td: ({ children }) => (
+                              <td className="p-2 border-b border-slate-100 dark:border-slate-800/60 text-slate-700 dark:text-slate-200">
+                                {children}
+                              </td>
+                            ),
                             img: ({ src, alt }) => (
                               <div className="my-2 max-w-[220px] rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-1.5 shadow-2xs">
                                 <img
@@ -341,8 +358,44 @@ export default function ChatbotWidget() {
                 <div ref={messagesEndRef} />
               </div>
 
+              {/* Quick Prompts Strip */}
+              <div className="px-3 py-1.5 bg-slate-100/90 dark:bg-slate-900 border-t border-slate-200/80 dark:border-slate-800 flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0">
+                <button
+                  type="button"
+                  onClick={() => sendQuery('Tư vấn build PC gaming 20 triệu chơi Valorant, Black Myth Wukong')}
+                  className="shrink-0 px-2.5 py-1 rounded-full bg-white dark:bg-slate-800 hover:bg-sky-50 dark:hover:bg-sky-950 text-slate-700 dark:text-slate-200 hover:text-sky-600 dark:hover:text-sky-400 text-[10.5px] font-bold border border-slate-200 dark:border-slate-700 transition-all flex items-center gap-1 cursor-pointer active:scale-95 shadow-2xs"
+                >
+                  <Zap size={12} className="text-amber-500 fill-amber-500" />
+                  <span>Build PC 20tr Gaming</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => sendQuery('Tư vấn cấu hình 15 triệu làm đồ họa Premiere, Photoshop')}
+                  className="shrink-0 px-2.5 py-1 rounded-full bg-white dark:bg-slate-800 hover:bg-sky-50 dark:hover:bg-sky-950 text-slate-700 dark:text-slate-200 hover:text-sky-600 dark:hover:text-sky-400 text-[10.5px] font-bold border border-slate-200 dark:border-slate-700 transition-all flex items-center gap-1 cursor-pointer active:scale-95 shadow-2xs"
+                >
+                  <Sparkles size={12} className="text-sky-500" />
+                  <span>PC 15tr Đồ Họa</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => sendQuery('Giá card màn hình RTX 4060 và RTX 3060 hiện tại?')}
+                  className="shrink-0 px-2.5 py-1 rounded-full bg-white dark:bg-slate-800 hover:bg-sky-50 dark:hover:bg-sky-950 text-slate-700 dark:text-slate-200 hover:text-sky-600 dark:hover:text-sky-400 text-[10.5px] font-bold border border-slate-200 dark:border-slate-700 transition-all flex items-center gap-1 cursor-pointer active:scale-95 shadow-2xs"
+                >
+                  <ShoppingBag size={12} className="text-emerald-500" />
+                  <span>Giá VGA RTX 4060</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => sendQuery('Chính sách bảo hành và đổi trả thế nào?')}
+                  className="shrink-0 px-2.5 py-1 rounded-full bg-white dark:bg-slate-800 hover:bg-sky-50 dark:hover:bg-sky-950 text-slate-700 dark:text-slate-200 hover:text-sky-600 dark:hover:text-sky-400 text-[10.5px] font-bold border border-slate-200 dark:border-slate-700 transition-all flex items-center gap-1 cursor-pointer active:scale-95 shadow-2xs"
+                >
+                  <ShieldCheck size={12} className="text-blue-500" />
+                  <span>Bảo hành 36T</span>
+                </button>
+              </div>
+
               {/* Input Area */}
-              <div className="p-3 border-t border-slate-200/80 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/90">
+              <div className="p-3 border-t border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900">
                 <div className="flex items-center gap-2 bg-white dark:bg-slate-950 rounded-2xl p-1.5 border border-slate-200 dark:border-slate-700 focus-within:border-sky-500 focus-within:ring-2 focus-within:ring-sky-500/20 transition-all shadow-2xs">
                   <textarea
                     value={input}

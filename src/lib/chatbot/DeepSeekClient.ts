@@ -1,5 +1,5 @@
 import { Logger } from './Logger';
-import { liveDatabaseKnowledge, LiveProduct } from './LiveDatabaseKnowledge';
+import { liveDatabaseKnowledge, LiveProduct, removeVietnameseTones } from './LiveDatabaseKnowledge';
 
 export class DeepSeekClient {
   /**
@@ -9,17 +9,59 @@ export class DeepSeekClient {
     try {
       const lastUserMsgObj = [...messages].reverse().find((m: any) => m.role === 'user');
       const userText = lastUserMsgObj ? String(lastUserMsgObj.content).trim() : '';
+      const userTextNoTone = removeVietnameseTones(userText);
 
       Logger.info(`[Realtime AI Engine] Processing query with Live Supabase DB: "${userText}"`);
 
-      // 1. Fetch live products from Supabase matching the user's inquiry
+      // 1. Check if query is asking for PC Build Consultation (Tư vấn Build PC / Cấu hình máy tính)
+      const isBuildInquiry = 
+        userTextNoTone.includes('build pc') ||
+        userTextNoTone.includes('rap pc') ||
+        userTextNoTone.includes('rap may') ||
+        userTextNoTone.includes('cau hinh') ||
+        userTextNoTone.includes('tu van pc') ||
+        userTextNoTone.includes('tu van may') ||
+        userTextNoTone.includes('dan may') ||
+        userTextNoTone.includes('case pc') ||
+        userTextNoTone.includes('tu van build') ||
+        userTextNoTone.match(/pc\s*\d+\s*(trieu|tr|cu|m)/i) ||
+        userTextNoTone.match(/may\s*\d+\s*(trieu|tr|cu|m)/i) ||
+        userTextNoTone.match(/build\s*\d+\s*(trieu|tr|cu|m)/i) ||
+        userTextNoTone.match(/tam\s*\d+\s*(trieu|tr|cu|m)/i);
+
+      if (isBuildInquiry) {
+        Logger.info(`[PC Builder AI] Detected build consultation request: "${userText}"`);
+        const buildResult = await liveDatabaseKnowledge.recommendPCBuild(userText);
+        
+        // Check if LLM API is available to enrich the consultation tone
+        const liveContext = await liveDatabaseKnowledge.buildLiveStoreContext(userText);
+        const enrichedContext = `${liveContext}\n\n[ĐỀ XUẤT CẤU HÌNH PC CHUẨN ĐÃ TÍNH TOÁN]:\n${buildResult.summaryMarkdown}`;
+        
+        const aiReply = await this.callLLMWithContext(messages, enrichedContext, true);
+        if (aiReply) {
+          return {
+            role: 'assistant',
+            content: aiReply,
+            matchedProducts: buildResult.matchedProducts,
+          };
+        }
+
+        // Direct high-precision fallback
+        return {
+          role: 'assistant',
+          content: buildResult.summaryMarkdown,
+          matchedProducts: buildResult.matchedProducts,
+        };
+      }
+
+      // 2. Fetch live products from Supabase matching the user's inquiry
       const matchedProducts = await liveDatabaseKnowledge.searchLiveProducts(userText, 5);
       const allLiveProducts = await liveDatabaseKnowledge.getAllLiveProducts();
 
-      // 2. Build live store context
+      // 3. Build live store context
       const liveContext = await liveDatabaseKnowledge.buildLiveStoreContext(userText);
 
-      // 3. Try Calling External LLM API (Groq -> DeepSeek -> Gemini) with Live Database context
+      // 4. Try Calling External LLM API (Groq -> DeepSeek) with Live Database context
       const aiReply = await this.callLLMWithContext(messages, liveContext);
       if (aiReply) {
         return {
@@ -29,7 +71,7 @@ export class DeepSeekClient {
         };
       }
 
-      // 4. Robust Real-time Fallback Engine using Live Supabase Data
+      // 5. Robust Real-time Fallback Engine using Live Supabase Data
       return this.generateLiveRuleBasedResponse(userText, matchedProducts, allLiveProducts);
 
     } catch (error: any) {
@@ -44,29 +86,30 @@ export class DeepSeekClient {
   }
 
   /**
-   * Call Groq or DeepSeek or Gemini API with live context
+   * Call Groq or DeepSeek API with live context
    */
-  private async callLLMWithContext(messages: any[], liveContext: string): Promise<string | null> {
+  private async callLLMWithContext(messages: any[], liveContext: string, isBuild = false): Promise<string | null> {
     const groqKey = process.env.GROQ_API_KEY;
     const deepseekKey = process.env.DEEPSEEK_API_KEY;
 
-    const systemPromptWithLiveDB = `Bạn là DRX CyberBot AI 🤖⚡ - Trợ lý AI tư vấn linh kiện PC & Gaming Gear tại DRX Hardware.
+    const systemPromptWithLiveDB = `Bạn là DRX CyberBot AI 🤖⚡ - Chuyên gia công nghệ phần cứng & tư vấn DRX Build PC tại DRX Hardware (chuẩn thông minh như Google Antigravity).
 
-DỮ LIỆU SẢN PHẨM & KHO HÀNG THỰC TẾ:
+DỮ LIỆU KHO HÀNG & THÔNG TIN THỰC TẾ TRÊN HỆ THỐNG SUPABASE:
 ${liveContext}
 
-QUY TẮC PHẢN HỒI (RẤT QUAN TRỌNG):
-1. TRẢ LỜI NGẮN GỌN, TRỌNG TÂM (Tối đa 1 - 2 câu ngắn).
-2. Khi khách hỏi giá hoặc sản phẩm, nêu rõ giá bán VND (ví dụ: 1.590.000 đ), bảo hành và tình trạng còn hàng.
-3. TUYỆT ĐỐI KHÔNG liệt kê danh sách dài dòng, không gạch đầu dòng lặp đi lặp lại vì giao diện sẽ tự động hiển thị thẻ sản phẩm tương tác bên dưới câu trả lời.
-4. Giọng điệu thân thiện, tự nhiên, chuẩn kỹ thuật phần cứng.`;
+QUY TẮC TRẢ LỜI:
+1. TRẢ LỜI CHÍNH XÁC, CHUẨN KỸ THUẬT: Sử dụng dữ liệu giá bán, khuyến mãi, tình trạng kho và bảo hành từ hệ thống.
+2. DẪN LINK NHANH TỚI SẢN PHẨM: Khi nhắc đến sản phẩm, luôn gắn link markdown dạng [Tên sản phẩm](/products/slug-san-pham). Nếu tư vấn build PC, luôn dẫn link [DRX PC Builder](/pc-builder) để khách tùy biến.
+3. NẾU KHÁCH HỎI TƯ VẤN BUILD PC: Trình bày bảng chi tiết linh kiện (CPU, Mainboard, RAM, VGA, SSD, Nguồn, Case, Tản nhiệt), tổng chi phí, bảo hành, đánh giá hiệu năng FPS thực tế và độ tương thích linh kiện.
+4. NẾU KHÁCH HỎI GIÁ SẢN PHẨM: Báo giá niêm yết và giá khuyến mãi (VND), bảo hành bao nhiêu tháng và tình trạng còn hàng.
+5. Giọng điệu chuyên nghiệp, am hiểu sâu sắc phần cứng, lịch sự và hỗ trợ tận tâm.`;
 
     const chatHistory = messages.map(m => ({
       role: m.role === 'user' ? 'user' : m.role === 'assistant' ? 'assistant' : 'system',
       content: m.content || '',
     }));
 
-    // Method A: Groq Cloud API (Siêu tốc < 500ms)
+    // Method A: Groq Cloud API
     if (groqKey && groqKey.startsWith('gsk_')) {
       try {
         const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -82,7 +125,7 @@ QUY TẮC PHẢN HỒI (RẤT QUAN TRỌNG):
               ...chatHistory.slice(-6),
             ],
             temperature: 0.4,
-            max_tokens: 300,
+            max_tokens: isBuild ? 800 : 400,
           }),
         });
 
@@ -92,7 +135,7 @@ QUY TẮC PHẢN HỒI (RẤT QUAN TRỌNG):
           if (content) return content;
         }
       } catch (e) {
-        Logger.warn('Groq API call notice, trying fallback engine:', e);
+        Logger.warn('Groq API call notice:', e);
       }
     }
 
@@ -112,7 +155,7 @@ QUY TẮC PHẢN HỒI (RẤT QUAN TRỌNG):
               ...chatHistory.slice(-6),
             ],
             temperature: 0.4,
-            max_tokens: 300,
+            max_tokens: isBuild ? 800 : 400,
           }),
         });
 
@@ -133,60 +176,72 @@ QUY TẮC PHẢN HỒI (RẤT QUAN TRỌNG):
    * Real-time Semantic Pattern Matching using Live Supabase Records
    */
   private generateLiveRuleBasedResponse(userText: string, matchedProducts: LiveProduct[], allProducts: LiveProduct[]) {
-    const q = userText.toLowerCase();
+    const qNoTone = removeVietnameseTones(userText);
+    const formatVND = (num: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(num);
 
     // 1. Matched specific products in Supabase
     if (matchedProducts.length > 0) {
       if (matchedProducts.length === 1) {
         const p = matchedProducts[0];
-        const priceFormatted = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(p.price);
-        const discFormatted = p.discountPrice ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(p.discountPrice) : null;
+        const priceFormatted = formatVND(p.price);
+        const discFormatted = p.discountPrice ? formatVND(p.discountPrice) : null;
         
         return {
           role: 'assistant',
-          content: `Dạ, **${p.name}** hiện có giá ${discFormatted ? `ưu đãi **${discFormatted}** (giảm từ ${priceFormatted})` : `**${priceFormatted}**`}, bảo hành chính hãng **${p.warrantyMonths} tháng** (${p.inStock ? `còn ${p.stockQuantity} món` : 'tạm hết hàng'}).`,
+          content: `Dạ, sản phẩm [**${p.name}**](/products/${p.slug}) hiện có giá bán:
+• **Giá ưu đãi**: ${discFormatted ? `**${discFormatted}** (giảm từ ${priceFormatted})` : `**${priceFormatted}**`}
+• **Bảo hành**: **${p.warrantyMonths} Tháng chính hãng 1 đổi 1**
+• **Tình trạng kho**: ${p.inStock ? `📦 **Còn hàng** (${p.stockQuantity} sản phẩm sẵn có)` : '🚫 **Tạm hết hàng**'}
+• **Giao hàng**: Miễn phí vận chuyển COD toàn quốc, đồng kiểm trước khi nhận.
+
+👉 [**Bấm vào đây để xem chi tiết và đặt mua ngay**](/products/${p.slug})`,
           matchedProducts: [p],
         };
       }
 
-      // 2 or 3 matched items
-      const topProducts = matchedProducts.slice(0, 3);
+      // Multiple matched items
+      const topProducts = matchedProducts.slice(0, 4);
+      const productListStr = topProducts.map(p => {
+        const pPrice = formatVND(p.discountPrice || p.price);
+        return `• [**${p.name}**](/products/${p.slug}) — **${pPrice}** (BH ${p.warrantyMonths}T)`;
+      }).join('\n');
+
       return {
         role: 'assistant',
-        content: `DRX Hardware hiện có các sản phẩm phù hợp với tìm kiếm của bạn:`,
+        content: `DRX Hardware hiện có **${matchedProducts.length} sản phẩm** phù hợp với tìm kiếm của bạn:\n\n${productListStr}\n\nBạn có thể bấm trực tiếp vào tên sản phẩm ở trên hoặc thẻ bên dưới để xem chi tiết nhé!`,
         matchedProducts: topProducts,
       };
     }
 
-    // 2. Keyword Intents
-    if (q.includes('bảo hành') || q.includes('bao hanh') || q.includes('serial')) {
+    // 2. Keyword Policies & Inquiries
+    if (qNoTone.includes('bao hanh') || qNoTone.includes('serial') || qNoTone.includes('sn')) {
       return {
         role: 'assistant',
-        content: '🛡️ **Bảo Hành 36 Tháng Chính Hãng**: 1 đổi 1 trong 30 ngày đầu nếu phát sinh lỗi. Bạn có thể tra cứu nhanh bằng mã Serial (SN) trên website!',
+        content: '🛡️ **Chính Sách Bảo Hành 36 Tháng Chính Hãng Tại DRX Hardware**:\n• 1 đổi 1 trong 30 ngày đầu tiên nếu phát sinh lỗi phần cứng.\n• Bảo hành theo mã Serial (SN) điện tử chính xác, không lo mất hóa đơn.\n• Bạn có thể tra cứu nhanh tại: [**Trang Tra Cứu Bảo Hành SN**](/warranty).',
         matchedProducts: allProducts.slice(0, 2),
       };
     }
 
-    if (q.includes('giao hàng') || q.includes('ship') || q.includes('vận chuyển') || q.includes('địa chỉ') || q.includes('showroom')) {
+    if (qNoTone.includes('giao hang') || qNoTone.includes('ship') || qNoTone.includes('van chuyen') || qNoTone.includes('dia chi') || qNoTone.includes('showroom')) {
       return {
         role: 'assistant',
-        content: '🚚 **Giao Hàng & Showroom**:\n• Giao hàng COD toàn quốc (1-3 ngày).\n• Showroom: 128 Nguyễn Trãi, Q.1, HCM (08:00 - 21:30 hàng ngày).',
+        content: '🚚 **Giao Hàng & Showroom DRX Hardware**:\n• **Showroom**: 128 Nguyễn Trãi, Q.1, TP. Hồ Chí Minh (Mở cửa 08:00 - 21:30 hàng ngày).\n• **Giao hàng**: Toàn quốc qua bưu cục hỏa tốc (1-3 ngày), hỗ trợ kiểm tra hàng trước khi thanh toán COD.\n• **Hotline hỗ trợ**: 1900.88.99.77.',
         matchedProducts: allProducts.slice(0, 2),
       };
     }
 
-    if (q.includes('thanh toán') || q.includes('cod') || q.includes('trả tiền')) {
+    if (qNoTone.includes('thanh toan') || qNoTone.includes('cod') || qNoTone.includes('tra tien') || qNoTone.includes('vietqr')) {
       return {
         role: 'assistant',
-        content: '💵 **Thanh Toán COD An Toàn**: Bạn được kiểm tra kiện hàng niêm phong trước khi thanh toán tiền mặt hoặc chuyển khoản cho shipper!',
+        content: '💵 **Phương Thức Thanh Toán Linh Hoạt & An Toàn**:\n• Thanh toán khi nhận hàng (COD) tận nhà.\n• Chuyển khoản VietQR / NAPAS 24/7 tức thì.\n• Miễn phí hoàn toàn phí giao dịch.',
         matchedProducts: allProducts.slice(0, 2),
       };
     }
 
-    if (q.includes('lắp ráp') || q.includes('ráp máy') || q.includes('build pc') || q.includes('cài win')) {
+    if (qNoTone.includes('lap rap') || qNoTone.includes('rap may') || qNoTone.includes('cai win') || qNoTone.includes('di day')) {
       return {
         role: 'assistant',
-        content: '🛠️ **Lắp Ráp & Cài Đặt PC Miễn Phí**: Kỹ thuật viên DRX sẽ hỗ trợ ráp máy, đi dây gọn đẹp, cài sẵn Win/Driver và test nhiệt độ Full-load trước khi giao!',
+        content: '🛠️ **Dịch Vụ Lắp Ráp & Kỹ Thuật Miễn Phí**:\n• Miễn phí 100% công lắp ráp máy, đi dây giấu nguồn thẩm mỹ cao.\n• Cài đặt sẵn Windows 11 bản quyền, Driver phần cứng và các phần mềm văn phòng/gaming cơ bản.\n• Chạy Stress Test FurMark & Cinebench kiểm tra nhiệt độ full-load ổn định trước khi đóng gói giao hàng!',
         matchedProducts: allProducts.slice(0, 2),
       };
     }
@@ -194,7 +249,7 @@ QUY TẮC PHẢN HỒI (RẤT QUAN TRỌNG):
     // 3. Fallback greeting
     return {
       role: 'assistant',
-      content: `Xin chào! Mình là DRX CyberBot AI 🤖. Bạn cần tìm linh kiện, kiểm tra giá bán hay tư vấn cấu hình PC nào hãy gõ tên sản phẩm nhé!`,
+      content: `Xin chào! Mình là **DRX CyberBot AI** 🤖⚡ — Trợ lý AI phần cứng tại DRX Hardware.\n\nBạn có thể hỏi mình bất kỳ câu hỏi nào như:\n• *"Giá VGA RTX 4060 bao nhiêu?"*\n• *"Tư vấn cấu hình PC Gaming 20 triệu chơi Valorant, Black Myth Wukong"*\n• *"Cấu hình 15 triệu làm đồ họa Premiere"* hoặc mở trực tiếp [**DRX PC Builder**](/pc-builder) nhé!`,
       matchedProducts: allProducts.slice(0, 2),
     };
   }
@@ -205,3 +260,4 @@ QUY TẮC PHẢN HỒI (RẤT QUAN TRỌNG):
 }
 
 export const deepSeekClient = new DeepSeekClient();
+

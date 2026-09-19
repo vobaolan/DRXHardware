@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { aiRouter } from '@/lib/chatbot/AIRouter';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
+
 import { toolRegistry } from '@/lib/chatbot/ToolRegistry';
 import { WebsiteRAGTool } from '@/lib/chatbot/tools/WebsiteRAGTool';
 import { WeatherTool } from '@/lib/chatbot/tools/WeatherTool';
@@ -46,12 +49,23 @@ export async function POST(req: Request) {
       source: response.source,
       documents: response.documents,
       products: response.documents || [],
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+        'CDN-Cache-Control': 'no-store',
+        'Vercel-CDN-Cache-Control': 'no-store',
+      }
     });
   } catch (error: any) {
     Logger.error('Chat API Error', error);
     return NextResponse.json(
       { error: 'An error occurred processing your request', details: error.message },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, max-age=0',
+        }
+      }
     );
   }
 }
