@@ -6,7 +6,7 @@ import {
   X, Plus, Trash2, Image as ImageIcon, Sparkles, Check, 
   Cpu, HardDrive, Monitor, Box, Zap, Fan, Gamepad2, Laptop, 
   ShieldCheck, DollarSign, Layers, Tag, ExternalLink, RefreshCw,
-  Upload, CheckCircle2, FileImage, Star
+  Upload, CheckCircle2, FileImage, Star, AlertTriangle
 } from 'lucide-react';
 import { showToast } from '@/components/Toast';
 import { authFetch } from '@/lib/auth-client';
