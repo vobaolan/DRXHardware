@@ -67,37 +67,6 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
     "updatedAt": "2026-09-19T03:13:31.718"
   },
   {
-    "id": "prod-test-1789782404281",
-    "name": "Test Product",
-    "slug": "test-product",
-    "description": "Test description",
-    "price": 1000000,
-    "discountPrice": null,
-    "costPrice": null,
-    "category": "VGA",
-    "brand": "ASUS",
-    "modelCode": "TEST-001",
-    "coverImage": "https://example.com/test.png",
-    "screenshots": [
-      "https://example.com/test.png"
-    ],
-    "socket": null,
-    "ramType": null,
-    "wattage": null,
-    "formFactor": null,
-    "specs": {
-      "Test": "Value"
-    },
-    "warrantyMonths": 36,
-    "stockQuantity": 10,
-    "status": true,
-    "isFlashDeal": false,
-    "isFeatured": false,
-    "isPrebuilt": false,
-    "createdAt": "2026-09-19T01:46:44.282",
-    "updatedAt": "2026-09-19T01:46:44.29"
-  },
-  {
     "id": "58c42c17-6e3b-45d1-b57b-150ec874e680",
     "name": "ng chủ  Linh kiện mới  RAM PC XPG Spectrix D50 16GB RGB DDR4 | (1x16GB), 3200MHz, Intel/AMD AX4U320016G16A-ST50",
     "slug": "ng-chu-linh-kien-moi-ram-pc-xpg-spectrix-d50-16gb-rgb-ddr4-1x16gb-3200mhz-intel-amd-ax4u320016g16a-st50",

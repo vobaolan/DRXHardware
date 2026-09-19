@@ -773,7 +773,9 @@ export default function AdminDashboardPage() {
           if (res.ok) {
             setProducts(prev => prev.filter(x => x.id !== p.id));
             showToast(`Đã xóa sản phẩm "${p.name}" thành công!`, 'success');
-            fetchAllData();
+            setTimeout(() => {
+              fetchAllData(false);
+            }, 300);
           } else {
             showToast('Không thể xóa sản phẩm lúc này.', 'error');
           }
