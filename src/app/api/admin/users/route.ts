@@ -220,14 +220,14 @@ export async function PATCH(request: Request) {
 
     const cleanEmail = email ? email.trim().toLowerCase() : undefined;
 
-    // 1. Locate existing user in Supabase by ID or Email
+    // 1. Locate existing user in Supabase by Email or ID
     let targetUser: any = null;
-    if (userId) {
-      const { data } = await supabase.from('User').select('*').eq('id', userId).maybeSingle();
+    if (cleanEmail) {
+      const { data } = await supabase.from('User').select('*').eq('email', cleanEmail).maybeSingle();
       if (data) targetUser = data;
     }
-    if (!targetUser && cleanEmail) {
-      const { data } = await supabase.from('User').select('*').eq('email', cleanEmail).maybeSingle();
+    if (!targetUser && userId) {
+      const { data } = await supabase.from('User').select('*').eq('id', userId).maybeSingle();
       if (data) targetUser = data;
     }
 
@@ -236,7 +236,10 @@ export async function PATCH(request: Request) {
     if (phone !== undefined) updateData.phone = (typeof phone === 'string' && phone.trim()) ? phone.trim() : '';
     if (address !== undefined) updateData.address = (typeof address === 'string' && address.trim()) ? address.trim() : '';
     if (balance !== undefined) updateData.balance = Number(balance);
-    if (role !== undefined) updateData.role = role;
+    if (role !== undefined) {
+      const r = String(role).toUpperCase();
+      updateData.role = (r === 'ADMIN' || r === 'STAFF' || r === 'USER') ? r : 'USER';
+    }
     if (newPassword && typeof newPassword === 'string' && newPassword.length >= 6) {
       updateData.password = bcrypt.hashSync(newPassword, 10);
     }
@@ -257,11 +260,12 @@ export async function PATCH(request: Request) {
     } else {
       // If user record doesn't exist yet in Supabase User table, create it with the requested info
       const newUserId = userId || `user-${Date.now()}`;
+      const validRole = updateData.role || 'USER';
       const userToInsert = {
         id: newUserId,
-        email: cleanEmail || 'admin@drx.vn',
+        email: cleanEmail || `user-${Date.now()}@drx.vn`,
         name: name || (cleanEmail ? cleanEmail.split('@')[0] : 'User'),
-        role: role || (cleanEmail && cleanEmail.includes('admin') ? 'ADMIN' : 'USER'),
+        role: validRole,
         phone: phone || null,
         address: address || null,
         balance: balance !== undefined ? Number(balance) : 0,

@@ -466,13 +466,13 @@ export default function Home() {
                     badgeText="HÀNG BÁN CHẠY"
                     bannerImage="https://images.unsplash.com/photo-1587202372616-b43abea06c2a?w=600&q=80"
                     theme="cyan"
-                    viewAllLink="/products?category=CASE"
+                    viewAllLink="/products?category=CASE_COOLING"
                     products={liveProducts.filter(isCaseCoolingPsuProduct)}
                     subTabs={[
-                      { id: 'ALL', label: 'Tất cả Case Tản' },
-                      { id: 'CASE', label: 'Case PC', filterFn: p => !isPrebuiltPC(p) && (matchCat(p, 'CASE') || p.name.toLowerCase().includes('vỏ case') || (p.name.toLowerCase().includes('case') && !p.name.toLowerCase().includes('pc '))) },
-                      { id: 'COOLING', label: 'Tản nhiệt', filterFn: p => !isPrebuiltPC(p) && (matchCat(p, 'COOLING') || p.name.toLowerCase().includes('tản nhiệt') || p.name.toLowerCase().includes('cooler') || p.name.toLowerCase().includes('liquid') || p.name.toLowerCase().includes('kraken')) },
-                      { id: 'PSU', label: 'Bộ Nguồn PSU', filterFn: p => !isPrebuiltPC(p) && (matchCat(p, 'PSU') || p.name.toLowerCase().includes('nguồn máy tính') || (p.name.toLowerCase().includes('nguồn') && !p.name.toLowerCase().includes('mainboard') && !p.name.toLowerCase().includes('pc ')) || p.name.toLowerCase().includes('80 plus')) },
+                      { id: 'ALL', label: 'Tất cả Case Tản', viewAllLink: '/products?category=CASE_COOLING' },
+                      { id: 'CASE', label: 'Case PC', viewAllLink: '/products?category=CASE', filterFn: p => !isPrebuiltPC(p) && (matchCat(p, 'CASE') || p.name.toLowerCase().includes('vỏ case') || (p.name.toLowerCase().includes('case') && !p.name.toLowerCase().includes('pc '))) },
+                      { id: 'COOLING', label: 'Tản nhiệt', viewAllLink: '/products?category=COOLING', filterFn: p => !isPrebuiltPC(p) && (matchCat(p, 'COOLING') || p.name.toLowerCase().includes('tản nhiệt') || p.name.toLowerCase().includes('cooler') || p.name.toLowerCase().includes('liquid') || p.name.toLowerCase().includes('kraken')) },
+                      { id: 'PSU', label: 'Bộ Nguồn PSU', viewAllLink: '/products?category=PSU', filterFn: p => !isPrebuiltPC(p) && (matchCat(p, 'PSU') || p.name.toLowerCase().includes('nguồn máy tính') || (p.name.toLowerCase().includes('nguồn') && !p.name.toLowerCase().includes('mainboard') && !p.name.toLowerCase().includes('pc ')) || p.name.toLowerCase().includes('80 plus')) },
                     ]}
                   />
 
@@ -486,10 +486,11 @@ export default function Home() {
                     viewAllLink="/products?category=GEAR"
                     products={liveProducts.filter(isGearProduct)}
                     subTabs={[
-                      { id: 'ALL', label: 'Bàn phím & Gear' },
+                      { id: 'ALL', label: 'Bàn phím & Gear', viewAllLink: '/products?category=GEAR' },
                       { 
                         id: 'KEYBOARD', 
                         label: 'Bàn phím cơ', 
+                        viewAllLink: '/products?category=KEYBOARD',
                         filterFn: p => {
                           const name = p.name.toLowerCase();
                           if (name.includes('chuột') || name.includes('mouse') || name.includes('tai nghe') || name.includes('headset') || name.includes('ghế')) return false;
@@ -499,6 +500,7 @@ export default function Home() {
                       { 
                         id: 'MOUSE', 
                         label: 'Chuột Gaming', 
+                        viewAllLink: '/products?category=MOUSE',
                         filterFn: p => {
                           const name = p.name.toLowerCase();
                           if (name.includes('tai nghe') || name.includes('headset') || name.includes('headphone') || name.includes('bàn phím') || name.includes('keyboard') || name.includes('ghế')) return false;
@@ -508,6 +510,7 @@ export default function Home() {
                       { 
                         id: 'HEADSET', 
                         label: 'Tai nghe', 
+                        viewAllLink: '/products?category=HEADSET',
                         filterFn: p => {
                           const name = p.name.toLowerCase();
                           if (name.includes('chuột') || name.includes('mouse') || name.includes('bàn phím') || name.includes('keyboard') || name.includes('ghế')) return false;
@@ -517,6 +520,7 @@ export default function Home() {
                       { 
                         id: 'CHAIR', 
                         label: 'Bàn & Ghế', 
+                        viewAllLink: '/products?category=CHAIR',
                         filterFn: p => {
                           const name = p.name.toLowerCase();
                           if (name.includes('chuột') || name.includes('mouse') || name.includes('bàn phím') || name.includes('keyboard') || name.includes('tai nghe') || name.includes('headset')) return false;
@@ -536,10 +540,11 @@ export default function Home() {
                     viewAllLink="/products?category=MONITOR"
                     products={liveProducts.filter(isMonitorProduct)}
                     subTabs={[
-                      { id: 'ALL', label: 'Màn hình khuyến mãi' },
+                      { id: 'ALL', label: 'Màn hình khuyến mãi', viewAllLink: '/products?category=MONITOR' },
                       { 
                         id: 'GAMING', 
                         label: 'Màn hình gaming', 
+                        viewAllLink: '/products?category=MONITOR&usage=gaming',
                         filterFn: p => {
                           const name = p.name.toLowerCase();
                           return name.includes('gaming') || name.includes('144hz') || name.includes('165hz') || name.includes('180hz') || name.includes('240hz') || name.includes('360hz') || name.includes('tuf') || name.includes('rog') || name.includes('odyssey') || name.includes('ultragear') || name.includes('24g2sp') || name.includes('vx2428') || name.includes('vg249') || name.includes('vg279');
@@ -548,6 +553,7 @@ export default function Home() {
                       { 
                         id: 'OFFICE', 
                         label: 'Màn hình văn phòng', 
+                        viewAllLink: '/products?category=MONITOR&usage=văn+phòng',
                         filterFn: p => {
                           const name = p.name.toLowerCase();
                           return name.includes('văn phòng') || name.includes('p2422h') || name.includes('ls24c310') || name.includes('essential') || name.includes('s3') || (name.includes('dell') && !name.includes('gaming') && !name.includes('ultrasharp')) || (!name.includes('165hz') && !name.includes('180hz') && !name.includes('240hz') && !name.includes('tuf') && !name.includes('ultragear') && !name.includes('24g2sp') && !name.includes('vx2428'));
@@ -556,6 +562,7 @@ export default function Home() {
                       { 
                         id: 'DESIGN', 
                         label: 'Màn hình đồ họa', 
+                        viewAllLink: '/products?category=MONITOR&usage=đồ+họa',
                         filterFn: p => {
                           const name = p.name.toLowerCase();
                           return name.includes('đồ họa') || name.includes('proart') || name.includes('ultrasharp') || name.includes('pa278cv') || name.includes('u2724d') || name.includes('ips black') || name.includes('2k') || name.includes('4k') || name.includes('srgb 125%') || name.includes('27gr75q');
@@ -574,15 +581,17 @@ export default function Home() {
                     viewAllLink="/products?category=LAPTOP"
                     products={liveProducts.filter(isLaptopProduct)}
                     subTabs={[
-                      { id: 'ALL', label: 'Laptop khuyến mãi' },
+                      { id: 'ALL', label: 'Laptop khuyến mãi', viewAllLink: '/products?category=LAPTOP' },
                       { 
                         id: 'GAMING', 
                         label: 'Laptop gaming', 
+                        viewAllLink: '/products?category=LAPTOP_GAMING',
                         filterFn: p => matchCat(p, 'LAPTOP_GAMING') || p.name.toLowerCase().includes('gaming') || p.name.toLowerCase().includes('nitro') || p.name.toLowerCase().includes('legion') || p.name.toLowerCase().includes('rog') || p.name.toLowerCase().includes('tuf') || p.name.toLowerCase().includes('katana') || p.name.toLowerCase().includes('dell g15') || p.name.toLowerCase().includes('loq') 
                       },
                       { 
                         id: 'OFFICE', 
                         label: 'Laptop văn phòng', 
+                        viewAllLink: '/products?category=LAPTOP',
                         filterFn: p => matchCat(p, 'LAPTOP') || p.name.toLowerCase().includes('macbook') || p.name.toLowerCase().includes('vivobook') || p.name.toLowerCase().includes('pavilion') || p.name.toLowerCase().includes('thinkpad') || p.name.toLowerCase().includes('swift') || p.name.toLowerCase().includes('inspiron') || p.name.toLowerCase().includes('zenbook') 
                       },
                     ]}
@@ -598,12 +607,12 @@ export default function Home() {
                     viewAllLink="/products?category=CORE_PARTS"
                     products={liveProducts.filter(isCoreProduct)}
                     subTabs={[
-                      { id: 'ALL', label: 'Tất cả Linh Kiện' },
-                      { id: 'CPU', label: 'Vi xử lý CPU', filterFn: p => matchCat(p, 'CPU') || p.name.toLowerCase().includes('cpu') || p.name.toLowerCase().includes('core i') || p.name.toLowerCase().includes('ryzen') },
-                      { id: 'VGA', label: 'Card đồ họa VGA', filterFn: p => matchCat(p, 'VGA') || p.name.toLowerCase().includes('card màn hình') || p.name.toLowerCase().includes('vga') || p.name.toLowerCase().includes('rtx') || p.name.toLowerCase().includes('geforce') },
-                      { id: 'MAINBOARD', label: 'Bo mạch Main', filterFn: p => matchCat(p, 'MAINBOARD') || p.name.toLowerCase().includes('bo mạch') || p.name.toLowerCase().includes('mainboard') || p.name.toLowerCase().includes('b760') || p.name.toLowerCase().includes('z790') || p.name.toLowerCase().includes('b650') || p.name.toLowerCase().includes('x670') },
-                      { id: 'RAM', label: 'Bộ nhớ RAM', filterFn: p => matchCat(p, 'RAM') || p.name.toLowerCase().includes('ram ') || p.name.toLowerCase().includes('ddr4') || p.name.toLowerCase().includes('ddr5') || p.name.toLowerCase().includes('trident') || p.name.toLowerCase().includes('vengeance') || p.name.toLowerCase().includes('fury') },
-                      { id: 'STORAGE', label: 'Ổ cứng SSD', filterFn: p => matchCat(p, 'STORAGE') || p.name.toLowerCase().includes('ssd') || p.name.toLowerCase().includes('hdd') || p.name.toLowerCase().includes('ổ cứng') || p.name.toLowerCase().includes('nvme') || p.name.toLowerCase().includes('sata') },
+                      { id: 'ALL', label: 'Tất cả Linh Kiện', viewAllLink: '/products?category=CORE_PARTS' },
+                      { id: 'CPU', label: 'Vi xử lý CPU', viewAllLink: '/products?category=CPU', filterFn: p => matchCat(p, 'CPU') || p.name.toLowerCase().includes('cpu') || p.name.toLowerCase().includes('core i') || p.name.toLowerCase().includes('ryzen') },
+                      { id: 'VGA', label: 'Card đồ họa VGA', viewAllLink: '/products?category=VGA', filterFn: p => matchCat(p, 'VGA') || p.name.toLowerCase().includes('card màn hình') || p.name.toLowerCase().includes('vga') || p.name.toLowerCase().includes('rtx') || p.name.toLowerCase().includes('geforce') },
+                      { id: 'MAINBOARD', label: 'Bo mạch Main', viewAllLink: '/products?category=MAINBOARD', filterFn: p => matchCat(p, 'MAINBOARD') || p.name.toLowerCase().includes('bo mạch') || p.name.toLowerCase().includes('mainboard') || p.name.toLowerCase().includes('b760') || p.name.toLowerCase().includes('z790') || p.name.toLowerCase().includes('b650') || p.name.toLowerCase().includes('x670') },
+                      { id: 'RAM', label: 'Bộ nhớ RAM', viewAllLink: '/products?category=RAM', filterFn: p => matchCat(p, 'RAM') || p.name.toLowerCase().includes('ram ') || p.name.toLowerCase().includes('ddr4') || p.name.toLowerCase().includes('ddr5') || p.name.toLowerCase().includes('trident') || p.name.toLowerCase().includes('vengeance') || p.name.toLowerCase().includes('fury') },
+                      { id: 'STORAGE', label: 'Ổ cứng SSD', viewAllLink: '/products?category=STORAGE', filterFn: p => matchCat(p, 'STORAGE') || p.name.toLowerCase().includes('ssd') || p.name.toLowerCase().includes('hdd') || p.name.toLowerCase().includes('ổ cứng') || p.name.toLowerCase().includes('nvme') || p.name.toLowerCase().includes('sata') },
                     ]}
                   />
                 </>

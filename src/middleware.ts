@@ -41,8 +41,9 @@ export function middleware(request: NextRequest) {
   const userRole = String(user?.role || '').toUpperCase();
   const userEmail = String(user?.email || '').toLowerCase();
 
-  const isAdmin = userRole === 'ADMIN' || userEmail === 'admin@drx.vn' || (userEmail.includes('admin') && !userEmail.includes('staff'));
-  const isStaff = isAdmin || userRole === 'STAFF' || userRole === 'WAREHOUSE' || userRole === 'MANAGER' || userEmail === 'staff@drx.vn' || userEmail.includes('staff');
+  const isExplicitUser = userRole === 'USER';
+  const isAdmin = !isExplicitUser && (userRole === 'ADMIN' || userEmail === 'admin@drx.vn' || userEmail === 'admin@drxhardware.vn' || userEmail === 'admin@odsstore.vn');
+  const isStaff = !isExplicitUser && (isAdmin || userRole === 'STAFF' || userRole === 'WAREHOUSE' || userRole === 'MANAGER' || userEmail === 'staff@drx.vn');
 
   // 2. Protect Admin & Staff API Routes (/api/admin/*)
   if (pathname.startsWith('/api/admin')) {

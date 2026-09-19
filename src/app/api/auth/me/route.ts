@@ -20,11 +20,12 @@ export async function GET(request: Request) {
 
     // Direct fetch fresh user data & balance from Supabase Cloud PostgreSQL
     try {
+      const cleanEmail = authUser.email ? authUser.email.toLowerCase().trim() : '';
       let query = supabase.from('User').select('id, name, email, role, balance, phone, address').limit(1);
-      if (authUser.sub && authUser.sub !== 'admin-id-master') {
+      if (cleanEmail) {
+        query = query.eq('email', cleanEmail);
+      } else if (authUser.sub && authUser.sub !== 'admin-id-master') {
         query = query.eq('id', authUser.sub);
-      } else if (authUser.email) {
-        query = query.eq('email', authUser.email);
       }
 
       const { data, error } = await query;
@@ -32,10 +33,10 @@ export async function GET(request: Request) {
         userBalance = Number(data[0].balance || 0);
         if (data[0].id) userId = data[0].id;
         if (data[0].name) userName = data[0].name;
-        if (data[0].role) userRole = data[0].role;
+        userRole = data[0].role || 'USER';
         if (data[0].phone) userPhone = data[0].phone;
         if (data[0].address) userAddress = data[0].address;
-      } else if (authUser.email && authUser.email !== 'admin@drx.vn' && authUser.email !== 'staff@drx.vn') {
+      } else if (authUser.email && authUser.email !== 'admin@drx.vn') {
         // Auto-heal: ensure user is persisted in Supabase User table
         try {
           const autoId = (authUser.sub && authUser.sub.startsWith('user-')) ? authUser.sub : ('user-' + Date.now());

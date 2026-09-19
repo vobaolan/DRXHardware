@@ -27,6 +27,7 @@ import {
 import { showToast, showConfirm } from '@/components/Toast';
 import { authFetch } from '@/lib/auth-client';
 import { PortalDropdown } from '@/components/ui/PortalDropdown';
+import { supabase } from '@/lib/supabase';
 
 interface CouponItem {
   code: string;
@@ -250,6 +251,17 @@ export function CouponManagementView({ canEdit = true }: { canEdit?: boolean }) 
 
   useEffect(() => {
     fetchCoupons();
+
+    const channel = supabase
+      .channel('coupon_management_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'Coupon' }, () => {
+        fetchCoupons();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [fetchCoupons]);
 
   // Copy code helper

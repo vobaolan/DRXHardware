@@ -11,27 +11,10 @@ import { formatCurrency, calculateDiscountPercent } from '@/lib/utils';
 import { useCart } from '@/context/CartContext';
 import { motion, AnimatePresence } from 'framer-motion';
 
-function getBrandName(name?: string, brand?: string): string {
-  if (brand && brand !== 'DRX' && brand !== 'OTHER' && brand !== 'GENERIC') {
-    return brand;
-  }
-  const n = name || '';
-  const knownBrands = [
-    'Kingbank', 'Asus', 'ROG', 'TUF', 'MSI', 'Gigabyte', 'Aorus', 'Corsair',
-    'Intel', 'AMD', 'Ryzen', 'Samsung', 'Kingston', 'TeamGroup', 'G.Skill',
-    'AOC', 'ViewSonic', 'Dell', 'Acer', 'Predator', 'Lenovo', 'Legion',
-    'HP', 'Omen', 'Thermalright', 'Deepcool', 'NZXT', 'Cooler Master',
-    'Lian Li', 'Antec', 'Xigmatek', 'Mik', 'DareU', 'Akko', 'Keychron',
-    'Logitech', 'Razer', 'SteelSeries', 'HyperX', 'Zotac', 'Palit', 'Colorful',
-    'Crucial', 'Western Digital', 'WD', 'Seagate', 'MacBook', 'Apple'
-  ];
-  const found = knownBrands.find(b => new RegExp(`\\b${b}\\b`, 'i').test(n));
-  return found ? found.toUpperCase() : (brand || 'CHÍNH HÃNG');
-}
-
 export interface SubTab {
   id: string;
   label: string;
+  viewAllLink?: string;
   filterFn?: (product: HardwareProduct) => boolean;
 }
 
@@ -199,10 +182,10 @@ export default function CategoryShowcaseBlock({
             })}
           </div>
 
-          {/* View All Link */}
+          {/* View All Link - Dynamically updates destination based on active tab */}
           <Link
-            href={viewAllLink}
-            className="hidden sm:flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-[#0284c7] dark:hover:text-[#38bdf8] transition-colors shrink-0 group px-2"
+            href={currentTab?.viewAllLink || viewAllLink}
+            className="flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-[#0284c7] dark:hover:text-[#38bdf8] transition-colors shrink-0 group px-2 py-1 rounded-lg hover:bg-slate-200/50 dark:hover:bg-slate-800/50"
           >
             <span>Xem tất cả</span>
             <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
@@ -288,62 +271,30 @@ export default function CategoryShowcaseBlock({
                   const activePrice = product.discountPrice ?? product.price;
                   const discountPercent = hasDiscount ? calculateDiscountPercent(product.price, product.discountPrice!) : 0;
                   const isJustAdded = addedId === product.id;
-                  const brandLabel = getBrandName(product.name, product.brand);
 
                   return (
                     <div
                       key={product.id}
-                      className={`min-w-[220px] sm:min-w-[240px] max-w-[240px] rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 shadow-xs hover:shadow-2xl ${themeStyles.accentBorder} transition-all duration-300 flex flex-col justify-between group relative shrink-0`}
+                      className={`min-w-[220px] sm:min-w-[240px] max-w-[240px] rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 shadow-xs hover:shadow-xl ${themeStyles.accentBorder} transition-all duration-300 flex flex-col justify-between group relative shrink-0`}
                     >
                       <Link href={`/products/${product.slug}`} className="flex flex-col h-full">
-                        {/* Image Box - Studio Hardware Showroom */}
-                        <div className="relative aspect-[4/3] w-full rounded-2xl overflow-hidden bg-gradient-to-b from-slate-50 via-slate-100/50 to-slate-100/90 dark:from-slate-950 dark:via-[#0c1424] dark:to-slate-950 p-2.5 mb-2.5 flex items-center justify-center border border-slate-100 dark:border-slate-800/90 group/media">
-                          {/* 1. Theme-Aware Ambient Radial Glow behind hardware */}
-                          <div className={`absolute inset-0 m-auto w-4/5 h-4/5 rounded-full bg-gradient-to-tr ${themeStyles.glow} blur-2xl pointer-events-none group-hover:scale-125 transition-all duration-700 opacity-70 dark:opacity-85`} />
-
-                          {/* 2. Hardware Pedestal Drop-Shadow */}
-                          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-3/5 h-2 bg-slate-900/10 dark:bg-black/40 rounded-full blur-sm pointer-events-none group-hover:w-4/5 group-hover:scale-110 transition-all duration-500" />
-
-                          {/* 3. Cyber Glass Light Sweep Shimmer on Hover */}
-                          <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out bg-gradient-to-r from-transparent via-white/40 dark:via-sky-400/15 to-transparent pointer-events-none skew-x-12 z-20" />
-
-                          {/* 4. Top-Left: Brand Chip */}
-                          <div className="absolute top-2 left-2 z-20 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/80 dark:border-slate-700/80 text-[9px] font-black tracking-wider text-slate-800 dark:text-slate-200 shadow-xs uppercase font-mono">
-                            <span className={`w-1.5 h-1.5 rounded-full ${themeStyles.brandDot} animate-pulse`} />
-                            <span>{brandLabel}</span>
-                          </div>
-
-                          {/* 5. Top-Right: Discount Badge or Warranty Tag */}
-                          {hasDiscount ? (
-                            <div className="absolute top-2 right-2 z-20 inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-gradient-to-r from-rose-500 via-red-500 to-amber-500 text-white text-[9.5px] font-black tracking-tight shadow-md shadow-rose-500/25">
+                        {/* Image Box - Clean & Seamless Presentation as in Image 3 */}
+                        <div className="relative aspect-[4/3] w-full rounded-xl overflow-hidden bg-white dark:bg-slate-900 p-3 mb-2 flex items-center justify-center group/media">
+                          {/* Top-Right: Discount Badge */}
+                          {hasDiscount && (
+                            <div className="absolute top-2 right-2 z-20 inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-gradient-to-r from-rose-500 to-amber-500 text-white text-[9.5px] font-black tracking-tight shadow-md shadow-rose-500/20">
                               <Percent className="w-2 h-2 stroke-[2.5]" />
                               <span>-{discountPercent}%</span>
                             </div>
-                          ) : (
-                            <div className="absolute top-2 right-2 z-20 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-slate-900/75 dark:bg-slate-800/80 backdrop-blur-md text-[8.5px] font-extrabold text-sky-400 dark:text-sky-300 border border-sky-500/30 shadow-xs">
-                              <Shield className="w-2.5 h-2.5 text-sky-400" />
-                              <span>BH {product.warrantyMonths || 36}T</span>
-                            </div>
                           )}
 
-                          {/* 6. Bottom-Left: Stock Status Pill */}
-                          <div className="absolute bottom-2 left-2 z-20 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-white/90 dark:bg-slate-900/90 backdrop-blur-md text-[8.5px] font-bold text-slate-700 dark:text-slate-300 border border-slate-200/70 dark:border-slate-800 shadow-2xs">
-                            <span className={`w-1.5 h-1.5 rounded-full ${product.status !== false ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
-                            <span>{product.status !== false ? 'Sẵn hàng' : 'Hết hàng'}</span>
-                          </div>
-
-                          {/* 7. Bottom-Right: Quick Preview Eye button appearing on hover */}
-                          <div className="absolute bottom-2 right-2 z-20 p-1 rounded-md bg-white/95 dark:bg-slate-900/95 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700 shadow-sm opacity-0 group-hover:opacity-100 transform translate-y-1 group-hover:translate-y-0 transition-all duration-300 pointer-events-none">
-                            <Eye className="w-3 h-3 text-[#0284c7]" />
-                          </div>
-
-                          {/* 8. Main Hardware Image with Physical Drop-Shadow & 3D Lift Scale */}
+                          {/* Main Hardware Image - Seamless Blend, No Contrasting White Square */}
                           <img
                             src={product.coverImage}
                             alt={product.name}
                             loading="lazy"
                             decoding="async"
-                            className="w-full h-full object-contain p-2 z-10 relative filter drop-shadow-[0_8px_16px_rgba(0,0,0,0.12)] dark:drop-shadow-[0_10px_20px_rgba(2,132,199,0.28)] group-hover:scale-110 group-hover:-translate-y-1.5 transition-all duration-500 ease-out"
+                            className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal group-hover:scale-108 transition-transform duration-500 ease-out z-10"
                           />
                         </div>
 

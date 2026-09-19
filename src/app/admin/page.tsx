@@ -34,7 +34,7 @@ function UserRoleButton({
   onSetRole,
 }: {
   user: any;
-  onSetRole: (userId: string, newRole: string) => void;
+  onSetRole: (userId: string, newRole: string, email?: string) => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -75,7 +75,7 @@ function UserRoleButton({
         <button
           type="button"
           onClick={() => {
-            onSetRole(user.id, 'USER');
+            onSetRole(user.id, 'USER', user.email);
             setIsOpen(false);
           }}
           className={`w-full flex items-center justify-between p-2 rounded-xl transition-all text-left cursor-pointer ${
@@ -98,7 +98,7 @@ function UserRoleButton({
         <button
           type="button"
           onClick={() => {
-            onSetRole(user.id, 'STAFF');
+            onSetRole(user.id, 'STAFF', user.email);
             setIsOpen(false);
           }}
           className={`w-full flex items-center justify-between p-2 rounded-xl transition-all text-left cursor-pointer ${
@@ -121,7 +121,7 @@ function UserRoleButton({
         <button
           type="button"
           onClick={() => {
-            onSetRole(user.id, 'ADMIN');
+            onSetRole(user.id, 'ADMIN', user.email);
             setIsOpen(false);
           }}
           className={`w-full flex items-center justify-between p-2 rounded-xl transition-all text-left cursor-pointer ${
@@ -134,10 +134,10 @@ function UserRoleButton({
             <span className="text-sm">👑</span>
             <div>
               <span className="block text-xs">Quản Trị Viên (ADMIN)</span>
-              <span className="block text-[10px] text-slate-400 font-normal">Toàn quyền hệ thống & tài chính</span>
+              <span className="block text-[10px] text-slate-400 font-normal">Toàn quyền hệ thống & Doanh thu</span>
             </div>
           </div>
-          {user.role === 'ADMIN' && <Check className="w-4 h-4 text-purple-600 shrink-0" />}
+          {user.role === 'ADMIN' && <Check className="w-4 h-4 text-[#0284c7] shrink-0" />}
         </button>
       </PortalDropdown>
     </>
@@ -1089,16 +1089,21 @@ export default function AdminDashboardPage() {
   };
 
   // Handlers for User Role Quick Switch
-  const handleSetUserRole = async (userId: string, newRole: string) => {
+  const handleSetUserRole = async (userId: string, newRole: string, email?: string) => {
     try {
       const res = await authFetch('/api/admin/users', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, role: newRole }),
+        body: JSON.stringify({ userId, email, role: newRole }),
       });
       if (res.ok) {
-        setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
+        setUsers(prev => prev.map(u => (u.id === userId || (email && u.email?.toLowerCase() === email.toLowerCase())) ? { ...u, role: newRole } : u));
         showToast(`Đã cập nhật phân quyền thành công: ${newRole}!`, 'success');
+        // If current admin modified their own account or session, refresh session
+        if (currentUser && (currentUser.id === userId || (email && currentUser.email?.toLowerCase() === email.toLowerCase()))) {
+          const { verifyCurrentSession } = await import('@/lib/auth-client');
+          await verifyCurrentSession();
+        }
       } else {
         showToast('Lỗi khi cập nhật quyền tài khoản.', 'error');
       }
@@ -1117,7 +1122,7 @@ export default function AdminDashboardPage() {
   }
 
   if (!isAdmin) {
-    const isStaffUser = currentUser?.role === 'STAFF' || String(currentUser?.email || '').toLowerCase().includes('staff');
+    const isStaffUser = currentUser?.role === 'STAFF' || (currentUser?.role !== 'USER' && currentUser?.email === 'staff@drx.vn');
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-[#090d16] text-slate-900 dark:text-slate-100 flex flex-col items-center justify-center p-4 antialiased">
         <motion.div 

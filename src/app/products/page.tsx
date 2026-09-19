@@ -108,12 +108,20 @@ const CATEGORY_DEFINITIONS: Record<string, { title: string; iconName: string }> 
     iconName: 'IconCpu',
   },
   CORE_PARTS: {
-    title: 'Linh Kiện Core - CPU, Main, VGA & RAM',
+    title: 'Tất Cả Linh Kiện (CPU, Main, VGA, RAM, SSD)',
     iconName: 'IconCpu',
   },
   CASE_COOLING: {
     title: 'Vỏ Case, Nguồn Máy Tính & Tản Nhiệt',
     iconName: 'IconCase',
+  },
+  MOUSE: {
+    title: 'Chuột Gaming & Văn Phòng',
+    iconName: 'IconKeyboard',
+  },
+  CHAIR: {
+    title: 'Bàn & Ghế Gaming',
+    iconName: 'IconKeyboard',
   },
 };
 
@@ -128,8 +136,10 @@ const ALL_CATEGORIES_NAV = [
   { id: 'CASE', name: 'Vỏ Case PC', icon: 'IconCase' },
   { id: 'COOLING', name: 'Tản Nhiệt', icon: 'IconCase' },
   { id: 'MONITOR', name: 'Màn Hình', icon: 'IconMonitor' },
-  { id: 'KEYBOARD', name: 'Bàn Phím', icon: 'IconKeyboard' },
+  { id: 'KEYBOARD', name: 'Bàn Phím Cơ', icon: 'IconKeyboard' },
+  { id: 'MOUSE', name: 'Chuột Gaming', icon: 'IconKeyboard' },
   { id: 'HEADSET', name: 'Tai Nghe', icon: 'IconHeadset' },
+  { id: 'CHAIR', name: 'Bàn & Ghế', icon: 'IconKeyboard' },
   { id: 'GEAR', name: 'Gaming Gear', icon: 'IconKeyboard' },
   { id: 'LAPTOP', name: 'Laptop', icon: 'IconLaptop' },
   { id: 'LAPTOP_GAMING', name: 'Laptop Gaming', icon: 'IconLaptopGaming' },
@@ -168,6 +178,7 @@ function ProductsCatalogContent() {
   const initialFilter = searchParams.get('filter') || 'ALL';
   const initialCategory = searchParams.get('category') || 'ALL';
   const initialPlatform = searchParams.get('platform') || 'ALL';
+  const initialUsage = searchParams.get('usage') || 'ALL';
 
   const [activeFilter, setActiveFilter] = useState<string>(initialFilter);
   const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory);
@@ -183,7 +194,7 @@ function ProductsCatalogContent() {
   const [appliedMaxPrice, setAppliedMaxPrice] = useState<number | null>(null);
 
   const [selectedBrand, setSelectedBrand] = useState<string>('ALL');
-  const [selectedUsage, setSelectedUsage] = useState<string>('ALL');
+  const [selectedUsage, setSelectedUsage] = useState<string>(initialUsage);
   const [selectedRam, setSelectedRam] = useState<string>('ALL');
   const [selectedSsd, setSelectedSsd] = useState<string>('ALL');
   const [selectedCpuBrand, setSelectedCpuBrand] = useState<string>('ALL');
@@ -194,6 +205,13 @@ function ProductsCatalogContent() {
   const [selectedSocket, setSelectedSocket] = useState<string>('ALL');
   const [selectedVram, setSelectedVram] = useState<string>('ALL');
   const [selectedWattage, setSelectedWattage] = useState<string>('ALL');
+  const [selectedSubCategory, setSelectedSubCategory] = useState<string>('ALL');
+  const [selectedFormFactor, setSelectedFormFactor] = useState<string>('ALL');
+  const [selectedCoolingType, setSelectedCoolingType] = useState<string>('ALL');
+  const [selectedConnectivity, setSelectedConnectivity] = useState<string>('ALL');
+  const [selectedSwitchType, setSelectedSwitchType] = useState<string>('ALL');
+  const [selectedPanelType, setSelectedPanelType] = useState<string>('ALL');
+  const [selectedEfficiency, setSelectedEfficiency] = useState<string>('ALL');
 
   const [showMobileFilters, setShowMobileFilters] = useState<boolean>(false);
   const [liveProducts, setLiveProducts] = useState<ProductProps[]>(INITIAL_CATALOG_PRODUCTS);
@@ -203,8 +221,30 @@ function ProductsCatalogContent() {
   // Sync state with query parameters
   useEffect(() => {
     setActiveFilter(searchParams.get('filter') || 'ALL');
-    setSelectedCategory(searchParams.get('category') || 'ALL');
+    const cat = searchParams.get('category') || 'ALL';
+    setSelectedCategory(cat);
     setSelectedPlatform(searchParams.get('platform') || 'ALL');
+    setSelectedUsage(searchParams.get('usage') || 'ALL');
+
+    // Reset specific sub-filters on category change to prevent cross-filtering conflicts
+    setSelectedBrand('ALL');
+    setSelectedRam('ALL');
+    setSelectedSsd('ALL');
+    setSelectedCpuBrand('ALL');
+    setSelectedGpuBrand('ALL');
+    setSelectedRefreshRate('ALL');
+    setSelectedScreenSize('ALL');
+    setSelectedResolution('ALL');
+    setSelectedSocket('ALL');
+    setSelectedVram('ALL');
+    setSelectedWattage('ALL');
+    setSelectedSubCategory('ALL');
+    setSelectedFormFactor('ALL');
+    setSelectedCoolingType('ALL');
+    setSelectedConnectivity('ALL');
+    setSelectedSwitchType('ALL');
+    setSelectedPanelType('ALL');
+    setSelectedEfficiency('ALL');
   }, [searchParams]);
 
   // Load products directly from Supabase PostgreSQL Database API
@@ -368,6 +408,13 @@ function ProductsCatalogContent() {
     setSelectedSocket('ALL');
     setSelectedVram('ALL');
     setSelectedWattage('ALL');
+    setSelectedSubCategory('ALL');
+    setSelectedFormFactor('ALL');
+    setSelectedCoolingType('ALL');
+    setSelectedConnectivity('ALL');
+    setSelectedSwitchType('ALL');
+    setSelectedPanelType('ALL');
+    setSelectedEfficiency('ALL');
     setActiveFilter('ALL');
     setSearchQuery('');
   };
@@ -389,23 +436,79 @@ function ProductsCatalogContent() {
       selectedSocket !== 'ALL' ||
       selectedVram !== 'ALL' ||
       selectedWattage !== 'ALL' ||
+      selectedSubCategory !== 'ALL' ||
+      selectedFormFactor !== 'ALL' ||
+      selectedCoolingType !== 'ALL' ||
+      selectedConnectivity !== 'ALL' ||
+      selectedSwitchType !== 'ALL' ||
+      selectedPanelType !== 'ALL' ||
+      selectedEfficiency !== 'ALL' ||
       searchQuery.trim() !== ''
     );
   }, [
     selectedPriceRange, appliedMinPrice, appliedMaxPrice, selectedBrand, 
     selectedUsage, selectedRam, selectedSsd, selectedCpuBrand, selectedGpuBrand, 
     selectedRefreshRate, selectedScreenSize, selectedResolution, selectedSocket, 
-    selectedVram, selectedWattage, searchQuery
+    selectedVram, selectedWattage, selectedSubCategory, selectedFormFactor,
+    selectedCoolingType, selectedConnectivity, selectedSwitchType,
+    selectedPanelType, selectedEfficiency, searchQuery
   ]);
 
-  // Available brands in the category
+  // Available brands in the active category (tránh lỗi hiện hãng linh kiện khác khi xem danh mục)
   const availableBrands = useMemo(() => {
+    let list = liveProducts;
+    if (selectedCategory !== 'ALL') {
+      const upperCat = selectedCategory.toUpperCase();
+      list = list.filter((p) => {
+        const pCats = Array.isArray(p.category) 
+          ? p.category.map((c: any) => String(c).toUpperCase()) 
+          : [String(p.category).toUpperCase()];
+
+        if (upperCat === 'CORE_PARTS') {
+          return pCats.some((c) => ['CORE_PARTS', 'CPU', 'VGA', 'MAINBOARD', 'RAM', 'STORAGE'].includes(c));
+        }
+        if (upperCat === 'CASE_COOLING') {
+          return pCats.some((c) => ['CASE', 'PSU', 'COOLING', 'CASE_COOLING'].includes(c));
+        }
+        if (upperCat === 'GEAR') {
+          return pCats.some((c) => ['GEAR', 'KEYBOARD', 'HEADSET', 'MOUSE', 'CHAIR'].includes(c));
+        }
+        if (upperCat === 'MOUSE') {
+          const name = (p.name || '').toLowerCase();
+          return (pCats.includes('GEAR') || pCats.includes('MOUSE')) &&
+                 (name.includes('chuột') || name.includes('mouse')) &&
+                 !name.includes('lót chuột') && !name.includes('bàn di');
+        }
+        if (upperCat === 'CHAIR') {
+          const name = (p.name || '').toLowerCase();
+          return name.includes('ghế') || name.includes('bàn ');
+        }
+        if (upperCat === 'LAPTOP_GAMING') {
+          return pCats.includes('LAPTOP_GAMING') || (
+            pCats.includes('LAPTOP') && (
+              (p.tags && p.tags.some((t: string) => t.toLowerCase().includes('gaming'))) ||
+              p.name.toLowerCase().includes('gaming') ||
+              p.name.toLowerCase().includes('rog') ||
+              p.name.toLowerCase().includes('tuf') ||
+              p.name.toLowerCase().includes('loq') ||
+              p.name.toLowerCase().includes('legion') ||
+              p.name.toLowerCase().includes('predator') ||
+              p.name.toLowerCase().includes('nitro')
+            )
+          );
+        }
+        return pCats.includes(upperCat);
+      });
+    }
+
     const brandsSet = new Set<string>();
-    liveProducts.forEach((p) => {
-      if (p.brand) brandsSet.add(p.brand.trim());
+    list.forEach((p) => {
+      if (p.brand && p.brand.trim()) {
+        brandsSet.add(p.brand.trim());
+      }
     });
-    return Array.from(brandsSet).slice(0, 10);
-  }, [liveProducts]);
+    return Array.from(brandsSet).slice(0, 15);
+  }, [liveProducts, selectedCategory]);
 
   // Filter products based on active category & all sidebar criteria
   const filteredProducts = useMemo(() => {
@@ -431,7 +534,7 @@ function ProductsCatalogContent() {
           : [String(p.category).toUpperCase()];
 
         if (upperCat === 'CORE_PARTS') {
-          return pCats.some((c) => ['CORE_PARTS', 'CPU', 'VGA', 'MAINBOARD', 'RAM'].includes(c));
+          return pCats.some((c) => ['CORE_PARTS', 'CPU', 'VGA', 'MAINBOARD', 'RAM', 'STORAGE'].includes(c));
         }
 
         if (upperCat === 'CASE_COOLING') {
@@ -439,10 +542,79 @@ function ProductsCatalogContent() {
         }
 
         if (upperCat === 'GEAR') {
-          return pCats.some((c) => ['GEAR', 'KEYBOARD', 'HEADSET', 'MOUSE'].includes(c));
+          return pCats.some((c) => ['GEAR', 'KEYBOARD', 'HEADSET', 'MOUSE', 'CHAIR'].includes(c));
+        }
+
+        if (upperCat === 'MOUSE') {
+          const name = (p.name || '').toLowerCase();
+          return (pCats.includes('GEAR') || pCats.includes('MOUSE')) &&
+                 (name.includes('chuột') || name.includes('mouse')) &&
+                 !name.includes('lót chuột') && !name.includes('bàn di');
+        }
+
+        if (upperCat === 'CHAIR') {
+          const name = (p.name || '').toLowerCase();
+          return name.includes('ghế') || name.includes('bàn ');
+        }
+
+        if (upperCat === 'LAPTOP_GAMING') {
+          return pCats.includes('LAPTOP_GAMING') || (
+            pCats.includes('LAPTOP') && (
+              (p.tags && p.tags.some((t: string) => t.toLowerCase().includes('gaming'))) ||
+              p.name.toLowerCase().includes('gaming') ||
+              p.name.toLowerCase().includes('rog') ||
+              p.name.toLowerCase().includes('tuf') ||
+              p.name.toLowerCase().includes('loq') ||
+              p.name.toLowerCase().includes('legion') ||
+              p.name.toLowerCase().includes('predator') ||
+              p.name.toLowerCase().includes('nitro')
+            )
+          );
         }
 
         return pCats.some((c) => c === upperCat);
+      });
+    }
+
+    // 2b. Sub-Category Quick Filter within group categories
+    if (selectedSubCategory !== 'ALL') {
+      const sub = selectedSubCategory.toUpperCase();
+      list = list.filter((p) => {
+        const pCats = Array.isArray(p.category) 
+          ? p.category.map((c: any) => String(c).toUpperCase()) 
+          : [String(p.category).toUpperCase()];
+
+        if (sub === 'CASE') return pCats.includes('CASE');
+        if (sub === 'COOLING') return pCats.includes('COOLING');
+        if (sub === 'PSU') return pCats.includes('PSU');
+
+        if (sub === 'KEYBOARD') {
+          const name = (p.name || '').toLowerCase();
+          return pCats.includes('KEYBOARD') || name.includes('bàn phím');
+        }
+        if (sub === 'MOUSE') {
+          const name = (p.name || '').toLowerCase();
+          return (pCats.includes('GEAR') || pCats.includes('MOUSE')) &&
+                 (name.includes('chuột') || name.includes('mouse')) &&
+                 !name.includes('lót chuột') && !name.includes('bàn di');
+        }
+        if (sub === 'HEADSET') {
+          const name = (p.name || '').toLowerCase();
+          return pCats.includes('HEADSET') || name.includes('tai nghe');
+        }
+        if (sub === 'CHAIR') {
+          const name = (p.name || '').toLowerCase();
+          return name.includes('ghế') || name.includes('bàn ');
+        }
+        if (sub === 'PAD') {
+          const name = (p.name || '').toLowerCase();
+          return name.includes('lót chuột') || name.includes('bàn di');
+        }
+
+        if (['CPU', 'VGA', 'MAINBOARD', 'RAM', 'STORAGE'].includes(sub)) {
+          return pCats.includes(sub);
+        }
+        return true;
       });
     }
 
@@ -470,19 +642,35 @@ function ProductsCatalogContent() {
       list = list.filter((p) => (p.brand || '').toLowerCase().includes(selectedBrand.toLowerCase()));
     }
 
-    // Helper text search in product metadata
+    // Helper text search in product metadata (name, description, brand, tags, specs)
     const matchText = (p: ProductProps, query: string) => {
       const q = query.toLowerCase();
       const n = (p.name || '').toLowerCase();
       const d = (p.description || '').toLowerCase();
       const b = (p.brand || '').toLowerCase();
+      const t = (p.tags || []).join(' ').toLowerCase();
       const s = p.specs ? Object.values(p.specs).join(' ').toLowerCase() : '';
-      return n.includes(q) || d.includes(q) || b.includes(q) || s.includes(q);
+      return n.includes(q) || d.includes(q) || b.includes(q) || t.includes(q) || s.includes(q);
     };
 
     // 5. Contextual: Nhu cầu sử dụng
     if (selectedUsage !== 'ALL') {
-      list = list.filter((p) => matchText(p, selectedUsage));
+      const u = selectedUsage.toLowerCase();
+      list = list.filter((p) => {
+        if (u === 'gaming') {
+          return matchText(p, 'gaming') || matchText(p, 'game') || matchText(p, 'rog') || matchText(p, 'tuf') || matchText(p, 'ultragear');
+        }
+        if (u.includes('văn phòng') || u.includes('học tập')) {
+          return matchText(p, 'văn phòng') || matchText(p, 'học tập') || matchText(p, 'essential') || matchText(p, 'p2422h') || matchText(p, 'office');
+        }
+        if (u.includes('đồ họa') || u.includes('kỹ thuật')) {
+          return matchText(p, 'đồ họa') || matchText(p, 'kỹ thuật') || matchText(p, 'proart') || matchText(p, 'creator') || matchText(p, 'srgb') || matchText(p, 'design');
+        }
+        if (u.includes('mỏng nhẹ') || u.includes('doanh nhân')) {
+          return matchText(p, 'mỏng nhẹ') || matchText(p, 'doanh nhân') || matchText(p, 'zenbook') || matchText(p, 'swift') || matchText(p, 'macbook') || matchText(p, 'gram');
+        }
+        return matchText(p, selectedUsage);
+      });
     }
 
     // 6. Contextual: RAM
@@ -507,17 +695,29 @@ function ProductsCatalogContent() {
 
     // 10. Contextual: Tần số quét
     if (selectedRefreshRate !== 'ALL') {
-      list = list.filter((p) => matchText(p, selectedRefreshRate));
+      const hz = selectedRefreshRate.toLowerCase();
+      list = list.filter((p) => matchText(p, hz) || matchText(p, hz.replace('hz', ' hz')));
     }
 
     // 11. Contextual: Kích thước màn hình
     if (selectedScreenSize !== 'ALL') {
-      list = list.filter((p) => matchText(p, selectedScreenSize));
+      list = list.filter((p) => {
+        if (selectedScreenSize.includes('24')) return matchText(p, '24') || matchText(p, '23.8');
+        if (selectedScreenSize.includes('27')) return matchText(p, '27');
+        if (selectedScreenSize.includes('32')) return matchText(p, '32');
+        return matchText(p, selectedScreenSize);
+      });
     }
 
     // 12. Contextual: Độ phân giải
     if (selectedResolution !== 'ALL') {
-      list = list.filter((p) => matchText(p, selectedResolution));
+      list = list.filter((p) => {
+        const res = selectedResolution.toLowerCase();
+        if (res.includes('1080') || res.includes('fhd')) return matchText(p, '1080') || matchText(p, 'fhd') || matchText(p, 'full hd');
+        if (res.includes('2k') || res.includes('1440') || res.includes('qhd')) return matchText(p, '2k') || matchText(p, '1440') || matchText(p, 'qhd');
+        if (res.includes('4k') || res.includes('2160') || res.includes('uhd')) return matchText(p, '4k') || matchText(p, '2160') || matchText(p, 'uhd');
+        return matchText(p, selectedResolution);
+      });
     }
 
     // 13. Contextual: Socket
@@ -532,10 +732,86 @@ function ProductsCatalogContent() {
 
     // 15. Contextual: Công suất nguồn
     if (selectedWattage !== 'ALL') {
-      list = list.filter((p) => matchText(p, selectedWattage) || (p.wattage && String(p.wattage).includes(selectedWattage)));
+      list = list.filter((p) => matchText(p, selectedWattage) || (p.wattage && String(p.wattage).includes(selectedWattage.replace('W', ''))));
     }
 
-    // 16. Search Query
+    // 16. Contextual: Form Factor / Kiểu dáng / Hỗ trợ Main
+    if (selectedFormFactor !== 'ALL') {
+      list = list.filter((p) => {
+        const ff = selectedFormFactor.toLowerCase();
+        if (ff.includes('kính')) return matchText(p, 'kính') || matchText(p, 'glass');
+        if (ff.includes('mid')) return matchText(p, 'mid-tower') || matchText(p, 'mid tower');
+        if (ff.includes('mini')) return matchText(p, 'mini-tower') || matchText(p, 'mini tower') || matchText(p, 'micro-atx') || matchText(p, 'matx');
+        if (ff.includes('fan')) return matchText(p, 'fan') || matchText(p, 'argb');
+        if (ff.includes('đen')) return matchText(p, 'black') || matchText(p, 'đen');
+        if (ff.includes('trắng')) return matchText(p, 'white') || matchText(p, 'trắng');
+        if (ff.includes('micro-atx') || ff.includes('matx')) return matchText(p, 'micro-atx') || matchText(p, 'matx') || matchText(p, 'm-atx');
+        if (ff.includes('atx')) return matchText(p, 'atx');
+        if (ff.includes('itx')) return matchText(p, 'itx');
+        return matchText(p, selectedFormFactor);
+      });
+    }
+
+    // 17. Contextual: Loại tản nhiệt / Hiệu ứng
+    if (selectedCoolingType !== 'ALL') {
+      list = list.filter((p) => {
+        const ct = selectedCoolingType.toLowerCase();
+        if (ct.includes('240')) return matchText(p, '240');
+        if (ct.includes('360')) return matchText(p, '360');
+        if (ct.includes('khí')) return matchText(p, 'khí') || matchText(p, 'air') || matchText(p, 'ak400');
+        if (ct.includes('lcd')) return matchText(p, 'lcd') || matchText(p, 'màn hình') || matchText(p, 'display');
+        if (ct.includes('argb')) return matchText(p, 'argb') || matchText(p, 'rgb');
+        return matchText(p, selectedCoolingType);
+      });
+    }
+
+    // 18. Contextual: Kết nối
+    if (selectedConnectivity !== 'ALL') {
+      list = list.filter((p) => {
+        const conn = selectedConnectivity.toLowerCase();
+        if (conn.includes('không dây') || conn.includes('wireless')) {
+          return matchText(p, 'không dây') || matchText(p, 'wireless') || matchText(p, 'bluetooth') || matchText(p, 'lightspeed');
+        }
+        if (conn.includes('có dây') || conn.includes('type-c') || conn.includes('usb')) {
+          return matchText(p, 'có dây') || matchText(p, 'type-c') || matchText(p, 'usb') || (!matchText(p, 'không dây') && !matchText(p, 'wireless'));
+        }
+        return matchText(p, selectedConnectivity);
+      });
+    }
+
+    // 19. Contextual: Loại Switch / Tính năng
+    if (selectedSwitchType !== 'ALL') {
+      list = list.filter((p) => {
+        const sw = selectedSwitchType.toLowerCase();
+        if (sw.includes('red')) return matchText(p, 'red') || matchText(p, 'linear') || matchText(p, 'piano');
+        if (sw.includes('blue')) return matchText(p, 'blue') || matchText(p, 'clicky');
+        if (sw.includes('brown')) return matchText(p, 'brown') || matchText(p, 'tactile');
+        if (sw.includes('hotswap')) return matchText(p, 'hotswap');
+        if (sw.includes('rgb')) return matchText(p, 'rgb');
+        if (sw.includes('gasket')) return matchText(p, 'gasket');
+        return matchText(p, selectedSwitchType);
+      });
+    }
+
+    // 20. Contextual: Tấm nền
+    if (selectedPanelType !== 'ALL') {
+      list = list.filter((p) => matchText(p, selectedPanelType));
+    }
+
+    // 21. Contextual: Chuẩn hiệu suất nguồn & Cáp
+    if (selectedEfficiency !== 'ALL') {
+      list = list.filter((p) => {
+        const eff = selectedEfficiency.toLowerCase();
+        if (eff.includes('gold')) return matchText(p, 'gold');
+        if (eff.includes('bronze')) return matchText(p, 'bronze');
+        if (eff.includes('platinum')) return matchText(p, 'platinum');
+        if (eff.includes('pcie 5.0') || eff.includes('atx 3.0')) return matchText(p, 'pcie 5.0') || matchText(p, 'atx 3.0') || matchText(p, 'pcie5');
+        if (eff.includes('modular')) return matchText(p, 'modular');
+        return matchText(p, selectedEfficiency);
+      });
+    }
+
+    // 22. Search Query
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       list = list.filter((p) => 
@@ -563,7 +839,10 @@ function ProductsCatalogContent() {
     appliedMinPrice, appliedMaxPrice, selectedBrand, selectedUsage, 
     selectedRam, selectedSsd, selectedCpuBrand, selectedGpuBrand, 
     selectedRefreshRate, selectedScreenSize, selectedResolution, 
-    selectedSocket, selectedVram, selectedWattage, searchQuery, sortBy, validRecentlyViewed
+    selectedSocket, selectedVram, selectedWattage, selectedSubCategory,
+    selectedFormFactor, selectedCoolingType, selectedConnectivity,
+    selectedSwitchType, selectedPanelType, selectedEfficiency,
+    searchQuery, sortBy, validRecentlyViewed
   ]);
 
   // Category types
@@ -575,7 +854,17 @@ function ProductsCatalogContent() {
   const isRam = upperCat === 'RAM';
   const isStorage = upperCat === 'STORAGE';
   const isMonitor = upperCat === 'MONITOR';
-  const isCaseCooling = upperCat === 'CASE_COOLING' || upperCat === 'PSU' || upperCat === 'CASE' || upperCat === 'COOLING';
+  const isCase = upperCat === 'CASE';
+  const isCooling = upperCat === 'COOLING';
+  const isPsu = upperCat === 'PSU';
+  const isCaseCoolingGroup = upperCat === 'CASE_COOLING';
+  const isCaseCooling = isCaseCoolingGroup || isCase || isCooling || isPsu;
+  const isKeyboard = upperCat === 'KEYBOARD';
+  const isMouse = upperCat === 'MOUSE';
+  const isHeadset = upperCat === 'HEADSET';
+  const isChair = upperCat === 'CHAIR';
+  const isGearGroup = upperCat === 'GEAR';
+  const isCorePartsGroup = upperCat === 'CORE_PARTS';
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#090d16] text-slate-900 dark:text-slate-100 flex flex-col antialiased transition-colors duration-300">
@@ -770,8 +1059,841 @@ function ProductsCatalogContent() {
               )}
 
               {/* 3. LOGIC LỌC TƯƠNG ỨNG TỪNG DANH MỤC */}
+
+              {/* ══════════════════════════════════════════════════════════════
+                  NHÓM 1: CASE - TẢN - NGUỒN (CASE_COOLING, CASE, COOLING, PSU)
+                  ══════════════════════════════════════════════════════════════ */}
               
-              {/* ─── A. CHO LAPTOP / LAPTOP GAMING ─── */}
+              {/* 1A. Nhóm Tổng: CASE_COOLING */}
+              {isCaseCoolingGroup && (
+                <>
+                  <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                      Phân Loại Linh Kiện
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[
+                        { id: 'ALL', label: 'Tất Cả' },
+                        { id: 'CASE', label: 'Vỏ Case' },
+                        { id: 'COOLING', label: 'Tản Nhiệt' },
+                        { id: 'PSU', label: 'Nguồn PSU' },
+                      ].map((item) => {
+                        const isSelected = selectedSubCategory === item.id;
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => setSelectedSubCategory(item.id)}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all border cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
+                            }`}
+                          >
+                            {item.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Công Suất Nguồn */}
+                  <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                      Công Suất Nguồn
+                    </span>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {['550W', '650W', '750W', '850W', '1000W'].map((w) => {
+                        const isSelected = selectedWattage === w;
+                        return (
+                          <button
+                            key={w}
+                            type="button"
+                            onClick={() => setSelectedWattage(isSelected ? 'ALL' : w)}
+                            className={`py-1.5 rounded-lg text-xs font-bold transition-all border text-center cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
+                            }`}
+                          >
+                            {w}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Loại Tản Nhiệt */}
+                  <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                      Loại Tản Nhiệt
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {['AIO 240mm', 'AIO 360mm', 'Tản Khí CPU'].map((ct) => {
+                        const isSelected = selectedCoolingType === ct;
+                        return (
+                          <button
+                            key={ct}
+                            type="button"
+                            onClick={() => setSelectedCoolingType(isSelected ? 'ALL' : ct)}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all border cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
+                            }`}
+                          >
+                            {ct}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Kiểu Vỏ Case */}
+                  <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                      Kiểu Vỏ Case
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {['Bể Kính', 'Mid-Tower', 'Mini-Tower'].map((ff) => {
+                        const isSelected = selectedFormFactor === ff;
+                        return (
+                          <button
+                            key={ff}
+                            type="button"
+                            onClick={() => setSelectedFormFactor(isSelected ? 'ALL' : ff)}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all border cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
+                            }`}
+                          >
+                            {ff}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* 1B. Vỏ Case (CASE) */}
+              {isCase && (
+                <>
+                  <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                      Kiểu Case / Thiết Kế
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {['Bể Kính', 'Mid-Tower', 'Mini-Tower', 'Kèm Fan ARGB'].map((ff) => {
+                        const isSelected = selectedFormFactor === ff;
+                        return (
+                          <button
+                            key={ff}
+                            type="button"
+                            onClick={() => setSelectedFormFactor(isSelected ? 'ALL' : ff)}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all border cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
+                            }`}
+                          >
+                            {ff}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                      Màu Sắc
+                    </span>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {['Màu Đen', 'Màu Trắng'].map((color) => {
+                        const isSelected = selectedFormFactor === color;
+                        return (
+                          <button
+                            key={color}
+                            type="button"
+                            onClick={() => setSelectedFormFactor(isSelected ? 'ALL' : color)}
+                            className={`py-1.5 rounded-lg text-xs font-bold transition-all border text-center cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
+                            }`}
+                          >
+                            {color}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                      Hỗ Trợ Mainboard
+                    </span>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {['ATX', 'Micro-ATX', 'Mini-ITX'].map((mb) => {
+                        const isSelected = selectedFormFactor === mb;
+                        return (
+                          <button
+                            key={mb}
+                            type="button"
+                            onClick={() => setSelectedFormFactor(isSelected ? 'ALL' : mb)}
+                            className={`py-1.5 rounded-lg text-xs font-bold transition-all border text-center cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
+                            }`}
+                          >
+                            {mb}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* 1C. Tản Nhiệt (COOLING) */}
+              {isCooling && (
+                <>
+                  <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                      Loại Tản Nhiệt
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {['AIO 240mm', 'AIO 360mm', 'Tản Khí CPU'].map((ct) => {
+                        const isSelected = selectedCoolingType === ct;
+                        return (
+                          <button
+                            key={ct}
+                            type="button"
+                            onClick={() => setSelectedCoolingType(isSelected ? 'ALL' : ct)}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all border cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
+                            }`}
+                          >
+                            {ct}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                      Hiệu Ứng / Tính Năng
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {['Màn Hình LCD', 'LED ARGB', 'Không LED'].map((ef) => {
+                        const isSelected = selectedCoolingType === ef;
+                        return (
+                          <button
+                            key={ef}
+                            type="button"
+                            onClick={() => setSelectedCoolingType(isSelected ? 'ALL' : ef)}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all border cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
+                            }`}
+                          >
+                            {ef}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                      Socket Tương Thích
+                    </span>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {['LGA1700', 'AM5', 'AM4'].map((sock) => {
+                        const isSelected = selectedSocket === sock;
+                        return (
+                          <button
+                            key={sock}
+                            type="button"
+                            onClick={() => setSelectedSocket(isSelected ? 'ALL' : sock)}
+                            className={`py-1.5 rounded-lg text-xs font-bold transition-all border text-center cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
+                            }`}
+                          >
+                            {sock}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* 1D. Nguồn Máy Tính (PSU) */}
+              {isPsu && (
+                <>
+                  <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                      Công Suất Nguồn
+                    </span>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {['550W', '650W', '750W', '850W', '1000W'].map((w) => {
+                        const isSelected = selectedWattage === w;
+                        return (
+                          <button
+                            key={w}
+                            type="button"
+                            onClick={() => setSelectedWattage(isSelected ? 'ALL' : w)}
+                            className={`py-1.5 rounded-lg text-xs font-bold transition-all border text-center cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
+                            }`}
+                          >
+                            {w}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                      Chuẩn Hiệu Suất
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {['80 Plus Bronze', '80 Plus Gold', '80 Plus Platinum'].map((eff) => {
+                        const isSelected = selectedEfficiency === eff;
+                        return (
+                          <button
+                            key={eff}
+                            type="button"
+                            onClick={() => setSelectedEfficiency(isSelected ? 'ALL' : eff)}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all border cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
+                            }`}
+                          >
+                            {eff}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                      Tính Năng Nguồn
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {['PCIe 5.0 (ATX 3.0)', 'Full Modular'].map((feat) => {
+                        const isSelected = selectedEfficiency === feat;
+                        return (
+                          <button
+                            key={feat}
+                            type="button"
+                            onClick={() => setSelectedEfficiency(isSelected ? 'ALL' : feat)}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all border cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
+                            }`}
+                          >
+                            {feat}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* ══════════════════════════════════════════════════════════════
+                  NHÓM 2: GAMING GEAR (GEAR, KEYBOARD, MOUSE, HEADSET, CHAIR)
+                  ══════════════════════════════════════════════════════════════ */}
+              
+              {/* 2A. Nhóm Tổng: GEAR */}
+              {isGearGroup && (
+                <>
+                  <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                      Phân Loại Gear
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[
+                        { id: 'ALL', label: 'Tất Cả Gear' },
+                        { id: 'KEYBOARD', label: 'Bàn Phím Cơ' },
+                        { id: 'MOUSE', label: 'Chuột Gaming' },
+                        { id: 'HEADSET', label: 'Tai Nghe' },
+                        { id: 'CHAIR', label: 'Bàn & Ghế' },
+                      ].map((item) => {
+                        const isSelected = selectedSubCategory === item.id;
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => setSelectedSubCategory(item.id)}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all border cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
+                            }`}
+                          >
+                            {item.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                      Kiểu Kết Nối
+                    </span>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {['Không Dây', 'Có Dây'].map((conn) => {
+                        const isSelected = selectedConnectivity === conn;
+                        return (
+                          <button
+                            key={conn}
+                            type="button"
+                            onClick={() => setSelectedConnectivity(isSelected ? 'ALL' : conn)}
+                            className={`py-1.5 rounded-lg text-xs font-bold transition-all border text-center cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
+                            }`}
+                          >
+                            {conn}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* 2B. Bàn Phím Cơ (KEYBOARD) */}
+              {isKeyboard && (
+                <>
+                  <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                      Kiểu Kết Nối
+                    </span>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {['Không Dây (Wireless)', 'Có Dây Type-C'].map((conn) => {
+                        const isSelected = selectedConnectivity === conn;
+                        return (
+                          <button
+                            key={conn}
+                            type="button"
+                            onClick={() => setSelectedConnectivity(isSelected ? 'ALL' : conn)}
+                            className={`py-1.5 rounded-lg text-xs font-bold transition-all border text-center cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
+                            }`}
+                          >
+                            {conn}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                      Loại Switch
+                    </span>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {['Red Switch', 'Blue Switch', 'Brown Switch'].map((sw) => {
+                        const isSelected = selectedSwitchType === sw;
+                        return (
+                          <button
+                            key={sw}
+                            type="button"
+                            onClick={() => setSelectedSwitchType(isSelected ? 'ALL' : sw)}
+                            className={`py-1.5 rounded-lg text-xs font-bold transition-all border text-center cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
+                            }`}
+                          >
+                            {sw}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                      Tính Năng Bàn Phím
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {['Hotswap', 'LED RGB', 'Gasket Mount'].map((feat) => {
+                        const isSelected = selectedSwitchType === feat;
+                        return (
+                          <button
+                            key={feat}
+                            type="button"
+                            onClick={() => setSelectedSwitchType(isSelected ? 'ALL' : feat)}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all border cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
+                            }`}
+                          >
+                            {feat}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* 2C. Chuột Gaming (MOUSE) */}
+              {isMouse && (
+                <>
+                  <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                      Kiểu Kết Nối
+                    </span>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {['Không Dây (Wireless)', 'Có Dây'].map((conn) => {
+                        const isSelected = selectedConnectivity === conn;
+                        return (
+                          <button
+                            key={conn}
+                            type="button"
+                            onClick={() => setSelectedConnectivity(isSelected ? 'ALL' : conn)}
+                            className={`py-1.5 rounded-lg text-xs font-bold transition-all border text-center cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
+                            }`}
+                          >
+                            {conn}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                      Trọng Lượng Chuột
+                    </span>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {['Siêu Nhẹ (<65g)', 'Tiêu Chuẩn'].map((w) => {
+                        const isSelected = selectedFormFactor === w;
+                        return (
+                          <button
+                            key={w}
+                            type="button"
+                            onClick={() => setSelectedFormFactor(isSelected ? 'ALL' : w)}
+                            className={`py-1.5 rounded-lg text-xs font-bold transition-all border text-center cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
+                            }`}
+                          >
+                            {w}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                      Độ Phân Giải (DPI)
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {['8.000 DPI', '16.000+ DPI', '30.000 DPI'].map((dpi) => {
+                        const isSelected = selectedFormFactor === dpi;
+                        return (
+                          <button
+                            key={dpi}
+                            type="button"
+                            onClick={() => setSelectedFormFactor(isSelected ? 'ALL' : dpi)}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all border cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
+                            }`}
+                          >
+                            {dpi}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* 2D. Tai Nghe Gaming (HEADSET) */}
+              {isHeadset && (
+                <>
+                  <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                      Kiểu Kết Nối
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {['Không Dây (Wireless)', 'Jack 3.5mm', 'Cổng USB'].map((conn) => {
+                        const isSelected = selectedConnectivity === conn;
+                        return (
+                          <button
+                            key={conn}
+                            type="button"
+                            onClick={() => setSelectedConnectivity(isSelected ? 'ALL' : conn)}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all border cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
+                            }`}
+                          >
+                            {conn}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                      Tính Năng Âm Thanh
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {['Âm Thanh Vòm 7.1', 'Spatial Audio', 'Micro Khử Ồn'].map((feat) => {
+                        const isSelected = selectedSwitchType === feat;
+                        return (
+                          <button
+                            key={feat}
+                            type="button"
+                            onClick={() => setSelectedSwitchType(isSelected ? 'ALL' : feat)}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all border cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
+                            }`}
+                          >
+                            {feat}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* 2E. Bàn & Ghế Gaming (CHAIR) */}
+              {isChair && (
+                <>
+                  <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                      Phân Loại Bàn Ghế
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {['Ghế Gaming', 'Ghế Công Thái Học', 'Bàn Gaming'].map((cat) => {
+                        const isSelected = selectedFormFactor === cat;
+                        return (
+                          <button
+                            key={cat}
+                            type="button"
+                            onClick={() => setSelectedFormFactor(isSelected ? 'ALL' : cat)}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all border cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
+                            }`}
+                          >
+                            {cat}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                      Chất Liệu
+                    </span>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {['Vải Nỉ Thoáng Khí', 'Da PU'].map((mat) => {
+                        const isSelected = selectedCoolingType === mat;
+                        return (
+                          <button
+                            key={mat}
+                            type="button"
+                            onClick={() => setSelectedCoolingType(isSelected ? 'ALL' : mat)}
+                            className={`py-1.5 rounded-lg text-xs font-bold transition-all border text-center cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
+                            }`}
+                          >
+                            {mat}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* ══════════════════════════════════════════════════════════════
+                  NHÓM 3: MÀN HÌNH GAMING (MONITOR)
+                  ══════════════════════════════════════════════════════════════ */}
+              {isMonitor && (
+                <>
+                  {/* Nhu Cầu Sử Dụng */}
+                  <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                      Nhu Cầu Sử Dụng
+                    </span>
+                    <div className="space-y-1">
+                      {['Gaming', 'Đồ Họa - Kỹ Thuật', 'Văn Phòng'].map((u) => {
+                        const isSelected = selectedUsage.toLowerCase().includes(u.toLowerCase().slice(0, 4));
+                        return (
+                          <button
+                            key={u}
+                            type="button"
+                            onClick={() => setSelectedUsage(isSelected ? 'ALL' : u)}
+                            className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-medium text-left transition-colors cursor-pointer ${
+                              isSelected
+                                ? 'bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] dark:text-sky-300 font-bold'
+                                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                            }`}
+                          >
+                            <span>{u}</span>
+                            {isSelected && <Check className="w-3.5 h-3.5 text-[#0284c7]" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Kích Thước Màn Hình */}
+                  <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                      Kích Thước Màn Hình
+                    </span>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {['24 inch', '27 inch', '32 inch'].map((sz) => {
+                        const isSelected = selectedScreenSize === sz;
+                        return (
+                          <button
+                            key={sz}
+                            type="button"
+                            onClick={() => setSelectedScreenSize(isSelected ? 'ALL' : sz)}
+                            className={`py-1.5 rounded-lg text-xs font-bold transition-all border text-center cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
+                            }`}
+                          >
+                            {sz}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Tần Số Quét */}
+                  <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                      Tần Số Quét
+                    </span>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {['75Hz', '100Hz', '144Hz', '165Hz', '240Hz'].map((hz) => {
+                        const isSelected = selectedRefreshRate === hz;
+                        return (
+                          <button
+                            key={hz}
+                            type="button"
+                            onClick={() => setSelectedRefreshRate(isSelected ? 'ALL' : hz)}
+                            className={`py-1.5 rounded-lg text-xs font-bold transition-all border text-center cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
+                            }`}
+                          >
+                            {hz}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Độ Phân Giải */}
+                  <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                      Độ Phân Giải
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {['Full HD (1080p)', '2K QHD (1440p)', '4K UHD (2160p)'].map((res) => {
+                        const isSelected = selectedResolution === res;
+                        return (
+                          <button
+                            key={res}
+                            type="button"
+                            onClick={() => setSelectedResolution(isSelected ? 'ALL' : res)}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all border cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
+                            }`}
+                          >
+                            {res}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Tấm Nền */}
+                  <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                      Công Nghệ Tấm Nền
+                    </span>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {['IPS', 'Fast IPS', 'VA', 'OLED'].map((pt) => {
+                        const isSelected = selectedPanelType === pt;
+                        return (
+                          <button
+                            key={pt}
+                            type="button"
+                            onClick={() => setSelectedPanelType(isSelected ? 'ALL' : pt)}
+                            className={`py-1.5 rounded-lg text-xs font-bold transition-all border text-center cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
+                            }`}
+                          >
+                            {pt}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* ══════════════════════════════════════════════════════════════
+                  NHÓM 4: LAPTOP & LAPTOP GAMING (LAPTOP, LAPTOP_GAMING)
+                  (Khớp 100% hình ảnh thực tế media_1789806427143.png)
+                  ══════════════════════════════════════════════════════════════ */}
               {isLaptop && (
                 <>
                   {/* Nhu Cầu Sử Dụng */}
@@ -853,7 +1975,7 @@ function ProductsCatalogContent() {
                     </div>
                   </div>
 
-                  {/* Dung Lượng Ổ Cứng SSD */}
+                  {/* Ổ Cứng SSD */}
                   <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
                     <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
                       Ổ Cứng SSD
@@ -933,8 +2055,49 @@ function ProductsCatalogContent() {
                 </>
               )}
 
-              {/* ─── B. CHO BỘ VI XỬ LÝ (CPU) ─── */}
-              {isCpu && (
+              {/* ══════════════════════════════════════════════════════════════
+                  NHÓM 5: MAIN, CPU, VGA, RAM, SSD (CORE_PARTS, CPU, VGA, MAIN, RAM, STORAGE)
+                  ══════════════════════════════════════════════════════════════ */}
+              
+              {/* 5A. Nhóm Tổng: CORE_PARTS */}
+              {isCorePartsGroup && (
+                <>
+                  <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                      Phân Loại Linh Kiện
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[
+                        { id: 'ALL', label: 'Tất Cả Linh Kiện' },
+                        { id: 'CPU', label: 'Vi Xử Lý CPU' },
+                        { id: 'VGA', label: 'Card Đồ Họa VGA' },
+                        { id: 'MAINBOARD', label: 'Bo Mạch Main' },
+                        { id: 'RAM', label: 'Bộ Nhớ RAM' },
+                        { id: 'STORAGE', label: 'Ổ Cứng SSD' },
+                      ].map((item) => {
+                        const isSelected = selectedSubCategory === item.id;
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => setSelectedSubCategory(item.id)}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all border cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
+                            }`}
+                          >
+                            {item.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* 5B. Bộ Vi Xử Lý (CPU) - hiển thị khi xem CPU hoặc chọn CPU trong nhóm Linh Kiện */}
+              {(isCpu || (isCorePartsGroup && selectedSubCategory === 'CPU')) && (
                 <>
                   <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
                     <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
@@ -950,8 +2113,8 @@ function ProductsCatalogContent() {
                             onClick={() => setSelectedCpuBrand(isSelected ? 'ALL' : c)}
                             className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all border cursor-pointer ${
                               isSelected
-                                ? 'bg-[#0284c7] text-white border-[#0284c7]'
-                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
                             }`}
                           >
                             {c}
@@ -965,8 +2128,8 @@ function ProductsCatalogContent() {
                     <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
                       Chuẩn Socket
                     </span>
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {['LGA1700', 'AM5', 'AM4'].map((sock) => {
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {['LGA1700', 'LGA1851', 'AM5', 'AM4'].map((sock) => {
                         const isSelected = selectedSocket === sock;
                         return (
                           <button
@@ -975,8 +2138,8 @@ function ProductsCatalogContent() {
                             onClick={() => setSelectedSocket(isSelected ? 'ALL' : sock)}
                             className={`py-1.5 rounded-lg text-xs font-bold transition-all border text-center cursor-pointer ${
                               isSelected
-                                ? 'bg-[#0284c7] text-white border-[#0284c7]'
-                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
                             }`}
                           >
                             {sock}
@@ -988,8 +2151,8 @@ function ProductsCatalogContent() {
                 </>
               )}
 
-              {/* ─── C. CHO CARD MÀN HÌNH (VGA) ─── */}
-              {isVga && (
+              {/* 5C. Card Đồ Họa (VGA) - hiển thị khi xem VGA hoặc chọn VGA trong nhóm Linh Kiện */}
+              {(isVga || (isCorePartsGroup && selectedSubCategory === 'VGA')) && (
                 <>
                   <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
                     <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
@@ -1005,8 +2168,8 @@ function ProductsCatalogContent() {
                             onClick={() => setSelectedGpuBrand(isSelected ? 'ALL' : g)}
                             className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all border cursor-pointer ${
                               isSelected
-                                ? 'bg-[#0284c7] text-white border-[#0284c7]'
-                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
                             }`}
                           >
                             {g}
@@ -1020,8 +2183,8 @@ function ProductsCatalogContent() {
                     <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
                       Dung Lượng VRAM
                     </span>
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {['8GB', '12GB', '16GB'].map((v) => {
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {['8GB', '12GB', '16GB', '24GB'].map((v) => {
                         const isSelected = selectedVram === v;
                         return (
                           <button
@@ -1030,8 +2193,8 @@ function ProductsCatalogContent() {
                             onClick={() => setSelectedVram(isSelected ? 'ALL' : v)}
                             className={`py-1.5 rounded-lg text-xs font-bold transition-all border text-center cursor-pointer ${
                               isSelected
-                                ? 'bg-[#0284c7] text-white border-[#0284c7]'
-                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
                             }`}
                           >
                             {v}
@@ -1040,12 +2203,62 @@ function ProductsCatalogContent() {
                       })}
                     </div>
                   </div>
+
+                  <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                      Số Quạt Tản Nhiệt
+                    </span>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {['2 Quạt (Dual Fan)', '3 Quạt (Triple Fan)'].map((f) => {
+                        const isSelected = selectedFormFactor === f;
+                        return (
+                          <button
+                            key={f}
+                            type="button"
+                            onClick={() => setSelectedFormFactor(isSelected ? 'ALL' : f)}
+                            className={`py-1.5 rounded-lg text-xs font-bold transition-all border text-center cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
+                            }`}
+                          >
+                            {f}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </>
               )}
 
-              {/* ─── D. CHO BO MẠCH CHỦ (MAINBOARD) ─── */}
-              {isMain && (
+              {/* 5D. Bo Mạch Chủ (MAINBOARD) - hiển thị khi xem MAINBOARD hoặc chọn trong Linh Kiện */}
+              {(isMain || (isCorePartsGroup && selectedSubCategory === 'MAINBOARD')) && (
                 <>
+                  <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                      Dòng Chipset
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {['B760', 'Z790', 'B650', 'X670', 'H610'].map((cs) => {
+                        const isSelected = selectedCpuBrand === cs;
+                        return (
+                          <button
+                            key={cs}
+                            type="button"
+                            onClick={() => setSelectedCpuBrand(isSelected ? 'ALL' : cs)}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all border cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
+                            }`}
+                          >
+                            {cs}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
                   <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
                     <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
                       Chuẩn Socket
@@ -1060,8 +2273,8 @@ function ProductsCatalogContent() {
                             onClick={() => setSelectedSocket(isSelected ? 'ALL' : s)}
                             className={`py-1.5 rounded-lg text-xs font-bold transition-all border text-center cursor-pointer ${
                               isSelected
-                                ? 'bg-[#0284c7] text-white border-[#0284c7]'
-                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
                             }`}
                           >
                             {s}
@@ -1085,8 +2298,8 @@ function ProductsCatalogContent() {
                             onClick={() => setSelectedRam(isSelected ? 'ALL' : r)}
                             className={`py-1.5 rounded-lg text-xs font-bold transition-all border text-center cursor-pointer ${
                               isSelected
-                                ? 'bg-[#0284c7] text-white border-[#0284c7]'
-                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
                             }`}
                           >
                             {r}
@@ -1095,18 +2308,43 @@ function ProductsCatalogContent() {
                       })}
                     </div>
                   </div>
+
+                  <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                      Kích Thước Mainboard
+                    </span>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {['ATX', 'Micro-ATX', 'Mini-ITX'].map((ff) => {
+                        const isSelected = selectedFormFactor === ff;
+                        return (
+                          <button
+                            key={ff}
+                            type="button"
+                            onClick={() => setSelectedFormFactor(isSelected ? 'ALL' : ff)}
+                            className={`py-1.5 rounded-lg text-xs font-bold transition-all border text-center cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
+                            }`}
+                          >
+                            {ff}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </>
               )}
 
-              {/* ─── E. CHO BỘ NHỚ TRONG (RAM) ─── */}
-              {isRam && (
+              {/* 5E. Bộ Nhớ Trong (RAM) - hiển thị khi xem RAM hoặc chọn trong Linh Kiện */}
+              {(isRam || (isCorePartsGroup && selectedSubCategory === 'RAM')) && (
                 <>
                   <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
                     <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
                       Dung Lượng RAM
                     </span>
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {['8GB', '16GB', '32GB'].map((r) => {
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {['8GB', '16GB', '32GB', '64GB'].map((r) => {
                         const isSelected = selectedRam === r;
                         return (
                           <button
@@ -1115,8 +2353,8 @@ function ProductsCatalogContent() {
                             onClick={() => setSelectedRam(isSelected ? 'ALL' : r)}
                             className={`py-1.5 rounded-lg text-xs font-bold transition-all border text-center cursor-pointer ${
                               isSelected
-                                ? 'bg-[#0284c7] text-white border-[#0284c7]'
-                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
                             }`}
                           >
                             {r}
@@ -1125,18 +2363,93 @@ function ProductsCatalogContent() {
                       })}
                     </div>
                   </div>
+
+                  <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                      Thế Hệ RAM
+                    </span>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {['DDR4', 'DDR5'].map((gen) => {
+                        const isSelected = selectedFormFactor === gen;
+                        return (
+                          <button
+                            key={gen}
+                            type="button"
+                            onClick={() => setSelectedFormFactor(isSelected ? 'ALL' : gen)}
+                            className={`py-1.5 rounded-lg text-xs font-bold transition-all border text-center cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
+                            }`}
+                          >
+                            {gen}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                      Tốc Độ Bus
+                    </span>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {['3200MHz', '5600MHz', '6000MHz'].map((bus) => {
+                        const isSelected = selectedFormFactor === bus;
+                        return (
+                          <button
+                            key={bus}
+                            type="button"
+                            onClick={() => setSelectedFormFactor(isSelected ? 'ALL' : bus)}
+                            className={`py-1.5 rounded-lg text-xs font-bold transition-all border text-center cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
+                            }`}
+                          >
+                            {bus}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                      Hiệu Ứng LED
+                    </span>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {['RGB', 'Không LED'].map((led) => {
+                        const isSelected = selectedSwitchType === led;
+                        return (
+                          <button
+                            key={led}
+                            type="button"
+                            onClick={() => setSelectedSwitchType(isSelected ? 'ALL' : led)}
+                            className={`py-1.5 rounded-lg text-xs font-bold transition-all border text-center cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
+                            }`}
+                          >
+                            {led}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </>
               )}
 
-              {/* ─── F. CHO Ổ CỨNG SSD ─── */}
-              {isStorage && (
+              {/* 5F. Ổ Cứng Lưu Trữ (STORAGE) - hiển thị khi xem STORAGE hoặc chọn trong Linh Kiện */}
+              {(isStorage || (isCorePartsGroup && selectedSubCategory === 'STORAGE')) && (
                 <>
                   <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
                     <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
                       Dung Lượng Ổ Cứng
                     </span>
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {['256GB', '512GB', '1TB'].map((s) => {
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                      {['256GB', '512GB', '1TB', '2TB'].map((s) => {
                         const isSelected = selectedSsd === s;
                         return (
                           <button
@@ -1145,8 +2458,8 @@ function ProductsCatalogContent() {
                             onClick={() => setSelectedSsd(isSelected ? 'ALL' : s)}
                             className={`py-1.5 rounded-lg text-xs font-bold transition-all border text-center cursor-pointer ${
                               isSelected
-                                ? 'bg-[#0284c7] text-white border-[#0284c7]'
-                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
                             }`}
                           >
                             {s}
@@ -1155,56 +2468,26 @@ function ProductsCatalogContent() {
                       })}
                     </div>
                   </div>
-                </>
-              )}
-
-              {/* ─── G. CHO MÀN HÌNH MÁY TÍNH ─── */}
-              {isMonitor && (
-                <>
-                  <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
-                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
-                      Tần Số Quét
-                    </span>
-                    <div className="grid grid-cols-4 gap-1.5">
-                      {['100Hz', '144Hz', '165Hz', '240Hz'].map((hz) => {
-                        const isSelected = selectedRefreshRate === hz;
-                        return (
-                          <button
-                            key={hz}
-                            type="button"
-                            onClick={() => setSelectedRefreshRate(isSelected ? 'ALL' : hz)}
-                            className={`py-1.5 rounded-lg text-xs font-bold transition-all border text-center cursor-pointer ${
-                              isSelected
-                                ? 'bg-[#0284c7] text-white border-[#0284c7]'
-                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
-                            }`}
-                          >
-                            {hz}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
 
                   <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
                     <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
-                      Kích Thước Màn Hình
+                      Chuẩn Giao Tiếp
                     </span>
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {['24 inch', '27 inch', '32 inch'].map((sz) => {
-                        const isSelected = selectedScreenSize === sz;
+                    <div className="flex flex-wrap gap-1.5">
+                      {['PCIe Gen 4', 'PCIe Gen 3', 'SATA 3'].map((std) => {
+                        const isSelected = selectedFormFactor === std;
                         return (
                           <button
-                            key={sz}
+                            key={std}
                             type="button"
-                            onClick={() => setSelectedScreenSize(isSelected ? 'ALL' : sz)}
-                            className={`py-1.5 rounded-lg text-xs font-bold transition-all border text-center cursor-pointer ${
+                            onClick={() => setSelectedFormFactor(isSelected ? 'ALL' : std)}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all border cursor-pointer ${
                               isSelected
-                                ? 'bg-[#0284c7] text-white border-[#0284c7]'
-                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
                             }`}
                           >
-                            {sz}
+                            {std}
                           </button>
                         );
                       })}
@@ -1213,39 +2496,36 @@ function ProductsCatalogContent() {
                 </>
               )}
 
-              {/* ─── H. CHO VỎ CASE & NGUỒN & TẢN NHIỆT ─── */}
-              {isCaseCooling && (
-                <>
-                  <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
-                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
-                      Công Suất Nguồn
-                    </span>
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {['650W', '750W', '850W'].map((w) => {
-                        const isSelected = selectedWattage === w;
-                        return (
-                          <button
-                            key={w}
-                            type="button"
-                            onClick={() => setSelectedWattage(isSelected ? 'ALL' : w)}
-                            className={`py-1.5 rounded-lg text-xs font-bold transition-all border text-center cursor-pointer ${
-                              isSelected
-                                ? 'bg-[#0284c7] text-white border-[#0284c7]'
-                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
-                            }`}
-                          >
-                            {w}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* ─── I. NẾU ĐANG Ở 'TẤT CẢ SẢN PHẨM' (ALL) ─── */}
+              {/* ══════════════════════════════════════════════════════════════
+                  KHI ĐANG Ở 'TẤT CẢ SẢN PHẨM' (ALL)
+                  ══════════════════════════════════════════════════════════════ */}
               {upperCat === 'ALL' && (
                 <>
+                  <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                      Nhóm Danh Mục Chính
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[
+                        { id: 'LAPTOP', label: 'Laptop' },
+                        { id: 'MONITOR', label: 'Màn Hình' },
+                        { id: 'CORE_PARTS', label: 'Linh Kiện PC' },
+                        { id: 'CASE_COOLING', label: 'Case / Tản / Nguồn' },
+                        { id: 'GEAR', label: 'Gaming Gear' },
+                      ].map((cat) => {
+                        return (
+                          <Link
+                            key={cat.id}
+                            href={`/products?category=${cat.id}`}
+                            className="px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-[#0284c7] hover:text-[#0284c7] transition-all cursor-pointer"
+                          >
+                            {cat.label}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+
                   <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
                     <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
                       Dung Lượng RAM
@@ -1260,8 +2540,8 @@ function ProductsCatalogContent() {
                             onClick={() => setSelectedRam(isSelected ? 'ALL' : ram)}
                             className={`py-1.5 rounded-lg text-xs font-bold transition-all border text-center cursor-pointer ${
                               isSelected
-                                ? 'bg-[#0284c7] text-white border-[#0284c7]'
-                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
                             }`}
                           >
                             {ram}
@@ -1285,8 +2565,8 @@ function ProductsCatalogContent() {
                             onClick={() => setSelectedSsd(isSelected ? 'ALL' : ssd)}
                             className={`py-1.5 rounded-lg text-xs font-bold transition-all border text-center cursor-pointer ${
                               isSelected
-                                ? 'bg-[#0284c7] text-white border-[#0284c7]'
-                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                                ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-2xs'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-300'
                             }`}
                           >
                             {ssd}
@@ -1401,6 +2681,55 @@ function ProductsCatalogContent() {
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] text-xs font-bold border border-sky-200 dark:border-sky-800">
                     <span>Công suất: {selectedWattage}</span>
                     <button onClick={() => setSelectedWattage('ALL')} className="hover:text-rose-500">✕</button>
+                  </span>
+                )}
+
+                {selectedSubCategory !== 'ALL' && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] text-xs font-bold border border-sky-200 dark:border-sky-800">
+                    <span>Phân loại: {selectedSubCategory}</span>
+                    <button onClick={() => setSelectedSubCategory('ALL')} className="hover:text-rose-500">✕</button>
+                  </span>
+                )}
+
+                {selectedFormFactor !== 'ALL' && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] text-xs font-bold border border-sky-200 dark:border-sky-800">
+                    <span>Thiết kế / Form: {selectedFormFactor}</span>
+                    <button onClick={() => setSelectedFormFactor('ALL')} className="hover:text-rose-500">✕</button>
+                  </span>
+                )}
+
+                {selectedCoolingType !== 'ALL' && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] text-xs font-bold border border-sky-200 dark:border-sky-800">
+                    <span>Tản / Chất liệu: {selectedCoolingType}</span>
+                    <button onClick={() => setSelectedCoolingType('ALL')} className="hover:text-rose-500">✕</button>
+                  </span>
+                )}
+
+                {selectedConnectivity !== 'ALL' && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] text-xs font-bold border border-sky-200 dark:border-sky-800">
+                    <span>Kết nối: {selectedConnectivity}</span>
+                    <button onClick={() => setSelectedConnectivity('ALL')} className="hover:text-rose-500">✕</button>
+                  </span>
+                )}
+
+                {selectedSwitchType !== 'ALL' && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] text-xs font-bold border border-sky-200 dark:border-sky-800">
+                    <span>Switch / Tính năng: {selectedSwitchType}</span>
+                    <button onClick={() => setSelectedSwitchType('ALL')} className="hover:text-rose-500">✕</button>
+                  </span>
+                )}
+
+                {selectedPanelType !== 'ALL' && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] text-xs font-bold border border-sky-200 dark:border-sky-800">
+                    <span>Tấm nền: {selectedPanelType}</span>
+                    <button onClick={() => setSelectedPanelType('ALL')} className="hover:text-rose-500">✕</button>
+                  </span>
+                )}
+
+                {selectedEfficiency !== 'ALL' && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] text-xs font-bold border border-sky-200 dark:border-sky-800">
+                    <span>Hiệu suất / Cáp: {selectedEfficiency}</span>
+                    <button onClick={() => setSelectedEfficiency('ALL')} className="hover:text-rose-500">✕</button>
                   </span>
                 )}
 

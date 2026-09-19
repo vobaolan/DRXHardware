@@ -77,6 +77,7 @@ export async function POST(request: Request) {
     }
 
     const couponData = {
+      id: cleanCode,
       code: cleanCode,
       discountType: discountType.toUpperCase(),
       discountValue: Number(discountValue),

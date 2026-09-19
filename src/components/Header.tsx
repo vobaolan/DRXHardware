@@ -58,12 +58,13 @@ export const Header: React.FC = () => {
 
   const userRole = String(currentUser?.role || '').toUpperCase();
   const userEmail = String(currentUser?.email || '').toLowerCase();
+  const isExplicitUser = userRole === 'USER';
 
   // Role 1: ADMIN (Access to both /admin and /staff)
-  const isAdmin = userRole === 'ADMIN' || userEmail === 'admin@drx.vn' || userEmail === 'admin@drxhardware.vn' || userEmail === 'admin@odsstore.vn' || (userEmail.includes('admin') && !userEmail.includes('staff'));
+  const isAdmin = !isExplicitUser && (userRole === 'ADMIN' || userEmail === 'admin@drx.vn' || userEmail === 'admin@drxhardware.vn' || userEmail === 'admin@odsstore.vn');
 
   // Role 2: STAFF (Access ONLY to /staff, NOT /admin)
-  const isStaff = !isAdmin && (userRole === 'STAFF' || userRole === 'WAREHOUSE' || userRole === 'MANAGER' || userEmail === 'staff@drx.vn' || userEmail.includes('staff'));
+  const isStaff = !isExplicitUser && !isAdmin && (userRole === 'STAFF' || userRole === 'WAREHOUSE' || userRole === 'MANAGER' || userEmail === 'staff@drx.vn');
 
   // Staff Portal Access (allowed for Admin or Staff)
   const canAccessStaffPortal = isAdmin || isStaff;

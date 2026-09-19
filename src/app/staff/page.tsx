@@ -326,27 +326,22 @@ export default function StaffWarehousePortalPage() {
     const initStaff = async () => {
       try {
         const { getStoredSessionUser, verifyCurrentSession } = await import('@/lib/auth-client');
-        let user = getStoredSessionUser();
-        if (!user) {
-          user = await verifyCurrentSession();
-        }
+        // Always verify live session with server to fetch fresh role from Supabase
+        const verifiedUser = await verifyCurrentSession();
+        const user = verifiedUser || getStoredSessionUser();
+
         if (user) {
           setCurrentUser(user);
           const email = String(user.email || '').toLowerCase();
           const role = String(user.role || '').toUpperCase();
 
           // Staff Portal Policy: Both ADMIN and STAFF are allowed to enter
-          // Regular USER and unauthenticated GUEST are strictly denied
-          if (
-            role === 'ADMIN' || 
-            role === 'STAFF' || 
-            role === 'WAREHOUSE' || 
-            role === 'MANAGER' || 
-            email === 'staff@drx.vn' || 
-            email === 'admin@drx.vn' ||
-            email.includes('staff') ||
-            email.includes('admin')
-          ) {
+          // Explicit USER role is strictly denied access
+          const isMasterAdmin = (email === 'admin@drx.vn' || email === 'admin@drxhardware.vn' || email === 'admin@odsstore.vn') && role !== 'USER';
+          const isMasterStaff = email === 'staff@drx.vn' && role !== 'USER';
+          const hasStaffRole = (role === 'ADMIN' || role === 'STAFF' || role === 'WAREHOUSE' || role === 'MANAGER') && role !== 'USER';
+
+          if (hasStaffRole || isMasterAdmin || isMasterStaff) {
             setIsAuthorizedStaff(true);
             setIsAuthChecking(false);
             fetchAllStaffData(false);
@@ -366,6 +361,11 @@ export default function StaffWarehousePortalPage() {
 
     initStaff();
 
+    const handleUserUpdate = () => {
+      initStaff();
+    };
+    window.addEventListener('ods_user_update', handleUserUpdate);
+
     // Supabase Realtime Channels
     const channel = supabase
       .channel('staff_global_realtime')
@@ -383,6 +383,7 @@ export default function StaffWarehousePortalPage() {
       .subscribe();
 
     return () => {
+      window.removeEventListener('ods_user_update', handleUserUpdate);
       supabase.removeChannel(channel);
     };
   }, [fetchAllStaffData]);
@@ -1181,155 +1182,158 @@ export default function StaffWarehousePortalPage() {
                   </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 items-start">
                   {filteredAssemblyOrders.map((ord) => {
                     if (!ord) return null;
                     const pDetails = typeof ord.paymentDetails === 'string'
                       ? (() => { try { return JSON.parse(ord.paymentDetails); } catch { return {}; } })()
                       : (ord.paymentDetails && typeof ord.paymentDetails === 'object' ? ord.paymentDetails : {});
-                  const needInst = Boolean(pDetails.needInstallation);
-                  const isProxy = Boolean(pDetails.isProxyRecipient);
-                  const isPickup = ord.deliveryType === 'STORE_PICKUP';
-                  const checksDone = [
-                    pDetails.check_called,
-                    pDetails.check_assembled,
-                    pDetails.check_packed,
-                    pDetails.check_handed_over,
-                    pDetails.check_collected_cod || ord.paymentStatus === 'PAID'
-                  ].filter(Boolean).length;
+                    const needInst = Boolean(pDetails.needInstallation);
+                    const isProxy = Boolean(pDetails.isProxyRecipient);
+                    const isPickup = ord.deliveryType === 'STORE_PICKUP';
+                    const checksDone = [
+                      pDetails.check_called,
+                      pDetails.check_assembled,
+                      pDetails.check_packed,
+                      pDetails.check_handed_over,
+                      pDetails.check_collected_cod || ord.paymentStatus === 'PAID'
+                    ].filter(Boolean).length;
 
-                  const orderDisplayCode = formatOrderDisplayCode(ord);
-                  const dateStr = ord.createdAt ? new Date(ord.createdAt).toLocaleDateString('vi-VN') : '';
+                    const orderDisplayCode = formatOrderDisplayCode(ord);
+                    const dateStr = ord.createdAt ? new Date(ord.createdAt).toLocaleDateString('vi-VN') : '';
 
-                  return (
-                    <div 
-                      key={ord.id} 
-                      className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5 space-y-4 shadow-xs hover:border-[#0284c7] transition-all flex flex-col justify-between"
-                    >
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono font-bold text-[#0284c7] text-xs">
-                              {orderDisplayCode}
-                            </span>
-                            {ord.status === 'CANCELLED' && (
-                              <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
-                                Đã Hủy
+                    return (
+                      <div 
+                        key={ord.id} 
+                        className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5 shadow-xs hover:border-[#0284c7] transition-all flex flex-col justify-between"
+                      >
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono font-bold text-[#0284c7] text-xs">
+                                {orderDisplayCode}
                               </span>
-                            )}
-                          </div>
-                          {dateStr && (
-                            <span className="text-[10.5px] font-mono text-slate-400">
-                              {dateStr}
-                            </span>
-                          )}
-                        </div>
-
-                        {/* SPECIAL REQUESTS BADGES */}
-                        <div className="flex flex-wrap gap-1.5">
-                          {ord.status === 'CANCELLED' ? (
-                            <span className="px-2 py-0.5 rounded-md text-[9.5px] font-black uppercase bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 flex items-center gap-1">
-                              <Ban className="w-3 h-3" />
-                              <span>Ngừng Vận Chuyển</span>
-                            </span>
-                          ) : (
-                            <>
-                              {needInst && (
-                                <span className="px-2 py-0.5 rounded-md text-[9.5px] font-black uppercase bg-sky-100 dark:bg-sky-950 text-[#0284c7] border border-sky-200 dark:border-sky-800 flex items-center gap-1">
-                                  <Wrench className="w-3 h-3" />
-                                  <span>Cần Ráp Máy / Cài Đặt</span>
+                              {ord.status === 'CANCELLED' && (
+                                <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                                  Đã Hủy
                                 </span>
                               )}
-                              {isProxy && (
-                                <span className="px-2 py-0.5 rounded-md text-[9.5px] font-black uppercase bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 flex items-center gap-1">
-                                  <UserCheck className="w-3 h-3" />
-                                  <span>Người Nhận Thay</span>
-                                </span>
-                              )}
-                              <span className="px-2 py-0.5 rounded-md text-[9.5px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                                {isPickup ? '🏬 Nhận Showroom' : '🚚 Giao Tận Nơi'}
-                              </span>
-                            </>
-                          )}
-                          <span className="px-2 py-0.5 rounded-md text-[9.5px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
-                            💵 COD
-                          </span>
-                        </div>
-
-                        {/* Prominent Cancellation Reason Display */}
-                        {ord.status === 'CANCELLED' && (
-                          <div className="p-3 rounded-xl bg-rose-50/90 dark:bg-rose-950/50 border border-rose-200/80 dark:border-rose-900/60 text-xs text-rose-900 dark:text-rose-300 space-y-1">
-                            <div className="flex items-center gap-1.5 font-bold text-rose-700 dark:text-rose-400 text-[11px] uppercase tracking-wide">
-                              <Ban className="w-3.5 h-3.5 text-rose-500" />
-                              <span>Lý do hủy đơn hàng:</span>
                             </div>
-                            <p className="text-[11.5px] font-bold text-rose-900 dark:text-rose-200 leading-tight">
-                              {pDetails.cancellationReason || 'Khách hủy / Không nhận hàng'}
-                            </p>
-                            {pDetails.cancelledAt && (
-                              <span className="text-[9.5px] text-rose-500/80 dark:text-rose-400/70 block font-mono">
-                                Hủy lúc: {new Date(pDetails.cancelledAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}{' '}
-                                {new Date(pDetails.cancelledAt).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}
+                            {dateStr && (
+                              <span className="text-[10.5px] font-mono text-slate-400">
+                                {dateStr}
                               </span>
                             )}
                           </div>
-                        )}
 
-                        <div className="space-y-1.5">
-                          <h4 className="font-bold text-slate-900 dark:text-white text-xs line-clamp-2">
-                            {ord.orderItems && ord.orderItems.length > 0
-                              ? ord.orderItems.map((oi: any) => `${oi.product?.name || 'Linh kiện'} (x${oi.quantity})`).join(', ')
-                              : pDetails.items && Array.isArray(pDetails.items)
-                              ? pDetails.items.map((it: any) => `${it.name} (x${it.quantity || 1})`).join(', ')
-                              : 'Đơn Hàng Lắp Ráp PC DRX'}
-                          </h4>
-                          <div className="text-[11px] text-slate-500 dark:text-slate-400 space-y-0.5">
-                            <p>Khách: <strong className="text-slate-800 dark:text-slate-200">{ord.customerName || 'Khách hàng'}</strong> ({ord.customerPhone || 'Chưa có SĐT'})</p>
-                            <p className="truncate" title={ord.shippingAddress}>Địa chỉ: {ord.shippingAddress || 'Nhận tại Showroom DRX'}</p>
-                            {ord.notes && <p className="italic text-slate-400 line-clamp-1">Ghi chú: "{ord.notes}"</p>}
+                          {/* SPECIAL REQUESTS BADGES */}
+                          <div className="flex flex-wrap gap-1.5">
+                            {ord.status === 'CANCELLED' ? (
+                              <span className="px-2 py-0.5 rounded-md text-[9.5px] font-black uppercase bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 flex items-center gap-1">
+                                <Ban className="w-3 h-3" />
+                                <span>Ngừng Vận Chuyển</span>
+                              </span>
+                            ) : (
+                              <>
+                                {needInst && (
+                                  <span className="px-2 py-0.5 rounded-md text-[9.5px] font-black uppercase bg-sky-100 dark:bg-sky-950 text-[#0284c7] border border-sky-200 dark:border-sky-800 flex items-center gap-1">
+                                    <Wrench className="w-3 h-3" />
+                                    <span>Cần Ráp Máy / Cài Đặt</span>
+                                  </span>
+                                )}
+                                {isProxy && (
+                                  <span className="px-2 py-0.5 rounded-md text-[9.5px] font-black uppercase bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 flex items-center gap-1">
+                                    <UserCheck className="w-3 h-3" />
+                                    <span>Người Nhận Thay</span>
+                                  </span>
+                                )}
+                                <span className="px-2 py-0.5 rounded-md text-[9.5px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                                  {isPickup ? '🏬 Nhận Showroom' : '🚚 Giao Tận Nơi'}
+                                </span>
+                              </>
+                            )}
+                            <span className="px-2 py-0.5 rounded-md text-[9.5px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                              💵 COD
+                            </span>
+                          </div>
+
+                          {/* Prominent Cancellation Reason Display */}
+                          {ord.status === 'CANCELLED' && (
+                            <div className="p-3 rounded-xl bg-rose-50/90 dark:bg-rose-950/50 border border-rose-200/80 dark:border-rose-900/60 text-xs text-rose-900 dark:text-rose-300 space-y-1">
+                              <div className="flex items-center gap-1.5 font-bold text-rose-700 dark:text-rose-400 text-[11px] uppercase tracking-wide">
+                                <Ban className="w-3.5 h-3.5 text-rose-500" />
+                                <span>Lý do hủy đơn hàng:</span>
+                              </div>
+                              <p className="text-[11.5px] font-bold text-rose-900 dark:text-rose-200 leading-tight">
+                                {pDetails.cancellationReason || 'Khách hủy / Không nhận hàng'}
+                              </p>
+                              {pDetails.cancelledAt && (
+                                <span className="text-[9.5px] text-rose-500/80 dark:text-rose-400/70 block font-mono">
+                                  Hủy lúc: {new Date(pDetails.cancelledAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}{' '}
+                                  {new Date(pDetails.cancelledAt).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}
+                                </span>
+                              )}
+                            </div>
+                          )}
+
+                          <div className="space-y-1.5">
+                            <h4 className="font-bold text-slate-900 dark:text-white text-xs line-clamp-2">
+                              {ord.orderItems && ord.orderItems.length > 0
+                                ? ord.orderItems.map((oi: any) => `${oi.product?.name || 'Linh kiện'} (x${oi.quantity})`).join(', ')
+                                : pDetails.items && Array.isArray(pDetails.items)
+                                ? pDetails.items.map((it: any) => `${it.name} (x${it.quantity || 1})`).join(', ')
+                                : 'Đơn Hàng Lắp Ráp PC DRX'}
+                            </h4>
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400 space-y-0.5">
+                              <p>Khách: <strong className="text-slate-800 dark:text-slate-200">{ord.customerName || 'Khách hàng'}</strong> ({ord.customerPhone || 'Chưa có SĐT'})</p>
+                              <p className="truncate" title={ord.shippingAddress}>Địa chỉ: {ord.shippingAddress || 'Nhận tại Showroom DRX'}</p>
+                              {ord.notes && <p className="italic text-slate-400 line-clamp-1">Ghi chú: "{ord.notes}"</p>}
+                            </div>
                           </div>
                         </div>
 
-                        {/* CHECKLIST PROGRESS BAR */}
-                        <div className="p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-100 dark:border-slate-800 text-[11px] flex items-center justify-between">
-                          <span className="text-slate-500 font-bold text-[10px] uppercase">Tiến Độ Check:</span>
-                          <span className="font-mono font-black text-[#0284c7]">{checksDone}/5 Bước Hoàn Tất</span>
-                        </div>
+                        {/* BOTTOM ACTIONS & METRICS */}
+                        <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2.5">
+                          {/* CHECKLIST PROGRESS BAR */}
+                          <div className="p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-100 dark:border-slate-800 text-[11px] flex items-center justify-between">
+                            <span className="text-slate-500 font-bold text-[10px] uppercase">Tiến Độ Check:</span>
+                            <span className="font-mono font-black text-[#0284c7]">{checksDone}/5 Bước Hoàn Tất</span>
+                          </div>
 
-                        <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
-                          <span className="text-slate-500 font-bold uppercase text-[10px]">Tổng Thanh Toán:</span>
-                          <span className="font-black text-[#0284c7] font-heading">{formatVND(ord.netAmount || ord.totalAmount)}</span>
+                          <div className="p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+                            <span className="text-slate-500 font-bold uppercase text-[10px]">Tổng Thanh Toán:</span>
+                            <span className="font-black text-[#0284c7] font-heading">{formatVND(ord.netAmount || ord.totalAmount)}</span>
+                          </div>
+
+                          <div className="pt-1 flex items-center justify-between gap-2 flex-wrap">
+                            <OrderStatusSelector
+                              orderId={ord.id}
+                              currentStatus={ord.status}
+                              onStatusChange={(newSt) => {
+                                if (newSt === 'CANCELLED') {
+                                  setCancellingOrder(ord);
+                                } else {
+                                  handleUpdateOrderStatus(ord.id, newSt);
+                                }
+                              }}
+                              size="sm"
+                            />
+
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                onClick={() => setViewingOrder(ord)}
+                                className="px-3.5 py-1.5 rounded-xl bg-[#0284c7] hover:bg-[#0369a1] text-white text-xs font-black uppercase tracking-wider cursor-pointer transition-all shadow-xs flex items-center gap-1.5 active:scale-95"
+                              >
+                                <PackageCheck className="w-3.5 h-3.5" />
+                                <span>Mục Check Đơn</span>
+                              </button>
+                            </div>
+                          </div>
                         </div>
                       </div>
-
-                      <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 flex-wrap">
-                        <OrderStatusSelector
-                          orderId={ord.id}
-                          currentStatus={ord.status}
-                          onStatusChange={(newSt) => {
-                            if (newSt === 'CANCELLED') {
-                              setCancellingOrder(ord);
-                            } else {
-                              handleUpdateOrderStatus(ord.id, newSt);
-                            }
-                          }}
-                          size="sm"
-                        />
-
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            onClick={() => setViewingOrder(ord)}
-                            className="px-3.5 py-1.5 rounded-xl bg-[#0284c7] hover:bg-[#0369a1] text-white text-xs font-black uppercase tracking-wider cursor-pointer transition-all shadow-xs flex items-center gap-1.5 active:scale-95"
-                          >
-                            <PackageCheck className="w-3.5 h-3.5" />
-                            <span>Mục Check Đơn</span>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
             )}
 
             </div>
