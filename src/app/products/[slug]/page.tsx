@@ -339,47 +339,54 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
           
           {/* UNIFIED MEDIA GALLERY COMPONENT (7 cols on desktop) */}
           <div className="lg:col-span-7 space-y-4">
-            {/* Big Main Media Viewer */}
-            <div className="relative aspect-[16/10] w-full overflow-hidden rounded-3xl bg-gradient-to-b from-slate-50/80 via-white to-slate-100/60 dark:from-slate-900/60 dark:via-slate-900 dark:to-slate-950 border border-slate-200/70 dark:border-slate-800/80 group select-none shadow-xl shadow-slate-200/50 dark:shadow-none flex items-center justify-center p-6 sm:p-8">
-              {/* Subtle ambient lighting backdrop glow */}
-              <div className="absolute inset-0 bg-radial from-sky-400/10 via-transparent to-transparent pointer-events-none" />
+            {/* Big Main Media Viewer - Pure White Canvas for Seamless Hardware Blend */}
+            <div className="relative aspect-[4/3] sm:aspect-[16/11] w-full overflow-hidden rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 group select-none shadow-xl shadow-slate-200/40 dark:shadow-2xl dark:shadow-black/50 flex items-center justify-center p-6 sm:p-10">
+              {/* Subtle background glow for dark mode */}
+              <div className="absolute inset-0 bg-radial from-sky-400/5 via-transparent to-transparent pointer-events-none dark:from-sky-500/10" />
 
               {activeMedia ? (
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={activeMedia.id}
-                    initial={{ opacity: 0, scale: 0.96 }}
+                    initial={{ opacity: 0, scale: 0.97 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.98 }}
-                    transition={{ duration: 0.3, ease: 'easeOut' }}
+                    transition={{ duration: 0.25, ease: 'easeOut' }}
                     className="relative h-full w-full flex items-center justify-center z-10"
                   >
                     <img
                       src={activeMedia.url}
                       alt={product.name}
-                      className="max-h-full max-w-full object-contain cursor-zoom-in hover:scale-[1.04] transition-transform duration-500 drop-shadow-2xl mix-blend-multiply dark:mix-blend-normal"
+                      className="max-h-full max-w-full object-contain cursor-zoom-in group-hover:scale-105 transition-transform duration-500 ease-out select-none"
                       onClick={() => setIsFullscreen(true)}
                     />
                   </motion.div>
                 </AnimatePresence>
               ) : null}
               
-              {/* Discount Badge */}
+              {/* Top-Right: Discount Badge */}
               {hasDiscount && (
-                <span className="absolute top-4 right-4 bg-gradient-to-r from-rose-600 via-rose-500 to-amber-500 text-white text-xs font-black px-3.5 py-1.5 rounded-full shadow-lg shadow-rose-500/30 z-30 pointer-events-none tracking-wide flex items-center gap-1">
+                <span className="absolute top-4 right-4 bg-gradient-to-r from-rose-600 via-rose-500 to-amber-500 text-white text-xs font-black px-3.5 py-1.5 rounded-full shadow-lg shadow-rose-500/30 z-30 pointer-events-none tracking-wide flex items-center gap-1 border border-white/20 backdrop-blur-xs">
                   <Sparkles className="h-3 w-3" />
                   <span>-{discountPercent}% OFF</span>
                 </span>
               )}
 
-              {/* Fullscreen Zoom Button */}
+              {/* Bottom-Left: Media Counter Pill */}
+              {mediaItems.length > 1 && (
+                <span className="absolute bottom-4 left-4 px-3 py-1 rounded-full bg-slate-900/70 dark:bg-slate-800/80 backdrop-blur-md text-white text-[11px] font-mono font-bold border border-white/10 z-30 select-none shadow-sm">
+                  {activeMediaIdx + 1} / {mediaItems.length}
+                </span>
+              )}
+
+              {/* Bottom-Right: Fullscreen Zoom Button */}
               {activeMedia && (
                 <button
                   onClick={() => setIsFullscreen(true)}
-                  className="absolute bottom-4 right-4 p-3 rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md text-slate-700 dark:text-slate-200 opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-white dark:hover:bg-slate-800 hover:scale-105 shadow-md border border-slate-200/60 dark:border-slate-700/60 z-30 cursor-pointer flex items-center gap-1.5 text-xs font-bold"
+                  className="absolute bottom-4 right-4 px-3.5 py-1.5 rounded-full bg-white/90 dark:bg-slate-800/90 backdrop-blur-md text-slate-700 dark:text-slate-200 opacity-90 group-hover:opacity-100 transition-all duration-300 hover:bg-white dark:hover:bg-slate-700 hover:scale-105 shadow-md border border-slate-200/80 dark:border-slate-700 z-30 cursor-pointer flex items-center gap-1.5 text-xs font-bold"
                   title="Xem ảnh phóng to"
                 >
-                  <Maximize2 className="h-4 w-4 text-[#0284c7]" />
+                  <Maximize2 className="h-3.5 w-3.5 text-[#0284c7] dark:text-sky-400" />
                   <span className="hidden sm:inline">Phóng to</span>
                 </button>
               )}
@@ -389,14 +396,14 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
                 <>
                   <button
                     onClick={handlePrevMedia}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-2xl bg-white/80 dark:bg-slate-900/80 hover:bg-white dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 opacity-0 group-hover:opacity-100 transition-all duration-300 backdrop-blur-md shadow-md hover:scale-110 active:scale-95 border border-slate-200/60 dark:border-slate-700/60 z-30 cursor-pointer"
+                    className="absolute left-4 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-white/90 dark:bg-slate-800/90 hover:bg-white dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 opacity-0 group-hover:opacity-100 transition-all duration-300 backdrop-blur-md shadow-lg hover:scale-110 active:scale-95 border border-slate-200/80 dark:border-slate-700 z-30 cursor-pointer"
                     title="Ảnh trước"
                   >
                     <ChevronLeft className="h-5 w-5" />
                   </button>
                   <button
                     onClick={handleNextMedia}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-2xl bg-white/80 dark:bg-slate-900/80 hover:bg-white dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 opacity-0 group-hover:opacity-100 transition-all duration-300 backdrop-blur-md shadow-md hover:scale-110 active:scale-95 border border-slate-200/60 dark:border-slate-700/60 z-30 cursor-pointer"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-white/90 dark:bg-slate-800/90 hover:bg-white dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 opacity-0 group-hover:opacity-100 transition-all duration-300 backdrop-blur-md shadow-lg hover:scale-110 active:scale-95 border border-slate-200/80 dark:border-slate-700 z-30 cursor-pointer"
                     title="Ảnh tiếp theo"
                   >
                     <ChevronRight className="h-5 w-5" />
@@ -407,7 +414,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
 
             {/* Media Thumbnails Strip */}
             {mediaItems.length > 1 && (
-              <div className="flex gap-3 overflow-x-auto py-2 px-1">
+              <div className="flex gap-3 overflow-x-auto py-2 px-0.5">
                 {mediaItems.map((item, idx) => {
                   const isActive = activeMediaIdx === idx;
                   return (
@@ -416,13 +423,13 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={() => setActiveMediaIdx(idx)}
-                      className={`relative aspect-[16/10] w-24 overflow-hidden rounded-2xl border p-2 transition-all duration-300 shrink-0 cursor-pointer ${
+                      className={`relative w-20 h-20 sm:w-22 sm:h-22 aspect-square overflow-hidden rounded-2xl p-2 transition-all duration-300 shrink-0 cursor-pointer flex items-center justify-center bg-white dark:bg-slate-900 ${
                         isActive
-                          ? 'border-[#0284c7] ring-2 ring-[#0284c7]/40 bg-white dark:bg-slate-900 shadow-md opacity-100'
-                          : 'border-slate-200/80 dark:border-slate-800 bg-white/60 dark:bg-slate-900/60 opacity-60 hover:opacity-100 hover:border-slate-300 dark:hover:border-slate-700'
+                          ? 'border-2 border-[#0284c7] ring-4 ring-[#0284c7]/20 shadow-md opacity-100'
+                          : 'border border-slate-200/90 dark:border-slate-800 opacity-60 hover:opacity-100 hover:border-slate-400 dark:hover:border-slate-600'
                       }`}
                     >
-                      <img src={item.thumbnailUrl} alt={`media-thumb-${idx}`} className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal" />
+                      <img src={item.thumbnailUrl} alt={`media-thumb-${idx}`} className="w-full h-full object-contain" />
                     </motion.button>
                   );
                 })}
