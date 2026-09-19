@@ -297,9 +297,12 @@ export async function updateUserProfile(payload: {
     if (res.ok) {
       const data = await res.json();
       if (data && data.user) {
-        setSessionUser(data.user, data.token, false);
+        setSessionUser(data.user, data.token, true);
         return data.user;
       }
+    } else {
+      const errData = await res.json().catch(() => ({}));
+      console.warn('Update profile rejected by server:', errData);
     }
     return null;
   } catch (e) {

@@ -7,7 +7,7 @@ import {
   ShoppingBag, ArrowLeft, ArrowRight, ShieldCheck, CheckCircle2, 
   Truck, Building2, Wrench, UserCheck, MessageSquare, 
   Trash2, Plus, Minus, DollarSign, Check, Sparkles,
-  PackageCheck, User, MapPin, QrCode, Copy
+  PackageCheck, User, MapPin, QrCode, Copy, AlertTriangle, Ban
 } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { Header } from '@/components/Header';
@@ -29,6 +29,38 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState<'COD' | 'QR_BANK'>('COD');
   const [draftOrderCode, setDraftOrderCode] = useState<string>('');
   const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  // Live stock validation for cart items
+  const [stockMap, setStockMap] = useState<Record<string, { inStock: boolean; stockQuantity: number; name?: string }>>({});
+
+  useEffect(() => {
+    if (cartItems.length === 0) return;
+    fetch(`/api/products?t=${Date.now()}`, { cache: 'no-store' })
+      .then(res => res.json())
+      .then(data => {
+        if (data && Array.isArray(data.products)) {
+          const map: Record<string, { inStock: boolean; stockQuantity: number; name?: string }> = {};
+          data.products.forEach((p: any) => {
+            const stock = p.stockQuantity !== undefined ? Number(p.stockQuantity) : 10;
+            const inStock = p.status !== false && stock > 0;
+            const info = { inStock, stockQuantity: stock, name: p.name };
+            map[p.id] = info;
+            if (p.slug) map[p.slug] = info;
+          });
+          setStockMap(map);
+        }
+      })
+      .catch(err => console.warn('Could not validate stock:', err));
+  }, [cartItems.length]);
+
+  const outOfStockItems = useMemo(() => {
+    return cartItems.filter(item => {
+      const s = stockMap[item.productId || item.id] || stockMap[item.slug];
+      return s ? !s.inStock : false;
+    });
+  }, [cartItems, stockMap]);
+
+  const hasOutOfStockItems = outOfStockItems.length > 0;
 
   useEffect(() => {
     const random5Digits = Math.floor(10000 + Math.random() * 90000);
@@ -192,6 +224,10 @@ export default function CheckoutPage() {
       showToast('Giỏ hàng của bạn đang trống!', 'error');
       return;
     }
+    if (hasOutOfStockItems) {
+      showToast('Giỏ hàng có sản phẩm tạm hết hàng. Vui lòng xóa trước khi tiếp tục!', 'error');
+      return;
+    }
     setCurrentStep(2);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -219,6 +255,11 @@ export default function CheckoutPage() {
       }
     }
 
+    if (hasOutOfStockItems) {
+      showToast('Giỏ hàng có linh kiện tạm hết hàng. Vui lòng kiểm tra lại!', 'error');
+      return;
+    }
+
     setCurrentStep(3);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -227,6 +268,10 @@ export default function CheckoutPage() {
   const handleConfirmOrder = async () => {
     if (cartItems.length === 0) {
       showToast('Giỏ hàng đang trống!', 'error');
+      return;
+    }
+    if (hasOutOfStockItems) {
+      showToast('Giỏ hàng có linh kiện đã hết hàng trong kho. Vui lòng xóa để tiếp tục!', 'error');
       return;
     }
 
@@ -583,6 +628,21 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
+                {/* OUT OF STOCK WARNING BANNER */}
+                {hasOutOfStockItems && (
+                  <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 text-rose-800 dark:text-rose-300 text-xs font-bold flex items-center gap-2.5 shadow-2xs">
+                    <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0" />
+                    <div className="space-y-0.5">
+                      <p className="font-extrabold uppercase text-[11px] text-rose-700 dark:text-rose-400">
+                        Cảnh báo hết hàng:
+                      </p>
+                      <p className="text-xs font-medium">
+                        Giỏ hàng của bạn đang có sản phẩm <strong>tạm hết hàng trong kho</strong>. Vui lòng bấm biểu tượng thùng rác để xóa linh kiện hết hàng trước khi tiếp tục!
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 {/* CART ITEMS LIST */}
                 {cartItems.length === 0 ? (
                   <div className="py-12 text-center space-y-4">
@@ -601,15 +661,28 @@ export default function CheckoutPage() {
                   <div className="divide-y divide-slate-100 dark:divide-slate-800">
                     {cartItems.map((item) => {
                       const itemPrice = item.discountPrice ?? item.price;
+                      const stockInfo = stockMap[item.productId || item.id] || stockMap[item.slug];
+                      const isItemOutOfStock = stockInfo ? !stockInfo.inStock : false;
+
                       return (
-                        <div key={item.id} className="py-4 flex items-center gap-4 flex-wrap sm:flex-nowrap">
+                        <div 
+                          key={item.id} 
+                          className={`py-4 flex items-center gap-4 flex-wrap sm:flex-nowrap rounded-xl transition-all ${
+                            isItemOutOfStock ? 'bg-rose-50/60 dark:bg-rose-950/30 px-3 border border-rose-200/80 dark:border-rose-900/60 my-1.5' : ''
+                          }`}
+                        >
                           {/* Image */}
-                          <div className="w-16 h-16 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-1 shrink-0 flex items-center justify-center overflow-hidden">
+                          <div className="w-16 h-16 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-1 shrink-0 flex items-center justify-center overflow-hidden relative">
                             <img
                               src={item.coverImage || 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=800&q=80'}
                               alt={item.name}
                               className="max-h-full max-w-full object-contain"
                             />
+                            {isItemOutOfStock && (
+                              <div className="absolute inset-0 bg-slate-950/60 flex items-center justify-center">
+                                <span className="text-[8px] font-black text-rose-400 uppercase tracking-tighter">HẾT HÀNG</span>
+                              </div>
+                            )}
                           </div>
 
                           {/* Info */}
@@ -617,9 +690,17 @@ export default function CheckoutPage() {
                             <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white leading-tight">
                               {item.name}
                             </h3>
-                            <span className="text-[11px] font-mono text-rose-600 dark:text-rose-400 font-bold block mt-0.5">
-                              {formatCurrency(itemPrice)}
-                            </span>
+                            <div className="flex items-center gap-2 flex-wrap mt-0.5">
+                              <span className="text-[11px] font-mono text-rose-600 dark:text-rose-400 font-bold block">
+                                {formatCurrency(itemPrice)}
+                              </span>
+                              {isItemOutOfStock && (
+                                <span className="px-2 py-0.5 rounded text-[9.5px] font-black uppercase bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-300 border border-rose-200 dark:border-rose-800 flex items-center gap-1">
+                                  <Ban className="w-3 h-3" />
+                                  <span>TẠM HẾT HÀNG</span>
+                                </span>
+                              )}
+                            </div>
                           </div>
 
                           {/* Quantity Controls */}
@@ -670,8 +751,13 @@ export default function CheckoutPage() {
                   <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end">
                     <button
                       type="button"
+                      disabled={hasOutOfStockItems}
                       onClick={handleProceedToStep2}
-                      className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-[#0284c7] to-[#38bdf8] hover:from-[#0369a1] hover:to-[#0284c7] text-white font-extrabold text-xs uppercase tracking-wider shadow-md shadow-sky-500/25 transition-all cursor-pointer"
+                      className={`inline-flex items-center gap-2 px-6 py-3.5 rounded-xl font-extrabold text-xs uppercase tracking-wider shadow-md transition-all ${
+                        hasOutOfStockItems
+                          ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-300 dark:border-slate-700'
+                          : 'bg-gradient-to-r from-[#0284c7] to-[#38bdf8] hover:from-[#0369a1] hover:to-[#0284c7] text-white shadow-sky-500/25 cursor-pointer'
+                      }`}
                     >
                       <span>Tiếp Tục: Điền Thông Tin Giao Hàng</span>
                       <ArrowRight className="w-4 h-4" />

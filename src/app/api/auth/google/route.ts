@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { prisma } from '@/lib/prisma';
 import { signJWT, setAuthCookie } from '@/lib/jwt';
 
 export const dynamic = 'force-dynamic';
@@ -61,29 +62,55 @@ export async function POST(request: Request) {
 
     let foundUser: any = null;
 
-    // Direct Check in Supabase User table
+    // 1. Primary Authority: Prisma DB lookup
     try {
-      const { data: supaUsers } = await supabase
-        .from('User')
-        .select('*')
-        .eq('email', cleanEmail);
-      
-      if (supaUsers && supaUsers.length > 0) {
-        foundUser = supaUsers[0];
-      }
+      foundUser = await prisma.user.findFirst({
+        where: { email: cleanEmail },
+      });
     } catch (e) {
-      console.warn('Supabase findUser error:', e);
+      console.warn('Prisma find Google user warning:', e);
     }
 
-    // If user doesn't exist, create a new Google user directly in Supabase Cloud DB
+    // 2. Secondary fallback: Supabase REST
+    if (!foundUser) {
+      try {
+        const { data: supaUsers } = await supabase
+          .from('User')
+          .select('*')
+          .eq('email', cleanEmail);
+        
+        if (supaUsers && supaUsers.length > 0) {
+          foundUser = supaUsers[0];
+        }
+      } catch (e) {
+        console.warn('Supabase findUser error:', e);
+      }
+    }
+
+    // If user doesn't exist, create a new Google user directly in Prisma & Supabase
     if (!foundUser) {
       const newUserId = `user-google-${Date.now()}`;
       try {
-        const { data: createdSupa, error: supaCreateErr } = await supabase
+        foundUser = await prisma.user.create({
+          data: {
+            id: newUserId,
+            name: userName,
+            email: cleanEmail,
+            image: userAvatar,
+            role: userRole as any,
+            balance: 0.0,
+          },
+        });
+      } catch (prismaCreateErr) {
+        console.warn('Prisma create Google user warning:', prismaCreateErr);
+      }
+
+      try {
+        const { data: createdSupa } = await supabase
           .from('User')
-          .insert([
+          .upsert([
             {
-              id: newUserId,
+              id: foundUser?.id || newUserId,
               name: userName,
               email: cleanEmail,
               image: userAvatar,
@@ -96,7 +123,7 @@ export async function POST(request: Request) {
           .select('*')
           .maybeSingle();
 
-        if (createdSupa) {
+        if (!foundUser && createdSupa) {
           foundUser = createdSupa;
         }
       } catch (createSupaErr) {
@@ -110,6 +137,8 @@ export async function POST(request: Request) {
       name: foundUser?.name || userName,
       email: cleanEmail,
       image: foundUser?.image || userAvatar,
+      phone: foundUser?.phone || '',
+      address: foundUser?.address || '',
       balance: Number(foundUser?.balance || 0),
       role: foundUser?.role || userRole,
       provider: 'google',

@@ -103,6 +103,9 @@ export async function GET(request: Request) {
         ? p.screenshots 
         : (coverImage ? [coverImage] : []);
 
+      const effectiveStock = p.stockQuantity !== undefined ? Number(p.stockQuantity) : (p.stockCount !== undefined ? Number(p.stockCount) : 10);
+      const isAvailable = p.status !== false && p.inStock !== false && effectiveStock > 0;
+
       return {
         id: p.id,
         name,
@@ -117,10 +120,10 @@ export async function GET(request: Request) {
         type: category,
         deliveryMethod: 'SHIP',
         mediaOrder: p.mediaOrder || 'image_first',
-        status: p.status !== false,
+        status: isAvailable,
         isFlashDeal: Boolean(p.isFlashDeal),
         flashSaleEnd: p.flashSaleEnd ? new Date(p.flashSaleEnd).toISOString() : null,
-        stockQuantity: p.stockQuantity !== undefined ? Number(p.stockQuantity) : 15,
+        stockQuantity: effectiveStock,
         warrantyMonths: p.warrantyMonths ? Number(p.warrantyMonths) : 36,
         specs,
         screenshots,

@@ -127,35 +127,35 @@ export const Footer: React.FC = () => {
               
               {/* 1. VietQR */}
               <div className="h-11 px-3.5 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl flex items-center justify-between shadow-2xs hover:border-sky-400/60 dark:hover:border-slate-700 transition-all group">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center h-6 max-w-[110px]">
                   <img 
                     src="/logos/payments/vietqr.png" 
                     alt="VietQR Logo" 
-                    className="h-6 w-auto object-contain transition-transform group-hover:scale-105" 
+                    className="h-5 w-auto object-contain transition-transform group-hover:scale-105" 
                   />
                 </div>
-                <span className="text-[9.5px] font-black text-[#0284c7] dark:text-sky-300 bg-sky-50 dark:bg-sky-950/70 px-2 py-0.5 rounded-md border border-sky-200/60 dark:border-sky-800/80 uppercase">
+                <span className="text-[9.5px] font-black text-[#0284c7] dark:text-sky-300 bg-sky-50 dark:bg-sky-950/70 px-2 py-0.5 rounded-md border border-sky-200/60 dark:border-sky-800/80 uppercase tracking-tight">
                   Quét QR 24/7
                 </span>
               </div>
 
               {/* 2. NAPAS 24/7 */}
               <div className="h-11 px-3.5 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl flex items-center justify-between shadow-2xs hover:border-sky-400/60 dark:hover:border-slate-700 transition-all group">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center h-6 max-w-[110px]">
                   <img 
                     src="/logos/payments/napas.png" 
                     alt="NAPAS 24/7 Logo" 
                     className="h-5 w-auto object-contain transition-transform group-hover:scale-105" 
                   />
                 </div>
-                <span className="text-[9.5px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/70 px-2 py-0.5 rounded-md border border-emerald-200/60 dark:border-emerald-800/80 uppercase">
+                <span className="text-[9.5px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/70 px-2 py-0.5 rounded-md border border-emerald-200/60 dark:border-emerald-800/80 uppercase tracking-tight">
                   Chuyển Nhanh
                 </span>
               </div>
 
               {/* 3. Techcombank */}
               <div className="h-11 px-3.5 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl flex items-center justify-between shadow-2xs hover:border-sky-400/60 dark:hover:border-slate-700 transition-all group">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center h-6 max-w-[110px]">
                   <img 
                     src="/logos/payments/techcombank.png" 
                     alt="Techcombank Logo" 

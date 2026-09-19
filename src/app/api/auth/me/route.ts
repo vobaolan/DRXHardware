@@ -72,7 +72,7 @@ export async function GET(request: Request) {
     }
 
     // 3. Auto-heal: If user is authenticated via OAuth or session but not yet in DB, persist them
-    if (!foundInDb && cleanEmail && cleanEmail !== 'admin@drx.vn') {
+    if (!foundInDb && cleanEmail) {
       try {
         const autoId = (authUser.sub && authUser.sub.startsWith('user-')) ? authUser.sub : ('user-' + Date.now());
         const created = await prisma.user.create({
@@ -80,7 +80,7 @@ export async function GET(request: Request) {
             id: autoId,
             name: authUser.name || cleanEmail.split('@')[0],
             email: cleanEmail,
-            role: authUser.role || 'USER',
+            role: (authUser.role as any) || 'USER',
             balance: 0.0,
           }
         });
@@ -133,48 +133,45 @@ export async function PUT(request: Request) {
     const authUser = getAuthUserFromRequest(request);
 
     const { name, phone, address } = body;
-    const cleanEmail = (authUser?.email || body.email || '').toLowerCase().trim();
-    const targetUserId = authUser?.sub || body.id || body.userId;
+    const cleanEmail = (body.email || authUser?.email || '').toLowerCase().trim();
+    const targetUserId = body.id || body.userId || authUser?.sub;
 
     if (!authUser && !cleanEmail && !targetUserId) {
       return NextResponse.json({ message: 'Chưa đăng nhập hoặc phiên hết hạn' }, { status: 401 });
     }
 
     const trimmedName = typeof name === 'string' && name.trim() ? name.trim() : (authUser?.name || '');
-    const trimmedPhone = typeof phone === 'string' ? phone.trim() : null;
-    const trimmedAddress = typeof address === 'string' ? address.trim() : null;
+    const trimmedPhone = typeof phone === 'string' ? phone.trim() : '';
+    const trimmedAddress = typeof address === 'string' ? address.trim() : '';
 
     let updatedUserRecord: any = null;
 
     // 1. Primary Authority: Guaranteed Direct Update via Prisma ORM
     try {
-      await prisma.user.updateMany({
-        where: {
+      if (cleanEmail || (targetUserId && targetUserId !== 'admin-id-master')) {
+        const updateWhere = {
           OR: [
             ...(cleanEmail ? [{ email: cleanEmail }] : []),
             ...(targetUserId && targetUserId !== 'admin-id-master' ? [{ id: targetUserId }] : []),
           ],
-        },
-        data: {
-          name: trimmedName,
-          phone: trimmedPhone,
-          address: trimmedAddress,
-          updatedAt: new Date(),
-        },
-      });
+        };
 
-      // Retrieve the authoritative updated record from DB
-      const freshUser = await prisma.user.findFirst({
-        where: {
-          OR: [
-            ...(cleanEmail ? [{ email: cleanEmail }] : []),
-            ...(targetUserId && targetUserId !== 'admin-id-master' ? [{ id: targetUserId }] : []),
-          ],
-        },
-      });
+        const updateResult = await prisma.user.updateMany({
+          where: updateWhere,
+          data: {
+            name: trimmedName,
+            phone: trimmedPhone,
+            address: trimmedAddress,
+            updatedAt: new Date(),
+          },
+        });
 
-      if (freshUser) {
-        updatedUserRecord = freshUser;
+        if (updateResult.count > 0) {
+          const freshUser = await prisma.user.findFirst({ where: updateWhere });
+          if (freshUser) {
+            updatedUserRecord = freshUser;
+          }
+        }
       }
     } catch (prismaErr) {
       console.error('Prisma PUT /api/auth/me error:', prismaErr);
@@ -202,7 +199,7 @@ export async function PUT(request: Request) {
         }
       }
 
-      if (targetUserId && targetUserId !== 'admin-id-master') {
+      if (targetUserId && targetUserId !== 'admin-id-master' && !updatedUserRecord) {
         const { data } = await supabase
           .from('User')
           .update(updateData)
@@ -218,8 +215,8 @@ export async function PUT(request: Request) {
       console.warn('Supabase PUT /api/auth/me warning:', supaErr);
     }
 
-    // 3. Auto-heal: If record does not exist yet in DB, persist it
-    if (!updatedUserRecord && cleanEmail && cleanEmail !== 'admin@drx.vn') {
+    // 3. Auto-heal: If record does not exist yet in DB, create it
+    if (!updatedUserRecord && cleanEmail) {
       try {
         const autoId = targetUserId || ('user-' + Date.now());
         const created = await prisma.user.create({
@@ -227,7 +224,7 @@ export async function PUT(request: Request) {
             id: autoId,
             name: trimmedName,
             email: cleanEmail,
-            role: authUser?.role || 'USER',
+            role: (authUser?.role as any) || 'USER',
             phone: trimmedPhone,
             address: trimmedAddress,
             balance: 0.0,
@@ -241,13 +238,21 @@ export async function PUT(request: Request) {
       }
     }
 
-    const resolvedName = updatedUserRecord?.name || trimmedName;
-    const resolvedEmail = updatedUserRecord?.email || cleanEmail || authUser?.email || '';
-    const resolvedRole = updatedUserRecord?.role || authUser?.role || 'USER';
-    const resolvedBalance = updatedUserRecord ? Number(updatedUserRecord.balance || 0) : 0;
-    const resolvedPhone = updatedUserRecord?.phone || trimmedPhone || '';
-    const resolvedAddress = updatedUserRecord?.address || trimmedAddress || '';
-    const resolvedId = updatedUserRecord?.id || targetUserId || 'user-' + Date.now();
+    // If still not updated in DB, fail explicitly
+    if (!updatedUserRecord) {
+      return NextResponse.json(
+        { message: 'Không tìm thấy tài khoản để cập nhật trong cơ sở dữ liệu!' },
+        { status: 404 }
+      );
+    }
+
+    const resolvedName = updatedUserRecord.name || trimmedName;
+    const resolvedEmail = updatedUserRecord.email || cleanEmail || authUser?.email || '';
+    const resolvedRole = updatedUserRecord.role || authUser?.role || 'USER';
+    const resolvedBalance = Number(updatedUserRecord.balance || 0);
+    const resolvedPhone = updatedUserRecord.phone || trimmedPhone || '';
+    const resolvedAddress = updatedUserRecord.address || trimmedAddress || '';
+    const resolvedId = updatedUserRecord.id || targetUserId;
     const resolvedProvider = authUser?.provider || (body.provider as string) || undefined;
 
     // Refreshed JWT with updated name and info

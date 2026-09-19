@@ -10,7 +10,7 @@ import {
   ShoppingCart, Heart, ShieldCheck, ChevronLeft, ChevronRight, 
   Star, Maximize2, X, ArrowLeft, CheckCircle2, Play, Truck,
   MessageSquare, User, Send, Cpu, HardDrive, Laptop, Award, Gamepad2, Monitor, Tag, Clock, Check, Wrench, Zap,
-  ThumbsUp, Sparkles
+  ThumbsUp, Sparkles, Ban
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { INITIAL_PRODUCTS } from '@/lib/hardware-data';
@@ -245,8 +245,14 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
     ? Math.round(((originalPrice - activePrice) / originalPrice) * 100)
     : 0;
 
+  const isOutOfStock = !product || product.status === false || (product.stockQuantity !== undefined && Number(product.stockQuantity) <= 0);
+
   const handleAddToCart = () => {
     if (!product) return;
+    if (isOutOfStock) {
+      showToast(`Sản phẩm "${product.name}" hiện đang tạm hết hàng!`, 'error');
+      return;
+    }
     addToCart({
       id: product.id,
       productId: product.id,
@@ -490,29 +496,38 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
                   </span>
                 )}
               </div>
-              {product.status !== false ? (
+              {!isOutOfStock ? (
                 <p className="text-xs text-emerald-600 dark:text-emerald-400 font-bold mt-2 flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                   Đang còn hàng sẵn tại Showroom DRX (Sẵn sàng giao)
                 </p>
               ) : (
-                <p className="text-xs text-rose-500 font-bold mt-2 flex items-center gap-1.5">
+                <p className="text-xs text-rose-500 dark:text-rose-400 font-bold mt-2 flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-rose-500"></span>
-                  Tạm hết hàng (Liên hệ đặt trước)
+                  Tạm hết hàng tại Showroom DRX (Liên hệ đặt trước)
                 </p>
               )}
             </div>
 
             {/* Action Buttons */}
             <div className="grid grid-cols-4 gap-3 pt-2">
-              <button
-                onClick={handleAddToCart}
-                disabled={product.status === false}
-                className="col-span-3 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0284c7] to-[#38bdf8] hover:from-[#0369a1] hover:to-[#0284c7] text-white py-3.5 text-xs font-extrabold uppercase tracking-wider shadow-md shadow-sky-500/25 transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ShoppingCart className="h-4 w-4" />
-                <span>THÊM VÀO GIỎ HÀNG</span>
-              </button>
+              {!isOutOfStock ? (
+                <button
+                  onClick={handleAddToCart}
+                  className="col-span-3 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0284c7] to-[#38bdf8] hover:from-[#0369a1] hover:to-[#0284c7] text-white py-3.5 text-xs font-extrabold uppercase tracking-wider shadow-md shadow-sky-500/25 transition-all active:scale-[0.98] cursor-pointer"
+                >
+                  <ShoppingCart className="h-4 w-4" />
+                  <span>THÊM VÀO GIỎ HÀNG</span>
+                </button>
+              ) : (
+                <button
+                  disabled
+                  className="col-span-3 flex items-center justify-center gap-2 rounded-xl bg-slate-200 dark:bg-slate-800/90 text-slate-400 dark:text-slate-500 py-3.5 text-xs font-extrabold uppercase tracking-wider border border-slate-300 dark:border-slate-700 cursor-not-allowed select-none"
+                >
+                  <Ban className="h-4 w-4 text-rose-500" />
+                  <span>TẠM HẾT HÀNG</span>
+                </button>
+              )}
 
               {/* Wishlist Button */}
               <button

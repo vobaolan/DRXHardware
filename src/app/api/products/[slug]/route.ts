@@ -85,6 +85,25 @@ export async function GET(
         ? matchedProduct.screenshots 
         : [coverImage];
 
+      let effectiveStock = matchedProduct.stockQuantity !== undefined ? Number(matchedProduct.stockQuantity) : (matchedProduct.stockCount !== undefined ? Number(matchedProduct.stockCount) : 0);
+
+      // Check live available serial numbers if product has serials tracking
+      try {
+        const { data: serialsData } = await supabase
+          .from('ProductSerial')
+          .select('id, status')
+          .eq('productId', matchedProduct.id);
+
+        if (serialsData && Array.isArray(serialsData) && serialsData.length > 0) {
+          const availCount = serialsData.filter((s: any) => s.status === 'AVAILABLE').length;
+          effectiveStock = availCount;
+        }
+      } catch (snErr) {
+        console.warn('ProductSerial check warning:', snErr);
+      }
+
+      const isActuallyInStock = matchedProduct.status !== false && matchedProduct.inStock !== false && effectiveStock > 0;
+
       return NextResponse.json(
         {
           product: {
@@ -102,8 +121,8 @@ export async function GET(
             type: matchedProduct.type || matchedProduct.category || 'HARDWARE',
             modelCode: matchedProduct.modelCode || '',
             warrantyMonths: matchedProduct.warrantyMonths || 36,
-            stockQuantity: matchedProduct.stockQuantity ?? matchedProduct.stockCount ?? 10,
-            status: matchedProduct.status !== false && matchedProduct.inStock !== false,
+            stockQuantity: effectiveStock,
+            status: isActuallyInStock,
             isFlashDeal: Boolean(matchedProduct.isFlashDeal),
             flashSaleEnd: matchedProduct.flashSaleEnd ? new Date(matchedProduct.flashSaleEnd).toISOString() : null,
             isFeaturedDeal: Boolean(matchedProduct.isFeaturedDeal || matchedProduct.isFeatured),

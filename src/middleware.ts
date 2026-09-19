@@ -75,7 +75,10 @@ export function middleware(request: NextRequest) {
 
   // 3. Protect Admin Web Portal (/admin)
   if (pathname === '/admin' || pathname.startsWith('/admin/')) {
-    if (user && !isAdmin) {
+    if (!user) {
+      return NextResponse.redirect(new URL(`/profile?auth=login&redirect=${encodeURIComponent(pathname)}`, request.url));
+    }
+    if (!isAdmin) {
       // If user is Staff trying to access Admin, redirect to Staff Portal
       if (isStaff) {
         return NextResponse.redirect(new URL('/staff', request.url));
@@ -86,18 +89,31 @@ export function middleware(request: NextRequest) {
 
   // 4. Protect Staff Web Portal (/staff)
   if (pathname === '/staff' || pathname.startsWith('/staff/')) {
-    if (user && !isStaff && !isAdmin) {
+    if (!user) {
+      return NextResponse.redirect(new URL(`/profile?auth=login&redirect=${encodeURIComponent(pathname)}`, request.url));
+    }
+    if (!isStaff && !isAdmin) {
       return NextResponse.redirect(new URL('/profile', request.url));
     }
   }
 
-  // 5. Append Strict Security Headers
+  // 5. Protect Private User Pages (/vault, /deposit)
+  if (pathname === '/vault' || pathname.startsWith('/vault/') || pathname === '/deposit' || pathname.startsWith('/deposit/')) {
+    if (!user) {
+      return NextResponse.redirect(new URL(`/profile?auth=login&redirect=${encodeURIComponent(pathname)}`, request.url));
+    }
+  }
+
+  // 6. Append Strict Security Headers
   const response = NextResponse.next();
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('X-Frame-Options', 'DENY');
   response.headers.set('X-XSS-Protection', '1; mode=block');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
+  response.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
+  response.headers.set('X-Permitted-Cross-Domain-Policies', 'none');
+  response.headers.set('X-Download-Options', 'noopen');
 
   return response;
 }
@@ -106,6 +122,8 @@ export const config = {
   matcher: [
     '/admin/:path*',
     '/staff/:path*',
+    '/vault/:path*',
+    '/deposit/:path*',
     '/api/admin/:path*',
   ],
 };

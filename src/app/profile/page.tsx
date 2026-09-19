@@ -144,8 +144,9 @@ function extractHardwareFromOrders(ordersList: Order[]): HardwareWarrantyItem[] 
         for (let q = 0; q < qty; q++) {
           const attachedSerial = serialsMap.get(prod.id || oi.productId)?.[q];
           const listedSerial = serialsList[q];
+          const rawCodeOnly = orderDisplayCode.replace(/^DRX-/, '').replace(/^DRX/, '');
           const brandPrefix = (prod.brand || 'DRX').toUpperCase().replace(/[^A-Z0-9]/g, '');
-          const fallbackSerial = `SN-${brandPrefix ? `${brandPrefix}-` : ''}${orderDisplayCode}-${oiIdx + 1}${qty > 1 ? `-${q + 1}` : ''}`;
+          const fallbackSerial = `SN-${brandPrefix ? `${brandPrefix}-` : 'DRX-'}${rawCodeOnly}-${oiIdx + 1}${qty > 1 ? `-${q + 1}` : ''}`;
           const finalSerial = attachedSerial?.serialNumber || listedSerial || fallbackSerial;
 
           hardwareItems.push({
@@ -175,16 +176,19 @@ function extractHardwareFromOrders(ordersList: Order[]): HardwareWarrantyItem[] 
           year: 'numeric', month: '2-digit', day: '2-digit',
         });
 
+        const rawCodeOnly = orderDisplayCode.replace(/^DRX-/, '').replace(/^DRX/, '');
+        const brandPrefix = (item.brand || 'DRX').toUpperCase().replace(/[^A-Z0-9]/g, '');
+
         for (let q = 0; q < qty; q++) {
-          const fallbackSerial = `SN-DRX-${orderDisplayCode}-${itIdx + 1}${qty > 1 ? `-${q + 1}` : ''}`;
+          const fallbackSerial = `SN-${brandPrefix ? `${brandPrefix}-` : 'DRX-'}${rawCodeOnly}-${itIdx + 1}${qty > 1 ? `-${q + 1}` : ''}`;
           hardwareItems.push({
             id: `hw-${order.id}-${item.id || itIdx}-${q}`,
             orderId: order.id,
             orderCode: orderDisplayCode,
             serialNumber: fallbackSerial,
             productName: item.name || 'Linh Kiện Máy Tính DRX',
-            category: 'HARDWARE',
-            brand: 'DRX Certified',
+            category: item.category || 'HARDWARE',
+            brand: item.brand || 'DRX Certified',
             coverImage: item.coverImage || 'https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?q=80&w=800',
             warrantyMonths,
             purchaseDate: orderPurchaseDate,

@@ -208,6 +208,36 @@ export async function POST(request: Request) {
       }))
     };
 
+    // 1.5. Pre-validate inventory: Ensure no out-of-stock items can be ordered
+    const productIds = cartItems.map((i: any) => i.productId || i.id).filter(Boolean);
+    if (productIds.length > 0) {
+      try {
+        const dbProducts = await prisma.product.findMany({
+          where: { id: { in: productIds } },
+          select: { id: true, name: true, stockQuantity: true, status: true },
+        });
+
+        for (const item of cartItems) {
+          const pid = item.productId || item.id;
+          const matched = dbProducts.find((p) => p.id === pid);
+          if (matched) {
+            const stock = Number(matched.stockQuantity ?? 0);
+            if (matched.status === false || stock <= 0) {
+              return NextResponse.json(
+                { 
+                  message: `Sản phẩm "${matched.name}" hiện đã TẠM HẾT HÀNG. Vui lòng bỏ sản phẩm này khỏi giỏ hàng trước khi đặt hàng!`,
+                  outOfStockProductId: matched.id 
+                },
+                { status: 400 }
+              );
+            }
+          }
+        }
+      } catch (checkErr) {
+        console.warn('Prisma pre-check stock warning:', checkErr);
+      }
+    }
+
     let createdOrder: any = null;
 
     // 2. PRIMARY AUTHORITY: Instant Atomic PostgreSQL Transaction via Prisma (< 100ms)

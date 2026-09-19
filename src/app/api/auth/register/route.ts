@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { signJWT, setAuthCookie } from '@/lib/jwt';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limiter';
@@ -38,20 +39,28 @@ export async function POST(request: Request) {
     const assignedRole = cleanEmail === 'admin@drx.vn' ? 'ADMIN' : cleanEmail === 'staff@drx.vn' ? 'STAFF' : 'USER';
     const userName = (name && String(name).trim()) || cleanEmail.split('@')[0];
 
-    // 1. Check if user already exists in Supabase
+    // 1. Check if user already exists in DB
     let existingUser: any = null;
 
     try {
-      const { data: supaExisting } = await supabase
-        .from('User')
-        .select('id, email')
-        .eq('email', cleanEmail)
-        .maybeSingle();
-
-      if (supaExisting) {
-        existingUser = supaExisting;
-      }
+      existingUser = await prisma.user.findFirst({
+        where: { email: cleanEmail },
+      });
     } catch (e) {}
+
+    if (!existingUser) {
+      try {
+        const { data: supaExisting } = await supabase
+          .from('User')
+          .select('id, email')
+          .eq('email', cleanEmail)
+          .maybeSingle();
+
+        if (supaExisting) {
+          existingUser = supaExisting;
+        }
+      } catch (e) {}
+    }
 
     if (existingUser) {
       return NextResponse.json(
@@ -65,12 +74,28 @@ export async function POST(request: Request) {
     const newUserId = 'user-' + Date.now();
     let savedUser: any = null;
 
-    // 3. Insert into Supabase User table (Primary Cloud DB)
+    // 3. Primary Authority: Insert via Prisma ORM
+    try {
+      savedUser = await prisma.user.create({
+        data: {
+          id: newUserId,
+          name: userName,
+          email: cleanEmail,
+          password: hashedPassword,
+          balance: 0.0,
+          role: assignedRole as any,
+        },
+      });
+    } catch (prismaErr) {
+      console.warn('Prisma registration create warning:', prismaErr);
+    }
+
+    // 4. Secondary Sync: Insert into Supabase User table
     try {
       const { data: supaCreated, error: supaErr } = await supabase
         .from('User')
-        .insert([{
-          id: newUserId,
+        .upsert([{
+          id: savedUser?.id || newUserId,
           name: userName,
           email: cleanEmail,
           password: hashedPassword,
@@ -82,20 +107,20 @@ export async function POST(request: Request) {
         .select('*')
         .maybeSingle();
 
-      if (supaErr) {
-        console.warn('Supabase registration insert warning:', supaErr);
-      } else if (supaCreated) {
+      if (!savedUser && supaCreated) {
         savedUser = supaCreated;
       }
     } catch (supaErr) {
       console.warn('Supabase registration error:', supaErr);
     }
 
-    // 4. Construct authenticated user object
+    // 5. Construct authenticated user object
     const authUser = {
       id: savedUser?.id || newUserId,
       name: savedUser?.name || userName,
       email: cleanEmail,
+      phone: savedUser?.phone || '',
+      address: savedUser?.address || '',
       balance: Number(savedUser?.balance || 0),
       role: savedUser?.role || assignedRole,
     };

@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: Request) {
   try {
     const clientIp = getClientIp(request);
-    const rateLimit = checkRateLimit(`login_${clientIp}`, 10, 5 * 60 * 1000);
+    const rateLimit = checkRateLimit(`login_${clientIp}`, 15, 5 * 60 * 1000);
     if (!rateLimit.allowed) {
       const waitSeconds = Math.ceil((rateLimit.resetTime - Date.now()) / 1000);
       return NextResponse.json(
@@ -30,36 +30,36 @@ export async function POST(request: Request) {
 
     const cleanEmail = email.trim().toLowerCase();
 
-    // 1. Direct query in Supabase Cloud Database REST API
+    // 1. Primary Authority: Direct PostgreSQL connection via Prisma ORM
     let user: any = null;
     try {
-      const { data: supabaseUsers } = await supabase
-        .from('User')
-        .select('*')
-        .eq('email', cleanEmail)
-        .limit(1);
-      if (supabaseUsers && supabaseUsers.length > 0) {
-        user = supabaseUsers[0];
+      const dbUser = await prisma.user.findFirst({
+        where: { email: cleanEmail },
+      });
+      if (dbUser) {
+        user = dbUser;
       }
-    } catch (e) {
-      console.warn('Supabase login lookup warning:', e);
+    } catch (prismaErr) {
+      console.warn('Prisma login lookup warning:', prismaErr);
     }
 
-    // Fallback: Query direct via Prisma ORM if Supabase REST had any hiccup
+    // 2. Secondary fallback: Query direct via Supabase REST API
     if (!user) {
       try {
-        const dbUser = await prisma.user.findFirst({
-          where: { email: cleanEmail },
-        });
-        if (dbUser) {
-          user = dbUser;
+        const { data: supabaseUsers } = await supabase
+          .from('User')
+          .select('*')
+          .eq('email', cleanEmail)
+          .limit(1);
+        if (supabaseUsers && supabaseUsers.length > 0) {
+          user = supabaseUsers[0];
         }
-      } catch (prismaErr) {
-        console.warn('Prisma login lookup warning:', prismaErr);
+      } catch (e) {
+        console.warn('Supabase login lookup warning:', e);
       }
     }
 
-    // 2. If user exists in Database, strictly verify password
+    // 3. If user exists in Database, strictly verify password
     if (user) {
       if (!user.password) {
         return NextResponse.json(
@@ -77,7 +77,7 @@ export async function POST(request: Request) {
         isPasswordValid = true;
       }
 
-      // Allow master credentials for admin/staff accounts
+      // Allow master credentials recovery for admin/staff accounts
       if (!isPasswordValid) {
         if (
           (cleanEmail === 'admin@drx.vn' || cleanEmail === 'admin@drxhardware.vn' || cleanEmail === 'admin@odsstore.vn') &&
@@ -131,7 +131,7 @@ export async function POST(request: Request) {
       return response;
     }
 
-    // 3. Fallback for admin / staff if record not yet populated in Database
+    // 4. Fallback for initial admin / staff if record not yet populated in Database
     if (
       (cleanEmail === 'admin@drx.vn' || cleanEmail === 'admin@drxhardware.vn' || cleanEmail === 'admin@odsstore.vn') &&
       (password === '01699224729' || password === 'admin')

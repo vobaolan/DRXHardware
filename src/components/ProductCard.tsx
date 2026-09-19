@@ -23,6 +23,7 @@ export interface ProductProps {
   wattage?: number;
   warrantyMonths?: number;
   deliveryMethod?: string;
+  stockQuantity?: number;
   status?: boolean;
   isFlashDeal?: boolean;
   flashSaleEnd?: string | null;
@@ -34,6 +35,7 @@ export const ProductCard: React.FC<{ product: ProductProps }> = ({ product }) =>
   const { addToCart, setCartOpen } = useCart();
   const [isAdded, setIsAdded] = useState(false);
 
+  const isOutOfStock = product.status === false || (product.stockQuantity !== undefined && Number(product.stockQuantity) <= 0);
   const activePrice = product.discountPrice ?? product.price;
   const hasDiscount = product.discountPrice !== null && product.discountPrice !== undefined && product.discountPrice < product.price;
   const discountPercent = hasDiscount ? Math.round(((product.price - product.discountPrice!) / product.price) * 100) : 0;
@@ -45,6 +47,8 @@ export const ProductCard: React.FC<{ product: ProductProps }> = ({ product }) =>
   const handleBuyNow = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
+    if (isOutOfStock) return;
 
     addToCart({
       id: product.id,
@@ -157,7 +161,7 @@ export const ProductCard: React.FC<{ product: ProductProps }> = ({ product }) =>
               )}
             </div>
 
-            {product.status !== false ? (
+            {!isOutOfStock ? (
               <button
                 onClick={handleBuyNow}
                 className={`px-3.5 py-2 text-xs font-heading font-extrabold rounded-xl shadow-md z-30 relative cursor-pointer flex items-center gap-1.5 shrink-0 transition-all active:scale-95 ${
@@ -181,7 +185,7 @@ export const ProductCard: React.FC<{ product: ProductProps }> = ({ product }) =>
             ) : (
               <button
                 disabled
-                className="flex items-center gap-1.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 px-3 py-2 text-xs font-bold cursor-not-allowed z-30 relative shrink-0"
+                className="flex items-center gap-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/90 text-rose-500 dark:text-rose-400 border border-rose-200 dark:border-rose-900/50 px-3 py-2 text-xs font-extrabold cursor-not-allowed z-30 relative shrink-0 select-none"
               >
                 <span>HẾT HÀNG</span>
               </button>

@@ -881,57 +881,81 @@ function PCBuilderContent() {
                   <p className="text-xs font-bold">Không tìm thấy linh kiện phù hợp với bộ lọc.</p>
                 </div>
               ) : (
-                filteredProducts.map((product) => (
-                  <div 
-                    key={product.id}
-                    className="bg-slate-50 dark:bg-slate-950 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-[#0284c7] transition-all shadow-2xs"
-                  >
-                    <div className="flex items-center gap-4 min-w-0 flex-1">
-                      <img 
-                        src={product.coverImage || 'https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?w=200'} 
-                        alt={product.name} 
-                        className="w-16 h-16 rounded-xl object-contain bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1 shrink-0"
-                      />
-                      <div className="space-y-1 min-w-0">
-                        <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
-                          {product.name}
-                        </h4>
-                        <div className="flex flex-wrap gap-1.5 text-[10.5px]">
-                          {product.brand && (
-                            <span className="bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded-md font-semibold border border-slate-200 dark:border-slate-800">
-                              Hãng: {product.brand}
+                filteredProducts.map((product) => {
+                  const isOutOfStock = product.status === false || (product.stockQuantity !== undefined && Number(product.stockQuantity) <= 0);
+
+                  return (
+                    <div 
+                      key={product.id}
+                      className={`bg-slate-50 dark:bg-slate-950 border rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all shadow-2xs ${
+                        isOutOfStock 
+                          ? 'border-rose-200/60 dark:border-rose-950/60 opacity-75' 
+                          : 'border-slate-200/90 dark:border-slate-800 hover:border-[#0284c7]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-4 min-w-0 flex-1">
+                        <img 
+                          src={product.coverImage || 'https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?w=200'} 
+                          alt={product.name} 
+                          className="w-16 h-16 rounded-xl object-contain bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1 shrink-0"
+                        />
+                        <div className="space-y-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                              {product.name}
+                            </h4>
+                            {isOutOfStock && (
+                              <span className="px-2 py-0.5 rounded text-[9.5px] font-black uppercase bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900">
+                                Tạm Hết Hàng
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap gap-1.5 text-[10.5px]">
+                            {product.brand && (
+                              <span className="bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded-md font-semibold border border-slate-200 dark:border-slate-800">
+                                Hãng: {product.brand}
+                              </span>
+                            )}
+                            <span className="bg-white dark:bg-slate-900 text-[#0284c7] dark:text-sky-300 px-2 py-0.5 rounded-md font-semibold border border-slate-200 dark:border-slate-800">
+                              BH: {product.warrantyMonths}T
                             </span>
-                          )}
-                          <span className="bg-white dark:bg-slate-900 text-[#0284c7] dark:text-sky-300 px-2 py-0.5 rounded-md font-semibold border border-slate-200 dark:border-slate-800">
-                            BH: {product.warrantyMonths}T
-                          </span>
-                          {product.socket && (
-                            <span className="bg-sky-100 dark:bg-sky-950 text-sky-800 dark:text-sky-300 px-2 py-0.5 rounded-md font-bold border border-sky-200 dark:border-sky-800">
-                              Socket: {product.socket}
-                            </span>
-                          )}
-                          {product.ramType && (
-                            <span className="bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300 px-2 py-0.5 rounded-md font-bold border border-purple-200 dark:border-purple-800">
-                              {product.ramType}
-                            </span>
-                          )}
+                            {product.socket && (
+                              <span className="bg-sky-100 dark:bg-sky-950 text-sky-800 dark:text-sky-300 px-2 py-0.5 rounded-md font-bold border border-sky-200 dark:border-sky-800">
+                                Socket: {product.socket}
+                              </span>
+                            )}
+                            {product.ramType && (
+                              <span className="bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300 px-2 py-0.5 rounded-md font-bold border border-purple-200 dark:border-purple-800">
+                                {product.ramType}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="flex sm:flex-col items-center sm:items-end justify-between gap-2 border-t sm:border-t-0 border-slate-200 dark:border-slate-900 pt-2 sm:pt-0 shrink-0">
-                      <span className="text-sm sm:text-base font-heading font-black text-rose-600 dark:text-rose-400">
-                        {formatVND(product.discountPrice || product.price)}
-                      </span>
-                      <button
-                        onClick={() => handleSelectComponent(activeStepModal, product)}
-                        className="px-4 py-2 rounded-xl bg-[#0284c7] hover:bg-[#0369a1] text-white text-xs font-heading font-black uppercase tracking-wider shadow-xs cursor-pointer active:scale-95 transition-all"
-                      >
-                        Chọn Linh Kiện
-                      </button>
+                      <div className="flex sm:flex-col items-center sm:items-end justify-between gap-2 border-t sm:border-t-0 border-slate-200 dark:border-slate-900 pt-2 sm:pt-0 shrink-0">
+                        <span className="text-sm sm:text-base font-heading font-black text-rose-600 dark:text-rose-400">
+                          {formatVND(product.discountPrice || product.price)}
+                        </span>
+                        {!isOutOfStock ? (
+                          <button
+                            onClick={() => handleSelectComponent(activeStepModal, product)}
+                            className="px-4 py-2 rounded-xl bg-[#0284c7] hover:bg-[#0369a1] text-white text-xs font-heading font-black uppercase tracking-wider shadow-xs cursor-pointer active:scale-95 transition-all"
+                          >
+                            Chọn Linh Kiện
+                          </button>
+                        ) : (
+                          <button
+                            disabled
+                            className="px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 text-xs font-bold uppercase tracking-wider cursor-not-allowed border border-slate-300 dark:border-slate-700 select-none"
+                          >
+                            Hết Hàng
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
 

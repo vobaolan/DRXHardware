@@ -251,31 +251,6 @@ function WarrantyContent() {
       }
     });
 
-    // 4. Dynamic verification for valid formatted serials (must look like a hardware serial with prefix/dash, not phone)
-    if (matched.length === 0 && (query.toUpperCase().startsWith('SN-') || query.toUpperCase().startsWith('ASUS-') || query.toUpperCase().startsWith('INTEL-') || query.toUpperCase().startsWith('DRX-') || (query.includes('-') && query.length >= 6))) {
-      const generatedItem: WarrantyItem = {
-        serialNumber: query.toUpperCase(),
-        productName: `Linh Kiện Phần Cứng DRX Hardware (Serial: ${query.toUpperCase()})`,
-        category: "Linh Kiện Phần Cứng Chính Hãng",
-        brand: "DRX Certified",
-        purchaseDate: "01/03/2024",
-        warrantyEnd: "01/03/2027",
-        status: "ACTIVE",
-        totalMonths: 36,
-        elapsedMonths: 6,
-        coverImage: "https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?w=800&q=80",
-        repairLogs: [
-          {
-            date: "01/03/2024",
-            center: "DRX Hardware Center",
-            note: "Linh kiện xác thực chính hãng trên hệ thống phân phối DRX. Được hưởng chính sách bảo hành 1 đổi 1 trong 36 tháng."
-          }
-        ]
-      };
-      setSearchResults([generatedItem]);
-      return;
-    }
-
     setSearchResults(matched.length > 0 ? matched : null);
   };
 

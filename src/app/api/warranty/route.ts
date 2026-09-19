@@ -27,7 +27,7 @@ export async function GET(request: Request) {
 
     let serialMatch: any = null;
 
-    // 1. Primary Authority: Direct pooled PostgreSQL query via Prisma ORM
+    // 1. Primary Authority: Direct query in ProductSerial table via Prisma ORM
     try {
       const dbSerial = await prisma.productSerial.findFirst({
         where: {
@@ -49,7 +49,7 @@ export async function GET(request: Request) {
       console.warn('Prisma warranty query warning, trying Supabase:', prismaErr);
     }
 
-    // 2. Secondary Fallback: Supabase Cloud Database REST API (ONLY by serialNumber)
+    // 2. Secondary Fallback: Supabase Cloud Database REST API for ProductSerial
     if (!serialMatch) {
       try {
         const { data: supaSerial } = await supabase
@@ -67,11 +67,12 @@ export async function GET(request: Request) {
       }
     }
 
+    // Return if matched from ProductSerial table
     if (serialMatch) {
       const product = serialMatch.product;
       const order = serialMatch.order;
       const totalMonths = product?.warrantyMonths || 36;
-      const soldDate = serialMatch.soldDate || serialMatch.createdAt;
+      const soldDate = serialMatch.soldDate || serialMatch.createdAt || order?.createdAt || new Date();
       
       const warrantyEndDate = serialMatch.warrantyEnd 
         ? new Date(serialMatch.warrantyEnd)
@@ -106,6 +107,118 @@ export async function GET(request: Request) {
           ]
         }
       }, { status: 200 });
+    }
+
+    // 3. Resolve by Customer Order Linkage (for orders with serials or paymentDetails)
+    const upperQ = q.toUpperCase();
+    const orderCodeMatch = upperQ.match(/DRX-?(\d{4,6})/i) || upperQ.match(/(\d{5})/);
+    const possibleCode = orderCodeMatch ? `DRX-${orderCodeMatch[1]}` : null;
+    const rawNum = orderCodeMatch ? orderCodeMatch[1] : null;
+
+    let matchedOrder: any = null;
+    try {
+      matchedOrder = await prisma.order.findFirst({
+        where: {
+          OR: [
+            ...(possibleCode ? [{ orderCode: possibleCode }] : []),
+            ...(rawNum ? [{ orderCode: { contains: rawNum } }] : []),
+            { id: { contains: rawNum || upperQ } }
+          ]
+        },
+        include: {
+          orderItems: { include: { product: true } },
+          serials: { include: { product: true } }
+        }
+      });
+    } catch (e) {
+      console.warn('Prisma order warranty search warning:', e);
+    }
+
+    if (!matchedOrder && (possibleCode || rawNum)) {
+      try {
+        const { data: supaOrder } = await supabase
+          .from('Order')
+          .select('*, orderItems:OrderItem(*, product:Product(*)), serials:ProductSerial(*, product:Product(*))')
+          .or(`orderCode.eq.${possibleCode || ''},orderCode.ilike.%${rawNum || ''}%`)
+          .limit(1)
+          .maybeSingle();
+
+        if (supaOrder) {
+          matchedOrder = supaOrder;
+        }
+      } catch (e) {
+        console.warn('Supabase order warranty search warning:', e);
+      }
+    }
+
+    if (matchedOrder) {
+      // Determine item index from serial query (e.g. SN-ASUS-77855-2 -> index 1)
+      const idxMatch = upperQ.match(/-(\d+)$/);
+      const itemIndex = idxMatch ? Math.max(0, parseInt(idxMatch[1], 10) - 1) : 0;
+
+      let targetItem: any = null;
+      let targetProduct: any = null;
+
+      if (matchedOrder.orderItems && matchedOrder.orderItems.length > 0) {
+        targetItem = matchedOrder.orderItems[itemIndex] || matchedOrder.orderItems[0];
+        targetProduct = targetItem.product;
+      }
+
+      const pDetails = typeof matchedOrder.paymentDetails === 'object' && matchedOrder.paymentDetails !== null
+        ? matchedOrder.paymentDetails
+        : typeof matchedOrder.paymentDetails === 'string'
+          ? (() => { try { return JSON.parse(matchedOrder.paymentDetails); } catch(e) { return {}; } })()
+          : {};
+
+      if (!targetProduct && pDetails.items && Array.isArray(pDetails.items) && pDetails.items.length > 0) {
+        targetItem = pDetails.items[itemIndex] || pDetails.items[0];
+        targetProduct = {
+          name: targetItem.name,
+          category: targetItem.category || 'HARDWARE',
+          brand: targetItem.brand || 'DRX Certified',
+          coverImage: targetItem.coverImage,
+          warrantyMonths: 36,
+        };
+      }
+
+      if (targetProduct || targetItem) {
+        const totalMonths = Number(targetProduct?.warrantyMonths) || 36;
+        const soldDate = new Date(matchedOrder.createdAt || Date.now());
+        const warrantyEndDate = new Date(soldDate);
+        warrantyEndDate.setMonth(warrantyEndDate.getMonth() + totalMonths);
+
+        const now = new Date();
+        const isValid = now <= warrantyEndDate;
+        const elapsedMonths = Math.max(0, Math.round((now.getTime() - soldDate.getTime()) / (1000 * 60 * 60 * 24 * 30)));
+
+        const orderDisplayCode = matchedOrder.orderCode || `DRX-${matchedOrder.id.slice(-5)}`;
+
+        return NextResponse.json({
+          found: true,
+          warranty: {
+            serialNumber: q.toUpperCase(),
+            productName: targetProduct?.name || targetItem?.name || 'Linh Kiện Máy Tính DRX',
+            category: targetProduct?.category || 'HARDWARE',
+            brand: targetProduct?.brand || 'DRX Certified',
+            coverImage: targetProduct?.coverImage || targetItem?.coverImage || 'https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?w=800&q=80',
+            purchaseDate: soldDate.toLocaleDateString('vi-VN'),
+            warrantyEnd: warrantyEndDate.toLocaleDateString('vi-VN'),
+            status: isValid ? 'ACTIVE' : 'EXPIRED',
+            totalMonths,
+            elapsedMonths,
+            customerName: matchedOrder.customerName || 'Khách Hàng DRX VIP',
+            customerPhone: matchedOrder.customerPhone ? `${matchedOrder.customerPhone.slice(0, 3)}****${matchedOrder.customerPhone.slice(-3)}` : 'Đã bảo mật',
+            orderCode: orderDisplayCode,
+            repairLogs: [
+              {
+                date: soldDate.toLocaleDateString('vi-VN'),
+                center: 'DRX Hardware Service Hub - TP. Hồ Chí Minh',
+                note: `Kích hoạt gói bảo hành điện tử chính hãng ${totalMonths} tháng (1 đổi 1) theo đơn hàng #${orderDisplayCode}.`
+              }
+            ]
+          }
+        }, { status: 200 });
+      }
     }
 
     return NextResponse.json({
