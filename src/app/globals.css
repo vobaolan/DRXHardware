@@ -496,11 +496,126 @@ body {
   border-color: rgba(15, 23, 42, 0.95) transparent transparent transparent;
 }
 
-.uiverse-tooltip-container:hover .uiverse-tooltip-popup {
-  visibility: visible;
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
+/* 11. UI VERSE CIRCUIT & CYBER STAT CARD */
+.uiverse-stat-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
+.dark .uiverse-stat-card {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(10, 15, 29, 0.95) 100%);
+  border-color: rgba(30, 41, 59, 0.8);
+  backdrop-filter: blur(16px);
+}
+
+.uiverse-stat-card:hover {
+  transform: translateY(-4px);
+  border-color: #0284c7;
+  box-shadow: 0 12px 30px -8px rgba(2, 132, 199, 0.2);
+}
+
+.dark .uiverse-stat-card:hover {
+  box-shadow: 0 12px 30px -8px rgba(2, 132, 199, 0.3), 0 0 20px rgba(56, 189, 248, 0.1);
+}
+
+/* 12. UI VERSE SLEEK TABLE ROW HOVER */
+.uiverse-table-row {
+  position: relative;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.uiverse-table-row::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: #0284c7;
+  transform: scaleY(0);
+  transition: transform 0.2s ease;
+  border-radius: 0 4px 4px 0;
+}
+
+.uiverse-table-row:hover::before {
+  transform: scaleY(1);
+}
+
+.uiverse-table-row:hover {
+  background-color: rgba(2, 132, 199, 0.04);
+}
+
+.dark .uiverse-table-row:hover {
+  background-color: rgba(56, 189, 248, 0.06);
+}
+
+/* 13. UI VERSE SEARCH INPUT FOCUS AURA */
+.uiverse-search-wrapper {
+  position: relative;
+}
+
+.uiverse-search-aura {
+  position: absolute;
+  inset: -2px;
+  border-radius: 1rem;
+  background: linear-gradient(90deg, #0284c7, #38bdf8, #818cf8);
+  filter: blur(8px);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.uiverse-search-wrapper:focus-within .uiverse-search-aura {
+  opacity: 0.35;
+}
+
+/* 14. UI VERSE FLUID SKELETON LOADER SWEEP */
+.uiverse-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: #e2e8f0;
+  border-radius: 0.75rem;
+}
+
+.dark .uiverse-skeleton {
+  background: #1e293b;
+}
+
+.uiverse-skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    transparent 100%
+  );
+  animation: uiverseSkeletonSweep 1.8s infinite cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dark .uiverse-skeleton::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(56, 189, 248, 0.12) 50%,
+    transparent 100%
+  );
+}
+
+@keyframes uiverseSkeletonSweep {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
 
 
 .loader {

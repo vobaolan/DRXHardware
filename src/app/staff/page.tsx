@@ -24,6 +24,7 @@ import { CancelOrderModal } from '@/components/admin/CancelOrderModal';
 import { CouponManagementView } from '@/components/admin/CouponManagementView';
 import { SerialManagementSection } from '@/components/admin/SerialManagementSection';
 import { PortalDropdown } from '@/components/ui/PortalDropdown';
+import { KPISparkCard, StatusBadge, CyberButton } from '@/components/ui/UiverseComponents';
 
 function SerialStatusButton({
   serial,
@@ -43,18 +44,25 @@ function SerialStatusButton({
         ref={btnRef}
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10.5px] font-black uppercase transition-all cursor-pointer shadow-xs active:scale-95 border ${
+        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10.5px] font-black uppercase transition-all cursor-pointer shadow-xs active:scale-95 border backdrop-blur-md ${
           status === 'AVAILABLE'
-            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800 hover:bg-emerald-100'
+            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800 hover:bg-emerald-100 shadow-emerald-500/10'
             : status === 'SOLD'
             ? 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 hover:bg-slate-200'
-            : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800 hover:bg-amber-100'
+            : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800 hover:bg-amber-100 shadow-amber-500/10'
         }`}
         title="Click để đổi trạng thái Serial"
       >
-        <span className={`w-1.5 h-1.5 rounded-full ${
-          status === 'AVAILABLE' ? 'bg-emerald-500' : status === 'SOLD' ? 'bg-slate-400' : 'bg-amber-500'
-        }`}></span>
+        <span className="relative flex h-2 w-2 shrink-0">
+          {status !== 'SOLD' && (
+            <span className={`absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping ${
+              status === 'AVAILABLE' ? 'bg-emerald-400' : 'bg-amber-400'
+            }`} />
+          )}
+          <span className={`relative inline-flex rounded-full h-2 w-2 ${
+            status === 'AVAILABLE' ? 'bg-emerald-500' : status === 'SOLD' ? 'bg-slate-400' : 'bg-amber-500'
+          }`} />
+        </span>
         <span>{status === 'AVAILABLE' ? 'Trong Kho' : status === 'SOLD' ? 'Đã Xuất Bán' : 'Bảo Hành'}</span>
         <ChevronDown className={`w-3 h-3 ml-0.5 opacity-60 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
@@ -1301,8 +1309,8 @@ export default function StaffWarehousePortalPage() {
                               </p>
                               {pDetails.cancelledAt && (
                                 <span className="text-[9.5px] text-rose-500/80 dark:text-rose-400/70 block font-mono">
-                                  Hủy lúc: {new Date(pDetails.cancelledAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}{' '}
-                                  {new Date(pDetails.cancelledAt).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}
+                                  Hủy lúc: {new Date(pDetails.cancelledAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Ho_Chi_Minh' })}{' '}
+                                  {new Date(pDetails.cancelledAt).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Asia/Ho_Chi_Minh' })}
                                 </span>
                               )}
                             </div>

@@ -17,6 +17,13 @@ import {
 } from '@/components/icons/HardwareIcons';
 import { INITIAL_PRODUCTS } from '@/lib/hardware-data';
 import { supabase } from '@/lib/supabase';
+import { ModernSelect, SelectOption } from '@/components/ui/ModernSelect';
+
+const CATALOG_SORT_OPTIONS: SelectOption[] = [
+  { value: 'FEATURED', label: 'Nổi Bật', badge: 'Phổ biến' },
+  { value: 'PRICE_ASC', label: 'Giá Tăng Dần', badge: 'Thấp ➔ Cao' },
+  { value: 'PRICE_DESC', label: 'Giá Giảm Dần', badge: 'Cao ➔ Thấp' },
+];
 
 const INITIAL_CATALOG_PRODUCTS: ProductProps[] = INITIAL_PRODUCTS.map(p => ({
   id: p.id,
@@ -927,16 +934,13 @@ function ProductsCatalogContent() {
             </div>
 
             {/* Sort Selector */}
-            <div className="flex items-center gap-1.5 shrink-0">
-              <select
+            <div className="w-48 shrink-0">
+              <ModernSelect
+                options={CATALOG_SORT_OPTIONS}
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-2 px-3 text-xs font-bold text-slate-700 dark:text-slate-300 focus:border-[#0284c7] focus:outline-none cursor-pointer shadow-xs"
-              >
-                <option value="FEATURED">Nổi Bật</option>
-                <option value="PRICE_ASC">Giá Tăng Dần</option>
-                <option value="PRICE_DESC">Giá Giảm Dần</option>
-              </select>
+                onChange={(val) => setSortBy(String(val))}
+                align="right"
+              />
             </div>
           </div>
         </div>

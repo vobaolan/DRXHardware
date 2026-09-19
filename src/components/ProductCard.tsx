@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ShoppingCart, Percent, Check } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { motion } from 'framer-motion';
+import { StatusBadge } from '@/components/ui/UiverseComponents';
 
 export interface ProductProps {
   id: string;
@@ -75,8 +76,19 @@ export const ProductCard: React.FC<{ product: ProductProps }> = ({ product }) =>
       className="uiverse-card-cyber flex flex-col group relative h-full cursor-pointer rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs hover:shadow-2xl hover:border-[#0284c7]/50 dark:hover:border-[#0284c7]/60 transition-all duration-300 overflow-hidden"
     >
       <Link href={`/products/${product.slug}`} className="flex flex-col h-full">
-        {/* Product Media Box - Clean & Seamless Presentation as in Image 3 */}
+        {/* Product Media Box - Clean & Seamless Presentation */}
         <div className="relative aspect-[4/3] w-full overflow-hidden bg-white dark:bg-slate-900 p-4 flex items-center justify-center group/media">
+          {/* Top-Left: Flash Deal / Hot Deal Badge with Radar Ping */}
+          {product.isFlashDeal ? (
+            <div className="absolute top-2.5 left-2.5 z-20">
+              <StatusBadge type="flash-sale" size="sm" />
+            </div>
+          ) : product.isFeaturedDeal ? (
+            <div className="absolute top-2.5 left-2.5 z-20">
+              <StatusBadge type="hot-deal" size="sm" />
+            </div>
+          ) : null}
+
           {/* Top-Right: Discount Badge (Only if discounted) */}
           {hasDiscount && (
             <div className="absolute top-2.5 right-2.5 z-20 inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-gradient-to-r from-rose-500 to-amber-500 text-white text-[10px] font-black tracking-tight shadow-md shadow-rose-500/20">

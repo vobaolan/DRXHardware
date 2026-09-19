@@ -31,20 +31,13 @@ const INITIAL_DISCOUNT_PRODUCTS: ProductProps[] = INITIAL_PRODUCTS.map(p => ({
   screenshots: p.screenshots || [p.coverImage]
 }));
 
-const HARDWARE_CATEGORIES = [
-  { id: 'ALL', label: 'TẤT CẢ' },
-  { id: 'CPU', label: 'CPU / VI XỬ LÝ' },
-  { id: 'VGA', label: 'VGA / CARD ĐỒ HỌA' },
-  { id: 'MAINBOARD', label: 'BO MẠCH CHỦ' },
-  { id: 'RAM', label: 'BỘ NHỚ RAM' },
-  { id: 'STORAGE', label: 'SSD / HDD' },
-  { id: 'PSU', label: 'NGUỒN PSU' },
-  { id: 'CASE', label: 'VỎ CASE' },
-  { id: 'COOLING', label: 'TẢN NHIỆT' },
-  { id: 'MONITOR', label: 'MÀN HÌNH' },
-  { id: 'GEAR', label: 'GAMING GEAR' },
-  { id: 'LAPTOP', label: 'LAPTOP' },
-  { id: 'PREBUILT_PC', label: 'PC ĐỒNG BỘ' },
+import { ModernSelect, SelectOption } from '@/components/ui/ModernSelect';
+import { CategoryPillsNav } from '@/components/ui/CategoryPillsNav';
+
+const SORT_OPTIONS: SelectOption[] = [
+  { value: 'FEATURED', label: 'Giảm Giá Nhiều Nhất', badge: 'Hot Deal' },
+  { value: 'PRICE_ASC', label: 'Giá Thấp ➔ Cao', badge: 'Tăng dần' },
+  { value: 'PRICE_DESC', label: 'Giá Cao ➔ Thấp', badge: 'Giảm dần' },
 ];
 
 export default function DiscountsPage() {
@@ -147,49 +140,31 @@ export default function DiscountsPage() {
             {/* Search and Sort Bar */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3 w-full border-b border-slate-200/80 dark:border-slate-800 pb-3">
               <div className="relative w-full sm:w-80">
-                <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <input
                   type="text"
                   placeholder="Tìm kiếm deal khuyến mãi..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 py-2 pl-9 pr-3 text-xs font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-[#0284c7] focus:outline-none"
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 py-2.5 pl-10 pr-3.5 text-xs font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-[#0284c7] focus:ring-2 focus:ring-[#0284c7]/20 outline-none transition-all"
                 />
               </div>
 
-              <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-                <SlidersHorizontal className="h-4 w-4 text-slate-400" />
-                <select
+              <div className="w-full sm:w-64 shrink-0">
+                <ModernSelect
+                  options={SORT_OPTIONS}
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 py-2 px-3 text-xs font-semibold text-slate-900 dark:text-white focus:border-[#0284c7] focus:outline-none cursor-pointer"
-                >
-                  <option value="FEATURED">Giảm Giá Nhiều Nhất</option>
-                  <option value="PRICE_ASC">Giá Thấp ➔ Cao</option>
-                  <option value="PRICE_DESC">Giá Cao ➔ Thấp</option>
-                </select>
+                  onChange={(val) => setSortBy(String(val))}
+                  align="right"
+                />
               </div>
             </div>
 
-            {/* Categorized Filter Pills */}
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {HARDWARE_CATEGORIES.map((cat) => {
-                const isActive = selectedCategory === cat.id;
-                return (
-                  <button
-                    key={cat.id}
-                    onClick={() => setSelectedCategory(cat.id)}
-                    className={`px-3 py-1.5 rounded-xl text-[11px] font-bold uppercase transition-all cursor-pointer whitespace-nowrap ${
-                      isActive
-                        ? 'bg-[#0284c7] text-white shadow-sm ring-2 ring-[#0284c7]/30 scale-[1.02]'
-                        : 'bg-white dark:bg-slate-800/90 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 hover:border-[#0284c7] hover:text-[#0284c7]'
-                    }`}
-                  >
-                    {cat.label}
-                  </button>
-                );
-              })}
-            </div>
+            {/* Categorized Filter Pills (Smooth 1-row scrollable navigation) */}
+            <CategoryPillsNav
+              selectedCategory={selectedCategory}
+              onSelectCategory={(id) => setSelectedCategory(id)}
+            />
           </div>
 
           {/* PRODUCTS GRID */}

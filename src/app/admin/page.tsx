@@ -28,6 +28,7 @@ import { CouponManagementView } from '@/components/admin/CouponManagementView';
 import { PortalDropdown } from '@/components/ui/PortalDropdown';
 import { RevenueChartWidget } from '@/components/admin/RevenueChartWidget';
 import { SerialManagementSection } from '@/components/admin/SerialManagementSection';
+import { KPISparkCard, StatusBadge, CyberButton } from '@/components/ui/UiverseComponents';
 
 function UserRoleButton({
   user,
@@ -1368,75 +1369,45 @@ export default function AdminDashboardPage() {
           {activeTab === 'overview' && (
             <div className="space-y-6">
               
-              {/* 4 CORE STATS CARDS */}
+              {/* 4 CORE STATS CARDS (UIVERSE HIGH-CRAFT STAT CARDS) */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5 space-y-2.5 shadow-xs hover:border-[#0284c7] transition-all">
-                  <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
-                    <span className="text-[11px] font-black uppercase tracking-wider">Tổng Doanh Thu Thực</span>
-                    <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
-                      <DollarSign className="w-4 h-4" />
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-heading">
-                      {formatVND(activeStats.totalRevenue)}
-                    </p>
-                    <p className="text-[11px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-bold mt-1">
-                      <ArrowUpRight className="w-3.5 h-3.5" /> Tính từ các đơn hoàn tất/thanh toán
-                    </p>
-                  </div>
-                </div>
+                <KPISparkCard
+                  title="Tổng Doanh Thu Thực"
+                  value={formatVND(activeStats.totalRevenue)}
+                  subtitle="Từ đơn đã hoàn tất"
+                  subValue="↑ 100%"
+                  isPositive={true}
+                  accentColor="emerald"
+                  icon={DollarSign}
+                />
 
-                <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5 space-y-2.5 shadow-xs hover:border-[#0284c7] transition-all">
-                  <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
-                    <span className="text-[11px] font-black uppercase tracking-wider">Lợi Nhuận Tạm Tính</span>
-                    <div className="p-2 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] dark:text-sky-400 border border-sky-200 dark:border-sky-800">
-                      <TrendingUp className="w-4 h-4" />
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-heading">
-                      {formatVND(activeStats.totalProfit)}
-                    </p>
-                    <p className="text-[11px] text-sky-600 dark:text-sky-400 flex items-center gap-1 font-bold mt-1">
-                      Biên lợi nhuận gộp ~15.0%
-                    </p>
-                  </div>
-                </div>
+                <KPISparkCard
+                  title="Lợi Nhuận Tạm Tính"
+                  value={formatVND(activeStats.totalProfit)}
+                  subtitle="Biên lợi nhuận gộp"
+                  subValue="~15.0%"
+                  isPositive={true}
+                  accentColor="sky"
+                  icon={TrendingUp}
+                />
 
-                <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5 space-y-2.5 shadow-xs hover:border-[#0284c7] transition-all">
-                  <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
-                    <span className="text-[11px] font-black uppercase tracking-wider">Đơn Hàng Thực Tế</span>
-                    <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
-                      <ShoppingCart className="w-4 h-4" />
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-heading">
-                      {activeStats.totalOrders} Đơn Hàng
-                    </p>
-                    <p className="text-[11px] text-amber-600 dark:text-amber-400 flex items-center gap-1 font-bold mt-1">
-                      {activeStats.pendingOrders} đơn chờ duyệt • {activeStats.shippingOrders} đang giao
-                    </p>
-                  </div>
-                </div>
+                <KPISparkCard
+                  title="Đơn Hàng Thực Tế"
+                  value={`${activeStats.totalOrders} Đơn`}
+                  subtitle={`${activeStats.shippingOrders} đang giao`}
+                  subValue={`${activeStats.pendingOrders} chờ duyệt`}
+                  accentColor="amber"
+                  icon={ShoppingCart}
+                />
 
-                <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5 space-y-2.5 shadow-xs hover:border-[#0284c7] transition-all">
-                  <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
-                    <span className="text-[11px] font-black uppercase tracking-wider">Mã Serial Bảo Hành</span>
-                    <div className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800">
-                      <Boxes className="w-4 h-4" />
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-heading">
-                      {activeStats.totalSerials} Mã Serial
-                    </p>
-                    <p className="text-[11px] text-purple-600 dark:text-purple-400 flex items-center gap-1 font-bold mt-1">
-                      {activeStats.serialsAvailable} còn trong kho • {activeStats.serialsSold} đã bán
-                    </p>
-                  </div>
-                </div>
+                <KPISparkCard
+                  title="Mã Serial Bảo Hành"
+                  value={`${activeStats.totalSerials} Serial`}
+                  subtitle={`${activeStats.serialsSold} đã xuất bán`}
+                  subValue={`${activeStats.serialsAvailable} trong kho`}
+                  accentColor="purple"
+                  icon={Boxes}
+                />
               </div>
 
               {/* CHARTS & RECENT ACTIVITY */}
@@ -2130,8 +2101,8 @@ export default function AdminDashboardPage() {
                                     </p>
                                     {pDetails.cancelledAt && (
                                       <span className="text-[9.5px] text-rose-500/80 dark:text-rose-400/70 block mt-0.5 font-mono">
-                                        {new Date(pDetails.cancelledAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}{' '}
-                                        {new Date(pDetails.cancelledAt).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}
+                                        {new Date(pDetails.cancelledAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Ho_Chi_Minh' })}{' '}
+                                        {new Date(pDetails.cancelledAt).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Asia/Ho_Chi_Minh' })}
                                       </span>
                                     )}
                                   </div>

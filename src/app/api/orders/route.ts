@@ -191,6 +191,7 @@ export async function POST(request: Request) {
       proxyName: proxyName.trim(),
       proxyPhone: proxyPhone.trim(),
       technicalNotes: technicalNotes.trim(),
+      inventoryDeducted: false,
       bankInfo: resolvedMethod === 'QR_BANK' ? {
         bankName: 'Techcombank',
         bankCode: 'TCB',
@@ -201,6 +202,7 @@ export async function POST(request: Request) {
       } : null,
       items: cartItems.map((i: any) => ({
         id: i.productId || i.id,
+        productId: i.productId || i.id,
         name: i.name,
         price: i.discountPrice ?? i.price,
         quantity: i.quantity || 1,
@@ -281,57 +283,6 @@ export async function POST(request: Request) {
             data: orderItemData,
             skipDuplicates: true,
           });
-
-          // C. Fast inventory allocation & serial status update
-          for (const item of cartItems) {
-            const pid = item.productId || item.id;
-            const qty = Number(item.quantity) || 1;
-            if (!pid) continue;
-
-            try {
-              const availSerials = await tx.productSerial.findMany({
-                where: { productId: pid, status: 'AVAILABLE' },
-                select: { id: true },
-                take: qty,
-              });
-
-              if (availSerials.length > 0) {
-                const sIds = availSerials.map((s) => s.id);
-                await tx.productSerial.updateMany({
-                  where: { id: { in: sIds } },
-                  data: {
-                    status: 'SOLD',
-                    orderId: newOrder.id,
-                    soldDate: new Date(),
-                  },
-                });
-
-                const remaining = await tx.productSerial.count({
-                  where: { productId: pid, status: 'AVAILABLE' },
-                });
-
-                await tx.product.updateMany({
-                  where: { id: pid },
-                  data: {
-                    stockQuantity: remaining,
-                    updatedAt: new Date(),
-                  },
-                });
-              } else {
-                await tx.product.updateMany({
-                  where: { id: pid },
-                  data: {
-                    stockQuantity: {
-                      decrement: qty,
-                    },
-                    updatedAt: new Date(),
-                  },
-                });
-              }
-            } catch (stockErr) {
-              console.warn('Inventory adjustment non-fatal notice:', stockErr);
-            }
-          }
         }
 
         // D. Coupon usage update

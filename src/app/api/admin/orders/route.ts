@@ -67,6 +67,176 @@ export async function GET(request: Request) {
   }
 }
 
+async function syncInventoryForOrder(
+  existingOrder: any,
+  targetStatus: string | undefined,
+  targetPaymentDetails: any
+) {
+  try {
+    const existingDetails = typeof existingOrder.paymentDetails === 'string'
+      ? (() => { try { return JSON.parse(existingOrder.paymentDetails); } catch { return {}; } })()
+      : (existingOrder.paymentDetails || {});
+
+    const mergedDetails = {
+      ...existingDetails,
+      ...(typeof targetPaymentDetails === 'object' ? targetPaymentDetails : {}),
+    };
+
+    const effectiveStatus = targetStatus || existingOrder.status;
+
+    // Check if Step 3 (check_packed), Step 4 (check_handed_over), Step 5 (check_collected_cod),
+    // or shipping/completed status is reached
+    const isStep3OrBeyond = Boolean(
+      mergedDetails.check_packed ||
+      mergedDetails.check_handed_over ||
+      mergedDetails.check_collected_cod ||
+      ['SHIPPING', 'DELIVERED', 'COMPLETED'].includes(effectiveStatus)
+    );
+
+    const alreadyDeducted = Boolean(existingDetails.inventoryDeducted || mergedDetails.inventoryDeducted);
+
+    // Extract items list
+    let itemsToProcess: Array<{ productId: string; quantity: number }> = [];
+
+    if (existingOrder.orderItems && Array.isArray(existingOrder.orderItems) && existingOrder.orderItems.length > 0) {
+      itemsToProcess = existingOrder.orderItems.map((oi: any) => ({
+        productId: oi.productId || oi.product?.id,
+        quantity: Number(oi.quantity) || 1,
+      }));
+    } else if (mergedDetails.items && Array.isArray(mergedDetails.items) && mergedDetails.items.length > 0) {
+      itemsToProcess = mergedDetails.items.map((i: any) => ({
+        productId: i.productId || i.id,
+        quantity: Number(i.quantity) || 1,
+      }));
+    }
+
+    // Filter valid product IDs
+    itemsToProcess = itemsToProcess.filter((i) => Boolean(i.productId));
+
+    // CASE 1: Order is cancelled -> restore stock if already deducted
+    if (effectiveStatus === 'CANCELLED') {
+      if (alreadyDeducted && itemsToProcess.length > 0) {
+        for (const item of itemsToProcess) {
+          try {
+            // Prisma increment
+            await prisma.product.updateMany({
+              where: { id: item.productId },
+              data: {
+                stockQuantity: { increment: item.quantity },
+                updatedAt: new Date(),
+              },
+            });
+
+            // Serial restore
+            try {
+              await prisma.productSerial.updateMany({
+                where: {
+                  orderId: existingOrder.id,
+                  productId: item.productId,
+                  status: 'SOLD',
+                },
+                data: {
+                  status: 'AVAILABLE',
+                  orderId: null,
+                  soldDate: null,
+                },
+              });
+            } catch (sErr) {}
+
+            // Supabase increment
+            try {
+              const { data: supaProd } = await supabase
+                .from('Product')
+                .select('stockQuantity')
+                .eq('id', item.productId)
+                .maybeSingle();
+              if (supaProd && typeof supaProd.stockQuantity === 'number') {
+                await supabase
+                  .from('Product')
+                  .update({
+                    stockQuantity: supaProd.stockQuantity + item.quantity,
+                    updatedAt: new Date().toISOString(),
+                  })
+                  .eq('id', item.productId);
+              }
+            } catch (supaErr) {}
+          } catch (itemErr) {
+            console.warn(`Lỗi khôi phục kho sản phẩm ${item.productId}:`, itemErr);
+          }
+        }
+        mergedDetails.inventoryDeducted = false;
+        mergedDetails.inventoryRestoredAt = new Date().toISOString();
+      }
+    } 
+    // CASE 2: Step 3+ reached and stock NOT yet deducted
+    else if (isStep3OrBeyond && !alreadyDeducted && effectiveStatus !== 'CANCELLED') {
+      if (itemsToProcess.length > 0) {
+        for (const item of itemsToProcess) {
+          try {
+            // Prisma decrement
+            await prisma.product.updateMany({
+              where: { id: item.productId },
+              data: {
+                stockQuantity: { decrement: item.quantity },
+                updatedAt: new Date(),
+              },
+            });
+
+            // Serial allocation
+            try {
+              const availSerials = await prisma.productSerial.findMany({
+                where: { productId: item.productId, status: 'AVAILABLE' },
+                select: { id: true },
+                take: item.quantity,
+              });
+
+              if (availSerials.length > 0) {
+                const sIds = availSerials.map((s) => s.id);
+                await prisma.productSerial.updateMany({
+                  where: { id: { in: sIds } },
+                  data: {
+                    status: 'SOLD',
+                    orderId: existingOrder.id,
+                    soldDate: new Date(),
+                  },
+                });
+              }
+            } catch (sErr) {}
+
+            // Supabase decrement
+            try {
+              const { data: supaProd } = await supabase
+                .from('Product')
+                .select('stockQuantity')
+                .eq('id', item.productId)
+                .maybeSingle();
+              if (supaProd && typeof supaProd.stockQuantity === 'number') {
+                const newStock = Math.max(0, supaProd.stockQuantity - item.quantity);
+                await supabase
+                  .from('Product')
+                  .update({
+                    stockQuantity: newStock,
+                    updatedAt: new Date().toISOString(),
+                  })
+                  .eq('id', item.productId);
+              }
+            } catch (supaErr) {}
+          } catch (itemErr) {
+            console.warn(`Lỗi trừ kho sản phẩm ${item.productId}:`, itemErr);
+          }
+        }
+        mergedDetails.inventoryDeducted = true;
+        mergedDetails.inventoryDeductedAt = new Date().toISOString();
+      }
+    }
+
+    return mergedDetails;
+  } catch (err) {
+    console.error('Lỗi syncInventoryForOrder:', err);
+    return targetPaymentDetails;
+  }
+}
+
 export async function PATCH(request: Request) {
   try {
     const body = await request.json();
@@ -99,17 +269,9 @@ export async function PATCH(request: Request) {
       }
     }
 
-    const updatePayload: any = {
-      ...(status ? { status } : {}),
-      ...(sanitizedPaymentStatus ? { paymentStatus: sanitizedPaymentStatus } : {}),
-      ...(paymentMethod ? { paymentMethod } : {}),
-      ...(parsedPaymentDetails !== undefined ? { paymentDetails: parsedPaymentDetails } : {}),
-      updatedAt: new Date(),
-    };
-
     let updatedOrder: any = null;
 
-    // 1. Primary Authority: Direct update via Prisma ORM
+    // 1. Primary Authority: Direct lookup & update via Prisma ORM
     try {
       const cleanCode = String(orderId).replace(/^[#]/, '').trim();
       const existing = await prisma.order.findFirst({
@@ -121,9 +283,27 @@ export async function PATCH(request: Request) {
             { id: { contains: cleanCode, mode: 'insensitive' } },
           ],
         },
+        include: {
+          orderItems: {
+            include: {
+              product: true,
+            },
+          },
+        },
       });
 
       if (existing) {
+        // Sync inventory if Step 3+ is reached or order is cancelled
+        const finalPaymentDetails = await syncInventoryForOrder(existing, status, parsedPaymentDetails);
+
+        const updatePayload: any = {
+          ...(status ? { status } : {}),
+          ...(sanitizedPaymentStatus ? { paymentStatus: sanitizedPaymentStatus } : {}),
+          ...(paymentMethod ? { paymentMethod } : {}),
+          ...(finalPaymentDetails !== undefined ? { paymentDetails: finalPaymentDetails } : {}),
+          updatedAt: new Date(),
+        };
+
         updatedOrder = await prisma.order.update({
           where: { id: existing.id },
           data: updatePayload,
@@ -146,32 +326,44 @@ export async function PATCH(request: Request) {
         let targetOrderId = orderId;
         const { data: directMatch } = await supabase
           .from('Order')
-          .select('id')
+          .select('*, orderItems:OrderItem(*, product:Product(*))')
           .eq('id', orderId)
           .maybeSingle();
 
+        let existingSupa = directMatch;
         if (directMatch) {
           targetOrderId = directMatch.id;
         } else {
           const cleanCode = String(orderId).replace(/^#/, '').trim();
           const { data: altMatch } = await supabase
             .from('Order')
-            .select('id')
+            .select('*, orderItems:OrderItem(*, product:Product(*))')
             .or(`orderCode.eq.${cleanCode},id.ilike.%${cleanCode}%`)
             .limit(1)
             .maybeSingle();
 
           if (altMatch) {
             targetOrderId = altMatch.id;
+            existingSupa = altMatch;
           }
         }
 
+        let finalPaymentDetails = parsedPaymentDetails;
+        if (existingSupa) {
+          finalPaymentDetails = await syncInventoryForOrder(existingSupa, status, parsedPaymentDetails);
+        }
+
+        const supaPayload: any = {
+          ...(status ? { status } : {}),
+          ...(sanitizedPaymentStatus ? { paymentStatus: sanitizedPaymentStatus } : {}),
+          ...(paymentMethod ? { paymentMethod } : {}),
+          ...(finalPaymentDetails !== undefined ? { paymentDetails: finalPaymentDetails } : {}),
+          updatedAt: new Date().toISOString(),
+        };
+
         const { data: supaUpdated, error: supaErr } = await supabase
           .from('Order')
-          .update({
-            ...updatePayload,
-            updatedAt: new Date().toISOString(),
-          })
+          .update(supaPayload)
           .eq('id', targetOrderId)
           .select('*')
           .single();

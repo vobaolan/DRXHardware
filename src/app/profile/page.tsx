@@ -9,7 +9,8 @@ import {
   ShoppingBag, Settings, LogOut, CheckCircle2, Copy, Check, ArrowRight, 
   ShieldCheck, Cpu, Box, Zap, PackageCheck, Wrench, ChevronRight,
   Award, CheckCircle, LayoutDashboard, Phone, MapPin,
-  Eye, EyeOff, Sparkles, X, Trash2, ShoppingCart, Download, ExternalLink
+  Eye, EyeOff, Sparkles, X, Trash2, ShoppingCart, Download, ExternalLink,
+  Search, SlidersHorizontal, RotateCcw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
@@ -859,6 +860,40 @@ function ProfileContent() {
   const hardwareItemsList = React.useMemo(() => extractHardwareFromOrders(orders), [orders]);
   const totalHardwareItems = hardwareItemsList.length;
 
+  // Search & Category Filtering for Warranty Vault
+  const [warrantySearchQuery, setWarrantySearchQuery] = useState('');
+  const [warrantyCategoryFilter, setWarrantyCategoryFilter] = useState('ALL');
+
+  const warrantyCategories = React.useMemo(() => {
+    const counts: Record<string, number> = { ALL: hardwareItemsList.length };
+    hardwareItemsList.forEach(item => {
+      const cat = (item.category || 'OTHER').toUpperCase();
+      counts[cat] = (counts[cat] || 0) + 1;
+    });
+    return Object.entries(counts).map(([id, count]) => ({
+      id,
+      label: id === 'ALL' ? 'TẤT CẢ' : id,
+      count
+    }));
+  }, [hardwareItemsList]);
+
+  const filteredHardwareItems = React.useMemo(() => {
+    return hardwareItemsList.filter((item) => {
+      const q = warrantySearchQuery.toLowerCase().trim();
+      const matchesSearch = !q ||
+        (item.productName && item.productName.toLowerCase().includes(q)) ||
+        (item.serialNumber && item.serialNumber.toLowerCase().includes(q)) ||
+        (item.orderCode && item.orderCode.toLowerCase().includes(q)) ||
+        (item.brand && item.brand.toLowerCase().includes(q)) ||
+        (item.category && item.category.toLowerCase().includes(q));
+
+      const matchesCat = warrantyCategoryFilter === 'ALL' || 
+        (item.category && item.category.toUpperCase() === warrantyCategoryFilter.toUpperCase());
+
+      return matchesSearch && matchesCat;
+    });
+  }, [hardwareItemsList, warrantySearchQuery, warrantyCategoryFilter]);
+
   const handleCopySerial = (itemId: string, sn: string) => {
     try {
       navigator.clipboard.writeText(sn);
@@ -1593,7 +1628,7 @@ function ProfileContent() {
                                       MÃ ĐƠN: #{orderDisplayCode}
                                     </span>
                                     <span className="text-xs text-slate-400 font-medium">
-                                      • Ngày đặt: {order.createdAt ? new Date(order.createdAt).toLocaleDateString('vi-VN') : 'Mới'}
+                                      • Ngày đặt: {order.createdAt ? `${new Date(order.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Ho_Chi_Minh' })} ${new Date(order.createdAt).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Asia/Ho_Chi_Minh' })}` : 'Mới'}
                                     </span>
                                   </div>
                                   <div className="flex items-center gap-2.5 flex-wrap">
@@ -1759,76 +1794,166 @@ function ProfileContent() {
                           </Link>
                         </div>
                       ) : (
-                        <div className="space-y-4">
-                          {hardwareItemsList.map((item) => (
-                            <div key={item.id} className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-5 space-y-3.5 hover:border-[#0284c7] transition-all">
-                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                <div className="flex items-center gap-3.5">
-                                  <img
-                                    src={item.coverImage}
-                                    alt={item.productName}
-                                    className="h-14 w-20 rounded-xl object-contain bg-slate-900 border border-slate-200 dark:border-slate-800 shrink-0 p-1"
-                                  />
-                                  <div className="min-w-0">
-                                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                                      <span className="text-[10px] font-black uppercase bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] border border-sky-200 dark:border-sky-800 px-2 py-0.5 rounded-md font-mono">
-                                        ĐƠN #{item.orderCode}
-                                      </span>
-                                      <span className="text-[10px] font-bold text-slate-500 uppercase">
-                                        {item.brand} • {item.category}
-                                      </span>
-                                    </div>
-                                    <h4 className="font-heading text-xs font-black text-slate-900 dark:text-slate-100 line-clamp-1">{item.productName}</h4>
-                                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold uppercase block mt-0.5">
-                                      ✓ Bảo hành chính hãng {item.warrantyMonths} Tháng (1 Đổi 1)
-                                    </span>
-                                  </div>
-                                </div>
-                                <div className="text-left sm:text-right shrink-0">
-                                  <span className="text-[10px] text-slate-400 font-mono block">Ngày kích hoạt: {item.purchaseDate}</span>
-                                  <span className="text-[10px] text-slate-500 font-mono block">Hạn bảo hành: {item.warrantyEnd}</span>
-                                  <span className="text-[9.5px] font-black text-emerald-600 dark:text-emerald-300 uppercase bg-emerald-100 dark:bg-emerald-950/80 border border-emerald-300 dark:border-emerald-800 px-2.5 py-0.5 rounded-full inline-block mt-1">
-                                    Đang trong hạn bảo hành
-                                  </span>
-                                </div>
+                        <div className="space-y-5">
+                          {/* SEARCH & FILTER CONTROLS BAR */}
+                          <div className="p-4 rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/80 space-y-3.5 shadow-2xs">
+                            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                              {/* Search Box */}
+                              <div className="relative w-full sm:flex-1">
+                                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#0284c7] dark:text-sky-400" />
+                                <input
+                                  type="text"
+                                  placeholder="Tìm theo tên linh kiện, mã đơn #DRX, mã Serial SN, thương hiệu..."
+                                  value={warrantySearchQuery}
+                                  onChange={(e) => setWarrantySearchQuery(e.target.value)}
+                                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 py-2.5 pl-10 pr-9 text-xs font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-[#0284c7] focus:ring-2 focus:ring-[#0284c7]/20 outline-none transition-all"
+                                />
+                                {warrantySearchQuery && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setWarrantySearchQuery('')}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs font-bold"
+                                    title="Xóa tìm kiếm"
+                                  >
+                                    ✕
+                                  </button>
+                                )}
                               </div>
 
-                              {/* SERIAL NUMBER BAR */}
-                              <div className="flex items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-700 p-3 rounded-xl flex-wrap sm:flex-nowrap">
-                                <div className="flex items-center gap-2 min-w-0">
-                                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 shrink-0">Mã Serial SN:</span>
-                                  <code className="text-xs font-mono text-[#0284c7] font-bold select-all truncate">
-                                    {item.serialNumber}
-                                  </code>
-                                </div>
-                                <div className="flex items-center gap-2 shrink-0">
-                                  <Link
-                                    href={`/warranty?sn=${encodeURIComponent(item.serialNumber)}`}
-                                    className="flex items-center gap-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-2.5 py-1.5 text-[10px] font-bold text-slate-700 dark:text-slate-300 hover:text-[#0284c7] hover:border-sky-300 transition-all"
-                                  >
-                                    <ExternalLink className="h-3 w-3" />
-                                    <span>Tra Cứu</span>
-                                  </Link>
-                                  <button
-                                    onClick={() => handleCopySerial(item.id, item.serialNumber)}
-                                    className="flex items-center gap-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 text-[10px] font-bold text-slate-800 dark:text-slate-200 hover:bg-[#0284c7] hover:text-white transition-all cursor-pointer"
-                                  >
-                                    {copiedKeyId === item.id ? (
-                                      <>
-                                        <Check className="h-3.5 w-3.5 text-emerald-400" />
-                                        <span className="text-emerald-400">ĐÃ COPY</span>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Copy className="h-3.5 w-3.5" />
-                                        <span>COPY MÃ SN</span>
-                                      </>
-                                    )}
-                                  </button>
-                                </div>
+                              {/* Results Counter Tag */}
+                              <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
+                                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 font-mono">
+                                  Hiển thị <span className="font-extrabold text-[#0284c7] dark:text-sky-400">{filteredHardwareItems.length}</span> / {totalHardwareItems} thiết bị
+                                </span>
                               </div>
                             </div>
-                          ))}
+
+                            {/* Category Filter Pills */}
+                            {warrantyCategories.length > 2 && (
+                              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-1 scroll-smooth">
+                                {warrantyCategories.map((cat) => {
+                                  const isActive = warrantyCategoryFilter === cat.id;
+                                  return (
+                                    <button
+                                      key={cat.id}
+                                      type="button"
+                                      onClick={() => setWarrantyCategoryFilter(cat.id)}
+                                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10.5px] font-extrabold uppercase transition-all duration-200 whitespace-nowrap cursor-pointer shrink-0 ${
+                                        isActive
+                                          ? 'bg-gradient-to-r from-[#0284c7] to-[#0ea5e9] text-white shadow-sm shadow-sky-500/20 scale-[1.02]'
+                                          : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200/90 dark:border-slate-800 hover:border-[#0284c7] hover:text-[#0284c7]'
+                                      }`}
+                                    >
+                                      <span>{cat.label}</span>
+                                      <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-mono ${
+                                        isActive ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                                      }`}>
+                                        {cat.count}
+                                      </span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* HARDWARE ITEMS LIST */}
+                          {filteredHardwareItems.length === 0 ? (
+                            <div className="text-center py-10 px-4 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 space-y-3">
+                              <Search className="w-8 h-8 text-slate-400 mx-auto" />
+                              <div className="space-y-1">
+                                <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                                  Không tìm thấy thiết bị nào khớp với từ khóa "{warrantySearchQuery}"
+                                </p>
+                                <p className="text-[11px] text-slate-400">
+                                  Vui lòng thử tìm kiếm bằng tên linh kiện khác, mã đơn hàng hoặc xóa bộ lọc.
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setWarrantySearchQuery('');
+                                  setWarrantyCategoryFilter('ALL');
+                                }}
+                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold hover:bg-[#0284c7] hover:text-white transition-all cursor-pointer"
+                              >
+                                <RotateCcw className="w-3.5 h-3.5" />
+                                <span>Đặt Lại Tìm Kiếm</span>
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="space-y-4">
+                              {filteredHardwareItems.map((item) => (
+                                <div key={item.id} className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-5 space-y-3.5 hover:border-[#0284c7] transition-all">
+                                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                    <div className="flex items-center gap-3.5">
+                                      <img
+                                        src={item.coverImage}
+                                        alt={item.productName}
+                                        className="h-14 w-20 rounded-xl object-contain bg-slate-900 border border-slate-200 dark:border-slate-800 shrink-0 p-1"
+                                      />
+                                      <div className="min-w-0">
+                                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                                          <span className="text-[10px] font-black uppercase bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] border border-sky-200 dark:border-sky-800 px-2 py-0.5 rounded-md font-mono">
+                                            ĐƠN #{item.orderCode}
+                                          </span>
+                                          <span className="text-[10px] font-bold text-slate-500 uppercase">
+                                            {item.brand} • {item.category}
+                                          </span>
+                                        </div>
+                                        <h4 className="font-heading text-xs font-black text-slate-900 dark:text-slate-100 line-clamp-1">{item.productName}</h4>
+                                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold uppercase block mt-0.5">
+                                          ✓ Bảo hành chính hãng {item.warrantyMonths} Tháng (1 Đổi 1)
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <div className="text-left sm:text-right shrink-0">
+                                      <span className="text-[10px] text-slate-400 font-mono block">Ngày kích hoạt: {item.purchaseDate}</span>
+                                      <span className="text-[10px] text-slate-500 font-mono block">Hạn bảo hành: {item.warrantyEnd}</span>
+                                      <span className="text-[9.5px] font-black text-emerald-600 dark:text-emerald-300 uppercase bg-emerald-100 dark:bg-emerald-950/80 border border-emerald-300 dark:border-emerald-800 px-2.5 py-0.5 rounded-full inline-block mt-1">
+                                        Đang trong hạn bảo hành
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  {/* SERIAL NUMBER BAR */}
+                                  <div className="flex items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-700 p-3 rounded-xl flex-wrap sm:flex-nowrap">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 shrink-0">Mã Serial SN:</span>
+                                      <code className="text-xs font-mono text-[#0284c7] font-bold select-all truncate">
+                                        {item.serialNumber}
+                                      </code>
+                                    </div>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                      <Link
+                                        href={`/warranty?sn=${encodeURIComponent(item.serialNumber)}`}
+                                        className="flex items-center gap-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-2.5 py-1.5 text-[10px] font-bold text-slate-700 dark:text-slate-300 hover:text-[#0284c7] hover:border-sky-300 transition-all"
+                                      >
+                                        <ExternalLink className="h-3 w-3" />
+                                        <span>Tra Cứu</span>
+                                      </Link>
+                                      <button
+                                        onClick={() => handleCopySerial(item.id, item.serialNumber)}
+                                        className="flex items-center gap-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 text-[10px] font-bold text-slate-800 dark:text-slate-200 hover:bg-[#0284c7] hover:text-white transition-all cursor-pointer"
+                                      >
+                                        {copiedKeyId === item.id ? (
+                                          <>
+                                            <Check className="h-3.5 w-3.5 text-emerald-400" />
+                                            <span className="text-emerald-400">ĐÃ COPY</span>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <Copy className="h-3.5 w-3.5" />
+                                            <span>COPY MÃ SN</span>
+                                          </>
+                                        )}
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>

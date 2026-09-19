@@ -320,8 +320,9 @@ export const Header: React.FC = () => {
         </div>
 
         {/* STEP 3: THANH TÌM KIẾM SẢN PHẨM (MAIN SEARCH BAR - UI VERSE INPUT) */}
-        <div className="relative flex-1 max-w-xl mx-2">
-          <form onSubmit={handleSearchSubmit} className="relative">
+        <div className="relative flex-1 max-w-xl mx-2 uiverse-search-wrapper">
+          <div className="uiverse-search-aura" />
+          <form onSubmit={handleSearchSubmit} className="relative z-10">
             <Search className="absolute left-3.5 top-2.5 h-4 w-4 text-[#0284c7] dark:text-[#6EC2F7]" />
             <input
               type="text"

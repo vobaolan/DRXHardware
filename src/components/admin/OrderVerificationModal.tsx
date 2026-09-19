@@ -254,7 +254,20 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
     try {
       const d = new Date(order.createdAt);
       if (isNaN(d.getTime())) return null;
-      return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' ' + d.toLocaleDateString('vi-VN');
+      const timeStr = d.toLocaleTimeString('vi-VN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+        timeZone: 'Asia/Ho_Chi_Minh',
+      });
+      const dateStr = d.toLocaleDateString('vi-VN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        timeZone: 'Asia/Ho_Chi_Minh',
+      });
+      return `${timeStr} ${dateStr}`;
     } catch (e) {
       return null;
     }
@@ -326,6 +339,18 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
                 <span>•</span>
                 <span>{currentPaymentStatus === 'PAID' ? 'Đã Thu Tiền' : currentPaymentStatus === 'REFUNDED' ? 'Đã Hoàn Tiền' : 'Chưa Thu Tiền'}</span>
               </span>
+
+              {/* Stock Deduction Status */}
+              {paymentDetails.inventoryDeducted ? (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-wide border whitespace-nowrap shrink-0 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-400/30">
+                  <Check className="w-3 h-3 text-emerald-500" />
+                  <span>Đã Trừ Tồn Kho</span>
+                </span>
+              ) : currentStatus !== 'CANCELLED' ? (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-wide border whitespace-nowrap shrink-0 bg-slate-100 dark:bg-slate-800/90 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700">
+                  <span>📦 Chưa Trừ Kho (Từ B3)</span>
+                </span>
+              ) : null}
             </div>
 
             <div className="flex items-center gap-3 text-xs text-slate-400 font-mono flex-wrap">
@@ -379,7 +404,16 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
               </div>
               {paymentDetails.cancelledAt && (
                 <span className="text-[10.5px] font-mono text-rose-700 dark:text-rose-300 bg-rose-100/70 dark:bg-rose-900/50 px-2.5 py-0.5 rounded-lg font-bold border border-rose-200/60 dark:border-rose-800/60">
-                  {new Date(paymentDetails.cancelledAt).toLocaleString('vi-VN')}
+                  {new Date(paymentDetails.cancelledAt).toLocaleString('vi-VN', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false,
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    timeZone: 'Asia/Ho_Chi_Minh'
+                  })}
                 </span>
               )}
             </div>
@@ -626,9 +660,12 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
                     <span className="font-heading text-xs font-black">
                       3. Đã đóng gói thùng xốp &amp; dán tem niêm phong bảo hành
                     </span>
+                    <span className="px-2 py-0.5 rounded-md text-[9.5px] font-black uppercase bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border border-amber-300/80 dark:border-amber-700">
+                      ⚡ Tự động trừ tồn kho từ bước này
+                    </span>
                   </div>
                   <p className="text-[11px] opacity-75 leading-relaxed">
-                    Đóng gói 3 lớp xốp chống va đập, dán tem bảo hành 36 tháng DRX Hardware và chụp hình kiện hàng.
+                    Đóng gói 3 lớp xốp chống va đập, dán tem bảo hành 36 tháng DRX Hardware. Hệ thống sẽ tự động trừ số lượng tồn kho của các linh kiện trong đơn.
                   </p>
                 </div>
               </div>

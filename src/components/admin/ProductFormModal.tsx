@@ -1,17 +1,25 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   X, Plus, Trash2, Image as ImageIcon, Sparkles, Check, 
   Cpu, HardDrive, Monitor, Box, Zap, Fan, Gamepad2, Laptop, 
   ShieldCheck, DollarSign, Layers, Tag, ExternalLink, RefreshCw,
-  Upload, CheckCircle2, FileImage, Star, AlertTriangle, FileText
+  Upload, CheckCircle2, FileImage, Star, AlertTriangle, FileText,
+  Building2, ChevronDown, Search
 } from 'lucide-react';
 import { showToast } from '@/components/Toast';
 import { authFetch } from '@/lib/auth-client';
 import { ModernSelect, SelectOption } from '@/components/ui/ModernSelect';
 import { optimizeImageForUpload } from '@/lib/imageOptimizer';
+
+export const DEFAULT_POPULAR_BRANDS = [
+  'ASUS', 'MSI', 'Gigabyte', 'Intel', 'AMD', 'Corsair', 'Kingston', 'Samsung',
+  'Hikvision', 'NZXT', 'DeepCool', 'Lian Li', 'ASRock', 'Thermalright', 'Western Digital',
+  'Seagate', 'Zotac', 'Palit', 'Inno3D', 'Colorful', 'Galax', 'TeamGroup',
+  'G.Skill', 'Patriot', 'DareU', 'Logitech', 'Razer', 'ViewSonic', 'LG', 'AOC', 'DRX'
+];
 
 const STANDARD_SPECS_BY_CATEGORY: Record<string, { key: string; value: string }[]> = {
   CPU: [
@@ -222,6 +230,56 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
   const [category, setCategory] = useState('VGA');
   const [brand, setBrand] = useState('ASUS');
   const [modelCode, setModelCode] = useState('');
+
+  // Dynamic Brand Selection & Creation State
+  const [customBrands, setCustomBrands] = useState<string[]>([]);
+  const [isBrandDropdownOpen, setIsBrandDropdownOpen] = useState(false);
+  const brandDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('drx_custom_brands');
+      if (stored) {
+        setCustomBrands(JSON.parse(stored));
+      }
+    } catch (e) {}
+  }, []);
+
+  const allAvailableBrands = useMemo(() => {
+    const combined = Array.from(new Set([...DEFAULT_POPULAR_BRANDS, ...customBrands]));
+    return combined;
+  }, [customBrands]);
+
+  const filteredBrands = useMemo(() => {
+    if (!brand.trim()) return allAvailableBrands;
+    return allAvailableBrands.filter(b => b.toLowerCase().includes(brand.toLowerCase()));
+  }, [allAvailableBrands, brand]);
+
+  const handleAddNewBrand = (newBrandName: string) => {
+    const trimmed = newBrandName.trim();
+    if (!trimmed) return;
+    
+    if (!allAvailableBrands.some(b => b.toLowerCase() === trimmed.toLowerCase())) {
+      const updated = [trimmed, ...customBrands];
+      setCustomBrands(updated);
+      try {
+        localStorage.setItem('drx_custom_brands', JSON.stringify(updated));
+      } catch (e) {}
+      showToast.success(`Đã thêm và lưu hãng mới "${trimmed}"!`);
+    }
+    setBrand(trimmed);
+    setIsBrandDropdownOpen(false);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (brandDropdownRef.current && !brandDropdownRef.current.contains(e.target as Node)) {
+        setIsBrandDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Formatted price strings (with commas: 89,999,999)
   const [priceInput, setPriceInput] = useState('');
@@ -661,18 +719,147 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                 />
               </div>
 
-              <div className="sm:col-span-6 space-y-1.5">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                  Hãng Sản Xuất (Thương Hiệu) <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="ASUS, MSI, Gigabyte, Intel, AMD, Corsair, NZXT, Samsung..."
-                  value={brand}
-                  onChange={(e) => setBrand(e.target.value)}
-                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-900 dark:text-slate-100 focus:border-[#0284c7] outline-none"
-                />
+              <div className="sm:col-span-6 space-y-2 relative" ref={brandDropdownRef}>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <Building2 className="w-3.5 h-3.5 text-[#0284c7]" />
+                    <span>Hãng Sản Xuất (Thương Hiệu) <span className="text-rose-500">*</span></span>
+                  </label>
+                  <span className="text-[10.5px] text-slate-400 font-medium">
+                    Chọn hãng cũ hoặc gõ tạo mới
+                  </span>
+                </div>
+
+                {/* Input & Autocomplete Search / Trigger */}
+                <div className="relative">
+                  <input
+                    type="text"
+                    required
+                    placeholder="Chọn hoặc nhập hãng: ASUS, MSI, Hikvision, Gigabyte..."
+                    value={brand}
+                    onFocus={() => setIsBrandDropdownOpen(true)}
+                    onChange={(e) => {
+                      setBrand(e.target.value);
+                      setIsBrandDropdownOpen(true);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (brand.trim()) {
+                          handleAddNewBrand(brand.trim());
+                        }
+                      }
+                    }}
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl pl-3.5 pr-14 py-2.5 text-xs font-bold text-slate-900 dark:text-slate-100 focus:border-[#0284c7] outline-none transition-all shadow-2xs"
+                  />
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                    {brand && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBrand('');
+                          setIsBrandDropdownOpen(true);
+                        }}
+                        className="p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                        title="Xóa chữ"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setIsBrandDropdownOpen(!isBrandDropdownOpen)}
+                      className="p-1 rounded-md text-slate-400 hover:text-[#0284c7] hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                      title="Mở danh sách hãng"
+                    >
+                      <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isBrandDropdownOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                  </div>
+
+                  {/* Dropdown Menu */}
+                  {isBrandDropdownOpen && (
+                    <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl p-2.5 max-h-64 overflow-y-auto space-y-2 backdrop-blur-md">
+                      {/* Create New Brand Action if not in list */}
+                      {brand.trim() && !allAvailableBrands.some(b => b.toLowerCase() === brand.trim().toLowerCase()) && (
+                        <button
+                          type="button"
+                          onClick={() => handleAddNewBrand(brand.trim())}
+                          className="w-full flex items-center justify-between p-2.5 rounded-xl bg-sky-50 dark:bg-sky-950/70 border border-sky-200 dark:border-sky-800/80 text-sky-700 dark:text-sky-300 hover:bg-sky-100 dark:hover:bg-sky-900/80 transition-all text-xs font-bold cursor-pointer text-left"
+                        >
+                          <span className="flex items-center gap-2">
+                            <Plus className="w-4 h-4 text-sky-600 dark:text-sky-400 shrink-0" />
+                            <span>Tạo hãng mới: <strong>"{brand.trim()}"</strong></span>
+                          </span>
+                          <span className="text-[9.5px] bg-sky-600 text-white px-2 py-0.5 rounded-full font-black uppercase">
+                            Lưu cho lần sau
+                          </span>
+                        </button>
+                      )}
+
+                      <div className="px-1 py-0.5 text-[10.5px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-1.5">
+                        <span>Danh Sách Thương Hiệu ({filteredBrands.length})</span>
+                        <span className="text-[10px] text-[#0284c7] font-semibold">Bấm để chọn</span>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 pt-0.5">
+                        {filteredBrands.map((b) => {
+                          const isSelected = brand.toLowerCase() === b.toLowerCase();
+                          return (
+                            <button
+                              key={b}
+                              type="button"
+                              onClick={() => {
+                                setBrand(b);
+                                setIsBrandDropdownOpen(false);
+                              }}
+                              className={`flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
+                                isSelected
+                                  ? 'bg-[#0284c7] text-white shadow-xs'
+                                  : 'bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-200 hover:bg-sky-50 dark:hover:bg-slate-800 hover:text-[#0284c7] border border-slate-100 dark:border-slate-800'
+                              }`}
+                            >
+                              <span className="truncate">{b}</span>
+                              {isSelected && <Check className="w-3.5 h-3.5 shrink-0 ml-1" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {filteredBrands.length === 0 && !brand.trim() && (
+                        <div className="p-3 text-center text-xs text-slate-400 font-medium">
+                          Chưa có thương hiệu nào phù hợp.
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Quick Selection Pills / Chips below input */}
+                <div className="pt-0.5">
+                  <div className="text-[10px] font-bold text-slate-400 mb-1.5 flex items-center gap-1 uppercase tracking-wider">
+                    <Sparkles className="w-3 h-3 text-amber-500" />
+                    <span>Hãng phổ biến (1 chạm chọn nhanh):</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {DEFAULT_POPULAR_BRANDS.slice(0, 11).map((b) => {
+                      const isSelected = brand.toLowerCase() === b.toLowerCase();
+                      return (
+                        <button
+                          key={b}
+                          type="button"
+                          onClick={() => setBrand(b)}
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                            isSelected
+                              ? 'bg-[#0284c7] text-white shadow-2xs scale-[1.02]'
+                              : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 hover:border-[#0284c7] hover:text-[#0284c7]'
+                          }`}
+                        >
+                          {b}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
