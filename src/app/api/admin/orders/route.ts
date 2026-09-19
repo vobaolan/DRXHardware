@@ -117,164 +117,186 @@ async function syncInventoryForOrder(
     itemsToProcess = itemsToProcess.filter((i) => Boolean(i.productId));
 
     let inventoryChanged = false;
+    const targetOrderId = existingOrder.id;
 
-    // CASE 1: Order is cancelled -> restore stock if already deducted
+    // 1. Query currently assigned sold serials for this order from Supabase
+    let assignedSerials: any[] = [];
+    try {
+      const { data: currentSupaSerials } = await supabase
+        .from('ProductSerial')
+        .select('id, productId, serialNumber, status')
+        .eq('orderId', targetOrderId)
+        .eq('status', 'SOLD');
+      if (currentSupaSerials && Array.isArray(currentSupaSerials)) {
+        assignedSerials = currentSupaSerials;
+      }
+    } catch (e) {}
+
+    // CASE 1: Order is CANCELLED -> Release all assigned serials back to AVAILABLE and restore stock
     if (effectiveStatus === 'CANCELLED') {
-      if (alreadyDeducted && itemsToProcess.length > 0) {
-        for (const item of itemsToProcess) {
+      if (assignedSerials.length > 0) {
+        // Supabase Serial restore
+        try {
+          await supabase
+            .from('ProductSerial')
+            .update({
+              status: 'AVAILABLE',
+              orderId: null,
+              soldDate: null,
+            })
+            .eq('orderId', targetOrderId)
+            .eq('status', 'SOLD');
+        } catch (supaSerialRestoreErr) {
+          console.warn(`Lỗi khôi phục serial Supabase khi hủy đơn:`, supaSerialRestoreErr);
+        }
+
+        // Prisma Serial restore
+        try {
+          await prisma.productSerial.updateMany({
+            where: {
+              orderId: targetOrderId,
+              status: 'SOLD',
+            },
+            data: {
+              status: 'AVAILABLE',
+              orderId: null,
+              soldDate: null,
+            },
+          });
+        } catch (sErr) {}
+
+        // Group restored quantities by productId
+        const restoredMap: Record<string, number> = {};
+        assignedSerials.forEach((s) => {
+          restoredMap[s.productId] = (restoredMap[s.productId] || 0) + 1;
+        });
+
+        for (const [prodId, qty] of Object.entries(restoredMap)) {
+          // Supabase increment
           try {
-            // Prisma increment
+            const { data: supaProd } = await supabase
+              .from('Product')
+              .select('stockQuantity')
+              .eq('id', prodId)
+              .maybeSingle();
+
+            if (supaProd && typeof supaProd.stockQuantity === 'number') {
+              await supabase
+                .from('Product')
+                .update({
+                  stockQuantity: supaProd.stockQuantity + qty,
+                  updatedAt: new Date().toISOString(),
+                })
+                .eq('id', prodId);
+            }
+          } catch (supaErr) {}
+
+          // Prisma increment
+          try {
             await prisma.product.updateMany({
-              where: { id: item.productId },
+              where: { id: prodId },
               data: {
-                stockQuantity: { increment: item.quantity },
+                stockQuantity: { increment: qty },
                 updatedAt: new Date(),
               },
             });
-
-            // Serial restore Prisma
-            try {
-              await prisma.productSerial.updateMany({
-                where: {
-                  orderId: existingOrder.id,
-                  productId: item.productId,
-                  status: 'SOLD',
-                },
-                data: {
-                  status: 'AVAILABLE',
-                  orderId: null,
-                  soldDate: null,
-                },
-              });
-            } catch (sErr) {}
-
-            // Supabase Serial restore
-            try {
-              await supabase
-                .from('ProductSerial')
-                .update({
-                  status: 'AVAILABLE',
-                  orderId: null,
-                  soldDate: null,
-                })
-                .eq('orderId', existingOrder.id)
-                .eq('productId', item.productId)
-                .eq('status', 'SOLD');
-            } catch (supaSerialRestoreErr) {
-              console.warn(`Lỗi khôi phục serial Supabase khi hủy đơn:`, supaSerialRestoreErr);
-            }
-
-            // Supabase increment
-            try {
-              const { data: supaProd } = await supabase
-                .from('Product')
-                .select('stockQuantity')
-                .eq('id', item.productId)
-                .maybeSingle();
-              if (supaProd && typeof supaProd.stockQuantity === 'number') {
-                await supabase
-                  .from('Product')
-                  .update({
-                    stockQuantity: supaProd.stockQuantity + item.quantity,
-                    updatedAt: new Date().toISOString(),
-                  })
-                  .eq('id', item.productId);
-              }
-            } catch (supaErr) {}
-          } catch (itemErr) {
-            console.warn(`Lỗi khôi phục kho sản phẩm ${item.productId}:`, itemErr);
-          }
+          } catch (prismaErr) {}
         }
+
         mergedDetails.inventoryDeducted = false;
         mergedDetails.inventoryRestoredAt = new Date().toISOString();
         inventoryChanged = true;
       }
     } 
-    // CASE 2: Step 3+ reached and stock NOT yet deducted
-    else if (isStep3OrBeyond && !alreadyDeducted && effectiveStatus !== 'CANCELLED') {
-      if (itemsToProcess.length > 0) {
-        for (const item of itemsToProcess) {
+    // CASE 2: Step 3+ reached -> Reconcile serials & deduct stock
+    else if (isStep3OrBeyond) {
+      for (const item of itemsToProcess) {
+        const alreadyAssigned = assignedSerials.filter((s) => s.productId === item.productId).length;
+        const needed = Math.max(0, item.quantity - alreadyAssigned);
+
+        if (needed > 0) {
+          // Supabase Serial allocation
           try {
-            // Prisma decrement
+            const { data: supaSerials } = await supabase
+              .from('ProductSerial')
+              .select('id, serialNumber')
+              .eq('productId', item.productId)
+              .eq('status', 'AVAILABLE')
+              .limit(needed);
+
+            if (supaSerials && supaSerials.length > 0) {
+              const sIds = supaSerials.map((s: any) => s.id);
+              await supabase
+                .from('ProductSerial')
+                .update({
+                  status: 'SOLD',
+                  orderId: targetOrderId,
+                  soldDate: new Date().toISOString(),
+                })
+                .in('id', sIds);
+            }
+          } catch (supaSerialErr) {
+            console.warn(`Lỗi gán serial SOLD trong Supabase cho sản phẩm ${item.productId}:`, supaSerialErr);
+          }
+
+          // Prisma Serial allocation
+          try {
+            const availSerials = await prisma.productSerial.findMany({
+              where: { productId: item.productId, status: 'AVAILABLE' },
+              select: { id: true },
+              take: needed,
+            });
+
+            if (availSerials.length > 0) {
+              const sIds = availSerials.map((s) => s.id);
+              await prisma.productSerial.updateMany({
+                where: { id: { in: sIds } },
+                data: {
+                  status: 'SOLD',
+                  orderId: targetOrderId,
+                  soldDate: new Date(),
+                },
+              });
+            }
+          } catch (sErr) {}
+
+          // Supabase decrement
+          try {
+            const { data: supaProd } = await supabase
+              .from('Product')
+              .select('stockQuantity')
+              .eq('id', item.productId)
+              .maybeSingle();
+
+            if (supaProd && typeof supaProd.stockQuantity === 'number') {
+              const newStock = Math.max(0, supaProd.stockQuantity - needed);
+              await supabase
+                .from('Product')
+                .update({
+                  stockQuantity: newStock,
+                  updatedAt: new Date().toISOString(),
+                })
+                .eq('id', item.productId);
+            }
+          } catch (supaErr) {}
+
+          // Prisma decrement
+          try {
             await prisma.product.updateMany({
               where: { id: item.productId },
               data: {
-                stockQuantity: { decrement: item.quantity },
+                stockQuantity: { decrement: needed },
                 updatedAt: new Date(),
               },
             });
+          } catch (itemErr) {}
 
-            // Serial allocation Prisma
-            try {
-              const availSerials = await prisma.productSerial.findMany({
-                where: { productId: item.productId, status: 'AVAILABLE' },
-                select: { id: true },
-                take: item.quantity,
-              });
-
-              if (availSerials.length > 0) {
-                const sIds = availSerials.map((s) => s.id);
-                await prisma.productSerial.updateMany({
-                  where: { id: { in: sIds } },
-                  data: {
-                    status: 'SOLD',
-                    orderId: existingOrder.id,
-                    soldDate: new Date(),
-                  },
-                });
-              }
-            } catch (sErr) {}
-
-            // Supabase Serial allocation
-            try {
-              const { data: supaSerials } = await supabase
-                .from('ProductSerial')
-                .select('id')
-                .eq('productId', item.productId)
-                .eq('status', 'AVAILABLE')
-                .limit(item.quantity);
-
-              if (supaSerials && supaSerials.length > 0) {
-                const sIds = supaSerials.map((s: any) => s.id);
-                await supabase
-                  .from('ProductSerial')
-                  .update({
-                    status: 'SOLD',
-                    orderId: existingOrder.id,
-                    soldDate: new Date().toISOString(),
-                  })
-                  .in('id', sIds);
-              }
-            } catch (supaSerialErr) {
-              console.warn(`Lỗi gán serial SOLD trong Supabase cho sản phẩm ${item.productId}:`, supaSerialErr);
-            }
-
-            // Supabase decrement
-            try {
-              const { data: supaProd } = await supabase
-                .from('Product')
-                .select('stockQuantity')
-                .eq('id', item.productId)
-                .maybeSingle();
-              if (supaProd && typeof supaProd.stockQuantity === 'number') {
-                const newStock = Math.max(0, supaProd.stockQuantity - item.quantity);
-                await supabase
-                  .from('Product')
-                  .update({
-                    stockQuantity: newStock,
-                    updatedAt: new Date().toISOString(),
-                  })
-                  .eq('id', item.productId);
-              }
-            } catch (supaErr) {}
-          } catch (itemErr) {
-            console.warn(`Lỗi trừ kho sản phẩm ${item.productId}:`, itemErr);
-          }
+          inventoryChanged = true;
         }
-        mergedDetails.inventoryDeducted = true;
-        mergedDetails.inventoryDeductedAt = new Date().toISOString();
-        inventoryChanged = true;
       }
+
+      mergedDetails.inventoryDeducted = true;
+      mergedDetails.inventoryDeductedAt = new Date().toISOString();
     }
 
     if (inventoryChanged) {
