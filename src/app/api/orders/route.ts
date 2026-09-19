@@ -192,6 +192,8 @@ export async function POST(request: Request) {
       proxyPhone: proxyPhone.trim(),
       technicalNotes: technicalNotes.trim(),
       inventoryDeducted: false,
+      couponCode: couponCode ? String(couponCode).trim().toUpperCase() : null,
+      discountAmount: resolvedDiscount,
       bankInfo: resolvedMethod === 'QR_BANK' ? {
         bankName: 'Techcombank',
         bankCode: 'TCB',
@@ -260,6 +262,7 @@ export async function POST(request: Request) {
             totalAmount: resolvedTotal,
             discountAmount: resolvedDiscount,
             netAmount: resolvedNet,
+            couponCode: couponCode ? String(couponCode).trim().toUpperCase() : null,
             status: 'PENDING',
             paymentMethod: resolvedMethod as any,
             paymentStatus: 'PENDING',
@@ -285,8 +288,8 @@ export async function POST(request: Request) {
           });
         }
 
-        // D. Coupon usage update
-        if (couponCode && typeof couponCode === 'string') {
+        // D. Coupon usage update (Increment in Prisma DB & Supabase Cloud)
+        if (couponCode && typeof couponCode === 'string' && couponCode.trim()) {
           const cleanCoupon = couponCode.trim().toUpperCase();
           try {
             await tx.coupon.updateMany({
@@ -297,7 +300,26 @@ export async function POST(request: Request) {
                 },
               },
             });
-          } catch (cErr) {}
+          } catch (cErr) {
+            console.warn('Prisma coupon count update warning:', cErr);
+          }
+
+          try {
+            const { data: supaC } = await supabase
+              .from('Coupon')
+              .select('usedCount')
+              .eq('code', cleanCoupon)
+              .maybeSingle();
+
+            if (supaC) {
+              await supabase
+                .from('Coupon')
+                .update({ usedCount: Number(supaC.usedCount || 0) + 1 })
+                .eq('code', cleanCoupon);
+            }
+          } catch (supaCErr) {
+            console.warn('Supabase coupon count update warning:', supaCErr);
+          }
         }
 
         return newOrder;
@@ -320,6 +342,7 @@ export async function POST(request: Request) {
           totalAmount: resolvedTotal,
           discountAmount: resolvedDiscount,
           netAmount: resolvedNet,
+          couponCode: couponCode ? String(couponCode).trim().toUpperCase() : null,
           status: 'PENDING',
           paymentMethod: resolvedMethod,
           paymentStatus: 'PENDING',
@@ -336,6 +359,23 @@ export async function POST(request: Request) {
 
         if (!supaErr && supaNew) {
           createdOrder = supaNew;
+
+          // Increment coupon usedCount in Supabase
+          if (couponCode && typeof couponCode === 'string' && couponCode.trim()) {
+            const cleanCoupon = couponCode.trim().toUpperCase();
+            const { data: supaC } = await supabase
+              .from('Coupon')
+              .select('usedCount')
+              .eq('code', cleanCoupon)
+              .maybeSingle();
+
+            if (supaC) {
+              await supabase
+                .from('Coupon')
+                .update({ usedCount: Number(supaC.usedCount || 0) + 1 })
+                .eq('code', cleanCoupon);
+            }
+          }
         }
       } catch (supaFallbackErr) {
         console.error('Supabase fallback order insert error:', supaFallbackErr);

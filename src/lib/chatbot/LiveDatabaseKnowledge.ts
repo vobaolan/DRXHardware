@@ -104,8 +104,8 @@ export class LiveDatabaseKnowledge {
   }
 
   /**
-   * Search matching products in Supabase real-time with smart NLP keyword matching
-   * and Vietnamese tone normalization.
+   * Search matching products in Supabase real-time with smart NLP keyword matching,
+   * category disambiguation (e.g. RAM Laptop vs Laptop machine), and generation filtering.
    */
   async searchLiveProducts(query: string, limit = 5): Promise<LiveProduct[]> {
     const all = await this.getAllLiveProducts();
@@ -113,12 +113,34 @@ export class LiveDatabaseKnowledge {
     const noToneQ = removeVietnameseTones(cleanQ);
     if (!cleanQ) return all.slice(0, limit);
 
+    // 1. Detect Explicit Category / Intent
+    const isRamInquiry = noToneQ.includes('ram') || noToneQ.includes('bo nho') || noToneQ.includes('sodimm') || noToneQ.includes('so-dimm') || noToneQ.includes('u-dimm');
+    const isLaptopRam = isRamInquiry && (noToneQ.includes('laptop') || noToneQ.includes('sodimm') || noToneQ.includes('so-dimm') || noToneQ.includes('xach tay'));
+    const isPcRam = isRamInquiry && (noToneQ.includes('pc') || noToneQ.includes('may ban') || noToneQ.includes('desktop') || noToneQ.includes('u-dimm'));
+    
+    const isLaptopMachine = !isRamInquiry && (noToneQ.includes('laptop') || noToneQ.includes('may tinh xach tay') || noToneQ.includes('gaming laptop') || noToneQ.includes('notebook'));
+    const isCpuInquiry = noToneQ.includes('cpu') || noToneQ.includes('chip') || noToneQ.includes('vi xu ly') || noToneQ.includes('core i') || noToneQ.includes('ryzen');
+    const isVgaInquiry = noToneQ.includes('vga') || noToneQ.includes('card man hinh') || noToneQ.includes('card do hoa') || noToneQ.includes('rtx') || noToneQ.includes('gtx') || noToneQ.includes('radeon') || noToneQ.includes('geforce');
+    const isMainboardInquiry = noToneQ.includes('mainboard') || noToneQ.includes('bo mach chu') || noToneQ.includes('bo mach') || noToneQ.includes('motherboard') || (noToneQ.includes('main') && !noToneQ.includes('remain'));
+    const isStorageInquiry = noToneQ.includes('ssd') || noToneQ.includes('hdd') || noToneQ.includes('o cung') || noToneQ.includes('nvme') || noToneQ.includes('m.2');
+    const isPsuInquiry = noToneQ.includes('nguon') || noToneQ.includes('psu') || noToneQ.includes('power supply');
+    const isCaseInquiry = noToneQ.includes('case') || noToneQ.includes('vo may') || noToneQ.includes('thung may');
+    const isCoolingInquiry = noToneQ.includes('tan nhiet') || noToneQ.includes('cooling') || noToneQ.includes('aio') || noToneQ.includes('tan nuoc') || noToneQ.includes('tan khi');
+    const isMonitorInquiry = noToneQ.includes('man hinh') || noToneQ.includes('monitor');
+    const isPrebuiltInquiry = noToneQ.includes('pc dong bo') || noToneQ.includes('pc san') || noToneQ.includes('may bo');
+
+    // 2. Generation & Spec Specificity
+    const wantDdr5 = noToneQ.includes('ddr5') || noToneQ.includes('d5');
+    const wantDdr4 = noToneQ.includes('ddr4') || noToneQ.includes('d4');
+    const wantDdr3 = noToneQ.includes('ddr3') || noToneQ.includes('d3');
+
     // Vietnamese common stop words
     const STOP_WORDS = new Set([
       'dang', 'ban', 'gia', 'nhieu', 'bao', 'mua', 'co', 'khong', 'cho', 'hoi',
       'la', 'gi', 'o', 'dau', 'nay', 'duoc', 'nao', 'voi', 'va', 'cua', 'minh', 'ban',
       'shop', 'ad', 'a', 'oi', 'nha', 'nhe', 'tim', 'kiem', 'xem', 'hang', 'con', 'het',
-      'tu', 'van', 'can', 'muon', 'giup', 'em', 'anh', 'chi', 'mau', 'loai', 'cai', 'the'
+      'tu', 'van', 'can', 'muon', 'giup', 'em', 'anh', 'chi', 'mau', 'loai', 'cai', 'the',
+      'nhung', 'cac'
     ]);
 
     const rawKeywords = noToneQ.split(/[\s,.\-_\/]+/).filter(w => w.length > 1);
@@ -136,60 +158,106 @@ export class LiveDatabaseKnowledge {
       const descNoTone = removeVietnameseTones(p.description.toLowerCase());
       const specsStr = removeVietnameseTones(JSON.stringify(p.specs).toLowerCase());
 
+      // ─── STRICT CATEGORY SCORING & DISAMBIGUATION ───
+      if (isLaptopRam) {
+        if (p.category === 'RAM') {
+          score += 80;
+          const isLaptopItem = nameNoTone.includes('laptop') || nameNoTone.includes('sodimm') || specsStr.includes('laptop') || specsStr.includes('sodimm');
+          if (isLaptopItem) {
+            score += 150; // Heavy boost for genuine laptop RAM
+          } else {
+            score -= 80; // Penalize desktop RAM when user asked for laptop RAM
+          }
+        } else {
+          // CRITICAL: NEVER show whole laptops when user asked for RAM Laptop
+          return { product: p, score: -500 };
+        }
+      } else if (isPcRam) {
+        if (p.category === 'RAM') {
+          score += 80;
+          const isLaptopItem = nameNoTone.includes('laptop') || nameNoTone.includes('sodimm') || specsStr.includes('laptop') || specsStr.includes('sodimm');
+          if (!isLaptopItem) {
+            score += 100;
+          } else {
+            score -= 80;
+          }
+        } else {
+          return { product: p, score: -500 };
+        }
+      } else if (isLaptopMachine) {
+        if (p.category === 'LAPTOP' || p.category === 'LAPTOP_GAMING') {
+          score += 120;
+        } else {
+          score -= 200;
+        }
+      } else if (isRamInquiry) {
+        if (p.category === 'RAM') score += 100;
+        else score -= 300;
+      } else if (isCpuInquiry) {
+        if (p.category === 'CPU') score += 100;
+        else score -= 300;
+      } else if (isVgaInquiry) {
+        if (p.category === 'VGA') score += 100;
+        else score -= 300;
+      } else if (isMainboardInquiry) {
+        if (p.category === 'MAINBOARD') score += 100;
+        else score -= 300;
+      } else if (isStorageInquiry) {
+        if (p.category === 'STORAGE') score += 100;
+        else score -= 300;
+      } else if (isPsuInquiry) {
+        if (p.category === 'PSU') score += 100;
+        else score -= 300;
+      } else if (isCaseInquiry) {
+        if (p.category === 'CASE') score += 100;
+        else score -= 300;
+      } else if (isCoolingInquiry) {
+        if (p.category === 'COOLING') score += 100;
+        else score -= 300;
+      } else if (isMonitorInquiry) {
+        if (p.category === 'MONITOR') score += 100;
+        else score -= 300;
+      } else if (isPrebuiltInquiry) {
+        if (p.category === 'PREBUILT_PC') score += 100;
+        else score -= 100;
+      }
+
+      // ─── GENERATION & SPEC FILTERING (DDR5 vs DDR4 vs DDR3) ───
+      const prodHasDdr5 = nameNoTone.includes('ddr5') || (p.ramType && p.ramType.toLowerCase().includes('ddr5')) || specsStr.includes('ddr5');
+      const prodHasDdr4 = nameNoTone.includes('ddr4') || (p.ramType && p.ramType.toLowerCase().includes('ddr4')) || specsStr.includes('ddr4');
+      const prodHasDdr3 = nameNoTone.includes('ddr3') || (p.ramType && p.ramType.toLowerCase().includes('ddr3')) || specsStr.includes('ddr3');
+
+      if (wantDdr5) {
+        if (prodHasDdr5) score += 120;
+        if (prodHasDdr4 || prodHasDdr3) score -= 200; // Strictly eliminate mismatched generation
+      } else if (wantDdr4) {
+        if (prodHasDdr4) score += 120;
+        if (prodHasDdr5 || prodHasDdr3) score -= 200;
+      } else if (wantDdr3) {
+        if (prodHasDdr3) score += 120;
+        if (prodHasDdr5 || prodHasDdr4) score -= 200;
+      }
+
       // Exact phrase match in Name
       if (nameNoTone.includes(noToneQ)) score += 100;
       if (noToneQ.includes(nameNoTone)) score += 80;
-      if (brandNoTone && noToneQ.includes(brandNoTone)) score += 30;
-
-      // Category detection bonus
-      if (noToneQ.includes('cpu') || noToneQ.includes('chip') || noToneQ.includes('vi xu ly')) {
-        if (p.category === 'CPU') score += 40;
-      }
-      if (noToneQ.includes('vga') || noToneQ.includes('card') || noToneQ.includes('do hoa') || noToneQ.includes('rtx') || noToneQ.includes('gtx') || noToneQ.includes('radeon')) {
-        if (p.category === 'VGA') score += 40;
-      }
-      if (noToneQ.includes('main') || noToneQ.includes('bo mach') || noToneQ.includes('motherboard')) {
-        if (p.category === 'MAINBOARD') score += 40;
-      }
-      if (noToneQ.includes('ram') || noToneQ.includes('bo nho')) {
-        if (p.category === 'RAM') score += 40;
-      }
-      if (noToneQ.includes('ssd') || noToneQ.includes('hdd') || noToneQ.includes('o cung') || noToneQ.includes('nvme')) {
-        if (p.category === 'STORAGE') score += 40;
-      }
-      if (noToneQ.includes('nguon') || noToneQ.includes('psu') || noToneQ.includes('power')) {
-        if (p.category === 'PSU') score += 40;
-      }
-      if (noToneQ.includes('case') || noToneQ.includes('vo may') || noToneQ.includes('thung may')) {
-        if (p.category === 'CASE') score += 40;
-      }
-      if (noToneQ.includes('tan nhiet') || noToneQ.includes('cooling') || noToneQ.includes('aio') || noToneQ.includes('fan')) {
-        if (p.category === 'COOLING') score += 40;
-      }
-      if (noToneQ.includes('man hinh') || noToneQ.includes('monitor') || noToneQ.includes('display') || noToneQ.includes('144hz') || noToneQ.includes('240hz')) {
-        if (p.category === 'MONITOR') score += 40;
-      }
-      if (noToneQ.includes('gear') || noToneQ.includes('ban phim') || noToneQ.includes('chuot') || noToneQ.includes('tai nghe') || noToneQ.includes('headset') || noToneQ.includes('keyboard') || noToneQ.includes('mouse')) {
-        if (p.category === 'GEAR' || p.category === 'KEYBOARD' || p.category === 'HEADSET') score += 40;
-      }
-      if (noToneQ.includes('laptop') || noToneQ.includes('gaming laptop')) {
-        if (p.category === 'LAPTOP' || p.category === 'LAPTOP_GAMING') score += 40;
-      }
+      if (brandNoTone && noToneQ.includes(brandNoTone)) score += 40;
 
       // Keyword matches
       let matchedKwCount = 0;
       for (const kw of effectiveKeywords) {
         if (nameNoTone.includes(kw)) {
-          score += 25;
+          score += 30;
           matchedKwCount++;
         } else if (brandNoTone.includes(kw)) {
+          score += 20;
+          matchedKwCount++;
+        } else if (specsStr.includes(kw)) {
           score += 15;
           matchedKwCount++;
         } else if (catNoTone.includes(kw)) {
           score += 10;
           matchedKwCount++;
-        } else if (specsStr.includes(kw)) {
-          score += 10;
         } else if (descNoTone.includes(kw)) {
           score += 5;
         }
@@ -197,7 +265,7 @@ export class LiveDatabaseKnowledge {
 
       // Bonus if all query keywords match the product
       if (effectiveKeywords.length > 1 && matchedKwCount >= effectiveKeywords.length) {
-        score += 45;
+        score += 50;
       }
 
       return { product: p, score };
@@ -208,7 +276,7 @@ export class LiveDatabaseKnowledge {
 
     const topScore = validMatches[0].score;
     const filtered = validMatches
-      .filter(item => item.score >= Math.max(20, topScore * 0.4))
+      .filter(item => item.score >= Math.max(30, topScore * 0.45))
       .map(item => item.product);
 
     return filtered.slice(0, limit);

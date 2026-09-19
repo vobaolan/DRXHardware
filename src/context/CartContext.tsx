@@ -36,10 +36,10 @@ interface CartContextType {
   setCartOpen: (isOpen: boolean) => void;
   setIsOpen: (isOpen: boolean) => void;
   coupon: Coupon | null;
-  applyCoupon: (code: string) => Promise<{ success: boolean; message: string }>;
+  applyCoupon: (code: string, customTotal?: number) => Promise<{ success: boolean; message: string }>;
   removeCoupon: () => void;
-  getDiscountAmount: () => number;
-  getNetAmount: () => number;
+  getDiscountAmount: (customTotal?: number) => number;
+  getNetAmount: (customTotal?: number) => number;
 }
 
 const PRIMARY_CART_KEY = 'drx_hardware_cart';
@@ -305,15 +305,17 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return total + activePrice * item.quantity;
   }, 0);
 
-  const applyCoupon = async (code: string): Promise<{ success: boolean; message: string }> => {
+  const applyCoupon = async (code: string, customTotal?: number): Promise<{ success: boolean; message: string }> => {
     const cleanedCode = code.toUpperCase().trim();
     if (!cleanedCode) return { success: false, message: 'Vui lòng nhập mã giảm giá!' };
+
+    const effectiveTotal = typeof customTotal === 'number' && customTotal > 0 ? customTotal : cartTotal;
 
     try {
       const res = await fetch('/api/coupons', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: cleanedCode, orderTotal: cartTotal }),
+        body: JSON.stringify({ code: cleanedCode, orderTotal: effectiveTotal }),
       });
 
       const data = await res.json();
@@ -329,7 +331,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: true, message: data.message || `Áp dụng mã ${cleanedCode} thành công!` };
       }
 
-      return { success: false, message: data.message || `Mã giảm giá "${cleanedCode}" không tồn tại.` };
+      return { success: false, message: data.message || `Mã giảm giá "${cleanedCode}" không hợp lệ hoặc không tồn tại.` };
     } catch (e) {
       console.warn('Lỗi gọi /api/coupons:', e);
       return { success: false, message: 'Lỗi kết nối máy chủ khi xác thực mã giảm giá.' };
@@ -340,13 +342,14 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCoupon(null);
   };
 
-  const getDiscountAmount = () => {
+  const getDiscountAmount = (customTotal?: number) => {
     if (!coupon) return 0;
+    const baseTotal = typeof customTotal === 'number' && customTotal > 0 ? customTotal : cartTotal;
     let amt = 0;
     if (coupon.discountType === 'PERCENT') {
-      amt = (cartTotal * coupon.discountValue) / 100;
+      amt = (baseTotal * coupon.discountValue) / 100;
     } else {
-      amt = Math.min(coupon.discountValue, cartTotal);
+      amt = Math.min(coupon.discountValue, baseTotal);
     }
     if (coupon.maxDiscount && amt > coupon.maxDiscount) {
       amt = coupon.maxDiscount;
@@ -354,8 +357,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return amt;
   };
 
-  const getNetAmount = () => {
-    return Math.max(0, cartTotal - getDiscountAmount());
+  const getNetAmount = (customTotal?: number) => {
+    const baseTotal = typeof customTotal === 'number' && customTotal > 0 ? customTotal : cartTotal;
+    return Math.max(0, baseTotal - getDiscountAmount(baseTotal));
   };
 
   return (

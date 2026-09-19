@@ -36,13 +36,13 @@ const HERO_BANNERS: TabBanner[] = [
     tabIcon: Gift,
     badgeTag: 'HỆ THỐNG VOUCHER HOẠT ĐỘNG 100%',
     mainTitleText: 'MÃ ƯU ĐÃI ĐƠN HÀNG',
-    highlightText: 'ÁP DỤNG NGAY TẠI BƯỚC THANH TOÁN • TRỪ TIỀN TRỰC TIẾP',
+    highlightText: 'ÁP DỤNG TẠI BƯỚC THANH TOÁN • TRỪ TIỀN TRỰC TIẾP VÀO ĐƠN',
     themeColor: '#0284c7',
     vouchers: [
-      { title: 'MÃ GIẢM DRX10', value: 'GIẢM 10% TỐI ĐA 500K', icon: Tag },
+      { title: 'VOUCHER DRX10', value: 'GIẢM 10% TỐI ĐA 500K', icon: Tag },
       { title: 'MÃ WELCOMEPC', value: 'GIẢM 5% ĐƠN TỪ 1TR', icon: Gift },
       { title: 'MÃ GAMING50K', value: 'GIẢM THẲNG 50.000Đ', icon: Percent },
-      { title: 'TRỪ TIỀN TỰ ĐỘNG', value: 'NHẬP MÃ TẠI CHECKOUT', icon: Zap },
+      { title: 'TRỪ TIỀN TỰ ĐỘNG', value: 'ÁP DỤNG TẠI CHECKOUT', icon: Zap },
     ],
     dateRange: 'Mã giảm giá áp dụng trực tiếp cho mọi đơn hàng đặt qua website',
     ctaText: 'SẮM LINH KIỆN NGAY',
@@ -62,7 +62,7 @@ const HERO_BANNERS: TabBanner[] = [
       { title: 'CHECK TƯƠNG THÍCH', value: 'SOCKET & RAM CHUẨN', icon: Cpu },
       { title: 'CÔNG SUẤT NGUỒN', value: 'TỰ TÍNH WATTAGE', icon: Zap },
       { title: 'MIỄN PHÍ LẮP RÁP', value: 'CÀI WINDOWS & TEST FULL', icon: Sparkles },
-      { title: 'XUẤT CẤU HÌNH NHANH', value: '1-CLICK THÊM GIỎ HÀNG', icon: Tag },
+      { title: 'XUẤT CẤU HÌNH', value: '1-CLICK VÀO GIỎ HÀNG', icon: Tag },
     ],
     dateRange: 'Dàn PC lắp ráp được kỹ thuật viên DRX test full-load trước khi giao',
     ctaText: 'TRẢI NGHIỆM BUILD PC',
@@ -80,9 +80,9 @@ const HERO_BANNERS: TabBanner[] = [
     themeColor: '#0ea5e9',
     vouchers: [
       { title: 'TRA THEO SERIAL', value: 'CHÍNH XÁC TỪNG MÓN', icon: ShieldCheck },
-      { title: 'TRA THEO SỐ ĐT', value: 'LỊCH SỬ MUA HÀNG', icon: Clock },
+      { title: 'TRA THEO SĐT', value: 'LỊCH SỬ MUA HÀNG', icon: Clock },
       { title: 'TEM BẢO HÀNH KHO', value: 'CAM KẾT 100% NEW', icon: Award },
-      { title: 'THỜI HẠN BẢO HÀNH', value: '12 ĐẾN 36 THÁNG', icon: Flame },
+      { title: 'HẠN BẢO HÀNH', value: 'TỪ 12 ĐẾN 36 THÁNG', icon: Flame },
     ],
     dateRange: 'Toàn bộ linh kiện bán ra đều được định danh Serial Number trên hệ thống',
     ctaText: 'TRA CỨU BẢO HÀNH',
@@ -92,17 +92,17 @@ const HERO_BANNERS: TabBanner[] = [
   {
     id: 'banner-vietqr-payment',
     tabTitle: 'QUÉT MÃ QR & COD',
-    tabSubtitle: 'Thanh toán VietQR Techcombank STK BAOLANN & COD tận nhà!',
+    tabSubtitle: 'Thanh toán VietQR Techcombank & COD nhận hàng tiện lợi!',
     tabIcon: CreditCard,
     badgeTag: 'THANH TOÁN TIỆN LỢI & AN TOÀN',
     mainTitleText: 'QUÉT MÃ VIETQR TECHCOMBANK',
-    highlightText: 'STK: BAOLANN • VO BAO LAN • KHÔNG PHÍ GIAO DỊCH • HOẶC CHỌN COD',
+    highlightText: 'QUÉT MÃ TỰ ĐỘNG • TECHCOMBANK 0Đ PHÍ • HỖ TRỢ COD TẬN NƠI',
     themeColor: '#8b5cf6',
     vouchers: [
-      { title: 'VIETQR TECHCOMBANK', value: 'STK: BAOLANN (0Đ PHÍ)', icon: CreditCard },
-      { title: 'THANH TOÁN COD', value: 'NHẬN HÀNG THANH TOÁN', icon: Tag },
-      { title: 'XÁC NHẬN ĐƠN HÀNG', value: 'DUYỆT NHANH 1-3 PHÚT', icon: Zap },
-      { title: 'GIAO NHẬN LINH HOẠT', value: 'TẬN NƠI HOẶC SHOWROOM', icon: Award },
+      { title: 'VIETQR TECHCOMBANK', value: 'MIỄN PHÍ 0Đ GIAO DỊCH', icon: CreditCard },
+      { title: 'THANH TOÁN COD', value: 'KIỂM TRA & NHẬN HÀNG', icon: Tag },
+      { title: 'XÁC NHẬN ĐƠN', value: 'DUYỆT NHANH 1-3 PHÚT', icon: Zap },
+      { title: 'GIAO NHẬN TOÀN QUỐC', value: 'GIAO TẬN NƠI & SHOWROOM', icon: Award },
     ],
     dateRange: 'Hỗ trợ cả 2 hình thức thanh toán QR Techcombank và COD khi nhận hàng',
     ctaText: 'XEM HƯỚNG DẪN MUA HÀNG',
@@ -293,24 +293,24 @@ export const SummerHeroCarousel: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -12 }}
               transition={{ duration: 0.4, delay: 0.08 }}
-              className="mt-8 sm:mt-9 grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3 max-w-4xl"
+              className="mt-8 sm:mt-9 grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3 max-w-5xl"
             >
               {activeSlide.vouchers.map((v, idx) => {
                 const IconComp = v.icon || Sparkles;
                 return (
                   <div 
                     key={idx} 
-                    className="p-3 rounded-2xl bg-slate-50/90 dark:bg-slate-900/70 hover:bg-white dark:hover:bg-slate-900/95 backdrop-blur-md border border-slate-200/90 dark:border-white/10 hover:border-sky-400 dark:hover:border-sky-400/50 transition-all duration-300 shadow-2xs hover:shadow-md overflow-hidden group/voucher"
+                    className="p-2.5 sm:px-3.5 sm:py-3 rounded-2xl bg-white/90 dark:bg-slate-900/80 hover:bg-white dark:hover:bg-slate-900/95 backdrop-blur-md border border-slate-200/90 dark:border-white/10 hover:border-sky-400 dark:hover:border-sky-400/50 transition-all duration-300 shadow-2xs hover:shadow-md group/voucher"
                   >
                     <div className="flex items-center gap-2.5 relative z-10">
-                      <div className="p-2 rounded-xl bg-sky-100 dark:bg-white/10 border border-sky-200/80 dark:border-white/10 text-[#0284c7] dark:text-sky-400 group-hover/voucher:scale-110 transition-transform">
+                      <div className="p-2 rounded-xl bg-sky-50 dark:bg-white/10 border border-sky-100 dark:border-white/10 text-[#0284c7] dark:text-sky-400 group-hover/voucher:scale-110 transition-transform shrink-0">
                         <IconComp className="w-4 h-4 shrink-0" />
                       </div>
-                      <div className="min-w-0">
-                        <div className="text-[9.5px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider truncate">
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider whitespace-nowrap">
                           {v.title}
                         </div>
-                        <div className="text-[11.5px] font-heading font-black text-slate-900 dark:text-white truncate group-hover/voucher:text-[#0284c7] dark:group-hover/voucher:text-sky-300 transition-colors">
+                        <div className="text-[11.5px] sm:text-[12px] font-heading font-black text-slate-900 dark:text-white whitespace-nowrap group-hover/voucher:text-[#0284c7] dark:group-hover/voucher:text-sky-300 transition-colors">
                           {v.value}
                         </div>
                       </div>

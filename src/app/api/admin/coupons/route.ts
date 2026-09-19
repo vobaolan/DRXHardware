@@ -1,16 +1,17 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 
-// GET: List all coupons
+// GET: List all coupons with real-time usage synchronization from orders
 export async function GET() {
   try {
     let coupons: any[] = [];
 
-    // Direct fetch from Supabase Cloud Database (Fast Direct REST)
+    // 1. Direct fetch from Supabase Cloud Database (Fast Direct REST)
     try {
       const { data, error } = await supabase
         .from('Coupon')
@@ -18,22 +19,89 @@ export async function GET() {
         .order('createdAt', { ascending: false });
 
       if (!error && data && Array.isArray(data)) {
-        coupons = data.map(c => {
-          const isExplicitlyDisabled = new Date(c.expiresAt).getFullYear() <= 1970;
-          const isExpired = new Date(c.expiresAt).getTime() <= Date.now();
-          const isDepleted = Number(c.usedCount || 0) >= Number(c.maxUses || 0);
-
-          return {
-            ...c,
-            status: isExplicitlyDisabled ? 'INACTIVE' : (isExpired || isDepleted) ? 'INACTIVE' : 'ACTIVE',
-          };
-        });
+        coupons = data;
       }
     } catch (e) {
       console.warn('Supabase get coupons warning:', e);
     }
 
-    return NextResponse.json({ coupons }, { status: 200 });
+    // Fallback to Prisma if Supabase returned empty
+    if (coupons.length === 0) {
+      try {
+        const prismaCoupons = await prisma.coupon.findMany({
+          orderBy: { createdAt: 'desc' },
+        });
+        if (prismaCoupons && prismaCoupons.length > 0) {
+          coupons = prismaCoupons.map((c: any) => ({
+            ...c,
+            discountValue: Number(c.discountValue),
+            minOrderValue: c.minOrderValue ? Number(c.minOrderValue) : null,
+            maxDiscount: c.maxDiscount ? Number(c.maxDiscount) : null,
+          }));
+        }
+      } catch (pErr) {
+        console.warn('Prisma get coupons fallback warning:', pErr);
+      }
+    }
+
+    // 2. Query all actual orders to cross-calculate exact real-time coupon usages
+    const orderUsageMap: Record<string, number> = {};
+    try {
+      // Check Supabase orders
+      const { data: supaOrders } = await supabase
+        .from('Order')
+        .select('couponCode, paymentDetails, discountAmount');
+
+      if (supaOrders && Array.isArray(supaOrders)) {
+        supaOrders.forEach((ord: any) => {
+          let code = ord.couponCode;
+          if (!code && ord.paymentDetails) {
+            const details = typeof ord.paymentDetails === 'string'
+              ? (() => { try { return JSON.parse(ord.paymentDetails); } catch { return null; } })()
+              : ord.paymentDetails;
+            code = details?.couponCode;
+          }
+          if (code && typeof code === 'string' && code.trim()) {
+            const clean = code.trim().toUpperCase();
+            orderUsageMap[clean] = (orderUsageMap[clean] || 0) + 1;
+          }
+        });
+      }
+    } catch (ordErr) {
+      console.warn('Coupon real-time usage check warning:', ordErr);
+    }
+
+    // 3. Normalize coupons, compute status and update synced counts
+    const normalizedCoupons = await Promise.all(
+      coupons.map(async (c) => {
+        const upperCode = String(c.code).trim().toUpperCase();
+        const realOrderCount = orderUsageMap[upperCode] || 0;
+        const currentCount = Number(c.usedCount || 0);
+        const effectiveUsedCount = Math.max(currentCount, realOrderCount);
+
+        // Auto background fix in Supabase if count was out of sync
+        if (effectiveUsedCount > currentCount) {
+          try {
+            await supabase
+              .from('Coupon')
+              .update({ usedCount: effectiveUsedCount })
+              .eq('code', c.code);
+          } catch (syncErr) {}
+        }
+
+        const isExplicitlyDisabled = new Date(c.expiresAt).getFullYear() <= 1970;
+        const isExpired = new Date(c.expiresAt).getTime() <= Date.now();
+        const isDepleted = effectiveUsedCount >= Number(c.maxUses || 0);
+
+        return {
+          ...c,
+          usedCount: effectiveUsedCount,
+          status: isExplicitlyDisabled ? 'INACTIVE' : (isExpired || isDepleted) ? 'INACTIVE' : 'ACTIVE',
+        };
+      })
+    );
+
+    return NextResponse.json({ coupons: normalizedCoupons }, { status: 200 });
   } catch (error: any) {
     console.error('Lỗi khi lấy danh sách mã giảm giá:', error);
     return NextResponse.json(
@@ -99,6 +167,33 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: 'Lỗi lưu mã giảm giá: ' + error.message }, { status: 400 });
     }
 
+    // Also sync to Prisma PostgreSQL
+    try {
+      await prisma.coupon.upsert({
+        where: { code: cleanCode },
+        create: {
+          code: cleanCode,
+          discountType: couponData.discountType,
+          discountValue: couponData.discountValue,
+          minOrderValue: couponData.minOrderValue,
+          maxDiscount: couponData.maxDiscount,
+          expiresAt: new Date(couponData.expiresAt),
+          maxUses: couponData.maxUses,
+          usedCount: 0,
+        },
+        update: {
+          discountType: couponData.discountType,
+          discountValue: couponData.discountValue,
+          minOrderValue: couponData.minOrderValue,
+          maxDiscount: couponData.maxDiscount,
+          expiresAt: new Date(couponData.expiresAt),
+          maxUses: couponData.maxUses,
+        }
+      });
+    } catch (pErr) {
+      console.warn('Prisma coupon create sync warning:', pErr);
+    }
+
     return NextResponse.json({
       message: `Tạo mã giảm giá ${cleanCode} thành công!`,
       coupon: {
@@ -135,6 +230,7 @@ export async function PUT(request: Request) {
       return NextResponse.json({ message: 'Thiếu mã giảm giá cần cập nhật!' }, { status: 400 });
     }
 
+    const cleanCode = code.trim().toUpperCase();
     const updateData: any = {};
     if (discountType) updateData.discountType = discountType.toUpperCase();
     if (discountValue !== undefined) updateData.discountValue = Number(discountValue);
@@ -154,7 +250,7 @@ export async function PUT(request: Request) {
     const { data: updated, error } = await supabase
       .from('Coupon')
       .update(updateData)
-      .eq('code', code)
+      .eq('code', cleanCode)
       .select()
       .single();
 
@@ -162,10 +258,29 @@ export async function PUT(request: Request) {
       return NextResponse.json({ message: 'Lỗi cập nhật mã giảm giá: ' + error.message }, { status: 400 });
     }
 
+    // Also sync to Prisma
+    try {
+      const prismaUpdate: any = {};
+      if (updateData.discountType) prismaUpdate.discountType = updateData.discountType;
+      if (updateData.discountValue !== undefined) prismaUpdate.discountValue = updateData.discountValue;
+      if (updateData.minOrderValue !== undefined) prismaUpdate.minOrderValue = updateData.minOrderValue;
+      if (updateData.maxDiscount !== undefined) prismaUpdate.maxDiscount = updateData.maxDiscount;
+      if (updateData.maxUses !== undefined) prismaUpdate.maxUses = updateData.maxUses;
+      if (updateData.usedCount !== undefined) prismaUpdate.usedCount = updateData.usedCount;
+      if (updateData.expiresAt) prismaUpdate.expiresAt = new Date(updateData.expiresAt);
+
+      await prisma.coupon.updateMany({
+        where: { code: cleanCode },
+        data: prismaUpdate,
+      });
+    } catch (pErr) {
+      console.warn('Prisma coupon update sync warning:', pErr);
+    }
+
     return NextResponse.json({
-      message: `Đã cập nhật mã giảm giá ${code}!`,
+      message: `Đã cập nhật mã giảm giá ${cleanCode}!`,
       coupon: {
-        ...(updated || { code, ...updateData }),
+        ...(updated || { code: cleanCode, ...updateData }),
         status: status || 'ACTIVE',
       },
     }, { status: 200 });
@@ -190,13 +305,21 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ message: 'Thiếu mã giảm giá cần xóa!' }, { status: 400 });
     }
 
-    const { error } = await supabase.from('Coupon').delete().eq('code', code);
+    const cleanCode = code.trim().toUpperCase();
+    const { error } = await supabase.from('Coupon').delete().eq('code', cleanCode);
     if (error) {
       return NextResponse.json({ message: 'Lỗi khi xóa mã: ' + error.message }, { status: 400 });
     }
 
+    // Also delete in Prisma
+    try {
+      await prisma.coupon.deleteMany({ where: { code: cleanCode } });
+    } catch (pErr) {
+      console.warn('Prisma delete coupon warning:', pErr);
+    }
+
     return NextResponse.json({
-      message: `Đã xóa mã giảm giá ${code} thành công!`,
+      message: `Đã xóa mã giảm giá ${cleanCode} thành công!`,
     }, { status: 200 });
   } catch (error: any) {
     console.error('Lỗi khi xóa mã giảm giá:', error);

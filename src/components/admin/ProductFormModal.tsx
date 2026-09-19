@@ -289,6 +289,12 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
   const [stockQuantity, setStockQuantity] = useState<number>(15);
   const [warrantyMonths, setWarrantyMonths] = useState<number>(36);
   
+  // Hardware Compatibility specs
+  const [socket, setSocket] = useState('');
+  const [ramType, setRamType] = useState('');
+  const [wattage, setWattage] = useState('');
+  const [formFactor, setFormFactor] = useState('');
+
   // Images (Direct upload to Supabase Storage - Anti Copyright)
   const [coverImage, setCoverImage] = useState('');
   const [screenshots, setScreenshots] = useState<string[]>([]);
@@ -321,6 +327,12 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
 
         setStockQuantity(initialData.stockQuantity !== undefined ? initialData.stockQuantity : 15);
         setWarrantyMonths(initialData.warrantyMonths || 36);
+        
+        setSocket(initialData.socket || '');
+        setRamType(initialData.ramType || '');
+        setWattage(initialData.wattage ? String(initialData.wattage) : '');
+        setFormFactor(initialData.formFactor || '');
+
         setCoverImage(initialData.coverImage || '');
         setScreenshots(initialData.screenshots || (initialData.coverImage ? [initialData.coverImage] : []));
         setDescription(initialData.description || '');
@@ -345,6 +357,11 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
 
         setStockQuantity(15);
         setWarrantyMonths(36);
+        setSocket('');
+        setRamType('');
+        setWattage('');
+        setFormFactor('');
+
         setCoverImage('');
         setScreenshots([]);
         setDescription('');
@@ -602,6 +619,10 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
       warrantyMonths: Number(warrantyMonths),
       coverImage: coverImage.trim(),
       screenshots: screenshots.length > 0 ? screenshots : [coverImage.trim()],
+      socket: socket.trim() || undefined,
+      ramType: ramType.trim() || undefined,
+      wattage: wattage ? Number(wattage) : undefined,
+      formFactor: formFactor.trim() || undefined,
       specs: specsObj,
       description: description.trim(),
       isFlashDeal,
@@ -624,7 +645,13 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
         return;
       }
 
-      showToast(mode === 'edit' ? 'Đã cập nhật linh kiện thành công!' : 'Đã thêm linh kiện mới vào kho!', 'success');
+      showToast(mode === 'edit' ? 'Đã cập nhật linh kiện thành công vào Supabase!' : 'Đã thêm linh kiện mới vào kho Supabase!', 'success');
+      
+      // Dispatch global sync event for all active tabs and views
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('ods_products_updated'));
+      }
+
       onSaved(data.product || payload);
       onClose();
     } catch (err: any) {
@@ -869,17 +896,17 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-black uppercase text-[#0284c7] tracking-wider flex items-center gap-2">
                 <DollarSign className="w-4 h-4" />
-                <span>2. Giá Bán & Quản Lý Kho (Tự Động Phân Tách Hàng Triệu, Hàng Trăm)</span>
+                <span>2. Giá Bán, Giá Vốn &amp; Quản Lý Kho</span>
               </h3>
-              <span className="text-[10px] text-slate-400 font-medium">Định dạng số dễ nhìn</span>
+              <span className="text-[10px] text-slate-400 font-medium">Định dạng số phân tách hàng triệu</span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
               
               {/* GIÁ GỐC */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
-                  <span>Giá Niêm Yết (Gốc) <span className="text-rose-500">*</span></span>
+                  <span>Giá Niêm Yết <span className="text-rose-500">*</span></span>
                   <span className="text-[10px] text-slate-400 font-mono">VNĐ</span>
                 </label>
                 <div className="relative">
@@ -889,23 +916,23 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                     placeholder="8,990,000"
                     value={priceInput}
                     onChange={(e) => handlePriceChange(e.target.value)}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl pl-3.5 pr-8 py-2.5 text-xs font-mono font-black text-slate-900 dark:text-slate-100 focus:border-[#0284c7] outline-none"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl pl-3 pr-7 py-2.5 text-xs font-mono font-black text-slate-900 dark:text-slate-100 focus:border-[#0284c7] outline-none"
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">₫</span>
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">₫</span>
                 </div>
                 {activeNumPrice > 0 ? (
-                  <span className="text-[10.5px] font-bold text-[#0284c7] block">
+                  <span className="text-[10px] font-bold text-[#0284c7] block truncate">
                     {toVietnameseCurrencyText(activeNumPrice)}
                   </span>
                 ) : (
-                  <span className="text-[10px] text-slate-400 block italic">Nhập số để xem tiền triệu/trăm</span>
+                  <span className="text-[10px] text-slate-400 block italic">Nhập số</span>
                 )}
               </div>
 
               {/* GIÁ KHUYẾN MÃI */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
-                  <span>Giá Khuyến Mãi (Nếu có)</span>
+                  <span>Giá Khuyến Mãi</span>
                   <span className="text-[10px] text-slate-400 font-mono">VNĐ</span>
                 </label>
                 <div className="relative">
@@ -914,12 +941,12 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                     placeholder="8,290,000"
                     value={discountPriceInput}
                     onChange={(e) => handleDiscountPriceChange(e.target.value)}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl pl-3.5 pr-8 py-2.5 text-xs font-mono font-black text-emerald-600 dark:text-emerald-400 focus:border-[#0284c7] outline-none"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl pl-3 pr-7 py-2.5 text-xs font-mono font-black text-emerald-600 dark:text-emerald-400 focus:border-[#0284c7] outline-none"
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-emerald-500">₫</span>
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-emerald-500">₫</span>
                 </div>
                 {activeNumDiscountPrice > 0 ? (
-                  <span className="text-[10.5px] font-bold text-emerald-600 block">
+                  <span className="text-[10px] font-bold text-emerald-600 block truncate">
                     {toVietnameseCurrencyText(activeNumDiscountPrice)}
                   </span>
                 ) : (
@@ -927,17 +954,42 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                 )}
               </div>
 
+              {/* GIÁ VỐN NHẬP KHO */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                  <span>Giá Nhập Kho</span>
+                  <span className="text-[10px] text-slate-400 font-mono">VNĐ</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="7,500,000"
+                    value={costPriceInput}
+                    onChange={(e) => handleCostPriceChange(e.target.value)}
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl pl-3 pr-7 py-2.5 text-xs font-mono font-bold text-slate-700 dark:text-slate-300 focus:border-[#0284c7] outline-none"
+                  />
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">₫</span>
+                </div>
+                {activeNumCostPrice > 0 ? (
+                  <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 block truncate">
+                    {toVietnameseCurrencyText(activeNumCostPrice)}
+                  </span>
+                ) : (
+                  <span className="text-[10px] text-slate-400 block italic">Tính lãi ròng</span>
+                )}
+              </div>
+
               {/* SỐ LƯỢNG TỒN KHO */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                  Số Lượng Tồn Kho (Chiếc)
+                  Số Lượng Tồn Kho
                 </label>
                 <input
                   type="number"
                   min="0"
                   value={stockQuantity}
                   onChange={(e) => setStockQuantity(Number(e.target.value))}
-                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-900 dark:text-slate-100 focus:border-[#0284c7] outline-none"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-900 dark:text-slate-100 focus:border-[#0284c7] outline-none"
                 />
                 <span className="text-[10px] text-slate-400 block">Sẵn sàng xuất bán</span>
               </div>
@@ -951,9 +1003,78 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                   options={WARRANTY_OPTIONS}
                   value={warrantyMonths}
                   onChange={(val) => setWarrantyMonths(Number(val))}
-                  placeholder="Chọn thời hạn bảo hành..."
+                  placeholder="Thời hạn..."
                 />
-                <span className="text-[10px] text-slate-400 block">Tra cứu bằng mã SN</span>
+                <span className="text-[10px] text-slate-400 block">Tra cứu bằng SN</span>
+              </div>
+            </div>
+          </div>
+
+          {/* 2.5. HARDWARE COMPATIBILITY & PC BUILDER SPECS */}
+          <div className="space-y-4 bg-slate-50 dark:bg-slate-950/50 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-black uppercase text-[#0284c7] tracking-wider flex items-center gap-2">
+                <Cpu className="w-4 h-4" />
+                <span>2.5. Tương Thích Lắp Ráp &amp; Tự Build PC (PC Builder Sync)</span>
+              </h3>
+              <span className="text-[10px] text-sky-600 dark:text-sky-400 font-bold">Tự động check tương thích khi khách build</span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  Socket (CPU / Mainboard)
+                </label>
+                <input
+                  type="text"
+                  placeholder="LGA 1700, AM5, AM4..."
+                  value={socket}
+                  onChange={(e) => setSocket(e.target.value)}
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 dark:text-slate-100 focus:border-[#0284c7] outline-none"
+                />
+                <span className="text-[10px] text-slate-400 block">Khớp socket giữa CPU &amp; Main</span>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  Chuẩn RAM (RAM / Mainboard)
+                </label>
+                <input
+                  type="text"
+                  placeholder="DDR4, DDR5..."
+                  value={ramType}
+                  onChange={(e) => setRamType(e.target.value)}
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 dark:text-slate-100 focus:border-[#0284c7] outline-none"
+                />
+                <span className="text-[10px] text-slate-400 block">Khớp thế hệ RAM DDR4/DDR5</span>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  Công Suất Tiêu Thụ / Cung Cấp (Watt)
+                </label>
+                <input
+                  type="number"
+                  placeholder="65, 125, 650, 750..."
+                  value={wattage}
+                  onChange={(e) => setWattage(e.target.value)}
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-900 dark:text-slate-100 focus:border-[#0284c7] outline-none"
+                />
+                <span className="text-[10px] text-slate-400 block">TDP (CPU/VGA) hoặc Nguồn (PSU)</span>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  Kích Thước (Form Factor)
+                </label>
+                <input
+                  type="text"
+                  placeholder="ATX, Micro-ATX, Mini-ITX..."
+                  value={formFactor}
+                  onChange={(e) => setFormFactor(e.target.value)}
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 dark:text-slate-100 focus:border-[#0284c7] outline-none"
+                />
+                <span className="text-[10px] text-slate-400 block">Khớp kích thước Main &amp; Vỏ Case</span>
               </div>
             </div>
           </div>

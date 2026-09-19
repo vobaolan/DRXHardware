@@ -32,7 +32,8 @@ import {
   ExternalLink,
   Cpu,
   Layers,
-  Zap
+  Zap,
+  Tag
 } from 'lucide-react';
 import { 
   IconCpu, 
@@ -45,6 +46,7 @@ import {
 } from '@/components/icons/HardwareIcons';
 import { BuildQuotationModal } from '@/components/pc-builder/BuildQuotationModal';
 import { SaveBuildModal } from '@/components/pc-builder/SaveBuildModal';
+import { CheckoutBuildModal } from '@/components/pc-builder/CheckoutBuildModal';
 import Link from 'next/link';
 
 type BuildStep = {
@@ -108,7 +110,7 @@ export function generateDynamicBuildName(build: Record<string, HardwareProduct |
 function PCBuilderContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { addToCart, addMultipleToCart } = useCart();
+  const { addToCart, addMultipleToCart, coupon, applyCoupon, removeCoupon, getDiscountAmount } = useCart();
 
   const [allProducts, setAllProducts] = useState<HardwareProduct[]>(INITIAL_PRODUCTS);
   const [selectedBuild, setSelectedBuild] = useState<Record<string, HardwareProduct | null>>({
@@ -132,6 +134,9 @@ function PCBuilderContent() {
   const [activeStepModal, setActiveStepModal] = useState<string | null>(null);
   const [isQuotationOpen, setIsQuotationOpen] = useState(false);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
+  const [couponInput, setCouponInput] = useState(coupon?.code || '');
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
 
   // Modal search & filter state
   const [searchQuery, setSearchQuery] = useState('');
@@ -401,13 +406,49 @@ function PCBuilderContent() {
     });
   };
 
-  // 1-Click Buy Entire PC Build
+  // Inline coupon handlers for PC Builder
+  const handleApplyInlineCoupon = async (codeToApply?: string) => {
+    const code = (codeToApply || couponInput).trim().toUpperCase();
+    if (!code) {
+      showToast('Vui lòng nhập mã giảm giá!', 'error');
+      return;
+    }
+    setIsApplyingCoupon(true);
+    try {
+      const res = await applyCoupon(code, totalCost);
+      if (res.success) {
+        showToast(res.message, 'success');
+        setCouponInput(code);
+      } else {
+        showToast(res.message, 'error');
+      }
+    } catch (err) {
+      showToast('Lỗi khi kiểm tra mã giảm giá', 'error');
+    } finally {
+      setIsApplyingCoupon(false);
+    }
+  };
+
+  const handleRemoveInlineCoupon = () => {
+    removeCoupon();
+    setCouponInput('');
+    showToast('Đã hủy áp dụng mã giảm giá', 'info');
+  };
+
+  // 1-Click Buy Entire PC Build - Opens Confirmation Modal with Coupon Application
   const handleBuyAll = () => {
     const itemsToBuy = Object.values(selectedBuild).filter(Boolean) as HardwareProduct[];
     if (itemsToBuy.length === 0) {
       showToast('Vui lòng bấm chọn ít nhất một linh kiện vào cấu hình trước khi thanh toán!', 'error');
       return;
     }
+    setIsCheckoutModalOpen(true);
+  };
+
+  // Proceed to checkout after reviewing items & applying coupon
+  const handleProceedToCheckout = (appliedCode?: string) => {
+    const itemsToBuy = Object.values(selectedBuild).filter(Boolean) as HardwareProduct[];
+    if (itemsToBuy.length === 0) return;
 
     const cartPayload = itemsToBuy.map(item => ({
       id: item.id,
@@ -422,10 +463,11 @@ function PCBuilderContent() {
 
     try {
       addMultipleToCart(cartPayload, false);
+      setIsCheckoutModalOpen(false);
       showToast(`Đã thêm ${itemsToBuy.length} linh kiện vào giỏ hàng!`, 'success');
       router.push('/checkout');
     } catch (e) {
-      console.error('Error during handleBuyAll:', e);
+      console.error('Error during handleProceedToCheckout:', e);
       router.push('/checkout');
     }
   };
@@ -743,14 +785,78 @@ function PCBuilderContent() {
                 })}
               </div>
 
-              {/* Total Summary Box (No Wattage display) */}
-              <div className="bg-slate-50 dark:bg-slate-950 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 space-y-1.5">
-                <span className="text-[10.5px] uppercase font-bold text-slate-500 tracking-wider block">
-                  Tổng Tiền Cấu Hình (Đã Gồm VAT):
-                </span>
-                <span className="text-xl sm:text-2xl font-heading font-black text-rose-600 dark:text-rose-400 block">
-                  {formatVND(totalCost)}
-                </span>
+              {/* Sidebar Inline Coupon Code Section */}
+              <div className="bg-sky-50/60 dark:bg-slate-950/60 rounded-2xl p-3.5 border border-sky-100 dark:border-slate-800 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 font-heading text-[11px] font-black uppercase text-slate-800 dark:text-slate-200">
+                    <Tag className="w-3.5 h-3.5 text-[#0284c7]" />
+                    <span>Mã Giảm Giá PC Builder</span>
+                  </div>
+                  {coupon && (
+                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
+                      Đã áp dụng
+                    </span>
+                  )}
+                </div>
+
+                {coupon ? (
+                  <div className="flex items-center justify-between gap-2 p-2 bg-emerald-500/10 border border-emerald-400/40 rounded-xl text-emerald-900 dark:text-emerald-200">
+                    <div className="min-w-0">
+                      <span className="font-mono font-black text-xs block truncate">MÃ: {coupon.code}</span>
+                      <span className="text-[10.5px] text-emerald-700 dark:text-emerald-300 font-bold block">
+                        Giảm: -{formatVND(getDiscountAmount(totalCost))}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleRemoveInlineCoupon}
+                      className="px-2 py-1 rounded-lg bg-white dark:bg-slate-900 hover:bg-rose-50 text-rose-600 dark:text-rose-400 text-[10.5px] font-bold border border-rose-200 dark:border-rose-900 cursor-pointer shrink-0"
+                    >
+                      Hủy
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="text"
+                      value={couponInput}
+                      onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                      onKeyDown={(e) => e.key === 'Enter' && handleApplyInlineCoupon()}
+                      placeholder="Mã voucher (DRXNEW...)"
+                      className="w-full px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-mono text-xs font-bold uppercase placeholder:normal-case placeholder:font-normal placeholder:text-slate-400 focus:outline-none focus:border-sky-500 text-slate-900 dark:text-white"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleApplyInlineCoupon()}
+                      disabled={!couponInput.trim() || isApplyingCoupon}
+                      className="px-3 py-1.5 rounded-xl bg-[#0284c7] hover:bg-[#0369a1] disabled:opacity-50 text-white font-heading font-black text-xs uppercase cursor-pointer shrink-0"
+                    >
+                      {isApplyingCoupon ? '...' : 'Áp Dụng'}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Total Summary Box with Discount */}
+              <div className="bg-slate-50 dark:bg-slate-950 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 space-y-2">
+                <div className="flex justify-between items-center text-slate-500 text-[11px]">
+                  <span>Tạm tính cấu hình:</span>
+                  <span className="font-mono font-bold text-slate-700 dark:text-slate-300">{formatVND(totalCost)}</span>
+                </div>
+                {getDiscountAmount(totalCost) > 0 && (
+                  <div className="flex justify-between items-center text-emerald-600 dark:text-emerald-400 text-[11px] font-bold">
+                    <span>Voucher ({coupon?.code}):</span>
+                    <span className="font-mono">-{formatVND(getDiscountAmount(totalCost))}</span>
+                  </div>
+                )}
+                <div className="pt-1.5 border-t border-slate-200 dark:border-slate-800 flex justify-between items-baseline">
+                  <span className="text-[10.5px] uppercase font-bold text-slate-600 dark:text-slate-300 tracking-wider">
+                    Tổng Thanh Toán:
+                  </span>
+                  <span className="text-xl sm:text-2xl font-heading font-black text-rose-600 dark:text-rose-400">
+                    {formatVND(Math.max(0, totalCost - getDiscountAmount(totalCost)))}
+                  </span>
+                </div>
                 <span className="text-[10.5px] text-slate-400 block">
                   Miễn phí lắp ráp, vệ sinh &amp; bảo hành 36 tháng
                 </span>
@@ -984,6 +1090,17 @@ function PCBuilderContent() {
           onSaved={(saved) => {
             setCustomSavedName(saved.name);
           }}
+        />
+      )}
+
+      {/* 7. CHECKOUT & COUPON CONFIRMATION MODAL */}
+      {isCheckoutModalOpen && (
+        <CheckoutBuildModal
+          isOpen={isCheckoutModalOpen}
+          onClose={() => setIsCheckoutModalOpen(false)}
+          selectedBuild={selectedBuild}
+          totalCost={totalCost}
+          onProceedToCheckout={handleProceedToCheckout}
         />
       )}
 

@@ -215,20 +215,19 @@ export default function ChatbotWidget() {
                             a: ({ href, children }) => {
                               if (href && (href.startsWith('/products/') || href.startsWith('/pc-builder') || href.startsWith('/warranty') || href.startsWith('/'))) {
                                 return (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
+                                  <span
+                                    onClick={(e) => {
+                                      e.stopPropagation();
                                       router.push(href);
                                     }}
-                                    className="text-sky-600 dark:text-sky-400 font-bold hover:underline inline-flex items-center gap-0.5 cursor-pointer ml-1 bg-sky-50 dark:bg-sky-950/60 px-2 py-0.5 rounded-lg border border-sky-200/60 dark:border-sky-800/60 transition-colors hover:bg-sky-100 dark:hover:bg-sky-900/60"
+                                    className="text-[#0284c7] dark:text-sky-400 font-bold hover:underline cursor-pointer inline-flex items-center gap-0.5"
                                   >
                                     <span>{children}</span>
-                                    <ExternalLink size={11} className="inline ml-0.5" />
-                                  </button>
+                                  </span>
                                 );
                               }
                               return (
-                                <a href={href} target="_blank" rel="noopener noreferrer" className="text-sky-600 dark:text-sky-400 font-bold hover:underline">
+                                <a href={href} target="_blank" rel="noopener noreferrer" className="text-[#0284c7] dark:text-sky-400 font-bold hover:underline">
                                   {children}
                                 </a>
                               );
@@ -268,12 +267,13 @@ export default function ChatbotWidget() {
 
                     {/* Interactive Product Mini-Cards */}
                     {msg.products && msg.products.length > 0 && (
-                      <div className="w-full space-y-2 mt-2">
+                      <div className="w-full space-y-2 mt-1.5">
                         {msg.products.map((prod: any, pIdx: number) => {
                           const hasDiscount = prod.discountPrice && prod.discountPrice < prod.price;
                           const currentPrice = prod.discountPrice || prod.price;
                           const discountPct = hasDiscount ? Math.round(((prod.price - prod.discountPrice) / prod.price) * 100) : 0;
                           const isInStock = prod.inStock !== false && (prod.stockQuantity === undefined || prod.stockQuantity > 0);
+                          const isLaptopItem = String(prod.name || '').toLowerCase().includes('laptop') || String(prod.name || '').toLowerCase().includes('sodimm');
 
                           return (
                             <div
@@ -298,15 +298,20 @@ export default function ChatbotWidget() {
                               {/* Info */}
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                                  <span className="text-[9px] font-black uppercase tracking-wider text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/80 border border-sky-200 dark:border-sky-800/60 px-1.5 py-0.5 rounded-md">
-                                    {prod.category || 'LINH KIỆN'}
+                                  <span className="text-[9.5px] font-black uppercase tracking-wider text-[#0284c7] dark:text-sky-400 bg-sky-50 dark:bg-sky-950/80 border border-sky-200/80 dark:border-sky-800/60 px-1.5 py-0.5 rounded-md">
+                                    {prod.category === 'RAM' && isLaptopItem ? 'RAM LAPTOP' : prod.category || 'LINH KIỆN'}
                                   </span>
+                                  {prod.brand && (
+                                    <span className="text-[9.5px] font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-md">
+                                      {prod.brand}
+                                    </span>
+                                  )}
                                   {prod.warrantyMonths && (
-                                    <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400">
+                                    <span className="text-[9.5px] font-bold text-slate-500 dark:text-slate-400">
                                       • BH {prod.warrantyMonths}T
                                     </span>
                                   )}
-                                  <span className={`text-[9px] font-bold ${isInStock ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}`}>
+                                  <span className={`text-[9.5px] font-bold ${isInStock ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}`}>
                                     • {isInStock ? 'Còn hàng' : 'Hết hàng'}
                                   </span>
                                 </div>
@@ -356,42 +361,6 @@ export default function ChatbotWidget() {
                   </div>
                 )}
                 <div ref={messagesEndRef} />
-              </div>
-
-              {/* Quick Prompts Strip */}
-              <div className="px-3 py-1.5 bg-slate-100/90 dark:bg-slate-900 border-t border-slate-200/80 dark:border-slate-800 flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0">
-                <button
-                  type="button"
-                  onClick={() => sendQuery('Tư vấn build PC gaming 20 triệu chơi Valorant, Black Myth Wukong')}
-                  className="shrink-0 px-2.5 py-1 rounded-full bg-white dark:bg-slate-800 hover:bg-sky-50 dark:hover:bg-sky-950 text-slate-700 dark:text-slate-200 hover:text-sky-600 dark:hover:text-sky-400 text-[10.5px] font-bold border border-slate-200 dark:border-slate-700 transition-all flex items-center gap-1 cursor-pointer active:scale-95 shadow-2xs"
-                >
-                  <Zap size={12} className="text-amber-500 fill-amber-500" />
-                  <span>Build PC 20tr Gaming</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => sendQuery('Tư vấn cấu hình 15 triệu làm đồ họa Premiere, Photoshop')}
-                  className="shrink-0 px-2.5 py-1 rounded-full bg-white dark:bg-slate-800 hover:bg-sky-50 dark:hover:bg-sky-950 text-slate-700 dark:text-slate-200 hover:text-sky-600 dark:hover:text-sky-400 text-[10.5px] font-bold border border-slate-200 dark:border-slate-700 transition-all flex items-center gap-1 cursor-pointer active:scale-95 shadow-2xs"
-                >
-                  <Sparkles size={12} className="text-sky-500" />
-                  <span>PC 15tr Đồ Họa</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => sendQuery('Giá card màn hình RTX 4060 và RTX 3060 hiện tại?')}
-                  className="shrink-0 px-2.5 py-1 rounded-full bg-white dark:bg-slate-800 hover:bg-sky-50 dark:hover:bg-sky-950 text-slate-700 dark:text-slate-200 hover:text-sky-600 dark:hover:text-sky-400 text-[10.5px] font-bold border border-slate-200 dark:border-slate-700 transition-all flex items-center gap-1 cursor-pointer active:scale-95 shadow-2xs"
-                >
-                  <ShoppingBag size={12} className="text-emerald-500" />
-                  <span>Giá VGA RTX 4060</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => sendQuery('Chính sách bảo hành và đổi trả thế nào?')}
-                  className="shrink-0 px-2.5 py-1 rounded-full bg-white dark:bg-slate-800 hover:bg-sky-50 dark:hover:bg-sky-950 text-slate-700 dark:text-slate-200 hover:text-sky-600 dark:hover:text-sky-400 text-[10.5px] font-bold border border-slate-200 dark:border-slate-700 transition-all flex items-center gap-1 cursor-pointer active:scale-95 shadow-2xs"
-                >
-                  <ShieldCheck size={12} className="text-blue-500" />
-                  <span>Bảo hành 36T</span>
-                </button>
               </div>
 
               {/* Input Area */}

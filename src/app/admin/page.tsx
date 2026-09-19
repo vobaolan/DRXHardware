@@ -2735,6 +2735,8 @@ export default function AdminDashboardPage() {
                 }
                 return [savedProd, ...prev];
               });
+              // Refresh from Supabase live database
+              fetchAllData(false);
             }
           }}
         />

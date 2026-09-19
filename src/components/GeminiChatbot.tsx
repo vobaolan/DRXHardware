@@ -362,34 +362,6 @@ export const GeminiChatbot: React.FC = () => {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Quick Prompts */}
-            <div className="px-3 py-2 bg-zinc-50 border-t border-zinc-200/60 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-              <button
-                type="button"
-                onClick={() => handleSendMessage('DRX Hardware chuyên về gì?')}
-                className="shrink-0 px-2.5 py-1 rounded-full bg-white hover:bg-sky-50 text-zinc-700 hover:text-sky-700 text-[10px] font-semibold border border-zinc-200 hover:border-sky-300 transition-all flex items-center gap-1 shadow-xs cursor-pointer active:scale-95"
-              >
-                <Sparkles className="h-3 w-3 text-sky-500" />
-                <span>DRX Hardware chuyên về gì?</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSendMessage('Linh kiện Flash Deals hôm nay?')}
-                className="shrink-0 px-2.5 py-1 rounded-full bg-white hover:bg-rose-50 text-zinc-700 hover:text-rose-700 text-[10px] font-semibold border border-zinc-200 hover:border-rose-300 transition-all flex items-center gap-1 shadow-xs cursor-pointer active:scale-95"
-              >
-                <Zap className="h-3 w-3 text-rose-500" />
-                <span>Linh kiện Flash Deals</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSendMessage('Chính sách bảo hành như thế nào?')}
-                className="shrink-0 px-2.5 py-1 rounded-full bg-white hover:bg-emerald-50 text-zinc-700 hover:text-emerald-700 text-[10px] font-semibold border border-zinc-200 hover:border-emerald-300 transition-all flex items-center gap-1 shadow-xs cursor-pointer active:scale-95"
-              >
-                <ShieldCheck className="h-3 w-3 text-emerald-500" />
-                <span>Chính sách bảo hành</span>
-              </button>
-            </div>
-
             {/* Input Bar */}
             <div className="p-3 bg-white border-t border-zinc-200/80 flex items-center gap-2">
               <input

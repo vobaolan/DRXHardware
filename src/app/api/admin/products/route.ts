@@ -303,12 +303,12 @@ export async function PUT(request: Request) {
       updatedAt: new Date().toISOString(),
     };
 
-    if (costPrice !== undefined) updatedData.costPrice = parseFloat(String(costPrice));
+    if (costPrice !== undefined) updatedData.costPrice = (costPrice && !isNaN(Number(costPrice))) ? parseFloat(String(costPrice)) : null;
     if (status !== undefined) updatedData.status = Boolean(status);
-    if (socket !== undefined) updatedData.socket = socket;
-    if (ramType !== undefined) updatedData.ramType = ramType;
-    if (wattage !== undefined) updatedData.wattage = wattage ? Number(wattage) : null;
-    if (formFactor !== undefined) updatedData.formFactor = formFactor;
+    if (socket !== undefined) updatedData.socket = socket ? String(socket).trim() : null;
+    if (ramType !== undefined) updatedData.ramType = ramType ? String(ramType).trim() : null;
+    if (wattage !== undefined) updatedData.wattage = (wattage && !isNaN(Number(wattage))) ? Number(wattage) : null;
+    if (formFactor !== undefined) updatedData.formFactor = formFactor ? String(formFactor).trim() : null;
 
     // Update in Supabase Cloud Database
     let updatedProduct: any = null;

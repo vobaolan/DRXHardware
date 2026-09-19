@@ -188,27 +188,37 @@ QUY TẮC TRẢ LỜI:
         
         return {
           role: 'assistant',
-          content: `Dạ, sản phẩm [**${p.name}**](/products/${p.slug}) hiện có giá bán:
-• **Giá ưu đãi**: ${discFormatted ? `**${discFormatted}** (giảm từ ${priceFormatted})` : `**${priceFormatted}**`}
-• **Bảo hành**: **${p.warrantyMonths} Tháng chính hãng 1 đổi 1**
+          content: `Dạ, DRX Hardware hiện có sẵn sản phẩm **${p.name}** chính hãng:
+• **Giá ưu đãi**: ${discFormatted ? `**${discFormatted}** (giá gốc ~~${priceFormatted}~~)` : `**${priceFormatted}**`}
+• **Bảo hành**: **${p.warrantyMonths} Tháng chính hãng (1 đổi 1)**
 • **Tình trạng kho**: ${p.inStock ? `📦 **Còn hàng** (${p.stockQuantity} sản phẩm sẵn có)` : '🚫 **Tạm hết hàng**'}
 • **Giao hàng**: Miễn phí vận chuyển COD toàn quốc, đồng kiểm trước khi nhận.
 
-👉 [**Bấm vào đây để xem chi tiết và đặt mua ngay**](/products/${p.slug})`,
+👉 Mời bạn xem chi tiết thông số và đặt hàng nhanh qua thẻ sản phẩm bên dưới:`,
           matchedProducts: [p],
         };
       }
 
       // Multiple matched items
       const topProducts = matchedProducts.slice(0, 4);
-      const productListStr = topProducts.map(p => {
-        const pPrice = formatVND(p.discountPrice || p.price);
-        return `• [**${p.name}**](/products/${p.slug}) — **${pPrice}** (BH ${p.warrantyMonths}T)`;
-      }).join('\n');
+      let categoryHeader = 'sản phẩm';
+      if (qNoTone.includes('ram') && (qNoTone.includes('laptop') || qNoTone.includes('sodimm'))) {
+        categoryHeader = `mẫu **RAM Laptop (SODIMM) ${qNoTone.includes('ddr5') ? 'DDR5' : qNoTone.includes('ddr4') ? 'DDR4' : ''}**`;
+      } else if (qNoTone.includes('ram')) {
+        categoryHeader = `mẫu **RAM ${qNoTone.includes('ddr5') ? 'DDR5' : qNoTone.includes('ddr4') ? 'DDR4' : ''}**`;
+      } else if (qNoTone.includes('vga') || qNoTone.includes('card')) {
+        categoryHeader = 'mẫu **Card màn hình VGA**';
+      } else if (qNoTone.includes('cpu') || qNoTone.includes('chip')) {
+        categoryHeader = 'mã **CPU / Vi xử lý**';
+      } else if (qNoTone.includes('ssd') || qNoTone.includes('o cung')) {
+        categoryHeader = 'mẫu **Ổ cứng SSD / NVMe**';
+      } else if (qNoTone.includes('laptop')) {
+        categoryHeader = 'mẫu **Laptop Gaming & Đồ họa**';
+      }
 
       return {
         role: 'assistant',
-        content: `DRX Hardware hiện có **${matchedProducts.length} sản phẩm** phù hợp với tìm kiếm của bạn:\n\n${productListStr}\n\nBạn có thể bấm trực tiếp vào tên sản phẩm ở trên hoặc thẻ bên dưới để xem chi tiết nhé!`,
+        content: `Dạ, DRX Hardware hiện có **${matchedProducts.length} ${categoryHeader}** chính hãng sẵn hàng tại kho, bảo hành 36 tháng 1 đổi 1.\n\n👉 Bạn có thể bấm trực tiếp vào từng thẻ bên dưới để xem thông số chi tiết, kiểm tra tồn kho và đặt mua nhanh nhé:`,
         matchedProducts: topProducts,
       };
     }
