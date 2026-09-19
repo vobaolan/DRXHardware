@@ -451,9 +451,20 @@ export default function Home() {
                 // Exclude components that might have "laptop" in their name (e.g. RAM Laptop, Ổ cứng laptop, Balo, Tản nhiệt)
                 if (matchCat(p, 'RAM', 'STORAGE', 'COOLING', 'CASE', 'PSU', 'CPU', 'VGA', 'MAINBOARD', 'KEYBOARD', 'MOUSE', 'HEADSET', 'MONITOR', 'CHAIR', 'GEAR')) return false;
                 const name = String(p.name || '').toLowerCase();
-                if (name.startsWith('ram ') || name.includes('sodimm') || name.includes('ddr4') || name.includes('ddr5') || name.includes('thanh ram') || name.includes('ổ cứng') || name.includes('ssd') || name.includes('balo') || name.includes('đế tản')) return false;
+                if (name.startsWith('ram ') || name.startsWith('thanh ram') || name.includes('sodimm') || name.startsWith('ổ cứng') || name.startsWith('ssd ') || name.includes('balo') || name.includes('đế tản') || name.includes('túi chống sốc')) return false;
                 if (matchCat(p, 'LAPTOP', 'LAPTOP_GAMING')) return true;
-                return (name.includes('laptop') || name.includes('macbook') || name.includes('vivobook') || name.includes('legion') || name.includes('loq') || name.includes('thinkpad') || name.includes('zenbook') || name.includes('swift')) && !name.includes('ram');
+                return (name.includes('laptop') || name.includes('macbook') || name.includes('vivobook') || name.includes('legion') || name.includes('loq') || name.includes('thinkpad') || name.includes('zenbook') || name.includes('swift')) && !name.startsWith('ram ');
+              };
+
+              const isGamingLaptopProduct = (p: any) => {
+                if (!isLaptopProduct(p)) return false;
+                const pCat = String(p.category || '').toUpperCase();
+                const name = String(p.name || '').toLowerCase();
+                return pCat === 'LAPTOP_GAMING' || name.includes('gaming') || name.includes('nitro') || name.includes('legion') || name.includes('rog') || name.includes('tuf') || name.includes('katana') || name.includes('dell g15') || name.includes('loq');
+              };
+
+              const isOfficeLaptopProduct = (p: any) => {
+                return isLaptopProduct(p) && !isGamingLaptopProduct(p);
               };
 
               const isCoreProduct = (p: any) => {
@@ -515,13 +526,13 @@ export default function Home() {
                         id: 'GAMING', 
                         label: 'Laptop gaming', 
                         viewAllLink: '/products?category=LAPTOP_GAMING',
-                        filterFn: p => matchCat(p, 'LAPTOP_GAMING') || p.name.toLowerCase().includes('gaming') || p.name.toLowerCase().includes('nitro') || p.name.toLowerCase().includes('legion') || p.name.toLowerCase().includes('rog') || p.name.toLowerCase().includes('tuf') || p.name.toLowerCase().includes('katana') || p.name.toLowerCase().includes('dell g15') || p.name.toLowerCase().includes('loq') 
+                        filterFn: isGamingLaptopProduct
                       },
                       { 
                         id: 'OFFICE', 
                         label: 'Laptop văn phòng', 
                         viewAllLink: '/products?category=LAPTOP',
-                        filterFn: p => matchCat(p, 'LAPTOP') || p.name.toLowerCase().includes('macbook') || p.name.toLowerCase().includes('vivobook') || p.name.toLowerCase().includes('pavilion') || p.name.toLowerCase().includes('thinkpad') || p.name.toLowerCase().includes('swift') || p.name.toLowerCase().includes('inspiron') || p.name.toLowerCase().includes('zenbook') 
+                        filterFn: isOfficeLaptopProduct
                       },
                     ]}
                   />
