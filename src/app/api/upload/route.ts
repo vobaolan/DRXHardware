@@ -27,10 +27,23 @@ export async function POST(request: Request) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Extract extension
+    // Extract extension & MIME type
     const originalExt = file.name.split('.').pop()?.toLowerCase() || 'png';
     const cleanExt = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'avif'].includes(originalExt) ? originalExt : 'png';
-    const fileName = `drx-${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${cleanExt}`;
+    const fileName = `drx-${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${cleanExt === 'jpg' ? 'jpg' : cleanExt}`;
+
+    const mimeMap: Record<string, string> = {
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      png: 'image/png',
+      webp: 'image/webp',
+      gif: 'image/gif',
+      svg: 'image/svg+xml',
+      avif: 'image/avif',
+    };
+    const validContentType = (file.type && file.type !== 'image/jpg' && validMimes.includes(file.type))
+      ? file.type
+      : (mimeMap[cleanExt] || 'image/jpeg');
 
     let uploadedUrl: string | null = null;
 
@@ -40,7 +53,7 @@ export async function POST(request: Request) {
       const { data: uploadData, error: uploadErr } = await supabase.storage
         .from('products')
         .upload(fileName, buffer, {
-          contentType: file.type || `image/${cleanExt}`,
+          contentType: validContentType,
           upsert: true,
         });
 
@@ -55,7 +68,7 @@ export async function POST(request: Request) {
         const { data: imgData, error: imgErr } = await supabase.storage
           .from('images')
           .upload(fileName, buffer, {
-            contentType: file.type || `image/${cleanExt}`,
+            contentType: validContentType,
             upsert: true,
           });
 
