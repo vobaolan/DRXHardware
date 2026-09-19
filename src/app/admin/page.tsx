@@ -663,6 +663,19 @@ export default function AdminDashboardPage() {
     return max > 0 ? max : 1;
   }, [last7Days]);
 
+  // Realtime Map of Available Serials by Product ID
+  const serialsByProductId = useMemo(() => {
+    const map = new Map<string, any[]>();
+    serials.forEach((s: any) => {
+      const pId = s.productId || s.product?.id;
+      if (pId) {
+        if (!map.has(pId)) map.set(pId, []);
+        map.get(pId)!.push(s);
+      }
+    });
+    return map;
+  }, [serials]);
+
   // Filtered Products
   const filteredProducts = useMemo(() => {
     return products.filter(p => {
@@ -1846,9 +1859,25 @@ export default function AdminDashboardPage() {
                               {formatVND(p.price)}
                             </td>
                             <td className="py-3.5 px-3 text-center whitespace-nowrap">
-                              <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                                {p.stockQuantity ?? p.stockCount ?? 0} Món
-                              </span>
+                              {(() => {
+                                const prodSerials = serialsByProductId.get(p.id) || [];
+                                const hasSerials = prodSerials.length > 0;
+                                const availCount = prodSerials.filter((s: any) => s.status === 'AVAILABLE').length;
+                                const effectiveStock = hasSerials ? availCount : (p.stockQuantity ?? p.stockCount ?? 0);
+
+                                if (effectiveStock > 0) {
+                                  return (
+                                    <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                      {effectiveStock} Món
+                                    </span>
+                                  );
+                                }
+                                return (
+                                  <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800">
+                                    0 Món
+                                  </span>
+                                );
+                              })()}
                             </td>
                             <td className="py-3.5 px-3 text-center whitespace-nowrap font-medium text-slate-600 dark:text-slate-400">
                               {p.warrantyMonths || 36}T
@@ -2482,8 +2511,14 @@ export default function AdminDashboardPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-xs font-semibold pt-1">
                   <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
-                    <span className="text-slate-400 text-[10px] block uppercase font-bold">Tồn Kho</span>
-                    <span className="text-emerald-600 dark:text-emerald-400 font-extrabold">{viewingProduct.stockQuantity ?? viewingProduct.stockCount ?? 0} Món</span>
+                    <span className="text-slate-400 text-[10px] block uppercase font-bold">Tồn Kho Khả Dụng</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-extrabold">
+                      {(() => {
+                        const pS = serialsByProductId.get(viewingProduct.id) || [];
+                        const avail = pS.filter((s: any) => s.status === 'AVAILABLE').length;
+                        return pS.length > 0 ? `${avail} Món (Khớp SN)` : `${viewingProduct.stockQuantity ?? viewingProduct.stockCount ?? 0} Món`;
+                      })()}
+                    </span>
                   </div>
                   <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
                     <span className="text-slate-400 text-[10px] block uppercase font-bold">Bảo Hành</span>
