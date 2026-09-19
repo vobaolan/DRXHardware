@@ -27,7 +27,7 @@ export async function GET(request: Request) {
       const dbUser = await prisma.user.findFirst({
         where: {
           OR: [
-            ...(cleanEmail ? [{ email: cleanEmail }] : []),
+            ...(cleanEmail ? [{ email: { equals: cleanEmail, mode: 'insensitive' as const } }] : []),
             ...(authUser.sub && authUser.sub !== 'admin-id-master' ? [{ id: authUser.sub }] : []),
           ]
         }
@@ -50,7 +50,7 @@ export async function GET(request: Request) {
       try {
         let supaQuery = supabase.from('User').select('id, name, email, role, balance, phone, address').limit(1);
         if (cleanEmail) {
-          supaQuery = supaQuery.eq('email', cleanEmail);
+          supaQuery = supaQuery.ilike('email', cleanEmail);
         } else if (authUser.sub && authUser.sub !== 'admin-id-master') {
           supaQuery = supaQuery.eq('id', authUser.sub);
         }
@@ -151,7 +151,7 @@ export async function PUT(request: Request) {
       if (cleanEmail || (targetUserId && targetUserId !== 'admin-id-master')) {
         const updateWhere = {
           OR: [
-            ...(cleanEmail ? [{ email: cleanEmail }] : []),
+            ...(cleanEmail ? [{ email: { equals: cleanEmail, mode: 'insensitive' as const } }] : []),
             ...(targetUserId && targetUserId !== 'admin-id-master' ? [{ id: targetUserId }] : []),
           ],
         };
@@ -190,7 +190,7 @@ export async function PUT(request: Request) {
         const { data } = await supabase
           .from('User')
           .update(updateData)
-          .eq('email', cleanEmail)
+          .ilike('email', cleanEmail)
           .select('*')
           .maybeSingle();
 

@@ -107,6 +107,7 @@ export function verifyJWT<T = JWTPayload>(token: string): T | null {
  * Set HttpOnly, Secure, SameSite Cookie in Response
  */
 export function setAuthCookie(response: NextResponse, token: string): void {
+  const expires = new Date(Date.now() + DEFAULT_EXPIRY * 1000);
   response.cookies.set({
     name: 'drx_auth_token',
     value: token,
@@ -114,6 +115,8 @@ export function setAuthCookie(response: NextResponse, token: string): void {
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
+    maxAge: DEFAULT_EXPIRY, // 30 days persistence
+    expires,
   });
 }
 
