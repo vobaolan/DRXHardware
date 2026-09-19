@@ -39,6 +39,18 @@ export const PortalHeader: React.FC<PortalHeaderProps> = ({
 
   const isAdminPortal = portalType === 'admin';
 
+  const userRole = String(currentUser?.role || '').toUpperCase();
+  const userEmail = String(currentUser?.email || '').toLowerCase().trim();
+  const isExplicitUser = userRole === 'USER';
+  const isUserAdmin = !isExplicitUser && (
+    userRole === 'ADMIN' || 
+    userRole === 'MANAGER' || 
+    userEmail === 'admin@drx.vn' || 
+    userEmail === 'admin@drxhardware.vn' || 
+    userEmail === 'admin@odsstore.vn' ||
+    userEmail.includes('admin')
+  );
+
   return (
     <header className="sticky top-0 z-30 w-full border-b border-slate-200/90 dark:border-slate-800 bg-white/95 dark:bg-slate-950/95 backdrop-blur-xl shadow-xs transition-colors duration-300">
       <div className="px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-4 flex-wrap">
@@ -131,7 +143,7 @@ export const PortalHeader: React.FC<PortalHeaderProps> = ({
               <Wrench className="w-3.5 h-3.5" />
               <span className="hidden lg:inline">Cổng Staff</span>
             </Link>
-          ) : (
+          ) : isUserAdmin ? (
             <Link
               href="/admin"
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 dark:bg-slate-800 hover:bg-purple-600 text-white font-bold text-xs transition-all shadow-xs"
@@ -140,7 +152,7 @@ export const PortalHeader: React.FC<PortalHeaderProps> = ({
               <ShieldCheck className="w-3.5 h-3.5" />
               <span className="hidden lg:inline">DRX Admin</span>
             </Link>
-          )}
+          ) : null}
 
           {/* 5. STOREFRONT BUTTON */}
           <Link

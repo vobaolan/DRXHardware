@@ -7,15 +7,20 @@ import {
 } from 'lucide-react';
 
 const FacebookIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" {...props}>
-    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
+  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" {...props}>
+    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
   </svg>
 );
 
 const YoutubeIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" {...props}>
-    <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"/>
-    <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/>
+  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" {...props}>
+    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+  </svg>
+);
+
+const TiktokIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" {...props}>
+    <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-1.01v8.44c0 1.95-.53 3.93-1.69 5.48-1.57 2.11-4.14 3.32-6.77 3.19-2.61-.13-5.02-1.58-6.38-3.79-1.37-2.22-1.48-5.07-.3-7.39 1.18-2.31 3.54-3.87 6.13-4.04.53-.03 1.07.01 1.59.13v4.11c-.48-.15-.99-.2-1.49-.16-1.12.08-2.18.73-2.73 1.7-.56.98-.53 2.24.07 3.2.6 1 1.69 1.6 2.82 1.55 1.11-.05 2.11-.77 2.53-1.8.18-.44.25-.92.25-1.4V.02h-.75z"/>
   </svg>
 );
 
@@ -117,32 +122,84 @@ export const Footer: React.FC = () => {
               Chấp nhận các hình thức thanh toán bảo mật 24/7:
             </p>
 
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { name: 'VietQR', text: 'VIETQR' },
-                { name: 'Techcombank', text: 'TCB 24/7' },
-                { name: 'COD', text: 'TIỀN MẶT COD' },
-                { name: 'Napas247', text: 'NAPAS 24/7' },
-                { name: 'Showroom', text: 'SHOWROOM' },
-                { name: 'E-Warranty', text: 'E-SERIAL' },
-              ].map((pay) => (
-                <div
-                  key={pay.name}
-                  className="h-9 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg flex items-center justify-center font-heading font-black text-[10px] text-slate-700 dark:text-slate-300 shadow-xs"
-                >
-                  {pay.text}
+            {/* 3 PAYMENT PARTNERS (VIETQR, NAPAS 24/7, TECHCOMBANK) */}
+            <div className="flex flex-col gap-2">
+              
+              {/* 1. VietQR */}
+              <div className="h-9 px-3 bg-slate-50 dark:bg-slate-900/90 border border-slate-200/90 dark:border-slate-800 rounded-xl flex items-center justify-between shadow-2xs">
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-md bg-[#003B70] flex items-center justify-center p-0.5 text-white shadow-2xs">
+                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5">
+                      <path d="M3 3h8v8H3V3zm2 2v4h4V5H5zm8-2h8v8h-8V3zm2 2v4h4V5h-4zM3 13h8v8H3v-8zm2 2v4h4v-4H5zm13-2h3v3h-3v-3zm0 5h3v3h-3v-3zm-5-5h3v3h-3v-3zm0 5h3v3h-3v-3z"/>
+                    </svg>
+                  </div>
+                  <span className="font-sans font-black text-xs tracking-tight">
+                    <span className="text-[#003B70] dark:text-[#38bdf8]">Viet</span>
+                    <span className="text-[#EF4444]">QR</span>
+                  </span>
                 </div>
-              ))}
+                <span className="text-[9.5px] font-bold text-slate-400 uppercase">Quét QR 24/7</span>
+              </div>
+
+              {/* 2. NAPAS 24/7 */}
+              <div className="h-9 px-3 bg-slate-50 dark:bg-slate-900/90 border border-slate-200/90 dark:border-slate-800 rounded-xl flex items-center justify-between shadow-2xs">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-sans font-black text-xs text-[#005BAB] dark:text-[#60a5fa] uppercase tracking-tight">
+                    napas
+                  </span>
+                  <span className="bg-[#F37021] text-white text-[9px] font-black px-1.5 py-0.5 rounded font-mono">
+                    247
+                  </span>
+                </div>
+                <span className="text-[9.5px] font-bold text-slate-400 uppercase">Chuyển Nhanh</span>
+              </div>
+
+              {/* 3. Techcombank */}
+              <div className="h-9 px-3 bg-slate-50 dark:bg-slate-900/90 border border-slate-200/90 dark:border-slate-800 rounded-xl flex items-center justify-between shadow-2xs">
+                <div className="flex items-center gap-2">
+                  <div className="relative w-4 h-4 flex items-center justify-center shrink-0">
+                    <div className="w-3 h-3 bg-[#E51B24] rotate-45 rounded-[1px]" />
+                    <div className="absolute w-1.5 h-1.5 bg-slate-50 dark:bg-slate-900 rotate-45" />
+                  </div>
+                  <span className="font-heading font-black text-[11px] uppercase tracking-tight text-slate-900 dark:text-white">
+                    Techcombank
+                  </span>
+                </div>
+                <span className="text-[9.5px] font-bold text-emerald-600 dark:text-emerald-400 font-mono">TCB</span>
+              </div>
+
             </div>
 
+            {/* SOCIAL CHANNELS */}
             <div className="pt-2 space-y-2">
               <span className="font-bold text-slate-900 dark:text-slate-100 block text-[11px]">Kênh Mạng Xã Hội:</span>
               <div className="flex items-center gap-2">
-                <a href="#" className="h-8 w-8 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-500 transition-all">
+                <a 
+                  href="https://www.facebook.com/DRXGlobal/" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="h-8 w-8 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-all shadow-2xs"
+                  title="Facebook DRX Global"
+                >
                   <FacebookIcon />
                 </a>
-                <a href="#" className="h-8 w-8 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:border-red-500 transition-all">
+                <a 
+                  href="https://youtube.com/drxglobal" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="h-8 w-8 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:border-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-all shadow-2xs"
+                  title="YouTube DRX Global"
+                >
                   <YoutubeIcon />
+                </a>
+                <a 
+                  href="https://www.tiktok.com/@drxglobal" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="h-8 w-8 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-black dark:hover:text-white hover:border-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all shadow-2xs"
+                  title="TikTok @drxglobal"
+                >
+                  <TiktokIcon />
                 </a>
               </div>
             </div>
@@ -168,5 +225,3 @@ export const Footer: React.FC = () => {
 };
 
 export default Footer;
-
-

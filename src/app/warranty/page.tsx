@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { 
   ShieldCheck, Search, CheckCircle2, Clock, Wrench, 
   Award, AlertCircle, ArrowRight, Barcode,
@@ -184,22 +185,16 @@ const AUTHORIZED_BRAND_LOGOS = [
   { name: 'LIAN LI', logo: '/logos/brands/lianli.svg', desc: 'Vỏ Máy & Quạt RGB' },
 ];
 
-export default function WarrantyPage() {
+function WarrantyContent() {
   const { showToast } = useToast();
+  const searchParams = useSearchParams();
   const [searchInput, setSearchInput] = useState('');
   const [searchResults, setSearchResults] = useState<WarrantyItem[] | null>(null);
   const [searched, setSearched] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const query = searchInput.trim();
-
-    if (!query) {
-      showToast('Vui lòng nhập mã Serial Number (SN) linh kiện!', 'error');
-      return;
-    }
-
+  const executeSearch = async (query: string) => {
+    if (!query) return;
     setSearched(true);
 
     // 1. Fetch live warranty from backend API
@@ -238,7 +233,7 @@ export default function WarrantyPage() {
       }
     });
 
-    // 3. Dynamic verification for valid formatted serials
+    // 4. Dynamic verification for valid formatted serials
     if (matched.length === 0 && (query.startsWith('SN-') || query.includes('-') || query.length >= 8)) {
       const generatedItem: WarrantyItem = {
         serialNumber: query,
@@ -264,6 +259,26 @@ export default function WarrantyPage() {
     }
 
     setSearchResults(matched);
+  };
+
+  useEffect(() => {
+    const snParam = searchParams.get('sn') || searchParams.get('q');
+    if (snParam && snParam.trim()) {
+      setSearchInput(snParam.trim());
+      executeSearch(snParam.trim());
+    }
+  }, [searchParams]);
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const query = searchInput.trim();
+
+    if (!query) {
+      showToast('Vui lòng nhập mã Serial Number (SN) linh kiện!', 'error');
+      return;
+    }
+
+    executeSearch(query);
   };
 
   const handleCopySerial = (sn: string) => {
@@ -644,5 +659,17 @@ export default function WarrantyPage() {
 
       <Footer />
     </div>
+  );
+}
+
+export default function WarrantyPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-slate-50 dark:bg-[#070a13] flex items-center justify-center text-xs text-slate-400">
+        Đang tải thông tin tra cứu bảo hành...
+      </div>
+    }>
+      <WarrantyContent />
+    </Suspense>
   );
 }

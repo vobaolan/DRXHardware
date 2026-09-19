@@ -276,6 +276,8 @@ export async function updateUserProfile(payload: {
   name: string;
   phone?: string;
   address?: string;
+  email?: string;
+  id?: string;
 }): Promise<AuthUser | null> {
   try {
     const token = (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(TOKEN_KEY) : null)
@@ -295,7 +297,7 @@ export async function updateUserProfile(payload: {
     if (res.ok) {
       const data = await res.json();
       if (data && data.user) {
-        setSessionUser(data.user, data.token);
+        setSessionUser(data.user, data.token, false);
         return data.user;
       }
     }

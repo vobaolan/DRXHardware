@@ -42,6 +42,8 @@ interface CartContextType {
   getNetAmount: () => number;
 }
 
+const PRIMARY_CART_KEY = 'drx_hardware_cart';
+
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -50,114 +52,103 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [coupon, setCoupon] = useState<Coupon | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
 
-  // Helper to generate user storage key
-  const getUserCartKey = (user: any) => {
-    if (!user) return null;
-    return `drx_user_cart_${user.id || user.email}`;
+  // Helper to get active user from localStorage safely
+  const getActiveUserSafely = () => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const raw = localStorage.getItem('drx_user_profile') || localStorage.getItem('drx_user');
+      if (raw) return JSON.parse(raw);
+    } catch (e) {}
+    return null;
+  };
+
+  // Helper to persist cart items to all storage mirrors
+  const persistCart = (items: CartItem[], user?: any) => {
+    if (typeof window === 'undefined') return;
+    try {
+      const dataStr = JSON.stringify(items);
+
+      // 1. Primary storage keys (Single Source of Truth)
+      localStorage.setItem(PRIMARY_CART_KEY, dataStr);
+      sessionStorage.setItem(PRIMARY_CART_KEY, dataStr);
+      localStorage.setItem('drx_guest_cart', dataStr);
+      sessionStorage.setItem('drx_guest_cart', dataStr);
+
+      // 2. User-specific backups if logged in
+      const targetUser = user || currentUser || getActiveUserSafely();
+      if (targetUser) {
+        if (targetUser.id) localStorage.setItem(`drx_user_cart_${targetUser.id}`, dataStr);
+        if (targetUser.email) localStorage.setItem(`drx_user_cart_${targetUser.email}`, dataStr);
+      }
+    } catch (e) {
+      console.error('Failed to persist cart items', e);
+    }
   };
 
   // Helper to load cart based on current session
-  const loadActiveCart = (user: any): CartItem[] => {
+  const loadActiveCart = (user?: any): CartItem[] => {
     if (typeof window === 'undefined') return [];
 
-    // Clean up any legacy cart keys
+    // Clean up legacy cart keys
     try {
       localStorage.removeItem('kami_steam_cart');
       localStorage.removeItem('ods_cart');
     } catch (e) {}
 
-    let targetUser = user;
-    if (!targetUser) {
-      try {
-        const raw = localStorage.getItem('drx_user_profile') || localStorage.getItem('drx_user');
-        if (raw) targetUser = JSON.parse(raw);
-      } catch (e) {}
-    }
-
-    if (targetUser && (targetUser.id || targetUser.email)) {
-      // 1. LOGGED-IN USERS: Cart is connected directly to user account
-      const userKey = getUserCartKey(targetUser);
-      if (userKey) {
-        try {
-          const savedUserCart = localStorage.getItem(userKey);
-          if (savedUserCart) {
-            const parsed = JSON.parse(savedUserCart);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              return parsed;
-            }
-          }
-        } catch (e) {
-          console.error('Failed to parse user cart data', e);
-        }
-      }
-    }
-
-    // 2. GUESTS / FALLBACK: Check guest cart in sessionStorage and localStorage
     try {
-      const guestCart = sessionStorage.getItem('drx_guest_cart') || localStorage.getItem('drx_guest_cart');
-      if (guestCart) {
-        const parsed = JSON.parse(guestCart);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          // If user is logged in, synchronize to their user cart key too
-          if (targetUser && (targetUser.id || targetUser.email)) {
-            const userKey = getUserCartKey(targetUser);
-            if (userKey) {
-              try {
-                localStorage.setItem(userKey, JSON.stringify(parsed));
-              } catch (e) {}
-            }
-          }
+      // 1. Check Primary storage first
+      const primaryRaw = sessionStorage.getItem(PRIMARY_CART_KEY) || localStorage.getItem(PRIMARY_CART_KEY);
+      if (primaryRaw !== null) {
+        const parsed = JSON.parse(primaryRaw);
+        if (Array.isArray(parsed)) {
           return parsed;
         }
       }
+
+      // 2. Check user-specific storage keys
+      const targetUser = user || getActiveUserSafely();
+      if (targetUser) {
+        if (targetUser.id) {
+          const userRaw = localStorage.getItem(`drx_user_cart_${targetUser.id}`);
+          if (userRaw !== null) {
+            const parsed = JSON.parse(userRaw);
+            if (Array.isArray(parsed)) return parsed;
+          }
+        }
+        if (targetUser.email) {
+          const userRaw = localStorage.getItem(`drx_user_cart_${targetUser.email}`);
+          if (userRaw !== null) {
+            const parsed = JSON.parse(userRaw);
+            if (Array.isArray(parsed)) return parsed;
+          }
+        }
+      }
+
+      // 3. Fallback to guest cart
+      const guestRaw = sessionStorage.getItem('drx_guest_cart') || localStorage.getItem('drx_guest_cart');
+      if (guestRaw !== null) {
+        const parsed = JSON.parse(guestRaw);
+        if (Array.isArray(parsed)) return parsed;
+      }
     } catch (e) {
-      console.error('Failed to parse guest cart data', e);
+      console.error('Failed to load active cart', e);
     }
 
     return [];
   };
 
-  // Helper to persist cart changes
-  const persistCart = (items: CartItem[], user?: any) => {
-    if (typeof window === 'undefined') return;
-    let targetUser = user !== undefined ? user : currentUser;
-    if (!targetUser) {
-      try {
-        const raw = localStorage.getItem('drx_user_profile') || localStorage.getItem('drx_user');
-        if (raw) targetUser = JSON.parse(raw);
-      } catch (e) {}
-    }
-
-    if (targetUser && (targetUser.id || targetUser.email)) {
-      // Save directly to user's persistent cart
-      const userKey = getUserCartKey(targetUser);
-      if (userKey) {
-        try {
-          localStorage.setItem(userKey, JSON.stringify(items));
-        } catch (e) {}
-      }
-    }
-
-    // ALWAYS also mirror to guest session storage & localStorage for guaranteed continuity
-    try {
-      sessionStorage.setItem('drx_guest_cart', JSON.stringify(items));
-      localStorage.setItem('drx_guest_cart', JSON.stringify(items));
-    } catch (e) {}
-  };
-
   // Initialize cart on mount & listen for Auth state changes
   useEffect(() => {
-    let activeUser: any = null;
-
     const initAuthAndCart = async () => {
       try {
         const { getStoredSessionUser } = await import('@/lib/auth-client');
-        activeUser = getStoredSessionUser();
+        const activeUser = getStoredSessionUser();
         setCurrentUser(activeUser);
         const initialCart = loadActiveCart(activeUser);
         setCartItems(initialCart);
       } catch (e) {
-        setCartItems([]);
+        const fallbackCart = loadActiveCart();
+        setCartItems(fallbackCart);
       }
     };
 
@@ -168,90 +159,57 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         const { getStoredSessionUser } = await import('@/lib/auth-client');
         const newUser = getStoredSessionUser();
-
-        // If guest had items in sessionStorage and just logged in, merge items into user cart!
-        if (newUser && !activeUser) {
-          let guestItems: CartItem[] = [];
-          try {
-            const guestRaw = sessionStorage.getItem('drx_guest_cart') || localStorage.getItem('drx_guest_cart');
-            if (guestRaw) guestItems = JSON.parse(guestRaw);
-          } catch (e) {}
-
-          const userKey = getUserCartKey(newUser);
-          let userItems: CartItem[] = [];
-          if (userKey) {
-            try {
-              const userRaw = localStorage.getItem(userKey);
-              if (userRaw) userItems = JSON.parse(userRaw);
-            } catch (e) {}
-          }
-
-          if (guestItems.length > 0) {
-            const merged = [...userItems];
-            for (const gItem of guestItems) {
-              const existIdx = merged.findIndex((i) => i.id === gItem.id || (i.productId && i.productId === gItem.productId));
-              if (existIdx >= 0) {
-                merged[existIdx].quantity += gItem.quantity;
-              } else {
-                merged.push(gItem);
-              }
-            }
-            if (userKey) {
-              localStorage.setItem(userKey, JSON.stringify(merged));
-            }
-            setCartItems(merged);
-            activeUser = newUser;
-            setCurrentUser(newUser);
-            return;
-          }
-        }
-
-        activeUser = newUser;
         setCurrentUser(newUser);
+
+        // If user logged in and has stored cart, restore it
         const loaded = loadActiveCart(newUser);
         setCartItems(loaded);
       } catch (e) {}
     };
 
-    window.addEventListener('storage', handleAuthChange);
+    const handleCartSync = () => {
+      const loaded = loadActiveCart();
+      setCartItems(loaded);
+    };
+
+    const handleCartCleared = () => {
+      setCartItems([]);
+      setCoupon(null);
+    };
+
     window.addEventListener('ods_user_update', handleAuthChange);
+    window.addEventListener('drx_cart_updated', handleCartSync);
+    window.addEventListener('drx_cart_cleared', handleCartCleared);
+
     return () => {
-      window.removeEventListener('storage', handleAuthChange);
       window.removeEventListener('ods_user_update', handleAuthChange);
+      window.removeEventListener('drx_cart_updated', handleCartSync);
+      window.removeEventListener('drx_cart_cleared', handleCartCleared);
     };
   }, []);
 
-  // Save cart state
-  const saveCart = (items: CartItem[]) => {
-    setCartItems(items);
-    persistCart(items, currentUser);
-  };
-
   const addToCart = (product: Omit<CartItem, 'quantity'>, openDrawer: boolean = true) => {
-    let activeUser = currentUser;
-    if (!activeUser && typeof window !== 'undefined') {
-      try {
-        const raw = localStorage.getItem('drx_user_profile') || localStorage.getItem('drx_user');
-        if (raw) activeUser = JSON.parse(raw);
-      } catch (e) {}
-    }
+    const activeUser = currentUser || getActiveUserSafely();
 
-    const currentList = cartItems.length > 0 ? cartItems : loadActiveCart(activeUser);
-    const existingIdx = currentList.findIndex((item) => item.id === product.id || (item.productId && item.productId === product.productId));
-    let updatedItems: CartItem[];
-    if (existingIdx >= 0) {
-      updatedItems = currentList.map((item, idx) =>
-        idx === existingIdx ? { ...item, quantity: item.quantity + 1 } : item
+    setCartItems((prev) => {
+      const currentList = prev.length > 0 ? prev : loadActiveCart(activeUser);
+      const existingIdx = currentList.findIndex(
+        (item) => item.id === product.id || (item.productId && item.productId === product.productId)
       );
-    } else {
-      updatedItems = [...currentList, { ...product, quantity: 1 }];
-    }
+      let updatedItems: CartItem[];
+      if (existingIdx >= 0) {
+        updatedItems = currentList.map((item, idx) =>
+          idx === existingIdx ? { ...item, quantity: item.quantity + 1 } : item
+        );
+      } else {
+        updatedItems = [...currentList, { ...product, quantity: 1 }];
+      }
 
-    persistCart(updatedItems, activeUser);
-    setCartItems(updatedItems);
+      persistCart(updatedItems, activeUser);
+      return updatedItems;
+    });
 
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new Event('storage'));
       window.dispatchEvent(new Event('drx_cart_updated'));
     }
 
@@ -263,36 +221,33 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const addMultipleToCart = (products: Array<Omit<CartItem, 'quantity'>>, openDrawer: boolean = false) => {
     if (!products || products.length === 0) return;
 
-    let activeUser = currentUser;
-    if (!activeUser && typeof window !== 'undefined') {
-      try {
-        const raw = localStorage.getItem('drx_user_profile') || localStorage.getItem('drx_user');
-        if (raw) activeUser = JSON.parse(raw);
-      } catch (e) {}
-    }
+    const activeUser = currentUser || getActiveUserSafely();
 
-    const currentList = cartItems.length > 0 ? cartItems : loadActiveCart(activeUser);
-    const merged = [...currentList];
-    for (const prod of products) {
-      const existIdx = merged.findIndex((item) => item.id === prod.id || (item.productId && item.productId === prod.productId));
-      if (existIdx >= 0) {
-        merged[existIdx] = {
-          ...merged[existIdx],
-          quantity: merged[existIdx].quantity + 1,
-        };
-      } else {
-        merged.push({
-          ...prod,
-          quantity: 1,
-        });
+    setCartItems((prev) => {
+      const currentList = prev.length > 0 ? prev : loadActiveCart(activeUser);
+      const merged = [...currentList];
+      for (const prod of products) {
+        const existIdx = merged.findIndex(
+          (item) => item.id === prod.id || (item.productId && item.productId === prod.productId)
+        );
+        if (existIdx >= 0) {
+          merged[existIdx] = {
+            ...merged[existIdx],
+            quantity: merged[existIdx].quantity + 1,
+          };
+        } else {
+          merged.push({
+            ...prod,
+            quantity: 1,
+          });
+        }
       }
-    }
 
-    persistCart(merged, activeUser);
-    setCartItems(merged);
+      persistCart(merged, activeUser);
+      return merged;
+    });
 
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new Event('storage'));
       window.dispatchEvent(new Event('drx_cart_updated'));
     }
 
@@ -304,9 +259,13 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const removeFromCart = (id: string) => {
     setCartItems((prev) => {
       const updatedItems = prev.filter((item) => item.id !== id);
-      persistCart(updatedItems, currentUser);
+      persistCart(updatedItems);
       return updatedItems;
     });
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('drx_cart_updated'));
+    }
   };
 
   const updateQuantity = (id: string, quantity: number) => {
@@ -318,32 +277,23 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const updatedItems = prev.map((item) =>
         item.id === id ? { ...item, quantity } : item
       );
-      persistCart(updatedItems, currentUser);
+      persistCart(updatedItems);
       return updatedItems;
     });
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('drx_cart_updated'));
+    }
   };
 
   const clearCart = () => {
     setCartItems([]);
     setCoupon(null);
-    let activeUser = currentUser;
-    if (!activeUser && typeof window !== 'undefined') {
-      try {
-        const raw = localStorage.getItem('drx_user_profile') || localStorage.getItem('drx_user');
-        if (raw) activeUser = JSON.parse(raw);
-      } catch (e) {}
-    }
+    const activeUser = currentUser || getActiveUserSafely();
     persistCart([], activeUser);
-    try {
-      sessionStorage.removeItem('drx_guest_cart');
-      localStorage.removeItem('drx_guest_cart');
-      if (activeUser) {
-        const userKey = getUserCartKey(activeUser);
-        if (userKey) localStorage.removeItem(userKey);
-      }
-    } catch (e) {}
+
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new Event('drx_cart_cleared'));
       window.dispatchEvent(new Event('drx_cart_updated'));
     }
   };
@@ -413,6 +363,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         cartItems,
         addToCart,
+        addMultipleToCart,
         removeFromCart,
         updateQuantity,
         clearCart,

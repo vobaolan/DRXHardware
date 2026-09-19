@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { 
-  ShieldCheck, Award, ArrowRight, Zap, ExternalLink,
+  ShieldCheck, Award, Zap, ExternalLink,
   CheckCircle2, ChevronRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -349,32 +349,6 @@ export default function SponsorsPage() {
             </div>
           </motion.div>
         )}
-
-        {/* ─── 5. CALL TO ACTION BAR ─── */}
-        <section className="bg-gradient-to-r from-sky-50 via-white to-blue-50/60 dark:from-slate-900 dark:to-slate-800/80 border border-sky-200 dark:border-slate-700 rounded-3xl p-8 text-center space-y-3 shadow-sm max-w-4xl mx-auto">
-          <h3 className="text-lg sm:text-xl font-black font-heading text-slate-900 dark:text-white uppercase tracking-tight">
-            TRA CỨU HẠN BẢO HÀNH LINH KIỆN ĐIỆN TỬ
-          </h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-lg mx-auto">
-            Nhập mã Serial Number (SN) trên tem hoặc vỏ hộp linh kiện để kiểm tra trực tuyến.
-          </p>
-          <div className="pt-1 flex flex-wrap items-center justify-center gap-3">
-            <Link
-              href="/warranty"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-[#0284c7] hover:bg-[#0369a1] text-white text-xs font-black font-heading uppercase tracking-wider shadow-md shadow-sky-500/25 transition-all hover:scale-105 cursor-pointer"
-            >
-              <span>Cổng Tra Cứu Bảo Hành</span>
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-            <Link
-              href="/products"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 text-xs font-black font-heading uppercase tracking-wider shadow-2xs hover:border-[#0284c7] transition-all hover:scale-105 cursor-pointer"
-            >
-              <span>Xem Danh Mục Sản Phẩm</span>
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-        </section>
 
       </main>
 

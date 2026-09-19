@@ -1677,6 +1677,8 @@ export default function AdminDashboardPage() {
                             <td className="py-3 px-3 max-w-xs truncate text-slate-600 dark:text-slate-300">
                               {o.orderItems && o.orderItems.length > 0 
                                 ? o.orderItems.map((oi: any) => `${oi.product?.name || 'Linh kiện'} (x${oi.quantity})`).join(', ')
+                                : (o.paymentDetails?.items && Array.isArray(o.paymentDetails.items))
+                                ? o.paymentDetails.items.map((it: any) => `${it.name} (x${it.quantity || 1})`).join(', ')
                                 : 'Đơn hàng PC / Linh kiện'}
                             </td>
                             <td className="py-3 px-3 font-black text-slate-900 dark:text-white">
@@ -1867,14 +1869,16 @@ export default function AdminDashboardPage() {
 
                                 if (effectiveStock > 0) {
                                   return (
-                                    <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                                      {effectiveStock} Món
+                                    <span className="inline-flex items-center justify-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                      <span>{effectiveStock} Món</span>
                                     </span>
                                   );
                                 }
                                 return (
-                                  <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800">
-                                    0 Món
+                                  <span className="inline-flex items-center justify-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 shadow-xs">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                                    <span>0 Món (Hết Hàng)</span>
                                   </span>
                                 );
                               })()}
@@ -2527,13 +2531,22 @@ export default function AdminDashboardPage() {
                 <div className="grid grid-cols-2 gap-2 text-xs font-semibold pt-1">
                   <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
                     <span className="text-slate-400 text-[10px] block uppercase font-bold">Tồn Kho Khả Dụng</span>
-                    <span className="text-emerald-600 dark:text-emerald-400 font-extrabold">
-                      {(() => {
-                        const pS = serialsByProductId.get(viewingProduct.id) || [];
-                        const avail = pS.filter((s: any) => s.status === 'AVAILABLE').length;
-                        return pS.length > 0 ? `${avail} Món (Khớp SN)` : `${viewingProduct.stockQuantity ?? viewingProduct.stockCount ?? 0} Món`;
-                      })()}
-                    </span>
+                    {(() => {
+                      const pS = serialsByProductId.get(viewingProduct.id) || [];
+                      const avail = pS.filter((s: any) => s.status === 'AVAILABLE').length;
+                      const effectiveStock = pS.length > 0 ? avail : (viewingProduct.stockQuantity ?? viewingProduct.stockCount ?? 0);
+                      return effectiveStock > 0 ? (
+                        <span className="text-emerald-600 dark:text-emerald-400 font-extrabold flex items-center gap-1 mt-0.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                          {effectiveStock} Món {pS.length > 0 ? '(Khớp SN)' : ''}
+                        </span>
+                      ) : (
+                        <span className="text-rose-600 dark:text-rose-400 font-extrabold flex items-center gap-1 mt-0.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 inline-block animate-pulse" />
+                          0 Món (Hết Hàng)
+                        </span>
+                      );
+                    })()}
                   </div>
                   <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
                     <span className="text-slate-400 text-[10px] block uppercase font-bold">Bảo Hành</span>

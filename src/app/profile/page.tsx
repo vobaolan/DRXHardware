@@ -19,24 +19,182 @@ import { useCart } from '@/context/CartContext';
 import { VIETNAM_PROVINCES, parseFullAddress } from '@/lib/vietnamLocations';
 import { ModernSelect } from '@/components/ui/ModernSelect';
 
-interface HardwareKey {
+interface OrderItemType {
   id: string;
-  keyCode: string;
+  productId?: string;
+  quantity?: number;
+  price?: number | string;
+  serialsList?: string[];
   product?: {
+    id: string;
     name: string;
-    coverImage: string;
-    platform: string;
-    type: string;
+    slug?: string;
+    coverImage?: string;
+    category?: string;
+    brand?: string;
+    warrantyMonths?: number;
+    platform?: string;
   };
-  createdAt?: string;
+}
+
+interface ProductSerialType {
+  id: string;
+  productId: string;
+  serialNumber: string;
+  status: string;
+  soldDate?: string;
+  warrantyEnd?: string;
+  product?: {
+    id: string;
+    name: string;
+    coverImage?: string;
+    category?: string;
+    brand?: string;
+    warrantyMonths?: number;
+  };
 }
 
 interface Order {
   id: string;
-  createdAt: string;
+  orderCode?: string;
+  userId?: string;
+  customerName?: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  shippingAddress?: string;
+  deliveryType?: string;
+  totalAmount?: number | string;
+  discountAmount?: number | string;
   netAmount: number | string;
   status: string;
-  gameKeys: HardwareKey[];
+  paymentMethod?: string;
+  paymentStatus?: string;
+  paymentDetails?: any;
+  notes?: string;
+  createdAt: string;
+  updatedAt?: string;
+  orderItems?: OrderItemType[];
+  serials?: ProductSerialType[];
+}
+
+interface HardwareWarrantyItem {
+  id: string;
+  orderId: string;
+  orderCode: string;
+  serialNumber: string;
+  productName: string;
+  category: string;
+  brand: string;
+  coverImage: string;
+  warrantyMonths: number;
+  purchaseDate: string;
+  warrantyEnd: string;
+  orderStatus: string;
+}
+
+function extractHardwareFromOrders(ordersList: Order[]): HardwareWarrantyItem[] {
+  const hardwareItems: HardwareWarrantyItem[] = [];
+
+  ordersList.forEach((order) => {
+    if (order.status === 'CANCELLED') return;
+
+    const pDetails = typeof order.paymentDetails === 'object' && order.paymentDetails !== null
+      ? order.paymentDetails
+      : typeof order.paymentDetails === 'string'
+        ? (() => { try { return JSON.parse(order.paymentDetails); } catch(e) { return {}; } })()
+        : {};
+
+    const orderDisplayCode = (() => {
+      let raw = String(order.orderCode || order.id || 'DRX-83921').toUpperCase();
+      raw = raw.replace(/^#/, '').replace(/^ORD-/, '');
+      if (raw.startsWith('DRX-')) return raw;
+      if (raw.startsWith('DRX')) return `DRX-${raw.slice(3)}`;
+      return `DRX-${raw.slice(-5)}`;
+    })();
+
+    const orderPurchaseDate = new Date(order.createdAt || Date.now()).toLocaleDateString('vi-VN', {
+      year: 'numeric', month: '2-digit', day: '2-digit',
+    });
+
+    const serialsMap = new Map<string, any[]>();
+    if (order.serials && Array.isArray(order.serials) && order.serials.length > 0) {
+      order.serials.forEach((s: any) => {
+        const pId = s.productId || s.product?.id || 'default';
+        if (!serialsMap.has(pId)) serialsMap.set(pId, []);
+        serialsMap.get(pId)!.push(s);
+      });
+    }
+
+    if (order.orderItems && Array.isArray(order.orderItems) && order.orderItems.length > 0) {
+      order.orderItems.forEach((oi: any, oiIdx: number) => {
+        const prod = oi.product || {};
+        const qty = Math.max(1, Number(oi.quantity) || 1);
+        const serialsList = Array.isArray(oi.serialsList) ? oi.serialsList : [];
+        const warrantyMonths = Number(prod.warrantyMonths) || 36;
+
+        const orderDate = new Date(order.createdAt || Date.now());
+        const warrantyEndDate = new Date(orderDate);
+        warrantyEndDate.setMonth(warrantyEndDate.getMonth() + warrantyMonths);
+        const warrantyEndStr = warrantyEndDate.toLocaleDateString('vi-VN', {
+          year: 'numeric', month: '2-digit', day: '2-digit',
+        });
+
+        for (let q = 0; q < qty; q++) {
+          const attachedSerial = serialsMap.get(prod.id || oi.productId)?.[q];
+          const listedSerial = serialsList[q];
+          const brandPrefix = (prod.brand || 'DRX').toUpperCase().replace(/[^A-Z0-9]/g, '');
+          const fallbackSerial = `SN-${brandPrefix ? `${brandPrefix}-` : ''}${orderDisplayCode}-${oiIdx + 1}${qty > 1 ? `-${q + 1}` : ''}`;
+          const finalSerial = attachedSerial?.serialNumber || listedSerial || fallbackSerial;
+
+          hardwareItems.push({
+            id: attachedSerial?.id || `hw-${order.id}-${oi.id || oiIdx}-${q}`,
+            orderId: order.id,
+            orderCode: orderDisplayCode,
+            serialNumber: finalSerial,
+            productName: prod.name || oi.name || 'Linh Kiện Máy Tính DRX',
+            category: prod.category || 'HARDWARE',
+            brand: prod.brand || 'DRX Certified',
+            coverImage: prod.coverImage || oi.coverImage || 'https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?q=80&w=800',
+            warrantyMonths,
+            purchaseDate: orderPurchaseDate,
+            warrantyEnd: warrantyEndStr,
+            orderStatus: order.status,
+          });
+        }
+      });
+    } else if (pDetails.items && Array.isArray(pDetails.items) && pDetails.items.length > 0) {
+      pDetails.items.forEach((item: any, itIdx: number) => {
+        const qty = Math.max(1, Number(item.quantity) || 1);
+        const warrantyMonths = 36;
+        const orderDate = new Date(order.createdAt || Date.now());
+        const warrantyEndDate = new Date(orderDate);
+        warrantyEndDate.setMonth(warrantyEndDate.getMonth() + warrantyMonths);
+        const warrantyEndStr = warrantyEndDate.toLocaleDateString('vi-VN', {
+          year: 'numeric', month: '2-digit', day: '2-digit',
+        });
+
+        for (let q = 0; q < qty; q++) {
+          const fallbackSerial = `SN-DRX-${orderDisplayCode}-${itIdx + 1}${qty > 1 ? `-${q + 1}` : ''}`;
+          hardwareItems.push({
+            id: `hw-${order.id}-${item.id || itIdx}-${q}`,
+            orderId: order.id,
+            orderCode: orderDisplayCode,
+            serialNumber: fallbackSerial,
+            productName: item.name || 'Linh Kiện Máy Tính DRX',
+            category: 'HARDWARE',
+            brand: 'DRX Certified',
+            coverImage: item.coverImage || 'https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?q=80&w=800',
+            warrantyMonths,
+            purchaseDate: orderPurchaseDate,
+            warrantyEnd: warrantyEndStr,
+            orderStatus: order.status,
+          });
+        }
+      });
+    }
+  });
+
+  return hardwareItems;
 }
 
 function GoogleIcon({ className = "w-4 h-4" }: { className?: string }) {
@@ -66,7 +224,7 @@ function ProfileContent() {
   const { showToast } = useToast();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { addToCart } = useCart();
+  const { addToCart, addMultipleToCart } = useCart();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [authTab, setAuthTab] = useState<'login' | 'register'>('login');
   
@@ -98,6 +256,7 @@ function ProfileContent() {
 
   // Guards against background verifications overwriting active user edits
   const isFormDirtyRef = useRef(false);
+  const isUpdatingProfileRef = useRef(false);
   const hasLoadedAddressRef = useRef(false);
 
   // Vietnam Administrative Locations State for Profile Default Address
@@ -227,9 +386,13 @@ function ProfileContent() {
 
   // Check login status on mount & restore remembered email
   useEffect(() => {
-    const initAuth = async () => {
+    let isSubscribed = true;
+
+    const initAuth = async (isInitialMount = false) => {
       const { getStoredSessionUser, verifyCurrentSession } = await import('@/lib/auth-client');
       const sessionUser = getStoredSessionUser();
+      if (!isSubscribed) return;
+
       if (sessionUser) {
         const storedProvider = typeof window !== 'undefined' ? sessionStorage.getItem('drx_auth_provider') : null;
         const resolvedSessionUser = storedProvider === 'google' || sessionUser.provider === 'google' || sessionUser.id?.startsWith('google-')
@@ -238,56 +401,66 @@ function ProfileContent() {
 
         setCurrentUser(resolvedSessionUser);
 
-        if (!isFormDirtyRef.current) {
+        if (!isFormDirtyRef.current && !isUpdatingProfileRef.current) {
           setProfileName(resolvedSessionUser.name || '');
           setProfilePhone(resolvedSessionUser.phone || '');
-          if (!hasLoadedAddressRef.current) {
+          if (!hasLoadedAddressRef.current && resolvedSessionUser.address) {
             applyAddressToForm(resolvedSessionUser.address);
           }
         }
         setIsLoggedIn(true);
 
-        verifyCurrentSession().then((verified) => {
-          if (verified) {
-            const resolvedVerified = storedProvider === 'google' || verified.provider === 'google' || verified.id?.startsWith('google-')
-              ? { ...verified, provider: 'google' }
-              : verified;
-            setCurrentUser(resolvedVerified);
-            if (!isFormDirtyRef.current) {
-              setProfileName(resolvedVerified.name || '');
-              setProfilePhone(resolvedVerified.phone || '');
-              applyAddressToForm(resolvedVerified.address, true);
+        if (isInitialMount) {
+          verifyCurrentSession().then((verified) => {
+            if (!isSubscribed) return;
+            if (verified) {
+              const resolvedVerified = storedProvider === 'google' || verified.provider === 'google' || verified.id?.startsWith('google-')
+                ? { ...verified, provider: 'google' }
+                : verified;
+              setCurrentUser(resolvedVerified);
+              if (!isFormDirtyRef.current && !isUpdatingProfileRef.current) {
+                setProfileName(resolvedVerified.name || '');
+                setProfilePhone(resolvedVerified.phone || '');
+                if (resolvedVerified.address) {
+                  applyAddressToForm(resolvedVerified.address, true);
+                }
+              }
+              setIsLoggedIn(true);
             }
-            setIsLoggedIn(true);
-          }
-        });
+          });
+        }
       } else {
-        verifyCurrentSession().then((verified) => {
-          if (verified) {
-            const storedProvider = typeof window !== 'undefined' ? sessionStorage.getItem('drx_auth_provider') : null;
-            const resolvedVerified = storedProvider === 'google' || verified.provider === 'google' || verified.id?.startsWith('google-')
-              ? { ...verified, provider: 'google' }
-              : verified;
-            setCurrentUser(resolvedVerified);
-            if (!isFormDirtyRef.current) {
-              setProfileName(resolvedVerified.name || '');
-              setProfilePhone(resolvedVerified.phone || '');
-              applyAddressToForm(resolvedVerified.address, true);
+        if (isInitialMount) {
+          verifyCurrentSession().then((verified) => {
+            if (!isSubscribed) return;
+            if (verified) {
+              const storedProvider = typeof window !== 'undefined' ? sessionStorage.getItem('drx_auth_provider') : null;
+              const resolvedVerified = storedProvider === 'google' || verified.provider === 'google' || verified.id?.startsWith('google-')
+                ? { ...verified, provider: 'google' }
+                : verified;
+              setCurrentUser(resolvedVerified);
+              if (!isFormDirtyRef.current && !isUpdatingProfileRef.current) {
+                setProfileName(resolvedVerified.name || '');
+                setProfilePhone(resolvedVerified.phone || '');
+                if (resolvedVerified.address) {
+                  applyAddressToForm(resolvedVerified.address, true);
+                }
+              }
+              setIsLoggedIn(true);
             }
-            setIsLoggedIn(true);
-          }
-        });
+          });
+        }
       }
     };
 
-    initAuth();
+    initAuth(true);
 
-    window.addEventListener('storage', initAuth);
-    window.addEventListener('ods_user_update', initAuth);
-    return () => {
-      window.removeEventListener('storage', initAuth);
-      window.removeEventListener('ods_user_update', initAuth);
+    const handleUserUpdate = () => {
+      initAuth(false);
     };
+
+    window.addEventListener('storage', handleUserUpdate);
+    window.addEventListener('ods_user_update', handleUserUpdate);
 
     try {
       const savedEmail = localStorage.getItem('drx_remember_email');
@@ -309,6 +482,12 @@ function ProfileContent() {
         document.head.appendChild(script);
       }
     } catch (e) {}
+
+    return () => {
+      isSubscribed = false;
+      window.removeEventListener('storage', handleUserUpdate);
+      window.removeEventListener('ods_user_update', handleUserUpdate);
+    };
   }, []);
 
   // Fetch orders when user is authenticated
@@ -540,23 +719,34 @@ function ProfileContent() {
       return;
     }
 
+    const payloadPhone = profilePhone.trim();
+    const payloadAddress = profileAddress.trim();
+
     setIsUpdatingProfile(true);
+    isUpdatingProfileRef.current = true;
     try {
       const { updateUserProfile } = await import('@/lib/auth-client');
       const updated = await updateUserProfile({
         name: trimmedName,
-        phone: profilePhone.trim(),
-        address: profileAddress.trim(),
+        phone: payloadPhone,
+        address: payloadAddress,
+        email: currentUser.email,
+        id: currentUser.id,
       });
 
       if (updated) {
         isFormDirtyRef.current = false;
         setCurrentUser(updated);
-        setProfileName(updated.name || '');
-        setProfilePhone(updated.phone || '');
-        setProfileAddress(updated.address || '');
-        applyAddressToForm(updated.address, true);
+        setProfileName(updated.name || trimmedName);
+        setProfilePhone(updated.phone || payloadPhone);
+        setProfileAddress(updated.address || payloadAddress);
+        if (updated.address || payloadAddress) {
+          applyAddressToForm(updated.address || payloadAddress, true);
+        }
         showToast('Cập nhật thông tin cá nhân lên hệ thống thành công!', 'success');
+
+        // Broadcast update event so PortalHeader and other components update immediately
+        window.dispatchEvent(new Event('ods_user_update'));
       } else {
         showToast('Không thể lưu thông tin vào cơ sở dữ liệu. Vui lòng thử lại!', 'error');
       }
@@ -565,6 +755,9 @@ function ProfileContent() {
       showToast('Đã xảy ra lỗi khi lưu thông tin.', 'error');
     } finally {
       setIsUpdatingProfile(false);
+      setTimeout(() => {
+        isUpdatingProfileRef.current = false;
+      }, 2500);
     }
   };
 
@@ -635,10 +828,11 @@ function ProfileContent() {
       showToast('Cấu hình này không có linh kiện!', 'error');
       return;
     }
-    items.forEach((it: any) => {
-      const p = it.product;
-      if (p) {
-        addToCart({
+    const cartPayload = items
+      .filter((it: any) => it && it.product)
+      .map((it: any) => {
+        const p = it.product;
+        return {
           id: p.id,
           productId: p.id,
           name: p.name,
@@ -647,15 +841,28 @@ function ProfileContent() {
           discountPrice: p.discountPrice,
           coverImage: p.coverImage,
           platform: 'HARDWARE',
-        });
-      }
-    });
+        };
+      });
+
+    addMultipleToCart(cartPayload, false);
     showToast(`Đã thêm toàn bộ linh kiện của "${build.name}" vào giỏ hàng!`, 'success');
     router.push('/checkout');
   };
 
-  // Calculate total registered hardware items
-  const totalHardwareItems = orders.reduce((acc, curr) => acc + (curr.gameKeys ? curr.gameKeys.length : 0), 0);
+  // Calculate total registered hardware items synced real-time from orders
+  const hardwareItemsList = React.useMemo(() => extractHardwareFromOrders(orders), [orders]);
+  const totalHardwareItems = hardwareItemsList.length;
+
+  const handleCopySerial = (itemId: string, sn: string) => {
+    try {
+      navigator.clipboard.writeText(sn);
+      setCopiedKeyId(itemId);
+      showToast(`Đã sao chép mã Serial Number: ${sn}`, 'success');
+      setTimeout(() => setCopiedKeyId(null), 2000);
+    } catch (e) {
+      showToast('Không thể sao chép mã Serial!', 'error');
+    }
+  };
 
   // Sanitized display values
   const sanitizedName = currentUser?.name ? currentUser.name.replace(/ODS/g, 'DRX') : 'Khách Hàng DRX';
@@ -1500,11 +1707,14 @@ function ProfileContent() {
                   {/* TAB 3: BẢO HÀNH */}
                   {dashboardTab === 'warranty' && (
                     <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-6 space-y-5 shadow-sm">
-                      <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-4">
                         <div>
                           <h3 className="font-heading text-sm font-black uppercase tracking-wider text-slate-900 dark:text-slate-100 flex items-center gap-2">
                             <ShieldCheck className="h-4 w-4 text-emerald-600" />
                             <span>KHO LINH KIỆN &amp; BẢO HÀNH CHÍNH HÃNG</span>
+                            <span className="text-xs bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+                              {totalHardwareItems} thiết bị
+                            </span>
                           </h3>
                           <p className="text-xs text-slate-500 dark:text-slate-400 font-light mt-0.5">
                             Quản lý toàn bộ mã Serial Number (SN) linh kiện đã mua và kích hoạt bảo hành 1 đổi 1 trong 36 tháng.
@@ -1512,7 +1722,7 @@ function ProfileContent() {
                         </div>
                         <Link
                           href="/warranty"
-                          className="hidden sm:inline-flex items-center gap-1.5 text-xs font-bold text-[#0284c7] hover:underline"
+                          className="inline-flex items-center gap-1.5 text-xs font-bold text-[#0284c7] hover:underline"
                         >
                           <span>Cổng tra cứu bảo hành</span>
                           <ChevronRight className="w-3.5 h-3.5" />
@@ -1521,89 +1731,81 @@ function ProfileContent() {
 
                       {isLoadingOrders ? (
                         <div className="text-center py-12 text-xs text-slate-400">
-                          Đang tải kho linh kiện...
+                          Đang tải kho linh kiện từ đơn hàng...
                         </div>
-                      ) : (() => {
-                        const allHardwareItems: any[] = [];
-                        orders.forEach((order) => {
-                          if (order.gameKeys && order.gameKeys.length > 0) {
-                            order.gameKeys.forEach((k: any) => {
-                              allHardwareItems.push({
-                                id: k.id,
-                                orderId: order.id,
-                                serialNumber: k.keyCode.includes('SN-') ? k.keyCode : `SN-${k.keyCode.toUpperCase()}`,
-                                productName: k.product?.name || 'Linh Kiện Máy Tính DRX',
-                                platform: k.product?.platform || 'HARDWARE',
-                                coverImage: k.product?.coverImage || 'https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?q=80&w=800',
-                                warrantyMonths: 36,
-                                purchaseDate: new Date(k.createdAt || order.createdAt).toLocaleDateString('vi-VN', {
-                                  year: 'numeric', month: '2-digit', day: '2-digit',
-                                }),
-                              });
-                            });
-                          }
-                        });
-
-                        if (allHardwareItems.length === 0) {
-                          return (
-                            <div className="text-center py-12 px-4 flex flex-col items-center justify-center space-y-4">
-                              <div className="h-16 w-16 rounded-3xl bg-emerald-50 dark:bg-slate-800 flex items-center justify-center text-emerald-500">
-                                <ShieldCheck className="h-8 w-8" />
-                              </div>
-                              <div className="space-y-1">
-                                <h4 className="text-xs font-black text-slate-900 dark:text-slate-100 uppercase tracking-wider">Chưa có linh kiện nào trong kho bảo hành</h4>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 font-light max-w-sm leading-relaxed mx-auto">
-                                  Bạn chưa sở hữu linh kiện máy tính nào. Hãy mua sắm linh kiện chính hãng tại DRX để nhận bảo hành 1 đổi 1 36 tháng tận nơi!
-                                </p>
-                              </div>
-                              <Link
-                                href="/products"
-                                className="uiverse-btn-shimmer inline-flex items-center gap-2 rounded-2xl text-white px-6 py-3 text-xs font-heading font-black uppercase tracking-wider shadow-lg"
-                              >
-                                <span>Mua Sắm Linh Kiện Ngay</span>
-                                <ArrowRight className="h-4 w-4" />
-                              </Link>
-                            </div>
-                          );
-                        }
-
-                        return (
-                          <div className="space-y-4">
-                            {allHardwareItems.map((item) => (
-                              <div key={item.id} className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-5 space-y-3.5 hover:border-[#0284c7] transition-all">
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                  <div className="flex items-center gap-3.5">
-                                    <img
-                                      src={item.coverImage}
-                                      alt={item.productName}
-                                      className="h-14 w-20 rounded-xl object-cover bg-slate-900 border border-slate-200 dark:border-slate-800 shrink-0"
-                                    />
-                                    <div>
-                                      <h4 className="font-heading text-xs font-black text-slate-900 dark:text-slate-100 line-clamp-1">{item.productName}</h4>
-                                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold uppercase block mt-0.5">
-                                        ✓ Bảo hành chính hãng 36 Tháng (1 Đổi 1)
+                      ) : hardwareItemsList.length === 0 ? (
+                        <div className="text-center py-12 px-4 flex flex-col items-center justify-center space-y-4">
+                          <div className="h-16 w-16 rounded-3xl bg-emerald-50 dark:bg-slate-800 flex items-center justify-center text-emerald-500">
+                            <ShieldCheck className="h-8 w-8" />
+                          </div>
+                          <div className="space-y-1">
+                            <h4 className="text-xs font-black text-slate-900 dark:text-slate-100 uppercase tracking-wider">Chưa có linh kiện nào trong kho bảo hành</h4>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 font-light max-w-sm leading-relaxed mx-auto">
+                              Bạn chưa sở hữu linh kiện máy tính nào. Hãy mua sắm linh kiện chính hãng tại DRX để nhận bảo hành 1 đổi 1 trong 36 tháng tận nơi!
+                            </p>
+                          </div>
+                          <Link
+                            href="/products"
+                            className="uiverse-btn-shimmer inline-flex items-center gap-2 rounded-2xl text-white px-6 py-3 text-xs font-heading font-black uppercase tracking-wider shadow-lg"
+                          >
+                            <span>Mua Sắm Linh Kiện Ngay</span>
+                            <ArrowRight className="h-4 w-4" />
+                          </Link>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {hardwareItemsList.map((item) => (
+                            <div key={item.id} className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-5 space-y-3.5 hover:border-[#0284c7] transition-all">
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div className="flex items-center gap-3.5">
+                                  <img
+                                    src={item.coverImage}
+                                    alt={item.productName}
+                                    className="h-14 w-20 rounded-xl object-contain bg-slate-900 border border-slate-200 dark:border-slate-800 shrink-0 p-1"
+                                  />
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                                      <span className="text-[10px] font-black uppercase bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] border border-sky-200 dark:border-sky-800 px-2 py-0.5 rounded-md font-mono">
+                                        ĐƠN #{item.orderCode}
+                                      </span>
+                                      <span className="text-[10px] font-bold text-slate-500 uppercase">
+                                        {item.brand} • {item.category}
                                       </span>
                                     </div>
-                                  </div>
-                                  <div className="text-left sm:text-right shrink-0">
-                                    <span className="text-[10px] text-slate-400 font-mono block">Ngày kích hoạt: {item.purchaseDate}</span>
-                                    <span className="text-[9.5px] font-black text-emerald-600 dark:text-emerald-300 uppercase bg-emerald-100 dark:bg-emerald-950/80 border border-emerald-300 dark:border-emerald-800 px-2.5 py-0.5 rounded-full inline-block mt-1">
-                                      Đang trong hạn bảo hành
+                                    <h4 className="font-heading text-xs font-black text-slate-900 dark:text-slate-100 line-clamp-1">{item.productName}</h4>
+                                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold uppercase block mt-0.5">
+                                      ✓ Bảo hành chính hãng {item.warrantyMonths} Tháng (1 Đổi 1)
                                     </span>
                                   </div>
                                 </div>
+                                <div className="text-left sm:text-right shrink-0">
+                                  <span className="text-[10px] text-slate-400 font-mono block">Ngày kích hoạt: {item.purchaseDate}</span>
+                                  <span className="text-[10px] text-slate-500 font-mono block">Hạn bảo hành: {item.warrantyEnd}</span>
+                                  <span className="text-[9.5px] font-black text-emerald-600 dark:text-emerald-300 uppercase bg-emerald-100 dark:bg-emerald-950/80 border border-emerald-300 dark:border-emerald-800 px-2.5 py-0.5 rounded-full inline-block mt-1">
+                                    Đang trong hạn bảo hành
+                                  </span>
+                                </div>
+                              </div>
 
-                                {/* SERIAL NUMBER BAR */}
-                                <div className="flex items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-700 p-3 rounded-xl">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Mã Serial SN:</span>
-                                    <code className="text-xs font-mono text-[#0284c7] font-bold select-all">
-                                      {item.serialNumber}
-                                    </code>
-                                  </div>
+                              {/* SERIAL NUMBER BAR */}
+                              <div className="flex items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-700 p-3 rounded-xl flex-wrap sm:flex-nowrap">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 shrink-0">Mã Serial SN:</span>
+                                  <code className="text-xs font-mono text-[#0284c7] font-bold select-all truncate">
+                                    {item.serialNumber}
+                                  </code>
+                                </div>
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <Link
+                                    href={`/warranty?sn=${encodeURIComponent(item.serialNumber)}`}
+                                    className="flex items-center gap-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-2.5 py-1.5 text-[10px] font-bold text-slate-700 dark:text-slate-300 hover:text-[#0284c7] hover:border-sky-300 transition-all"
+                                  >
+                                    <ExternalLink className="h-3 w-3" />
+                                    <span>Tra Cứu</span>
+                                  </Link>
                                   <button
-                                    onClick={() => handleCopy(item.id, item.serialNumber)}
-                                    className="flex items-center gap-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 text-[10px] font-bold text-slate-800 dark:text-slate-200 hover:bg-[#0284c7] hover:text-white transition-all shrink-0 cursor-pointer"
+                                    onClick={() => handleCopySerial(item.id, item.serialNumber)}
+                                    className="flex items-center gap-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 text-[10px] font-bold text-slate-800 dark:text-slate-200 hover:bg-[#0284c7] hover:text-white transition-all cursor-pointer"
                                   >
                                     {copiedKeyId === item.id ? (
                                       <>
@@ -1619,10 +1821,10 @@ function ProfileContent() {
                                   </button>
                                 </div>
                               </div>
-                            ))}
-                          </div>
-                        );
-                      })()}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
 

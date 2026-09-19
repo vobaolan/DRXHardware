@@ -257,6 +257,7 @@ export default function CheckoutPage() {
           discountAmount: discountAmount,
           netAmount: netAmount,
           paymentMethod: paymentMethod,
+          orderCode: draftOrderCode || undefined,
         }),
       });
 
@@ -813,7 +814,7 @@ export default function CheckoutPage() {
                         </div>
                       </div>
                       <p className="text-[11px] text-slate-500 dark:text-slate-400 font-normal">
-                        Showroom DRX Hardware (TP. Hồ Chí Minh). Hỗ trợ kiểm tra linh kiện và ráp PC tại chỗ.
+                        Showroom DRX Hardware (TP. Hồ Chí Minh)
                       </p>
                     </button>
                   </div>

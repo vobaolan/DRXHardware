@@ -419,6 +419,19 @@ export default function StaffWarehousePortalPage() {
     });
   }, [serials, searchQuery, serialStatusFilter]);
 
+  // Map serials by productId for instant lookup & stock verification
+  const serialsByProductId = useMemo(() => {
+    const map = new Map<string, any[]>();
+    serials.forEach(s => {
+      const pid = s.productId || s.product?.id;
+      if (pid) {
+        if (!map.has(pid)) map.set(pid, []);
+        map.get(pid)!.push(s);
+      }
+    });
+    return map;
+  }, [serials]);
+
   // Filtered Assembly Orders
   const filteredAssemblyOrders = useMemo(() => {
     return orders.filter(o => {
@@ -1052,9 +1065,27 @@ export default function StaffWarehousePortalPage() {
                             {formatVND(p.price)}
                           </td>
                           <td className="py-3.5 px-3 text-center whitespace-nowrap">
-                            <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                              {p.stockQuantity ?? p.stockCount ?? 0} Món
-                            </span>
+                            {(() => {
+                              const prodSerials = serialsByProductId.get(p.id) || [];
+                              const hasSerials = prodSerials.length > 0;
+                              const availCount = prodSerials.filter((s: any) => s.status === 'AVAILABLE').length;
+                              const effectiveStock = hasSerials ? availCount : (p.stockQuantity ?? p.stockCount ?? 0);
+
+                              if (effectiveStock > 0) {
+                                return (
+                                  <span className="inline-flex items-center justify-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                    <span>{effectiveStock} Món</span>
+                                  </span>
+                                );
+                              }
+                              return (
+                                <span className="inline-flex items-center justify-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 shadow-xs">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                                  <span>0 Món (Hết Hàng)</span>
+                                </span>
+                              );
+                            })()}
                           </td>
                           <td className="py-3.5 px-3 text-center whitespace-nowrap font-medium text-slate-600 dark:text-slate-400">
                             {p.warrantyMonths || 36} Tháng
@@ -1500,7 +1531,22 @@ export default function StaffWarehousePortalPage() {
                 <div className="grid grid-cols-2 gap-2 text-xs font-semibold pt-1">
                   <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
                     <span className="text-slate-400 text-[10px] block uppercase font-bold">Tồn Kho</span>
-                    <span className="text-emerald-600 dark:text-emerald-400 font-extrabold">{viewingProduct.stockQuantity ?? viewingProduct.stockCount ?? 0} Món</span>
+                    {(() => {
+                      const pS = serialsByProductId.get(viewingProduct.id) || [];
+                      const avail = pS.filter((s: any) => s.status === 'AVAILABLE').length;
+                      const effectiveStock = pS.length > 0 ? avail : (viewingProduct.stockQuantity ?? viewingProduct.stockCount ?? 0);
+                      return effectiveStock > 0 ? (
+                        <span className="text-emerald-600 dark:text-emerald-400 font-extrabold flex items-center gap-1 mt-0.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                          {effectiveStock} Món {pS.length > 0 ? '(Khớp SN)' : ''}
+                        </span>
+                      ) : (
+                        <span className="text-rose-600 dark:text-rose-400 font-extrabold flex items-center gap-1 mt-0.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 inline-block animate-pulse" />
+                          0 Món (Hết Hàng)
+                        </span>
+                      );
+                    })()}
                   </div>
                   <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
                     <span className="text-slate-400 text-[10px] block uppercase font-bold">Bảo Hành</span>

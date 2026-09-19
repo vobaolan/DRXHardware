@@ -13,21 +13,37 @@ export async function GET(request: Request) {
     try {
       const { data: supaOrders, error: supaErr } = await supabase
         .from('Order')
-        .select('*')
+        .select('*, orderItems:OrderItem(*, product:Product(*))')
         .order('createdAt', { ascending: false });
 
       if (!supaErr && supaOrders && Array.isArray(supaOrders)) {
         orders = supaOrders;
       } else {
-        if (supaErr) console.warn('Supabase get all orders warning, trying Prisma fallback:', supaErr);
-        const { PrismaClient } = await import('@prisma/client');
-        const prisma = new PrismaClient();
-        try {
-          orders = await prisma.order.findMany({
-            orderBy: { createdAt: 'desc' },
-          });
-        } finally {
-          await prisma.$disconnect();
+        // Fallback without relation if relation failed
+        const { data: simpleOrders, error: simpleErr } = await supabase
+          .from('Order')
+          .select('*')
+          .order('createdAt', { ascending: false });
+        if (!simpleErr && simpleOrders && Array.isArray(simpleOrders)) {
+          orders = simpleOrders;
+        } else {
+          if (supaErr) console.warn('Supabase get all orders warning, trying Prisma fallback:', supaErr);
+          const { PrismaClient } = await import('@prisma/client');
+          const prisma = new PrismaClient();
+          try {
+            orders = await prisma.order.findMany({
+              include: {
+                orderItems: {
+                  include: {
+                    product: true,
+                  },
+                },
+              },
+              orderBy: { createdAt: 'desc' },
+            });
+          } finally {
+            await prisma.$disconnect();
+          }
         }
       }
     } catch (e) {
@@ -37,6 +53,13 @@ export async function GET(request: Request) {
         const prisma = new PrismaClient();
         try {
           orders = await prisma.order.findMany({
+            include: {
+              orderItems: {
+                include: {
+                  product: true,
+                },
+              },
+            },
             orderBy: { createdAt: 'desc' },
           });
         } finally {
