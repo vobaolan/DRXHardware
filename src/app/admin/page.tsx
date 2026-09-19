@@ -370,7 +370,7 @@ export default function AdminDashboardPage() {
     serialsWarranty: 0,
   });
   const [last7Days, setLast7Days] = useState<any[]>([]);
-  const [products, setProducts] = useState<any[]>(INITIAL_PRODUCTS);
+  const [products, setProducts] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [serials, setSerials] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
@@ -2566,11 +2566,14 @@ export default function AdminDashboardPage() {
             setEditingProduct(null);
             if (savedProd) {
               setProducts((prev) => {
-                const filtered = prev.filter(p => p.id !== savedProd.id && p.slug !== (savedProd as any).slug && p.name !== savedProd.name);
-                return [{ ...savedProd, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }, ...filtered];
+                const exists = prev.some(p => p.id === savedProd.id);
+                if (exists) {
+                  return prev.map(p => p.id === savedProd.id ? { ...p, ...savedProd, updatedAt: new Date().toISOString() } : p);
+                }
+                return [savedProd, ...prev];
               });
             }
-            fetchAllData(true);
+            fetchAllData(false);
           }}
         />
       )}

@@ -5,11 +5,6 @@ import { INITIAL_PRODUCTS } from '@/lib/hardware-data';
 
 export const dynamic = 'force-dynamic';
 
-// High-speed In-Memory Cache with 15s TTL for Admin
-let adminCachedProducts: any[] | null = null;
-let lastAdminCacheTimestamp = 0;
-const ADMIN_CACHE_TTL_MS = 15 * 1000; // 15 seconds
-
 export async function GET() {
   const headers = {
     'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
@@ -19,32 +14,23 @@ export async function GET() {
   };
 
   try {
-    const now = Date.now();
     let dbProducts: any[] = [];
 
-    if (adminCachedProducts && (now - lastAdminCacheTimestamp < ADMIN_CACHE_TTL_MS)) {
-      dbProducts = adminCachedProducts;
-    } else {
-      // 1. Direct query from Supabase Cloud Database (Fast Direct REST)
-      try {
-        const { data: supaProds, error: supaErr } = await supabase
-          .from('Product')
-          .select('*')
-          .order('createdAt', { ascending: false });
+    // 1. Direct query from Supabase Cloud Database (Live REST)
+    try {
+      const { data: supaProds, error: supaErr } = await supabase
+        .from('Product')
+        .select('*')
+        .order('createdAt', { ascending: false });
 
-        if (!supaErr && supaProds && Array.isArray(supaProds) && supaProds.length > 0) {
-          dbProducts = supaProds;
-          adminCachedProducts = supaProds;
-          lastAdminCacheTimestamp = now;
-        } else if (adminCachedProducts) {
-          dbProducts = adminCachedProducts;
-        } else {
-          dbProducts = INITIAL_PRODUCTS;
-        }
-      } catch (e) {
-        console.warn('Supabase products fetch warning, using fallback:', e);
-        dbProducts = adminCachedProducts || INITIAL_PRODUCTS;
+      if (!supaErr && supaProds && Array.isArray(supaProds) && supaProds.length > 0) {
+        dbProducts = supaProds;
+      } else {
+        dbProducts = INITIAL_PRODUCTS;
       }
+    } catch (e) {
+      console.warn('Supabase products fetch warning, using fallback:', e);
+      dbProducts = INITIAL_PRODUCTS;
     }
 
     if (!dbProducts || dbProducts.length === 0) {
