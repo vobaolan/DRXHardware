@@ -255,10 +255,12 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
       const data = await res.json();
       if (res.ok && data.url) {
         setCoverImage(data.url);
-        if (!screenshots.includes(data.url)) {
-          setScreenshots([data.url, ...screenshots]);
-        }
-        showToast('Đã tải ảnh đại diện từ máy tính lên thành công!', 'success');
+        // If existing screenshots were just the old placeholder, replace it; otherwise prepend
+        setScreenshots(prev => {
+          const filtered = prev.filter(img => !img.includes('unsplash.com'));
+          return [data.url, ...filtered.filter(u => u !== data.url)];
+        });
+        showToast('Đã tải ảnh đại diện từ máy tính lên Supabase thành công!', 'success');
       } else {
         showToast(data.message || 'Lỗi khi tải ảnh lên.', 'error');
       }
@@ -289,11 +291,17 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
       const validUrls = results.filter(Boolean) as string[];
 
       if (validUrls.length > 0) {
-        setScreenshots(prev => [...prev, ...validUrls]);
-        if (!coverImage && validUrls.length > 0) {
+        setScreenshots(prev => {
+          // If previous screenshots only had unsplash placeholder images, replace them
+          const realImages = prev.filter(img => !img.includes('unsplash.com'));
+          return [...realImages, ...validUrls];
+        });
+        
+        // If current cover was unsplash or empty, set to first uploaded image
+        if (!coverImage || coverImage.includes('unsplash.com')) {
           setCoverImage(validUrls[0]);
         }
-        showToast(`Đã tải lên ${validUrls.length} ảnh linh kiện từ máy tính thành công!`, 'success');
+        showToast(`Đã tải lên ${validUrls.length} ảnh linh kiện từ máy tính lên Cloud thành công!`, 'success');
       } else {
         showToast('Không thể tải ảnh lên.', 'error');
       }
@@ -305,9 +313,15 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
     }
   };
 
+  const handleClearAllImages = () => {
+    setCoverImage('');
+    setScreenshots([]);
+    showToast('Đã xóa toàn bộ ảnh. Hãy tải lên ảnh mới từ máy tính!', 'info');
+  };
+
   const handleRemoveCoverImage = () => {
     setCoverImage('');
-    showToast('Đã gỡ ảnh đại diện. Vui lòng tải ảnh mới từ máy tính!', 'info');
+    showToast('Đã gỡ ảnh đại diện. Vui lòng chọn hoặc tải ảnh mới!', 'info');
   };
 
   const handleRemoveScreenshot = (index: number) => {
@@ -605,12 +619,23 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
               </span>
             </div>
 
-            {/* COVER IMAGE SECTION (UPLOAD ONLY) */}
+            {/* COVER IMAGE SECTION */}
             <div className="space-y-2.5">
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
-                <span>Ảnh Đại Diện Chính (Cover Image) <span className="text-rose-500">*</span></span>
-                <span className="text-[10.5px] text-slate-400 font-normal">Hiển thị ở trang chủ & danh mục</span>
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  Ảnh Đại Diện Chính (Cover Image) <span className="text-rose-500">*</span>
+                </label>
+                {screenshots.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleClearAllImages}
+                    className="text-[11px] font-bold text-rose-500 hover:text-rose-600 hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    <span>Xóa Sạch Tất Cả Ảnh Cũ &amp; Tải Mới</span>
+                  </button>
+                )}
+              </div>
 
               {coverImage ? (
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3.5 p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
@@ -622,10 +647,17 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                   {/* INFO & ACTIONS */}
                   <div className="flex-1 space-y-2">
                     <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-wider flex items-center gap-1 border border-emerald-500/20">
-                        <CheckCircle2 className="w-3 h-3" />
-                        <span>Đã Tải Lên Máy Chủ Ảnh Thành Công</span>
-                      </span>
+                      {coverImage.includes('supabase.co') ? (
+                        <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-wider flex items-center gap-1 border border-emerald-500/20">
+                          <CheckCircle2 className="w-3 h-3" />
+                          <span>Đã Lưu Trên Supabase Cloud Storage</span>
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-black uppercase tracking-wider flex items-center gap-1 border border-amber-500/20">
+                          <AlertTriangle className="w-3 h-3" />
+                          <span>Ảnh Mẫu Cũ (Hãy bấm "Thay Ảnh Bìa" để tải ảnh mới từ máy tính)</span>
+                        </span>
+                      )}
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
@@ -649,7 +681,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                         className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 text-rose-600 dark:text-rose-400 text-xs font-bold transition-all border border-rose-200 dark:border-rose-900/50 cursor-pointer"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
-                        <span>Gỡ Ảnh</span>
+                        <span>Gỡ Ảnh Này</span>
                       </button>
                     </div>
                   </div>
@@ -669,7 +701,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                       {isUploadingCover ? 'Đang Tải Ảnh Lên Máy Chủ...' : '📁 Nhấp Để Tải Ảnh Bìa Từ Máy Tính'}
                     </span>
                     <span className="text-[10px] text-slate-400 block mt-0.5">
-                      Định dạng hỗ trợ: JPG, PNG, WebP, AVIF (Tự động lưu vào hệ thống an toàn)
+                      Định dạng hỗ trợ: JPG, PNG, WebP, AVIF (Tự động lưu vào Supabase Cloud)
                     </span>
                   </div>
                   <input
