@@ -85,7 +85,7 @@ export function BuildQuotationModal({
       // 2x HD Resolution for Ultra Sharp Output
       const width = 900;
       const rowHeight = 44;
-      const baseHeight = 480;
+      const baseHeight = 420;
       const height = baseHeight + (selectedItems.length * rowHeight);
 
       canvas.width = width * 2;
@@ -158,26 +158,8 @@ export function BuildQuotationModal({
       ctx.fillText(`Ngày: ${currentDateStr}`, width - 133, 76);
       ctx.textAlign = 'left';
 
-      // 3. Build Name Banner Box
-      ctx.fillStyle = '#f0f9ff';
-      ctx.strokeStyle = '#bae6fd';
-      ctx.lineWidth = 1;
-      ctx.fillRect(36, 122, width - 72, 42);
-      ctx.strokeRect(36, 122, width - 72, 42);
-
-      ctx.fillStyle = '#0f172a';
-      ctx.font = 'bold 13px sans-serif';
-      const truncatedBuildName = buildName.length > 55 ? buildName.slice(0, 53) + '...' : buildName;
-      ctx.fillText(`Cấu hình: ${truncatedBuildName}`, 50, 148);
-
-      ctx.textAlign = 'right';
-      ctx.fillStyle = '#0284c7';
-      ctx.font = 'bold 11px monospace';
-      ctx.fillText(`${selectedItems.length} LINH KIỆN`, width - 50, 148);
-      ctx.textAlign = 'left';
-
-      // 4. Table Header
-      const tableTop = 180;
+      // 3. Table Header (Directly after header banner)
+      const tableTop = 122;
       ctx.fillStyle = '#0f172a';
       ctx.fillRect(36, tableTop, width - 72, 34);
 
@@ -374,17 +356,6 @@ export function BuildQuotationModal({
                 <span className="font-mono font-black text-xs sm:text-sm text-[#0284c7] block">#{quoteCode}</span>
                 <span className="text-[10px] text-slate-500 dark:text-slate-400 block">{currentDateStr}</span>
               </div>
-            </div>
-
-            {/* Build Title Banner */}
-            <div className="p-3 bg-sky-50/70 dark:bg-sky-950/30 rounded-xl border border-sky-200/70 dark:border-sky-800/50 flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 truncate">
-                <span className="text-[10px] font-black text-[#0284c7] uppercase shrink-0">Cấu hình:</span>
-                <h4 className="font-heading font-black text-xs sm:text-sm text-slate-900 dark:text-white truncate">{buildName}</h4>
-              </div>
-              <span className="px-2 py-0.5 rounded-lg bg-white dark:bg-slate-900 text-[#0284c7] font-mono font-black text-[10px] border border-sky-200 dark:border-sky-800 shrink-0">
-                {selectedItems.length} Món
-              </span>
             </div>
 
             {/* Items Table */}

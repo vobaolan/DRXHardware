@@ -73,6 +73,44 @@ export const RevenueChartWidget: React.FC<RevenueChartWidgetProps> = ({
   const [startDate, setStartDate] = useState<string>(defaultDates.start);
   const [endDate, setEndDate] = useState<string>(defaultDates.end);
 
+  const isCurrentWeek = useMemo(() => {
+    return startDate === defaultDates.start && endDate === defaultDates.end;
+  }, [startDate, endDate, defaultDates]);
+
+  const weekLabel = useMemo(() => {
+    if (isCurrentWeek) {
+      return 'Tuần Này';
+    }
+
+    try {
+      const curEndTime = new Date(defaultDates.end + 'T00:00:00').getTime();
+      const selEndTime = new Date(endDate + 'T00:00:00').getTime();
+      const diffDays = Math.round((selEndTime - curEndTime) / (24 * 60 * 60 * 1000));
+
+      if (diffDays === -7) {
+        return 'Tuần Trước';
+      }
+      if (diffDays === 7) {
+        return 'Tuần Sau';
+      }
+      if (diffDays < 0 && diffDays % 7 === 0) {
+        return `${Math.abs(diffDays / 7)} tuần trước`;
+      }
+      if (diffDays > 0 && diffDays % 7 === 0) {
+        return `${diffDays / 7} tuần sau`;
+      }
+
+      // If custom date range or non-multiple of 7
+      const sParts = startDate.split('-');
+      const eParts = endDate.split('-');
+      if (sParts.length === 3 && eParts.length === 3) {
+        return `${sParts[2]}/${sParts[1]} - ${eParts[2]}/${eParts[1]}`;
+      }
+    } catch (e) {}
+
+    return 'Tuần Chọn';
+  }, [isCurrentWeek, startDate, endDate, defaultDates]);
+
   // Quick navigation: Previous week, Next week, Current week
   const handleShiftWeek = (daysOffset: number) => {
     try {
@@ -400,9 +438,17 @@ export const RevenueChartWidget: React.FC<RevenueChartWidgetProps> = ({
               <button
                 type="button"
                 onClick={handleResetCurrentWeek}
-                className="px-2 py-0.5 rounded-lg font-bold text-[11px] text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
+                title={isCurrentWeek ? 'Đang xem tuần hiện tại' : 'Click để quay về Tuần Này'}
+                className={`px-2.5 py-0.5 rounded-lg font-bold text-[11px] transition-all cursor-pointer flex items-center gap-1.5 ${
+                  isCurrentWeek
+                    ? 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                    : 'text-[#0284c7] bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 dark:hover:bg-sky-900/60'
+                }`}
               >
-                Tuần Này
+                <span>{weekLabel}</span>
+                {!isCurrentWeek && (
+                  <RotateCcw className="w-2.5 h-2.5 opacity-70 animate-in fade-in" />
+                )}
               </button>
               <button
                 type="button"
@@ -488,53 +534,56 @@ export const RevenueChartWidget: React.FC<RevenueChartWidgetProps> = ({
         </div>
       </div>
 
-      {/* 3. PERMANENT FINANCIAL HUD STATUS BAR (Always visible & interactive) */}
-      <div className="relative z-10 min-h-[36px] flex items-center justify-between border border-sky-200/80 dark:border-sky-900/60 py-1.5 px-3 rounded-xl bg-gradient-to-r from-sky-50/80 via-blue-50/50 to-indigo-50/50 dark:from-sky-950/40 dark:via-slate-900/60 dark:to-indigo-950/30">
-        <div className="flex items-center gap-2 text-xs flex-wrap">
-          <span className="w-2 h-2 rounded-full bg-sky-500 animate-pulse" />
+      {/* 3. PERMANENT FINANCIAL HUD STATUS BAR (Fixed 40px height to prevent vertical jitter) */}
+      <div className="relative z-10 h-10 flex items-center justify-between border border-sky-200/80 dark:border-sky-900/60 px-3 rounded-xl bg-gradient-to-r from-sky-50/80 via-blue-50/50 to-indigo-50/50 dark:from-sky-950/40 dark:via-slate-900/60 dark:to-indigo-950/30 overflow-hidden">
+        <div className="flex items-center gap-2 text-xs truncate min-w-0">
+          <span className="w-2 h-2 rounded-full bg-sky-500 animate-pulse shrink-0" />
           {hoveredIndex !== null && chartData[hoveredIndex] ? (
-            <span className="font-bold text-slate-900 dark:text-white flex items-center gap-2 flex-wrap">
-              <span className="text-[#0284c7] font-black">
+            <span className="font-bold text-slate-900 dark:text-white flex items-center gap-2 truncate text-xs">
+              <span className="text-[#0284c7] font-black truncate">
                 {chartData[hoveredIndex].day} ({chartData[hoveredIndex].fullDate})
               </span>
-              <span className="text-slate-300 dark:text-slate-600">•</span>
-              <span className="text-emerald-600 dark:text-emerald-400 font-black">
+              <span className="text-slate-300 dark:text-slate-600 shrink-0">•</span>
+              <span className="text-emerald-600 dark:text-emerald-400 font-black shrink-0">
                 {formatVND(chartData[hoveredIndex].revenue)}
               </span>
-              <span className="text-slate-300 dark:text-slate-600">•</span>
-              <span className="text-purple-600 dark:text-purple-400 font-bold">
+              <span className="text-slate-300 dark:text-slate-600 shrink-0">•</span>
+              <span className="text-purple-600 dark:text-purple-400 font-bold shrink-0">
                 {chartData[hoveredIndex].orders} đơn
               </span>
               {hoveredIndex === peakIndex && chartData[hoveredIndex].revenue > 0 && (
-                <span className="bg-amber-400/25 text-amber-600 dark:text-amber-400 px-1.5 py-0.2 rounded-md text-[10px] font-black border border-amber-300 dark:border-amber-700">
+                <span className="bg-amber-400/25 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded-md text-[10px] font-black border border-amber-300 dark:border-amber-700 shrink-0">
                   👑 Đỉnh Doanh Thu
                 </span>
               )}
             </span>
           ) : (
-            <span className="text-slate-600 dark:text-slate-300 text-[11px] font-medium flex items-center gap-1.5">
-              <span>Tuần:</span>
-              <strong className="text-sky-600 dark:text-sky-400 font-mono font-bold">
+            <span className="text-slate-600 dark:text-slate-300 text-[11px] font-medium flex items-center gap-1.5 truncate">
+              <span className="shrink-0">{weekLabel}:</span>
+              <strong className="text-sky-600 dark:text-sky-400 font-mono font-bold shrink-0">
                 {formatDateDisplay(startDate)} ➔ {formatDateDisplay(endDate)}
               </strong>
               {peakIndex !== -1 && chartData[peakIndex].revenue > 0 && (
                 <>
-                  <span className="text-slate-300 dark:text-slate-600">•</span>
-                  <span>Đỉnh tuần: <strong className="text-amber-600 dark:text-amber-400">{chartData[peakIndex].day} ({formatVND(chartData[peakIndex].revenue)})</strong></span>
+                  <span className="text-slate-300 dark:text-slate-600 shrink-0">•</span>
+                  <span className="truncate">Đỉnh tuần: <strong className="text-amber-600 dark:text-amber-400">{chartData[peakIndex].day} ({formatVND(chartData[peakIndex].revenue)})</strong></span>
                 </>
               )}
             </span>
           )}
         </div>
         {hoveredIndex !== null && chartData[hoveredIndex] && totalRevenue > 0 && (
-          <span className="text-[11px] font-extrabold text-sky-600 dark:text-sky-400 hidden sm:inline bg-white/80 dark:bg-slate-900/80 px-2 py-0.5 rounded-lg border border-sky-100 dark:border-sky-900/50">
+          <span className="text-[11px] font-extrabold text-sky-600 dark:text-sky-400 shrink-0 hidden sm:inline-flex items-center bg-white/80 dark:bg-slate-900/80 px-2 py-0.5 rounded-lg border border-sky-100 dark:border-sky-900/50 ml-2">
             Chiếm {Math.round((chartData[hoveredIndex].revenue / totalRevenue) * 100)}% tổng tuần
           </span>
         )}
       </div>
 
-      {/* 4. CHART CANVAS CONTAINER */}
-      <div className="relative z-10 pt-2">
+      {/* 4. CHART CANVAS CONTAINER (onMouseLeave handled here to prevent dead-zone resets) */}
+      <div 
+        className="relative z-10 pt-2"
+        onMouseLeave={() => setHoveredIndex(null)}
+      >
         <div className="flex items-stretch gap-3">
           
           {/* Y-Axis Tick Labels Column */}
@@ -576,7 +625,7 @@ export const RevenueChartWidget: React.FC<RevenueChartWidgetProps> = ({
 
             {/* MODE 1: BAR CHART */}
             {chartMode === 'bar' && (
-              <div className="absolute inset-0 flex items-end justify-between gap-1.5 sm:gap-3 z-10">
+              <div className="absolute inset-0 flex items-end justify-between z-10">
                 {chartData.map((item, idx) => {
                   const heightPercent = yAxisConfig.chartMax > 0 
                     ? Math.min(70, Math.max(0, ((item.revenue || 0) / yAxisConfig.chartMax) * 100)) 
@@ -588,19 +637,18 @@ export const RevenueChartWidget: React.FC<RevenueChartWidgetProps> = ({
                     <div
                       key={idx}
                       onMouseEnter={() => setHoveredIndex(idx)}
-                      onMouseLeave={() => setHoveredIndex(null)}
                       onClick={() => setHoveredIndex(idx)}
-                      className="flex-1 h-full flex flex-col items-center justify-end group cursor-pointer relative"
+                      className="flex-1 h-full px-1 sm:px-1.5 flex flex-col items-center justify-end group cursor-pointer relative"
                     >
                       {/* ACCURATELY ANCHORED ON-BAR FLOATING PILL */}
                       {(isHovered || (isPeak && hoveredIndex === null)) && (
                         <div 
-                          className="absolute z-30 pointer-events-none -translate-x-1/2 left-1/2 flex flex-col items-center transition-all duration-150"
+                          className="absolute z-30 pointer-events-none select-none -translate-x-1/2 left-1/2 flex flex-col items-center"
                           style={{ 
                             bottom: `${Math.min(74, Math.max(heightPercent + 3, 7))}%` 
                           }}
                         >
-                          <div className={`px-2 py-0.5 rounded-lg text-[10.5px] font-black shadow-lg whitespace-nowrap flex items-center gap-1 transition-all ${
+                          <div className={`px-2 py-0.5 rounded-lg text-[10.5px] font-black shadow-lg whitespace-nowrap flex items-center gap-1 ${
                             isPeak && item.revenue > 0
                               ? 'bg-amber-500 text-slate-950 ring-2 ring-amber-300 shadow-amber-500/30'
                               : isHovered
@@ -617,20 +665,20 @@ export const RevenueChartWidget: React.FC<RevenueChartWidgetProps> = ({
                         </div>
                       )}
 
-                      {/* Bar Pillar */}
-                      <div className="w-full h-full flex items-end justify-center">
-                        <div className={`w-full max-w-[42px] sm:max-w-[54px] h-full flex items-end justify-center rounded-2xl p-1 transition-all ${
+                      {/* Bar Pillar - fixed 1px border to eliminate 1px layout shift */}
+                      <div className="w-full h-full flex items-end justify-center pointer-events-none">
+                        <div className={`w-full max-w-[42px] sm:max-w-[54px] h-full flex items-end justify-center rounded-2xl p-1 border transition-colors duration-150 ${
                           isHovered 
-                            ? 'bg-sky-100/50 dark:bg-sky-950/40 ring-2 ring-sky-400/50' 
+                            ? 'bg-sky-100/60 dark:bg-sky-950/50 border-sky-400 dark:border-sky-500 shadow-sm shadow-sky-500/20' 
                             : item.revenue > 0 
-                              ? 'bg-slate-100/50 dark:bg-slate-800/30 border border-slate-200/60 dark:border-slate-800/60' 
-                              : 'bg-slate-50/40 dark:bg-slate-800/10 border border-dashed border-slate-200/40 dark:border-slate-800/40'
+                              ? 'bg-slate-100/50 dark:bg-slate-800/30 border-slate-200/60 dark:border-slate-800/60' 
+                              : 'bg-slate-50/40 dark:bg-slate-800/10 border-dashed border-slate-200/40 dark:border-slate-800/40'
                         }`}>
                           <motion.div
                             initial={{ height: 0 }}
                             animate={{ height: `${item.revenue > 0 ? Math.max(heightPercent, 6) : 3}%` }}
                             transition={{ type: 'spring', damping: 20, stiffness: 120, delay: idx * 0.02 }}
-                            className={`w-full rounded-xl transition-all relative flex flex-col justify-between ${
+                            className={`w-full rounded-xl relative flex flex-col justify-between ${
                               item.revenue > 0
                                 ? isPeak
                                   ? 'bg-gradient-to-t from-[#0284c7] via-[#0ea5e9] to-[#38bdf8] shadow-lg shadow-sky-500/35 border-t-2 border-cyan-200'
@@ -656,7 +704,7 @@ export const RevenueChartWidget: React.FC<RevenueChartWidgetProps> = ({
               <div className="absolute inset-0 z-10">
                 <svg
                   viewBox="0 0 700 240"
-                  className="w-full h-full overflow-visible"
+                  className="w-full h-full overflow-visible pointer-events-none"
                   preserveAspectRatio="none"
                 >
                   <defs>
@@ -707,13 +755,7 @@ export const RevenueChartWidget: React.FC<RevenueChartWidgetProps> = ({
                     const isPeak = idx === peakIndex && pt.d.revenue > 0;
 
                     return (
-                      <g
-                        key={idx}
-                        className="cursor-pointer"
-                        onMouseEnter={() => setHoveredIndex(idx)}
-                        onMouseLeave={() => setHoveredIndex(null)}
-                        onClick={() => setHoveredIndex(idx)}
-                      >
+                      <g key={idx}>
                         {isHovered && (
                           <line
                             x1={pt.x}
@@ -741,6 +783,18 @@ export const RevenueChartWidget: React.FC<RevenueChartWidgetProps> = ({
                     );
                   })}
                 </svg>
+
+                {/* Seamless hit-area overlay for Area chart */}
+                <div className="absolute inset-0 flex items-stretch z-20">
+                  {chartData.map((_, idx) => (
+                    <div
+                      key={idx}
+                      onMouseEnter={() => setHoveredIndex(idx)}
+                      onClick={() => setHoveredIndex(idx)}
+                      className="flex-1 h-full cursor-pointer"
+                    />
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -759,9 +813,8 @@ export const RevenueChartWidget: React.FC<RevenueChartWidgetProps> = ({
                 <div
                   key={idx}
                   onMouseEnter={() => setHoveredIndex(idx)}
-                  onMouseLeave={() => setHoveredIndex(null)}
                   onClick={() => setHoveredIndex(idx)}
-                  className="flex-1 flex flex-col items-center justify-center text-center cursor-pointer group"
+                  className="flex-1 flex flex-col items-center justify-center text-center cursor-pointer group py-0.5"
                 >
                   <span className={`text-[11px] sm:text-xs transition-colors font-heading block ${
                     isHovered 
@@ -772,7 +825,7 @@ export const RevenueChartWidget: React.FC<RevenueChartWidgetProps> = ({
                   }`}>
                     {item.day}
                   </span>
-                  <span className={`text-[10px] sm:text-[11px] font-mono mt-0.5 px-1.5 py-0.2 rounded-md transition-all ${
+                  <span className={`text-[10px] sm:text-[11px] font-mono mt-0.5 px-1.5 py-0.2 rounded-md transition-colors ${
                     isHovered
                       ? 'bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 font-black'
                       : isPeak
