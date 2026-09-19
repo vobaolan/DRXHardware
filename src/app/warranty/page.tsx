@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { 
   ShieldCheck, Search, CheckCircle2, Clock, Wrench, 
   Award, AlertCircle, ArrowRight, Barcode,
-  HelpCircle, ExternalLink, Check
+  HelpCircle, ExternalLink, Check, Cpu
 } from 'lucide-react';
 import { 
   IconVga, IconCpu, IconMainboard, IconStorage 
