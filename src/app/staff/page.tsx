@@ -527,11 +527,6 @@ export default function StaffWarehousePortalPage() {
           status: newStatus,
           ...(targetPaymentStatus ? { paymentStatus: targetPaymentStatus } : {})
         } : o));
-        setAssemblyOrders(prev => prev.map(o => o.id === orderId ? { 
-          ...o, 
-          status: newStatus,
-          ...(targetPaymentStatus ? { paymentStatus: targetPaymentStatus } : {})
-        } : o));
         if (viewingOrder && viewingOrder.id === orderId) {
           setViewingOrder({ 
             ...viewingOrder, 
@@ -540,9 +535,10 @@ export default function StaffWarehousePortalPage() {
           });
         }
         showToast(`Đã chuyển đơn hàng sang trạng thái: ${newStatus}`, 'success');
-        fetchAllStaffData();
+        fetchAllStaffData(false);
       } else {
-        showToast('Lỗi khi cập nhật trạng thái đơn hàng!', 'error');
+        const errData = await res.json().catch(() => ({}));
+        showToast(errData.message || 'Lỗi khi cập nhật trạng thái đơn hàng!', 'error');
       }
     } catch (e) {
       showToast('Không thể kết nối máy chủ để cập nhật đơn.', 'error');
@@ -576,16 +572,10 @@ export default function StaffWarehousePortalPage() {
         }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (res.ok) {
         showToast(`Đã hủy đơn hàng #${formatOrderDisplayCode(cancellingOrder)} thành công!`, 'success');
         setOrders(prev => prev.map(o => o.id === cancellingOrder.id ? { 
-          ...o, 
-          status: 'CANCELLED', 
-          paymentStatus: targetPaymentStatus,
-          paymentDetails: mergedDetails 
-        } : o));
-        setAssemblyOrders(prev => prev.map(o => o.id === cancellingOrder.id ? { 
           ...o, 
           status: 'CANCELLED', 
           paymentStatus: targetPaymentStatus,
@@ -600,7 +590,7 @@ export default function StaffWarehousePortalPage() {
           });
         }
         setCancellingOrder(null);
-        fetchAllStaffData();
+        fetchAllStaffData(false);
       } else {
         showToast(data.message || 'Lỗi khi hủy đơn hàng!', 'error');
       }

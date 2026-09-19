@@ -123,49 +123,48 @@ export const Footer: React.FC = () => {
             </p>
 
             {/* 3 PAYMENT PARTNERS (VIETQR, NAPAS 24/7, TECHCOMBANK) */}
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2.5">
               
               {/* 1. VietQR */}
-              <div className="h-9 px-3 bg-slate-50 dark:bg-slate-900/90 border border-slate-200/90 dark:border-slate-800 rounded-xl flex items-center justify-between shadow-2xs">
+              <div className="h-11 px-3.5 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl flex items-center justify-between shadow-2xs hover:border-sky-400/60 dark:hover:border-slate-700 transition-all group">
                 <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 rounded-md bg-[#003B70] flex items-center justify-center p-0.5 text-white shadow-2xs">
-                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5">
-                      <path d="M3 3h8v8H3V3zm2 2v4h4V5H5zm8-2h8v8h-8V3zm2 2v4h4V5h-4zM3 13h8v8H3v-8zm2 2v4h4v-4H5zm13-2h3v3h-3v-3zm0 5h3v3h-3v-3zm-5-5h3v3h-3v-3zm0 5h3v3h-3v-3z"/>
-                    </svg>
-                  </div>
-                  <span className="font-sans font-black text-xs tracking-tight">
-                    <span className="text-[#003B70] dark:text-[#38bdf8]">Viet</span>
-                    <span className="text-[#EF4444]">QR</span>
-                  </span>
+                  <img 
+                    src="/logos/payments/vietqr.png" 
+                    alt="VietQR Logo" 
+                    className="h-6 w-auto object-contain transition-transform group-hover:scale-105" 
+                  />
                 </div>
-                <span className="text-[9.5px] font-bold text-slate-400 uppercase">Quét QR 24/7</span>
+                <span className="text-[9.5px] font-black text-[#0284c7] dark:text-sky-300 bg-sky-50 dark:bg-sky-950/70 px-2 py-0.5 rounded-md border border-sky-200/60 dark:border-sky-800/80 uppercase">
+                  Quét QR 24/7
+                </span>
               </div>
 
               {/* 2. NAPAS 24/7 */}
-              <div className="h-9 px-3 bg-slate-50 dark:bg-slate-900/90 border border-slate-200/90 dark:border-slate-800 rounded-xl flex items-center justify-between shadow-2xs">
-                <div className="flex items-center gap-1.5">
-                  <span className="font-sans font-black text-xs text-[#005BAB] dark:text-[#60a5fa] uppercase tracking-tight">
-                    napas
-                  </span>
-                  <span className="bg-[#F37021] text-white text-[9px] font-black px-1.5 py-0.5 rounded font-mono">
-                    247
-                  </span>
+              <div className="h-11 px-3.5 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl flex items-center justify-between shadow-2xs hover:border-sky-400/60 dark:hover:border-slate-700 transition-all group">
+                <div className="flex items-center gap-2">
+                  <img 
+                    src="/logos/payments/napas.png" 
+                    alt="NAPAS 24/7 Logo" 
+                    className="h-5 w-auto object-contain transition-transform group-hover:scale-105" 
+                  />
                 </div>
-                <span className="text-[9.5px] font-bold text-slate-400 uppercase">Chuyển Nhanh</span>
+                <span className="text-[9.5px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/70 px-2 py-0.5 rounded-md border border-emerald-200/60 dark:border-emerald-800/80 uppercase">
+                  Chuyển Nhanh
+                </span>
               </div>
 
               {/* 3. Techcombank */}
-              <div className="h-9 px-3 bg-slate-50 dark:bg-slate-900/90 border border-slate-200/90 dark:border-slate-800 rounded-xl flex items-center justify-between shadow-2xs">
+              <div className="h-11 px-3.5 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl flex items-center justify-between shadow-2xs hover:border-sky-400/60 dark:hover:border-slate-700 transition-all group">
                 <div className="flex items-center gap-2">
-                  <div className="relative w-4 h-4 flex items-center justify-center shrink-0">
-                    <div className="w-3 h-3 bg-[#E51B24] rotate-45 rounded-[1px]" />
-                    <div className="absolute w-1.5 h-1.5 bg-slate-50 dark:bg-slate-900 rotate-45" />
-                  </div>
-                  <span className="font-heading font-black text-[11px] uppercase tracking-tight text-slate-900 dark:text-white">
-                    Techcombank
-                  </span>
+                  <img 
+                    src="/logos/payments/techcombank.png" 
+                    alt="Techcombank Logo" 
+                    className="h-4.5 w-auto object-contain transition-transform group-hover:scale-105" 
+                  />
                 </div>
-                <span className="text-[9.5px] font-bold text-emerald-600 dark:text-emerald-400 font-mono">TCB</span>
+                <span className="text-[9.5px] font-black text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/70 px-2 py-0.5 rounded-md border border-rose-200/60 dark:border-rose-800/80 font-mono">
+                  TCB
+                </span>
               </div>
 
             </div>

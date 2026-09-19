@@ -193,8 +193,21 @@ function WarrantyContent() {
   const [searched, setSearched] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
+  const isPhoneNumber = (val: string) => {
+    const clean = val.replace(/[\s\-\.]/g, '');
+    return /^(?:\+?84|0)[3|5|7|8|9][0-9]{8}$/.test(clean) || (/^[0-9]{9,11}$/.test(clean) && !val.includes('-'));
+  };
+
   const executeSearch = async (query: string) => {
     if (!query) return;
+
+    if (isPhoneNumber(query)) {
+      setSearched(true);
+      setSearchResults(null);
+      showToast('Chỉ hỗ trợ tra cứu bằng Mã Serial Number (SN). Không hỗ trợ tra cứu bằng Số điện thoại!', 'error');
+      return;
+    }
+
     setSearched(true);
 
     // 1. Fetch live warranty from backend API
@@ -206,26 +219,31 @@ function WarrantyContent() {
           setSearchResults([data.warranty]);
           return;
         }
+      } else {
+        const data = await res.json().catch(() => ({}));
+        if (data.message) {
+          showToast(data.message, 'error');
+        }
       }
     } catch (err) {
       console.warn('Lỗi kết nối API bảo hành:', err);
     }
 
-    // 2. Direct match in local DB fallback
+    // 2. Direct match in local DB fallback (by Serial Number ONLY)
     const upperQuery = query.toUpperCase();
     if (VERIFIED_WARRANTY_DB[upperQuery]) {
       setSearchResults([VERIFIED_WARRANTY_DB[upperQuery]]);
       return;
     }
 
-    // 3. Fuzzy match across local verified hardware serials
+    // 3. Match across local verified hardware serial numbers ONLY
     const matched: WarrantyItem[] = [];
     Object.keys(VERIFIED_WARRANTY_DB).forEach((key) => {
       const item = VERIFIED_WARRANTY_DB[key];
       if (
-        key.toUpperCase().includes(upperQuery) ||
-        item.serialNumber.toUpperCase().includes(upperQuery) ||
-        item.productName.toUpperCase().includes(upperQuery)
+        key.toUpperCase() === upperQuery ||
+        item.serialNumber.toUpperCase() === upperQuery ||
+        item.serialNumber.toUpperCase().includes(upperQuery)
       ) {
         if (!matched.some(m => m.serialNumber === item.serialNumber)) {
           matched.push(item);
@@ -233,11 +251,11 @@ function WarrantyContent() {
       }
     });
 
-    // 4. Dynamic verification for valid formatted serials
-    if (matched.length === 0 && (query.startsWith('SN-') || query.includes('-') || query.length >= 8)) {
+    // 4. Dynamic verification for valid formatted serials (must look like a hardware serial with prefix/dash, not phone)
+    if (matched.length === 0 && (query.toUpperCase().startsWith('SN-') || query.toUpperCase().startsWith('ASUS-') || query.toUpperCase().startsWith('INTEL-') || query.toUpperCase().startsWith('DRX-') || (query.includes('-') && query.length >= 6))) {
       const generatedItem: WarrantyItem = {
-        serialNumber: query,
-        productName: `Linh Kiện Phần Cứng DRX Hardware (Serial: ${query})`,
+        serialNumber: query.toUpperCase(),
+        productName: `Linh Kiện Phần Cứng DRX Hardware (Serial: ${query.toUpperCase()})`,
         category: "Linh Kiện Phần Cứng Chính Hãng",
         brand: "DRX Certified",
         purchaseDate: "01/03/2024",
@@ -258,7 +276,7 @@ function WarrantyContent() {
       return;
     }
 
-    setSearchResults(matched);
+    setSearchResults(matched.length > 0 ? matched : null);
   };
 
   useEffect(() => {
@@ -275,6 +293,13 @@ function WarrantyContent() {
 
     if (!query) {
       showToast('Vui lòng nhập mã Serial Number (SN) linh kiện!', 'error');
+      return;
+    }
+
+    if (isPhoneNumber(query)) {
+      setSearched(true);
+      setSearchResults(null);
+      showToast('Hệ thống chỉ hỗ trợ tra cứu bằng Mã Serial Number (SN). Không hỗ trợ tra cứu bằng Số điện thoại!', 'error');
       return;
     }
 

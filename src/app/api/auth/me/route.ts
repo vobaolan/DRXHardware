@@ -22,52 +22,52 @@ export async function GET(request: Request) {
 
     let foundInDb = false;
 
-    // 1. Direct fetch fresh user data & balance from Supabase Cloud PostgreSQL REST API
+    // 1. Primary Authority: Direct PostgreSQL connection via Prisma ORM
     try {
-      let supaQuery = supabase.from('User').select('id, name, email, role, balance, phone, address').limit(1);
-      if (cleanEmail) {
-        supaQuery = supaQuery.eq('email', cleanEmail);
-      } else if (authUser.sub && authUser.sub !== 'admin-id-master') {
-        supaQuery = supaQuery.eq('id', authUser.sub);
-      }
-
-      const { data, error } = await supaQuery;
-      if (!error && data && data.length > 0) {
-        const row = data[0];
-        userBalance = Number(row.balance || 0);
-        if (row.id) userId = row.id;
-        if (row.name) userName = row.name;
-        userRole = row.role || authUser.role || 'USER';
-        userPhone = row.phone || null;
-        userAddress = row.address || null;
+      const dbUser = await prisma.user.findFirst({
+        where: {
+          OR: [
+            ...(cleanEmail ? [{ email: cleanEmail }] : []),
+            ...(authUser.sub && authUser.sub !== 'admin-id-master' ? [{ id: authUser.sub }] : []),
+          ]
+        }
+      });
+      if (dbUser) {
+        userBalance = Number(dbUser.balance || 0);
+        userId = dbUser.id;
+        userName = dbUser.name || userName;
+        userRole = dbUser.role || userRole;
+        userPhone = dbUser.phone || null;
+        userAddress = dbUser.address || null;
         foundInDb = true;
       }
-    } catch (supaErr) {
-      console.warn('Supabase GET /api/auth/me query warning:', supaErr);
+    } catch (prismaErr) {
+      console.warn('Prisma GET /api/auth/me warning:', prismaErr);
     }
 
-    // 2. Guaranteed Dual-Layer Fallback via Prisma Direct DB Connection
+    // 2. Secondary fallback: Supabase REST API
     if (!foundInDb) {
       try {
-        const dbUser = await prisma.user.findFirst({
-          where: {
-            OR: [
-              ...(cleanEmail ? [{ email: cleanEmail }] : []),
-              ...(authUser.sub && authUser.sub !== 'admin-id-master' ? [{ id: authUser.sub }] : []),
-            ]
-          }
-        });
-        if (dbUser) {
-          userBalance = Number(dbUser.balance || 0);
-          userId = dbUser.id;
-          userName = dbUser.name || userName;
-          userRole = dbUser.role || userRole;
-          userPhone = dbUser.phone || null;
-          userAddress = dbUser.address || null;
+        let supaQuery = supabase.from('User').select('id, name, email, role, balance, phone, address').limit(1);
+        if (cleanEmail) {
+          supaQuery = supaQuery.eq('email', cleanEmail);
+        } else if (authUser.sub && authUser.sub !== 'admin-id-master') {
+          supaQuery = supaQuery.eq('id', authUser.sub);
+        }
+
+        const { data, error } = await supaQuery;
+        if (!error && data && data.length > 0) {
+          const row = data[0];
+          userBalance = Number(row.balance || 0);
+          if (row.id) userId = row.id;
+          if (row.name) userName = row.name;
+          userRole = row.role || authUser.role || 'USER';
+          userPhone = row.phone || null;
+          userAddress = row.address || null;
           foundInDb = true;
         }
-      } catch (prismaErr) {
-        console.warn('Prisma GET /api/auth/me fallback warning:', prismaErr);
+      } catch (supaErr) {
+        console.warn('Supabase GET /api/auth/me query warning:', supaErr);
       }
     }
 
@@ -146,45 +146,7 @@ export async function PUT(request: Request) {
 
     let updatedUserRecord: any = null;
 
-    const updateData = {
-      name: trimmedName,
-      phone: trimmedPhone,
-      address: trimmedAddress,
-      updatedAt: new Date().toISOString(),
-    };
-
-    // 1. Direct update in Supabase Cloud Database REST API
-    try {
-      if (cleanEmail) {
-        const { data, error } = await supabase
-          .from('User')
-          .update(updateData)
-          .eq('email', cleanEmail)
-          .select('*')
-          .maybeSingle();
-
-        if (!error && data) {
-          updatedUserRecord = data;
-        }
-      }
-
-      if (!updatedUserRecord && targetUserId && targetUserId !== 'admin-id-master') {
-        const { data, error } = await supabase
-          .from('User')
-          .update(updateData)
-          .eq('id', targetUserId)
-          .select('*')
-          .maybeSingle();
-
-        if (!error && data) {
-          updatedUserRecord = data;
-        }
-      }
-    } catch (supaErr) {
-      console.warn('Supabase PUT /api/auth/me warning:', supaErr);
-    }
-
-    // 2. Guaranteed Dual-Layer Update via Prisma ORM direct database connection
+    // 1. Primary Authority: Guaranteed Direct Update via Prisma ORM
     try {
       await prisma.user.updateMany({
         where: {
@@ -201,7 +163,7 @@ export async function PUT(request: Request) {
         },
       });
 
-      // Always retrieve the authoritative updated record from DB
+      // Retrieve the authoritative updated record from DB
       const freshUser = await prisma.user.findFirst({
         where: {
           OR: [
@@ -216,6 +178,44 @@ export async function PUT(request: Request) {
       }
     } catch (prismaErr) {
       console.error('Prisma PUT /api/auth/me error:', prismaErr);
+    }
+
+    // 2. Secondary Sync: Attempt Supabase REST API update as background mirror
+    try {
+      const updateData = {
+        name: trimmedName,
+        phone: trimmedPhone,
+        address: trimmedAddress,
+        updatedAt: new Date().toISOString(),
+      };
+
+      if (cleanEmail) {
+        const { data } = await supabase
+          .from('User')
+          .update(updateData)
+          .eq('email', cleanEmail)
+          .select('*')
+          .maybeSingle();
+
+        if (data && !updatedUserRecord) {
+          updatedUserRecord = data;
+        }
+      }
+
+      if (targetUserId && targetUserId !== 'admin-id-master') {
+        const { data } = await supabase
+          .from('User')
+          .update(updateData)
+          .eq('id', targetUserId)
+          .select('*')
+          .maybeSingle();
+
+        if (data && !updatedUserRecord) {
+          updatedUserRecord = data;
+        }
+      }
+    } catch (supaErr) {
+      console.warn('Supabase PUT /api/auth/me warning:', supaErr);
     }
 
     // 3. Auto-heal: If record does not exist yet in DB, persist it

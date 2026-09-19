@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 import { supabase } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
@@ -9,23 +10,62 @@ export async function GET(request: Request) {
     const q = url.searchParams.get('q')?.trim() || '';
 
     if (!q) {
-      return NextResponse.json({ message: 'Vui lòng cung cấp mã Serial SN hoặc số điện thoại' }, { status: 400 });
+      return NextResponse.json(
+        { message: 'Vui lòng cung cấp mã Serial Number (SN) linh kiện!' },
+        { status: 400 }
+      );
     }
 
-    // 1. Supabase direct search by serialNumber
-    let serialMatch: any = null;
-    try {
-      const { data: supaSerial } = await supabase
-        .from('ProductSerial')
-        .select('*, product:Product(*), order:Order(*)')
-        .ilike('serialNumber', `%${q}%`)
-        .limit(1)
-        .maybeSingle();
+    // Check if user accidentally entered a phone number (digits only or starts with 0/84)
+    const isPhoneNumber = /^(?:\+?84|0)[3|5|7|8|9][0-9]{8}$/.test(q.replace(/\s+/g, '')) || (/^[0-9]{9,11}$/.test(q) && !q.includes('-'));
+    if (isPhoneNumber) {
+      return NextResponse.json({
+        found: false,
+        message: 'Hệ thống chỉ hỗ trợ tra cứu chính xác bằng Mã Serial Number (SN) in trên tem linh kiện hoặc vỏ hộp. Không hỗ trợ tra cứu bằng số điện thoại nhằm bảo mật thông tin khách hàng.'
+      }, { status: 400 });
+    }
 
-      if (supaSerial) {
-        serialMatch = supaSerial;
+    let serialMatch: any = null;
+
+    // 1. Primary Authority: Direct pooled PostgreSQL query via Prisma ORM
+    try {
+      const dbSerial = await prisma.productSerial.findFirst({
+        where: {
+          serialNumber: {
+            equals: q,
+            mode: 'insensitive',
+          },
+        },
+        include: {
+          product: true,
+          order: true,
+        },
+      });
+
+      if (dbSerial) {
+        serialMatch = dbSerial;
       }
-    } catch (e) {}
+    } catch (prismaErr) {
+      console.warn('Prisma warranty query warning, trying Supabase:', prismaErr);
+    }
+
+    // 2. Secondary Fallback: Supabase Cloud Database REST API (ONLY by serialNumber)
+    if (!serialMatch) {
+      try {
+        const { data: supaSerial } = await supabase
+          .from('ProductSerial')
+          .select('*, product:Product(*), order:Order(*)')
+          .ilike('serialNumber', q)
+          .limit(1)
+          .maybeSingle();
+
+        if (supaSerial) {
+          serialMatch = supaSerial;
+        }
+      } catch (e) {
+        console.warn('Supabase warranty lookup warning:', e);
+      }
+    }
 
     if (serialMatch) {
       const product = serialMatch.product;
@@ -47,7 +87,7 @@ export async function GET(request: Request) {
           serialNumber: serialMatch.serialNumber,
           productName: product?.name || 'Linh Kiện Phần Cứng DRX',
           category: product?.category || 'CORE_PARTS',
-          brand: product?.brand || 'DRX',
+          brand: product?.brand || 'DRX Certified',
           coverImage: product?.coverImage || '',
           purchaseDate: new Date(soldDate).toLocaleDateString('vi-VN'),
           warrantyEnd: warrantyEndDate.toLocaleDateString('vi-VN'),
@@ -55,7 +95,7 @@ export async function GET(request: Request) {
           totalMonths,
           elapsedMonths,
           customerName: order?.customerName || 'Khách Hàng DRX VIP',
-          customerPhone: order?.customerPhone || 'Đã kích hoạt',
+          customerPhone: order?.customerPhone ? `${order.customerPhone.slice(0, 3)}****${order.customerPhone.slice(-3)}` : 'Đã bảo mật',
           orderCode: order?.orderCode || 'DRX-RETAIL',
           repairLogs: [
             {
@@ -68,59 +108,9 @@ export async function GET(request: Request) {
       }, { status: 200 });
     }
 
-    // 2. Search by orderCode or customerPhone in Supabase Order table
-    try {
-      const { data: orderMatches } = await supabase
-        .from('Order')
-        .select('*')
-        .or(`orderCode.ilike.%${q}%,customerPhone.ilike.%${q}%`)
-        .order('createdAt', { ascending: false })
-        .limit(1);
-
-      if (orderMatches && orderMatches.length > 0) {
-        const orderMatch = orderMatches[0];
-        const soldDate = orderMatch.createdAt;
-        const totalMonths = 36;
-        const warrantyEndDate = new Date(new Date(soldDate).setMonth(new Date(soldDate).getMonth() + totalMonths));
-        const now = new Date();
-        const isValid = now <= warrantyEndDate;
-        const elapsedMonths = Math.max(0, Math.round((now.getTime() - new Date(soldDate).getTime()) / (1000 * 60 * 60 * 24 * 30)));
-
-        const items = orderMatch.paymentDetails?.items || [];
-        const firstItem = items[0] || {};
-        const sn = `SN-DRX-${orderMatch.orderCode || orderMatch.id.slice(0, 8)}`;
-
-        return NextResponse.json({
-          found: true,
-          warranty: {
-            serialNumber: sn,
-            productName: firstItem.name || 'Bộ Máy Tính PC DRX Custom',
-            category: 'PC',
-            brand: 'DRX',
-            coverImage: firstItem.coverImage || '',
-            purchaseDate: new Date(soldDate).toLocaleDateString('vi-VN'),
-            warrantyEnd: warrantyEndDate.toLocaleDateString('vi-VN'),
-            status: isValid ? 'ACTIVE' : 'EXPIRED',
-            totalMonths,
-            elapsedMonths,
-            customerName: orderMatch.customerName,
-            customerPhone: orderMatch.customerPhone,
-            orderCode: orderMatch.orderCode,
-            repairLogs: [
-              {
-                date: new Date(soldDate).toLocaleDateString('vi-VN'),
-                center: 'DRX Assembly & Service Center',
-                note: `Đã hoàn tất nghiệm thu và kích hoạt bảo hành điện tử chính hãng.`
-              }
-            ]
-          }
-        }, { status: 200 });
-      }
-    } catch (e) {}
-
     return NextResponse.json({
       found: false,
-      message: `Không tìm thấy thông tin bảo hành cho mã "${q}". Vui lòng kiểm tra lại mã Serial hoặc liên hệ CSKH 1900 8888.`
+      message: `Không tìm thấy thông tin bảo hành cho mã Serial "${q}". Vui lòng kiểm tra lại tem Serial Number trên sản phẩm hoặc liên hệ CSKH DRX.`
     }, { status: 404 });
 
   } catch (error: any) {

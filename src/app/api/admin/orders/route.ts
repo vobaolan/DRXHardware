@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 import { supabase } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
@@ -8,65 +9,51 @@ export const fetchCache = 'force-no-store';
 export async function GET(request: Request) {
   try {
     let orders: any[] = [];
+    let foundInDb = false;
 
-    // 1. Direct fetch from Supabase Cloud Database (Fast Direct REST)
+    // 1. Primary Authority: Direct pooled PostgreSQL connection via Prisma ORM (Ultra-Fast)
     try {
-      const { data: supaOrders, error: supaErr } = await supabase
-        .from('Order')
-        .select('*, orderItems:OrderItem(*, product:Product(*))')
-        .order('createdAt', { ascending: false });
+      orders = await prisma.order.findMany({
+        include: {
+          orderItems: {
+            include: {
+              product: true,
+            },
+          },
+          serials: {
+            include: {
+              product: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+      foundInDb = true;
+    } catch (prismaErr) {
+      console.warn('Prisma get all orders warning, trying Supabase fallback:', prismaErr);
+    }
 
-      if (!supaErr && supaOrders && Array.isArray(supaOrders)) {
-        orders = supaOrders;
-      } else {
-        // Fallback without relation if relation failed
-        const { data: simpleOrders, error: simpleErr } = await supabase
+    // 2. Secondary Fallback: Supabase Cloud Database REST API
+    if (!foundInDb) {
+      try {
+        const { data: supaOrders, error: supaErr } = await supabase
           .from('Order')
-          .select('*')
+          .select('*, orderItems:OrderItem(*, product:Product(*))')
           .order('createdAt', { ascending: false });
-        if (!simpleErr && simpleOrders && Array.isArray(simpleOrders)) {
-          orders = simpleOrders;
+
+        if (!supaErr && supaOrders && Array.isArray(supaOrders)) {
+          orders = supaOrders;
         } else {
-          if (supaErr) console.warn('Supabase get all orders warning, trying Prisma fallback:', supaErr);
-          const { PrismaClient } = await import('@prisma/client');
-          const prisma = new PrismaClient();
-          try {
-            orders = await prisma.order.findMany({
-              include: {
-                orderItems: {
-                  include: {
-                    product: true,
-                  },
-                },
-              },
-              orderBy: { createdAt: 'desc' },
-            });
-          } finally {
-            await prisma.$disconnect();
+          const { data: simpleOrders, error: simpleErr } = await supabase
+            .from('Order')
+            .select('*')
+            .order('createdAt', { ascending: false });
+          if (!simpleErr && simpleOrders && Array.isArray(simpleOrders)) {
+            orders = simpleOrders;
           }
         }
-      }
-    } catch (e) {
-      console.warn('Supabase get all orders warning, trying Prisma fallback:', e);
-      try {
-        const { PrismaClient } = await import('@prisma/client');
-        const prisma = new PrismaClient();
-        try {
-          orders = await prisma.order.findMany({
-            include: {
-              orderItems: {
-                include: {
-                  product: true,
-                },
-              },
-            },
-            orderBy: { createdAt: 'desc' },
-          });
-        } finally {
-          await prisma.$disconnect();
-        }
-      } catch (pe) {
-        console.error('Prisma fallback get orders error:', pe);
+      } catch (supaErr) {
+        console.error('Supabase fallback get orders error:', supaErr);
       }
     }
 
@@ -83,7 +70,7 @@ export async function GET(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const body = await request.json();
-    const { orderId, status, paymentStatus, paymentDetails } = body;
+    const { orderId, status, paymentStatus, paymentDetails, paymentMethod } = body;
 
     if (!orderId) {
       return NextResponse.json({ message: 'Thiếu mã đơn hàng' }, { status: 400 });
@@ -102,54 +89,99 @@ export async function PATCH(request: Request) {
       sanitizedPaymentStatus = 'PAID';
     }
 
-    const { paymentMethod } = body;
+    // Parse paymentDetails if passed as JSON string
+    let parsedPaymentDetails = paymentDetails;
+    if (typeof paymentDetails === 'string') {
+      try {
+        parsedPaymentDetails = JSON.parse(paymentDetails);
+      } catch {
+        parsedPaymentDetails = paymentDetails;
+      }
+    }
+
     const updatePayload: any = {
       ...(status ? { status } : {}),
       ...(sanitizedPaymentStatus ? { paymentStatus: sanitizedPaymentStatus } : {}),
       ...(paymentMethod ? { paymentMethod } : {}),
-      ...(paymentDetails ? { paymentDetails } : {}),
-      updatedAt: new Date().toISOString(),
+      ...(parsedPaymentDetails !== undefined ? { paymentDetails: parsedPaymentDetails } : {}),
+      updatedAt: new Date(),
     };
 
-    // 1. Locate target order by ID or orderCode
-    let targetOrderId = orderId;
-    const { data: directMatch } = await supabase
-      .from('Order')
-      .select('id')
-      .eq('id', orderId)
-      .maybeSingle();
+    let updatedOrder: any = null;
 
-    if (directMatch) {
-      targetOrderId = directMatch.id;
-    } else {
-      const cleanCode = String(orderId).replace(/^#/, '').trim();
-      const strippedCode = cleanCode.replace(/-/g, '');
-      const digitsOnly = cleanCode.replace(/\D/g, '');
+    // 1. Primary Authority: Direct update via Prisma ORM
+    try {
+      const cleanCode = String(orderId).replace(/^[#]/, '').trim();
+      const existing = await prisma.order.findFirst({
+        where: {
+          OR: [
+            { id: orderId },
+            { orderCode: cleanCode },
+            { orderCode: { contains: cleanCode, mode: 'insensitive' } },
+            { id: { contains: cleanCode, mode: 'insensitive' } },
+          ],
+        },
+      });
 
-      let query = supabase.from('Order').select('id');
-      if (cleanCode) {
-        query = query.or(`orderCode.eq.${cleanCode},orderCode.eq.${strippedCode}${digitsOnly ? `,orderCode.ilike.%${digitsOnly}%` : ''},id.ilike.%${cleanCode}%`);
+      if (existing) {
+        updatedOrder = await prisma.order.update({
+          where: { id: existing.id },
+          data: updatePayload,
+          include: {
+            orderItems: {
+              include: {
+                product: true,
+              },
+            },
+          },
+        });
       }
-
-      const { data: altMatch } = await query.limit(1).maybeSingle();
-
-      if (altMatch) {
-        targetOrderId = altMatch.id;
-      } else {
-        return NextResponse.json({ message: 'Không tìm thấy đơn hàng để cập nhật' }, { status: 404 });
-      }
+    } catch (prismaErr) {
+      console.warn('Prisma update order warning, trying Supabase:', prismaErr);
     }
 
-    const { data: updatedOrder, error: supaErr } = await supabase
-      .from('Order')
-      .update(updatePayload)
-      .eq('id', targetOrderId)
-      .select('*')
-      .single();
+    // 2. Secondary Fallback / Background Sync to Supabase
+    if (!updatedOrder) {
+      try {
+        let targetOrderId = orderId;
+        const { data: directMatch } = await supabase
+          .from('Order')
+          .select('id')
+          .eq('id', orderId)
+          .maybeSingle();
 
-    if (supaErr) {
-      console.error('Lỗi Supabase khi cập nhật đơn hàng:', supaErr);
-      return NextResponse.json({ message: 'Lỗi cập nhật đơn hàng: ' + (supaErr.message || 'Lỗi dữ liệu') }, { status: 500 });
+        if (directMatch) {
+          targetOrderId = directMatch.id;
+        } else {
+          const cleanCode = String(orderId).replace(/^#/, '').trim();
+          const { data: altMatch } = await supabase
+            .from('Order')
+            .select('id')
+            .or(`orderCode.eq.${cleanCode},id.ilike.%${cleanCode}%`)
+            .limit(1)
+            .maybeSingle();
+
+          if (altMatch) {
+            targetOrderId = altMatch.id;
+          }
+        }
+
+        const { data: supaUpdated, error: supaErr } = await supabase
+          .from('Order')
+          .update({
+            ...updatePayload,
+            updatedAt: new Date().toISOString(),
+          })
+          .eq('id', targetOrderId)
+          .select('*')
+          .single();
+
+        if (!supaErr && supaUpdated) {
+          updatedOrder = supaUpdated;
+        }
+      } catch (supaErr) {
+        console.error('Supabase update order error:', supaErr);
+      }
     }
 
     if (!updatedOrder) {
@@ -179,14 +211,27 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ message: 'Thiếu ID đơn hàng' }, { status: 400 });
     }
 
-    // Clean up order items and delete order
+    // 1. Primary Authority: Direct delete via Prisma ORM
+    let deleted = false;
     try {
-      await supabase.from('OrderItem').delete().eq('orderId', orderId);
-    } catch (e) {}
+      await prisma.orderItem.deleteMany({ where: { orderId } });
+      await prisma.order.delete({ where: { id: orderId } });
+      deleted = true;
+    } catch (prismaErr) {
+      console.warn('Prisma delete order warning, trying Supabase:', prismaErr);
+    }
 
-    const { error } = await supabase.from('Order').delete().eq('id', orderId);
-    if (error) {
-      return NextResponse.json({ message: 'Lỗi khi xóa đơn hàng: ' + error.message }, { status: 500 });
+    // 2. Secondary fallback via Supabase
+    if (!deleted) {
+      try {
+        await supabase.from('OrderItem').delete().eq('orderId', orderId);
+        const { error } = await supabase.from('Order').delete().eq('id', orderId);
+        if (error) {
+          return NextResponse.json({ message: 'Lỗi khi xóa đơn hàng: ' + error.message }, { status: 500 });
+        }
+      } catch (e: any) {
+        return NextResponse.json({ message: 'Lỗi khi xóa đơn hàng: ' + e.message }, { status: 500 });
+      }
     }
 
     return NextResponse.json({ success: true, message: 'Đã xóa đơn hàng thành công' }, { status: 200 });
@@ -195,4 +240,3 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ message: 'Lỗi xử lý xóa đơn', error: error.message }, { status: 500 });
   }
 }
-

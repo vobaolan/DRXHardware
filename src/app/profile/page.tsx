@@ -96,7 +96,9 @@ function extractHardwareFromOrders(ordersList: Order[]): HardwareWarrantyItem[] 
   const hardwareItems: HardwareWarrantyItem[] = [];
 
   ordersList.forEach((order) => {
-    if (order.status === 'CANCELLED') return;
+    // Chỉ kích hoạt và hiển thị mã Serial SN bảo hành khi đơn hàng đã được giao và nghiệm thu thành công (COMPLETED)
+    // Các đơn hàng đang 'PENDING' (Chờ DRX xác nhận), đang vận chuyển hoặc 'CANCELLED' (Đã hủy) chưa thể kích hoạt bảo hành.
+    if (order.status !== 'COMPLETED') return;
 
     const pDetails = typeof order.paymentDetails === 'object' && order.paymentDetails !== null
       ? order.paymentDetails
