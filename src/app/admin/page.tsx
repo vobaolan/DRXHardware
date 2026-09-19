@@ -28,6 +28,7 @@ import { CouponManagementView } from '@/components/admin/CouponManagementView';
 import { PortalDropdown } from '@/components/ui/PortalDropdown';
 import { RevenueChartWidget } from '@/components/admin/RevenueChartWidget';
 import { SerialManagementSection } from '@/components/admin/SerialManagementSection';
+import { INITIAL_PRODUCTS } from '@/lib/hardware-data';
 
 function UserRoleButton({
   user,
@@ -370,7 +371,7 @@ export default function AdminDashboardPage() {
     serialsWarranty: 0,
   });
   const [last7Days, setLast7Days] = useState<any[]>([]);
-  const [products, setProducts] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>(INITIAL_PRODUCTS);
   const [orders, setOrders] = useState<any[]>([]);
   const [serials, setSerials] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
