@@ -28,7 +28,6 @@ import { CouponManagementView } from '@/components/admin/CouponManagementView';
 import { PortalDropdown } from '@/components/ui/PortalDropdown';
 import { RevenueChartWidget } from '@/components/admin/RevenueChartWidget';
 import { SerialManagementSection } from '@/components/admin/SerialManagementSection';
-import { INITIAL_PRODUCTS } from '@/lib/hardware-data';
 
 function UserRoleButton({
   user,

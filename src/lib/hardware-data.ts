@@ -3947,9 +3947,11 @@ export const INITIAL_PRODUCTS: HardwareProduct[] = [
     "category": "MONITOR",
     "brand": "ASUS",
     "modelCode": "PA278CV",
-    "coverImage": "https://images.unsplash.com/photo-1547082299-de196ea013d6?w=800&q=80",
+    "coverImage": "https://xrnrveehpyxurmkfgquc.supabase.co/storage/v1/object/public/products/drx-1789789238317-tcnqtbk.jpg",
     "screenshots": [
-      "https://images.unsplash.com/photo-1547082299-de196ea013d6?w=800&q=80"
+      "https://xrnrveehpyxurmkfgquc.supabase.co/storage/v1/object/public/products/drx-1789789238317-tcnqtbk.jpg",
+      "https://xrnrveehpyxurmkfgquc.supabase.co/storage/v1/object/public/products/drx-1789789245911-plyue9n.jpg",
+      "https://xrnrveehpyxurmkfgquc.supabase.co/storage/v1/object/public/products/drx-1789789246115-rmykcqh.webp"
     ],
     "socket": null,
     "ramType": null,
