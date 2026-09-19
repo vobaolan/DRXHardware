@@ -542,7 +542,20 @@ export default function AdminDashboardPage() {
 
       if (prodsRes.ok) {
         const prodsData = await prodsRes.json();
-        if (prodsData.products) setProducts(prodsData.products);
+        if (prodsData.products && Array.isArray(prodsData.products)) {
+          setProducts(prodsData.products);
+        }
+      } else {
+        // Backup fetch from live Supabase products API if admin endpoint had a cold start
+        try {
+          const backupRes = await fetch(`/api/products?t=${Date.now()}`, { cache: 'no-store' });
+          if (backupRes.ok) {
+            const backupData = await backupRes.json();
+            if (backupData.products && Array.isArray(backupData.products)) {
+              setProducts(backupData.products);
+            }
+          }
+        } catch (e) {}
       }
 
       if (ordersRes.ok) {
