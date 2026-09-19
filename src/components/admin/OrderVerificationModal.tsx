@@ -239,6 +239,10 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
       const data = await res.json();
       if (res.ok && data.order) {
         showToast(`Đã lưu tiến độ đơn #${orderDisplayCode}`, 'success');
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('ods_products_updated'));
+          window.dispatchEvent(new Event('ods_orders_updated'));
+        }
         onOrderUpdated(data.order);
       } else {
         showToast(data.message || 'Lỗi cập nhật đơn hàng', 'error');

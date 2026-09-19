@@ -390,8 +390,17 @@ export default function StaffWarehousePortalPage() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'Order' }, () => fetchAllStaffData())
       .subscribe();
 
+    const handleGlobalUpdate = () => {
+      fetchAllStaffData(false);
+    };
+
+    window.addEventListener('ods_products_updated', handleGlobalUpdate);
+    window.addEventListener('ods_orders_updated', handleGlobalUpdate);
+
     return () => {
       window.removeEventListener('ods_user_update', handleUserUpdate);
+      window.removeEventListener('ods_products_updated', handleGlobalUpdate);
+      window.removeEventListener('ods_orders_updated', handleGlobalUpdate);
       supabase.removeChannel(channel);
     };
   }, [fetchAllStaffData]);

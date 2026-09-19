@@ -67,6 +67,9 @@ export async function GET(request: Request) {
   }
 }
 
+import { revalidatePath } from 'next/cache';
+import { invalidateProductsCache } from '@/app/api/products/route';
+
 async function syncInventoryForOrder(
   existingOrder: any,
   targetStatus: string | undefined,
@@ -100,7 +103,7 @@ async function syncInventoryForOrder(
 
     if (existingOrder.orderItems && Array.isArray(existingOrder.orderItems) && existingOrder.orderItems.length > 0) {
       itemsToProcess = existingOrder.orderItems.map((oi: any) => ({
-        productId: oi.productId || oi.product?.id,
+        productId: oi.productId || oi.product?.id || oi.id,
         quantity: Number(oi.quantity) || 1,
       }));
     } else if (mergedDetails.items && Array.isArray(mergedDetails.items) && mergedDetails.items.length > 0) {
@@ -112,6 +115,8 @@ async function syncInventoryForOrder(
 
     // Filter valid product IDs
     itemsToProcess = itemsToProcess.filter((i) => Boolean(i.productId));
+
+    let inventoryChanged = false;
 
     // CASE 1: Order is cancelled -> restore stock if already deducted
     if (effectiveStatus === 'CANCELLED') {
@@ -127,7 +132,7 @@ async function syncInventoryForOrder(
               },
             });
 
-            // Serial restore
+            // Serial restore Prisma
             try {
               await prisma.productSerial.updateMany({
                 where: {
@@ -142,6 +147,22 @@ async function syncInventoryForOrder(
                 },
               });
             } catch (sErr) {}
+
+            // Supabase Serial restore
+            try {
+              await supabase
+                .from('ProductSerial')
+                .update({
+                  status: 'AVAILABLE',
+                  orderId: null,
+                  soldDate: null,
+                })
+                .eq('orderId', existingOrder.id)
+                .eq('productId', item.productId)
+                .eq('status', 'SOLD');
+            } catch (supaSerialRestoreErr) {
+              console.warn(`Lỗi khôi phục serial Supabase khi hủy đơn:`, supaSerialRestoreErr);
+            }
 
             // Supabase increment
             try {
@@ -166,6 +187,7 @@ async function syncInventoryForOrder(
         }
         mergedDetails.inventoryDeducted = false;
         mergedDetails.inventoryRestoredAt = new Date().toISOString();
+        inventoryChanged = true;
       }
     } 
     // CASE 2: Step 3+ reached and stock NOT yet deducted
@@ -182,7 +204,7 @@ async function syncInventoryForOrder(
               },
             });
 
-            // Serial allocation
+            // Serial allocation Prisma
             try {
               const availSerials = await prisma.productSerial.findMany({
                 where: { productId: item.productId, status: 'AVAILABLE' },
@@ -202,6 +224,30 @@ async function syncInventoryForOrder(
                 });
               }
             } catch (sErr) {}
+
+            // Supabase Serial allocation
+            try {
+              const { data: supaSerials } = await supabase
+                .from('ProductSerial')
+                .select('id')
+                .eq('productId', item.productId)
+                .eq('status', 'AVAILABLE')
+                .limit(item.quantity);
+
+              if (supaSerials && supaSerials.length > 0) {
+                const sIds = supaSerials.map((s: any) => s.id);
+                await supabase
+                  .from('ProductSerial')
+                  .update({
+                    status: 'SOLD',
+                    orderId: existingOrder.id,
+                    soldDate: new Date().toISOString(),
+                  })
+                  .in('id', sIds);
+              }
+            } catch (supaSerialErr) {
+              console.warn(`Lỗi gán serial SOLD trong Supabase cho sản phẩm ${item.productId}:`, supaSerialErr);
+            }
 
             // Supabase decrement
             try {
@@ -227,7 +273,18 @@ async function syncInventoryForOrder(
         }
         mergedDetails.inventoryDeducted = true;
         mergedDetails.inventoryDeductedAt = new Date().toISOString();
+        inventoryChanged = true;
       }
+    }
+
+    if (inventoryChanged) {
+      try {
+        invalidateProductsCache();
+        revalidatePath('/', 'layout');
+        revalidatePath('/products', 'layout');
+        revalidatePath('/admin', 'layout');
+        revalidatePath('/staff', 'layout');
+      } catch (e) {}
     }
 
     return mergedDetails;
