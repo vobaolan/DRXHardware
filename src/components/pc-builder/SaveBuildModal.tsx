@@ -18,6 +18,7 @@ import Link from 'next/link';
 interface SaveBuildModalProps {
   build: Record<string, HardwareProduct | null>;
   totalCost: number;
+  defaultBuildName?: string;
   onClose: () => void;
   onSaved: (savedBuild: any) => void;
 }
@@ -29,10 +30,11 @@ const formatVND = (num: number) => {
 export function SaveBuildModal({
   build,
   totalCost,
+  defaultBuildName,
   onClose,
   onSaved
 }: SaveBuildModalProps) {
-  const [buildName, setBuildName] = useState('Cấu Hình DRX Build Gaming');
+  const [buildName, setBuildName] = useState(defaultBuildName || 'Cấu Hình DRX Build Gaming');
   const [note, setNote] = useState('');
   const [isSavedSuccess, setIsSavedSuccess] = useState(false);
 

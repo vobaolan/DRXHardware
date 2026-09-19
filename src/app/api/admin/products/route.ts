@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { supabase } from '@/lib/supabase';
 import { INITIAL_PRODUCTS } from '@/lib/hardware-data';
+import { invalidateProductsCache } from '@/app/api/products/route';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -145,6 +146,7 @@ export async function POST(request: Request) {
 
     const finalProduct = savedProduct || productData;
 
+    invalidateProductsCache();
     revalidatePath('/', 'layout');
     revalidatePath('/products', 'layout');
     revalidatePath('/admin', 'layout');
@@ -270,6 +272,7 @@ export async function PUT(request: Request) {
       updatedProduct = upsertRes;
     }
 
+    invalidateProductsCache();
     revalidatePath('/', 'layout');
     revalidatePath('/products', 'layout');
     revalidatePath('/admin', 'layout');
@@ -309,6 +312,7 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ message: 'Lỗi khi xóa từ cơ sở dữ liệu: ' + error.message }, { status: 500 });
     }
 
+    invalidateProductsCache();
     revalidatePath('/', 'layout');
     revalidatePath('/products', 'layout');
     revalidatePath('/admin', 'layout');

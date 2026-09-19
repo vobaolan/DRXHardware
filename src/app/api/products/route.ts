@@ -3,18 +3,30 @@ import { supabase } from '@/lib/supabase';
 import { INITIAL_PRODUCTS } from '@/lib/hardware-data';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
 
-// High-speed In-Memory Cache with 30s TTL
+// High-speed In-Memory Cache with 10s TTL
 let memoryCachedProducts: any[] | null = null;
 let lastCacheTimestamp = 0;
-const CACHE_TTL_MS = 30 * 1000; // 30 seconds
+const CACHE_TTL_MS = 10 * 1000; // 10 seconds
+
+export function invalidateProductsCache() {
+  memoryCachedProducts = null;
+  lastCacheTimestamp = 0;
+}
 
 export async function GET(request: Request) {
   const headers = {
-    'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120',
+    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+    'Pragma': 'no-cache',
+    'Expires': '0',
+    'Surrogate-Control': 'no-store'
   };
 
   try {
+    const now = Date.now();
+    let dbProducts: any[] = [];
     const url = new URL(request.url);
     const categoryFilter = url.searchParams.get('category')?.toUpperCase();
     const isBypassCache = url.searchParams.has('t') || url.searchParams.has('nocache');
@@ -23,7 +35,7 @@ export async function GET(request: Request) {
     if (!isBypassCache && memoryCachedProducts && (now - lastCacheTimestamp < CACHE_TTL_MS)) {
       dbProducts = memoryCachedProducts;
     } else {
-      // 1. Fetch from Supabase with timeout/safety
+      // 1. Fetch from Supabase with safety
       try {
         const { data, error } = await supabase
           .from('Product')

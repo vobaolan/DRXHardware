@@ -11,7 +11,28 @@ export interface AuthUser {
 
 const SESSION_KEY = 'drx_user_profile';
 const SESSION_COOKIE = 'drx_session_active';
-const TOKEN_KEY = 'drx_auth_bearer';
+export const TOKEN_KEY = 'drx_auth_bearer';
+
+/**
+ * Universal authenticated fetch helper that automatically attaches
+ * JWT Bearer token and includes credentials for all API requests.
+ */
+export async function authFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const token = typeof window !== 'undefined'
+    ? (sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY))
+    : null;
+
+  const headers = new Headers(init?.headers || {});
+  if (token && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+
+  return fetch(input, {
+    ...init,
+    headers,
+    credentials: init?.credentials || 'include',
+  });
+}
 
 /**
  * Check if the current browser session cookie is active.

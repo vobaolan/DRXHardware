@@ -15,6 +15,7 @@ import { motion } from 'framer-motion';
 import { showToast, showConfirm } from '@/components/Toast';
 import { ProductFormModal, ProductFormData } from '@/components/admin/ProductFormModal';
 import { supabase } from '@/lib/supabase';
+import { authFetch } from '@/lib/auth-client';
 import { ModernSelect, SelectOption } from '@/components/ui/ModernSelect';
 import { PortalHeader } from '@/components/admin/PortalHeader';
 import { OrderVerificationModal } from '@/components/admin/OrderVerificationModal';
@@ -281,10 +282,10 @@ export default function StaffWarehousePortalPage() {
     setIsRefreshing(true);
     try {
       const [prodsRes, serialsRes, ordersRes, couponsRes] = await Promise.all([
-        fetch(`/api/admin/products?t=${Date.now()}`, { cache: 'no-store' }),
-        fetch(`/api/admin/serials?t=${Date.now()}`, { cache: 'no-store' }),
-        fetch(`/api/admin/orders?t=${Date.now()}`, { cache: 'no-store' }),
-        fetch(`/api/admin/coupons?t=${Date.now()}`, { cache: 'no-store' }),
+        authFetch(`/api/admin/products?t=${Date.now()}`, { cache: 'no-store' }),
+        authFetch(`/api/admin/serials?t=${Date.now()}`, { cache: 'no-store' }),
+        authFetch(`/api/admin/orders?t=${Date.now()}`, { cache: 'no-store' }),
+        authFetch(`/api/admin/coupons?t=${Date.now()}`, { cache: 'no-store' }),
       ]);
 
       if (prodsRes.ok) {
@@ -368,7 +369,16 @@ export default function StaffWarehousePortalPage() {
     // Supabase Realtime Channels
     const channel = supabase
       .channel('staff_global_realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'Product' }, () => fetchAllStaffData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'Product' }, (payload: any) => {
+        if (payload.eventType === 'UPDATE' && payload.new) {
+          setProducts(prev => prev.map(p => p.id === payload.new.id ? { ...p, ...payload.new } : p));
+        } else if (payload.eventType === 'INSERT' && payload.new) {
+          setProducts(prev => [payload.new, ...prev.filter(p => p.id !== payload.new.id)]);
+        } else if (payload.eventType === 'DELETE' && payload.old) {
+          setProducts(prev => prev.filter(p => p.id !== payload.old.id));
+        }
+        fetchAllStaffData();
+      })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'ProductSerial' }, () => fetchAllStaffData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'Order' }, () => fetchAllStaffData())
       .subscribe();
@@ -463,7 +473,7 @@ export default function StaffWarehousePortalPage() {
       variant: 'danger',
       onConfirm: async () => {
         try {
-          const res = await fetch(`/api/admin/products?id=${p.id}`, { method: 'DELETE' });
+          const res = await authFetch(`/api/admin/products?id=${p.id}`, { method: 'DELETE' });
           if (res.ok) {
             setProducts(prev => prev.filter(x => x.id !== p.id));
             showToast(`Đã xóa linh kiện "${p.name}" thành công!`, 'success');
@@ -487,7 +497,7 @@ export default function StaffWarehousePortalPage() {
         payload.paymentStatus = targetPaymentStatus;
       }
 
-      const res = await fetch('/api/admin/orders', {
+      const res = await authFetch('/api/admin/orders', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -536,7 +546,7 @@ export default function StaffWarehousePortalPage() {
         cancelledBy: 'STAFF',
       };
 
-      const res = await fetch('/api/admin/orders', {
+      const res = await authFetch('/api/admin/orders', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -596,7 +606,7 @@ export default function StaffWarehousePortalPage() {
 
     setIsSubmittingSn(true);
     try {
-      const res = await fetch('/api/admin/serials', {
+      const res = await authFetch('/api/admin/serials', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -624,7 +634,7 @@ export default function StaffWarehousePortalPage() {
 
   const handleUpdateSerialStatus = async (serialId: string, newStatus: string) => {
     try {
-      const res = await fetch('/api/admin/serials', {
+      const res = await authFetch('/api/admin/serials', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: serialId, status: newStatus }),
@@ -652,7 +662,7 @@ export default function StaffWarehousePortalPage() {
       variant: 'danger',
       onConfirm: async () => {
         try {
-          const res = await fetch(`/api/admin/serials?id=${serialId}`, { method: 'DELETE' });
+          const res = await authFetch(`/api/admin/serials?id=${serialId}`, { method: 'DELETE' });
           if (res.ok) {
             setSerials(prev => prev.filter(s => s.id !== serialId));
             showToast('Đã xóa mã Serial thành công!', 'success');
@@ -1133,12 +1143,45 @@ export default function StaffWarehousePortalPage() {
               </div>
 
               {/* ASSEMBLY CARDS GRID */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                {filteredAssemblyOrders.map((ord) => {
-                  if (!ord) return null;
-                  const pDetails = typeof ord.paymentDetails === 'string'
-                    ? (() => { try { return JSON.parse(ord.paymentDetails); } catch { return {}; } })()
-                    : (ord.paymentDetails && typeof ord.paymentDetails === 'object' ? ord.paymentDetails : {});
+              {filteredAssemblyOrders.length === 0 ? (
+                <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-12 text-center shadow-xs">
+                  <div className="flex flex-col items-center justify-center max-w-md mx-auto space-y-3">
+                    <div className="w-14 h-14 rounded-2xl bg-sky-50 dark:bg-sky-950/60 text-[#0284c7] flex items-center justify-center border border-sky-200 dark:border-sky-800">
+                      <Wrench className="w-7 h-7 text-[#0284c7]" />
+                    </div>
+                    <div className="space-y-1">
+                      <h4 className="text-sm font-black text-slate-900 dark:text-white">
+                        Không có đơn lắp ráp nào
+                      </h4>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        {searchQuery || assemblyStatusFilter !== 'ALL'
+                          ? `Không tìm thấy đơn lắp ráp nào phù hợp với bộ lọc "${assemblyStatusFilter !== 'ALL' ? assemblyStatusFilter : ''}" ${searchQuery ? `hoặc từ khóa "${searchQuery}"` : ''}.`
+                          : 'Hiện tại chưa có đơn hàng PC cần lắp ráp mới nào.'}
+                      </p>
+                    </div>
+                    {(searchQuery || assemblyStatusFilter !== 'ALL') && (
+                      <div className="pt-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSearchQuery('');
+                            setAssemblyStatusFilter('ALL');
+                          }}
+                          className="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
+                        >
+                          Xóa bộ lọc tìm kiếm
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {filteredAssemblyOrders.map((ord) => {
+                    if (!ord) return null;
+                    const pDetails = typeof ord.paymentDetails === 'string'
+                      ? (() => { try { return JSON.parse(ord.paymentDetails); } catch { return {}; } })()
+                      : (ord.paymentDetails && typeof ord.paymentDetails === 'object' ? ord.paymentDetails : {});
                   const needInst = Boolean(pDetails.needInstallation);
                   const isProxy = Boolean(pDetails.isProxyRecipient);
                   const isPickup = ord.deliveryType === 'STORE_PICKUP';
@@ -1282,6 +1325,7 @@ export default function StaffWarehousePortalPage() {
                   );
                 })}
               </div>
+            )}
 
             </div>
           )}

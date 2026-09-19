@@ -68,6 +68,42 @@ const BUILD_STEPS: BuildStep[] = [
   { key: "monitor", stepNum: "09", name: "Màn Hình Máy Tính (Monitor)", shortBtn: "Chọn Màn Hình", subtitle: "Tần số quét cao 144Hz - 240Hz, tấm nền IPS chuẩn màu đồ họa", category: "MONITOR", icon: IconCpu },
 ];
 
+export function generateDynamicBuildName(build: Record<string, HardwareProduct | null>, customName?: string): string {
+  // If user has manually saved a customized name, prioritize it
+  if (customName && 
+      customName.trim() &&
+      customName !== 'Cấu Hình DRX Build Gaming' && 
+      customName !== 'Cấu Hình Tự Chọn DRX Build' &&
+      !customName.startsWith('Cấu Hình PC DRX Venom (Intel Core i5 13400F') && 
+      !customName.startsWith('Cấu Hình PC DRX Quái Thú (AMD Ryzen 7 7800X3D')) {
+    return customName;
+  }
+
+  const cpu = build.cpu?.name || '';
+  const vga = build.vga?.name || '';
+
+  let cpuShort = '';
+  const ryzenMatch = cpu.match(/Ryzen\s+[3579]\s+\w+/i);
+  const intelMatch = cpu.match(/(Core\s+i[3579][\s-]*\w+|Ultra\s+\d+[\s-]*\w+)/i);
+  if (ryzenMatch) cpuShort = ryzenMatch[0];
+  else if (intelMatch) cpuShort = intelMatch[0];
+  else if (cpu) cpuShort = cpu.split('(')[0].replace(/Bộ Vi Xử Lý|CPU/gi, '').trim().slice(0, 24);
+
+  let vgaShort = '';
+  const rtxMatch = vga.match(/(RTX\s*\d+\s*(Ti|SUPER)?|GTX\s*\d+\s*(Ti|SUPER)?|RX\s*\d+\s*(XT|XTX)?|Arc\s*\w+)/i);
+  if (rtxMatch) vgaShort = rtxMatch[0].trim();
+  else if (vga) vgaShort = vga.split('(')[0].replace(/Card Màn Hình|VGA|Card Đồ Họa/gi, '').trim().slice(0, 20);
+
+  if (cpuShort && vgaShort) {
+    return `Cấu Hình PC DRX Gaming (${cpuShort} + ${vgaShort})`;
+  } else if (cpuShort) {
+    return `Cấu Hình PC DRX Custom (${cpuShort})`;
+  } else if (vgaShort) {
+    return `Cấu Hình PC DRX Custom (${vgaShort})`;
+  }
+  return 'Cấu Hình PC DRX Custom Build';
+}
+
 function PCBuilderContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -86,7 +122,12 @@ function PCBuilderContent() {
     monitor: null,
   });
 
-  const [currentBuildName, setCurrentBuildName] = useState<string>('Cấu Hình DRX Build Gaming');
+  const [customSavedName, setCustomSavedName] = useState<string>('');
+
+  const computedBuildName = useMemo(() => {
+    return generateDynamicBuildName(selectedBuild, customSavedName);
+  }, [selectedBuild, customSavedName]);
+
   const [activeStepModal, setActiveStepModal] = useState<string | null>(null);
   const [isQuotationOpen, setIsQuotationOpen] = useState(false);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
@@ -120,7 +161,7 @@ function PCBuilderContent() {
         cooling: null,
         monitor: null,
       });
-      setCurrentBuildName('Cấu Hình Tự Chọn DRX Build');
+      setCustomSavedName('');
       showToast('Đã làm mới danh sách linh kiện PC.', 'info');
       return;
     }
@@ -154,7 +195,7 @@ function PCBuilderContent() {
         cooling,
         monitor: null,
       });
-      setCurrentBuildName('Cấu Hình PC DRX Venom (Intel Core i5 13400F + RTX 4060)');
+      setCustomSavedName('');
       showToast('Đã nạp Cấu Hình Mẫu: PC Gaming Intel Core i5 + RTX 4060!', 'success');
     } else if (type === 'amd') {
       const cpu = findProduct('CPU', '7800X3D') || findProduct('CPU', 'AMD');
@@ -177,7 +218,7 @@ function PCBuilderContent() {
         cooling,
         monitor: null,
       });
-      setCurrentBuildName('Cấu Hình PC DRX Quái Thú (AMD Ryzen 7 7800X3D + RTX 4060)');
+      setCustomSavedName('');
       showToast('Đã nạp Cấu Hình Mẫu: AMD Ryzen 7 7800X3D Siêu Cấp!', 'success');
     }
   };
@@ -230,7 +271,7 @@ function PCBuilderContent() {
               });
               setSelectedBuild(prev => ({ ...prev, ...restored }));
             }
-            if (found.name) setCurrentBuildName(found.name);
+            if (found.name) setCustomSavedName(found.name);
             showToast(`Đã tải lại cấu hình "${found.name}" vào PC Builder!`, 'success');
           }
         }
@@ -859,7 +900,7 @@ function PCBuilderContent() {
         <BuildQuotationModal
           build={selectedBuild}
           totalCost={totalCost}
-          buildName={currentBuildName}
+          buildName={computedBuildName}
           onClose={() => setIsQuotationOpen(false)}
           onBuyAll={handleBuyAll}
         />
@@ -870,9 +911,10 @@ function PCBuilderContent() {
         <SaveBuildModal
           build={selectedBuild}
           totalCost={totalCost}
+          defaultBuildName={computedBuildName}
           onClose={() => setIsSaveModalOpen(false)}
           onSaved={(saved) => {
-            setCurrentBuildName(saved.name);
+            setCustomSavedName(saved.name);
           }}
         />
       )}

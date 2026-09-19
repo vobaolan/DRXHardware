@@ -23,6 +23,7 @@ import {
   RotateCcw
 } from 'lucide-react';
 import { showToast } from '@/components/Toast';
+import { authFetch } from '@/lib/auth-client';
 import { OrderStatusSelector, OrderStatus } from './OrderStatusSelector';
 import { CancelOrderModal } from './CancelOrderModal';
 
@@ -163,7 +164,7 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
 
       const targetPaymentStatus = order.paymentStatus === 'PAID' ? 'REFUNDED' : 'FAILED';
 
-      const res = await fetch('/api/admin/orders', {
+      const res = await authFetch('/api/admin/orders', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -199,7 +200,7 @@ export function OrderVerificationModal({ order, onClose, onOrderUpdated }: Order
         ...checklistToSave,
       };
 
-      const res = await fetch('/api/admin/orders', {
+      const res = await authFetch('/api/admin/orders', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

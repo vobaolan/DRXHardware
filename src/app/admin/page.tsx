@@ -18,6 +18,7 @@ import { motion } from 'framer-motion';
 import { showToast, showConfirm } from '@/components/Toast';
 import { ProductFormModal, ProductFormData } from '@/components/admin/ProductFormModal';
 import { supabase } from '@/lib/supabase';
+import { authFetch } from '@/lib/auth-client';
 import { ModernSelect, SelectOption } from '@/components/ui/ModernSelect';
 import { PortalHeader } from '@/components/admin/PortalHeader';
 import { OrderVerificationModal } from '@/components/admin/OrderVerificationModal';
@@ -526,12 +527,12 @@ export default function AdminDashboardPage() {
     setIsRefreshing(true);
     try {
       const [statsRes, prodsRes, ordersRes, serialsRes, usersRes, couponsRes] = await Promise.all([
-        fetch(`/api/admin/stats?t=${Date.now()}`, { cache: 'no-store' }),
-        fetch(`/api/admin/products?t=${Date.now()}`, { cache: 'no-store' }),
-        fetch(`/api/admin/orders?t=${Date.now()}`, { cache: 'no-store' }),
-        fetch(`/api/admin/serials?t=${Date.now()}`, { cache: 'no-store' }),
-        fetch(`/api/admin/users?t=${Date.now()}`, { cache: 'no-store' }),
-        fetch(`/api/admin/coupons?t=${Date.now()}`, { cache: 'no-store' }),
+        authFetch(`/api/admin/stats?t=${Date.now()}`, { cache: 'no-store' }),
+        authFetch(`/api/admin/products?t=${Date.now()}`, { cache: 'no-store' }),
+        authFetch(`/api/admin/orders?t=${Date.now()}`, { cache: 'no-store' }),
+        authFetch(`/api/admin/serials?t=${Date.now()}`, { cache: 'no-store' }),
+        authFetch(`/api/admin/users?t=${Date.now()}`, { cache: 'no-store' }),
+        authFetch(`/api/admin/coupons?t=${Date.now()}`, { cache: 'no-store' }),
       ]);
 
       if (statsRes.ok) {
@@ -617,7 +618,16 @@ export default function AdminDashboardPage() {
     const channel = supabase
       .channel('admin_global_realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'Order' }, () => fetchAllData())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'Product' }, () => fetchAllData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'Product' }, (payload: any) => {
+        if (payload.eventType === 'UPDATE' && payload.new) {
+          setProducts(prev => prev.map(p => p.id === payload.new.id ? { ...p, ...payload.new } : p));
+        } else if (payload.eventType === 'INSERT' && payload.new) {
+          setProducts(prev => [payload.new, ...prev.filter(p => p.id !== payload.new.id)]);
+        } else if (payload.eventType === 'DELETE' && payload.old) {
+          setProducts(prev => prev.filter(p => p.id !== payload.old.id));
+        }
+        fetchAllData();
+      })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'ProductSerial' }, () => fetchAllData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'User' }, () => fetchAllData())
       .subscribe();
@@ -746,7 +756,7 @@ export default function AdminDashboardPage() {
       variant: 'danger',
       onConfirm: async () => {
         try {
-          const res = await fetch(`/api/admin/products?id=${p.id}`, { method: 'DELETE' });
+          const res = await authFetch(`/api/admin/products?id=${p.id}`, { method: 'DELETE' });
           if (res.ok) {
             setProducts(prev => prev.filter(x => x.id !== p.id));
             showToast(`Đã xóa sản phẩm "${p.name}" thành công!`, 'success');
@@ -770,7 +780,7 @@ export default function AdminDashboardPage() {
         payload.paymentStatus = targetPaymentStatus;
       }
 
-      const res = await fetch('/api/admin/orders', {
+      const res = await authFetch('/api/admin/orders', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -779,22 +789,22 @@ export default function AdminDashboardPage() {
         setOrders(prev => prev.map(o => o.id === orderId ? { 
           ...o, 
           status: newStatus,
-          ...(targetPaymentStatus ? { paymentStatus: targetPaymentStatus } : {})
+          paymentStatus: targetPaymentStatus || o.paymentStatus 
         } : o));
         if (viewingOrder && viewingOrder.id === orderId) {
           setViewingOrder({ 
             ...viewingOrder, 
             status: newStatus,
-            ...(targetPaymentStatus ? { paymentStatus: targetPaymentStatus } : {})
+            paymentStatus: targetPaymentStatus || viewingOrder.paymentStatus 
           });
         }
-        showToast(`Đã chuyển đơn hàng sang trạng thái: ${newStatus}`, 'success');
+        showToast(`Đã cập nhật trạng thái đơn sang: ${newStatus}`, 'success');
         fetchAllData(false);
       } else {
-        showToast('Lỗi khi cập nhật trạng thái đơn hàng!', 'error');
+        showToast('Lỗi khi cập nhật đơn hàng.', 'error');
       }
     } catch (e) {
-      showToast('Không thể kết nối máy chủ để cập nhật đơn.', 'error');
+      showToast('Lỗi kết nối máy chủ.', 'error');
     }
   };
 
@@ -814,7 +824,7 @@ export default function AdminDashboardPage() {
         cancelledBy: 'ADMIN',
       };
 
-      const res = await fetch('/api/admin/orders', {
+      const res = await authFetch('/api/admin/orders', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -868,7 +878,7 @@ export default function AdminDashboardPage() {
 
     setIsSubmittingSn(true);
     try {
-      const res = await fetch('/api/admin/serials', {
+      const res = await authFetch('/api/admin/serials', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -896,7 +906,7 @@ export default function AdminDashboardPage() {
 
   const handleUpdateSerialStatus = async (serialId: string, newStatus: string) => {
     try {
-      const res = await fetch('/api/admin/serials', {
+      const res = await authFetch('/api/admin/serials', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: serialId, status: newStatus }),
@@ -924,7 +934,7 @@ export default function AdminDashboardPage() {
       variant: 'danger',
       onConfirm: async () => {
         try {
-          const res = await fetch(`/api/admin/serials?id=${serialId}`, { method: 'DELETE' });
+          const res = await authFetch(`/api/admin/serials?id=${serialId}`, { method: 'DELETE' });
           if (res.ok) {
             setSerials(prev => prev.filter(s => s.id !== serialId));
             showToast('Đã xóa mã Serial thành công!', 'success');
@@ -982,7 +992,7 @@ export default function AdminDashboardPage() {
     setIsSubmittingUser(true);
     try {
       if (userModalMode === 'create') {
-        const res = await fetch('/api/admin/users', {
+        const res = await authFetch('/api/admin/users', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(userFormData),
@@ -997,7 +1007,7 @@ export default function AdminDashboardPage() {
         }
       } else {
         // Edit Mode
-        const res = await fetch('/api/admin/users', {
+        const res = await authFetch('/api/admin/users', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -1044,7 +1054,7 @@ export default function AdminDashboardPage() {
       variant: 'danger',
       onConfirm: async () => {
         try {
-          const res = await fetch(`/api/admin/users?userId=${u.id}`, { method: 'DELETE' });
+          const res = await authFetch(`/api/admin/users?userId=${u.id}`, { method: 'DELETE' });
           const data = await res.json();
           if (res.ok) {
             setUsers(prev => prev.filter(x => x.id !== u.id));
@@ -1062,7 +1072,7 @@ export default function AdminDashboardPage() {
   // Handlers for User Role Quick Switch
   const handleSetUserRole = async (userId: string, newRole: string) => {
     try {
-      const res = await fetch('/api/admin/users', {
+      const res = await authFetch('/api/admin/users', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, role: newRole }),
@@ -1847,11 +1857,46 @@ export default function AdminDashboardPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                      {filteredOrders.map((o) => {
-                        if (!o) return null;
-                        const pDetails = typeof o.paymentDetails === 'string'
-                          ? (() => { try { return JSON.parse(o.paymentDetails); } catch { return {}; } })()
-                          : (o.paymentDetails && typeof o.paymentDetails === 'object' ? o.paymentDetails : {});
+                      {filteredOrders.length === 0 ? (
+                        <tr>
+                          <td colSpan={8} className="py-16 px-4 text-center">
+                            <div className="flex flex-col items-center justify-center max-w-md mx-auto space-y-3">
+                              <div className="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800/80 text-slate-400 flex items-center justify-center border border-slate-200 dark:border-slate-700">
+                                <ShoppingBag className="w-7 h-7 text-slate-400" />
+                              </div>
+                              <div className="space-y-1">
+                                <h4 className="text-sm font-black text-slate-900 dark:text-white">
+                                  Không có đơn hàng nào
+                                </h4>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                  {searchQuery || orderStatusFilter !== 'ALL'
+                                    ? `Không tìm thấy đơn hàng nào phù hợp với bộ lọc "${orderStatusFilter !== 'ALL' ? orderStatusFilter : ''}" ${searchQuery ? `hoặc từ khóa "${searchQuery}"` : ''}.`
+                                    : 'Hệ thống hiện tại chưa phát sinh đơn hàng mới nào.'}
+                                </p>
+                              </div>
+                              {(searchQuery || orderStatusFilter !== 'ALL') && (
+                                <div className="pt-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSearchQuery('');
+                                      setOrderStatusFilter('ALL');
+                                    }}
+                                    className="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
+                                  >
+                                    Xóa bộ lọc tìm kiếm
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredOrders.map((o) => {
+                          if (!o) return null;
+                          const pDetails = typeof o.paymentDetails === 'string'
+                            ? (() => { try { return JSON.parse(o.paymentDetails); } catch { return {}; } })()
+                            : (o.paymentDetails && typeof o.paymentDetails === 'object' ? o.paymentDetails : {});
                         const needInst = Boolean(pDetails.needInstallation);
                         const isProxy = Boolean(pDetails.isProxyRecipient);
                         const isPickup = o.deliveryType === 'STORE_PICKUP';
@@ -1976,7 +2021,7 @@ export default function AdminDashboardPage() {
                             </td>
                           </tr>
                         );
-                      })}
+                      }))}
                     </tbody>
                   </table>
                 </div>

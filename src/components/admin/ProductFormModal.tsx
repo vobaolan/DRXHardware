@@ -9,6 +9,7 @@ import {
   Upload, CheckCircle2, FileImage, Star
 } from 'lucide-react';
 import { showToast } from '@/components/Toast';
+import { authFetch } from '@/lib/auth-client';
 import { ModernSelect, SelectOption } from '@/components/ui/ModernSelect';
 
 const CATEGORY_OPTIONS: SelectOption[] = [
@@ -246,7 +247,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
       const formData = new FormData();
       formData.append('file', file);
 
-      const res = await fetch('/api/upload', {
+      const res = await authFetch('/api/upload', {
         method: 'POST',
         body: formData,
       });
@@ -279,7 +280,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
       const uploadPromises = Array.from(files).map(async (file) => {
         const formData = new FormData();
         formData.append('file', file);
-        const res = await fetch('/api/upload', { method: 'POST', body: formData });
+        const res = await authFetch('/api/upload', { method: 'POST', body: formData });
         const data = await res.json();
         return res.ok && data.url ? data.url : null;
       });
@@ -373,7 +374,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
     };
 
     try {
-      const res = await fetch('/api/admin/products', {
+      const res = await authFetch('/api/admin/products', {
         method: mode === 'edit' ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

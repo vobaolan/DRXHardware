@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { INITIAL_PRODUCTS } from '@/lib/hardware-data';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
 
 function cleanSlug(str: string) {
   return decodeURIComponent(str || '')
@@ -63,6 +66,16 @@ export async function GET(
       }
     } catch (e) {
       console.warn('Supabase product slug query warning:', e);
+    }
+
+    if (!matchedProduct) {
+      matchedProduct = INITIAL_PRODUCTS.find((p: any) => 
+        (p.slug && p.slug.toLowerCase() === decodedSlug) || 
+        p.id === decodedSlug || 
+        p.id === rawSlug ||
+        cleanSlug(p.slug) === normalizedTarget ||
+        cleanSlug(p.name) === normalizedTarget
+      );
     }
 
     if (matchedProduct) {

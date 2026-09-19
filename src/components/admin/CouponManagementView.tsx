@@ -25,6 +25,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { showToast, showConfirm } from '@/components/Toast';
+import { authFetch } from '@/lib/auth-client';
 import { PortalDropdown } from '@/components/ui/PortalDropdown';
 
 interface CouponItem {
@@ -223,7 +224,7 @@ export function CouponManagementView({ canEdit = true }: { canEdit?: boolean }) 
   const fetchCoupons = useCallback(async (showNotification = false) => {
     setIsRefreshing(true);
     try {
-      const res = await fetch(`/api/admin/coupons?t=${Date.now()}`, { cache: 'no-store' });
+      const res = await authFetch(`/api/admin/coupons?t=${Date.now()}`, { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data.coupons)) {
@@ -307,7 +308,7 @@ export function CouponManagementView({ canEdit = true }: { canEdit?: boolean }) 
     setCoupons(prev => prev.map(c => c.code === coupon.code ? { ...c, status: targetStatus } : c));
 
     try {
-      const res = await fetch('/api/admin/coupons', {
+      const res = await authFetch('/api/admin/coupons', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -343,7 +344,7 @@ export function CouponManagementView({ canEdit = true }: { canEdit?: boolean }) 
       variant: 'danger',
       onConfirm: async () => {
         try {
-          const res = await fetch(`/api/admin/coupons?code=${encodeURIComponent(code)}`, {
+          const res = await authFetch(`/api/admin/coupons?code=${encodeURIComponent(code)}`, {
             method: 'DELETE',
           });
           if (res.ok) {
@@ -375,7 +376,7 @@ export function CouponManagementView({ canEdit = true }: { canEdit?: boolean }) 
     setIsSubmitting(true);
     try {
       const method = modalMode === 'create' ? 'POST' : 'PUT';
-      const res = await fetch('/api/admin/coupons', {
+      const res = await authFetch('/api/admin/coupons', {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
