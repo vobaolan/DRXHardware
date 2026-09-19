@@ -195,20 +195,22 @@ export default function CategoryShowcaseBlock({
         {/* SHOWCASE BODY: LEFT BANNER + RIGHT PRODUCT CAROUSEL */}
         <div className="p-4 sm:p-5 grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
           
-          {/* 1. LEFT FEATURED BANNER POSTER (Full Poster Banner Card) */}
-          <Link
-            href={currentTab?.viewAllLink || viewAllLink}
-            className={`lg:col-span-3 rounded-2xl border ${themeStyles.bannerBorder} overflow-hidden group relative flex flex-col justify-center items-center shadow-md hover:shadow-2xl transition-all duration-300 bg-white dark:bg-slate-900 cursor-pointer min-h-[340px] sm:min-h-[420px] max-h-[460px]`}
-          >
-            <img
-              src={bannerImage}
-              alt={title}
-              className="w-full h-full object-cover object-center group-hover:scale-[1.03] transition-transform duration-500 ease-out"
-              style={{ imageRendering: '-webkit-optimize-contrast' }}
-            />
-            {/* Subtle glow / sheen overlay on hover */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-          </Link>
+          {/* 1. LEFT FEATURED BANNER POSTER (Uncropped Full Native Ratio) */}
+          <div className="lg:col-span-3 flex items-center justify-center">
+            <Link
+              href={currentTab?.viewAllLink || viewAllLink}
+              className={`w-full h-full rounded-2xl border ${themeStyles.bannerBorder} overflow-hidden group relative flex items-center justify-center bg-white dark:bg-slate-900 shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer p-0`}
+            >
+              <img
+                src={bannerImage}
+                alt={title}
+                className="w-full h-full object-contain rounded-2xl group-hover:scale-[1.02] transition-transform duration-500 ease-out select-none"
+                style={{ imageRendering: '-webkit-optimize-contrast' }}
+              />
+              {/* Subtle glow / sheen overlay on hover */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/15 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-2xl" />
+            </Link>
+          </div>
 
           {/* 2. RIGHT PRODUCTS SLIDER / GRID (Col 12 -> Col 9) */}
           <div className="lg:col-span-9 relative flex flex-col justify-between">
@@ -254,14 +256,14 @@ export default function CategoryShowcaseBlock({
                   return (
                     <div
                       key={product.id}
-                      className={`min-w-[225px] sm:min-w-[245px] max-w-[245px] rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-3.5 shadow-xs hover:shadow-xl ${themeStyles.accentBorder} transition-all duration-300 flex flex-col justify-between group relative shrink-0`}
+                      className={`min-w-[215px] sm:min-w-[235px] max-w-[235px] rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 shadow-xs hover:shadow-xl ${themeStyles.accentBorder} transition-all duration-300 flex flex-col justify-between group relative shrink-0`}
                     >
                       <Link href={`/products/${product.slug}`} className="flex flex-col h-full">
                         {/* Image Box - Pure White & Crisp Sharp Rendering */}
-                        <div className="relative aspect-[4/3] w-full rounded-xl overflow-hidden bg-white dark:bg-slate-900 p-2.5 mb-2.5 flex items-center justify-center group/media">
+                        <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-slate-50/70 dark:bg-slate-800/40 p-3 mb-2.5 flex items-center justify-center group-hover:bg-slate-100/70 dark:group-hover:bg-slate-800/60 transition-colors">
                           {/* Top-Right: Discount Badge */}
                           {hasDiscount && (
-                            <div className="absolute top-1.5 right-1.5 z-20 inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-gradient-to-r from-rose-500 to-amber-500 text-white text-[9.5px] font-black tracking-tight shadow-md shadow-rose-500/20">
+                            <div className="absolute top-2 right-2 z-20 inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md bg-gradient-to-r from-red-600 to-rose-500 text-white text-[9.5px] font-black tracking-tight shadow-sm shadow-rose-500/20">
                               <Percent className="w-2.5 h-2.5 stroke-[2.5]" />
                               <span>-{discountPercent}%</span>
                             </div>
@@ -269,7 +271,7 @@ export default function CategoryShowcaseBlock({
 
                           {/* Top-Left: Brand Tag */}
                           {product.brand && (
-                            <span className="absolute top-1.5 left-1.5 z-20 px-2 py-0.5 rounded-md bg-slate-100/90 dark:bg-slate-800/90 text-slate-600 dark:text-slate-300 text-[9px] font-black uppercase tracking-wider border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-xs">
+                            <span className="absolute top-2 left-2 z-20 px-2 py-0.5 rounded-md bg-white/95 dark:bg-slate-900/95 text-slate-700 dark:text-slate-300 text-[9px] font-black uppercase tracking-wider border border-slate-200/80 dark:border-slate-700 shadow-2xs backdrop-blur-xs">
                               {product.brand}
                             </span>
                           )}
@@ -280,7 +282,7 @@ export default function CategoryShowcaseBlock({
                             alt={product.name}
                             loading="lazy"
                             decoding="async"
-                            className="w-full h-full object-contain group-hover:scale-106 transition-transform duration-500 ease-out select-none"
+                            className="max-h-full max-w-full object-contain group-hover:scale-108 transition-transform duration-500 ease-out select-none"
                             style={{ 
                               imageRendering: '-webkit-optimize-contrast',
                               WebkitBackfaceVisibility: 'hidden',
@@ -298,10 +300,10 @@ export default function CategoryShowcaseBlock({
                               WebkitLineClamp: 2,
                               WebkitBoxOrient: 'vertical',
                               overflow: 'hidden',
-                              height: '38px',
-                              lineHeight: '19px',
+                              height: '36px',
+                              lineHeight: '18px',
                             }}
-                            className="font-heading font-extrabold text-[12.5px] text-slate-900 dark:text-slate-100 group-hover:text-[#0284c7] dark:group-hover:text-[#38bdf8] transition-colors"
+                            className="font-heading font-bold text-[12.5px] text-slate-900 dark:text-slate-100 group-hover:text-[#0284c7] dark:group-hover:text-[#38bdf8] transition-colors"
                           >
                             {product.name}
                           </h4>
@@ -333,21 +335,20 @@ export default function CategoryShowcaseBlock({
                                   <span className="text-[10.5px] text-slate-400 line-through font-mono-tech">
                                     {formatCurrency(product.price)}
                                   </span>
-                                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded bg-rose-50 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 text-[9px] font-black">
-                                    <Percent className="w-2 h-2 stroke-[2.5]" />
-                                    <span>-{discountPercent}%</span>
+                                  <span className="text-[10px] font-bold text-rose-500">
+                                    Tiết kiệm {formatCurrency(product.price - activePrice)}
                                   </span>
                                 </div>
-                                <span className="font-heading font-black text-[15px] sm:text-base text-rose-600 dark:text-rose-400 block">
+                                <span className="font-heading font-black text-[16px] text-rose-600 dark:text-rose-400 block tracking-tight">
                                   {formatCurrency(activePrice)}
                                 </span>
                               </>
                             ) : (
                               <>
                                 <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block mb-0.5">
-                                  Giá niêm yết
+                                  Giá bán
                                 </span>
-                                <span className="font-heading font-black text-[15px] sm:text-base text-slate-900 dark:text-white block">
+                                <span className="font-heading font-black text-[16px] text-slate-900 dark:text-white block tracking-tight">
                                   {formatCurrency(activePrice)}
                                 </span>
                               </>
@@ -357,7 +358,7 @@ export default function CategoryShowcaseBlock({
                       </Link>
 
                       {/* Action Buttons Row: Cart Icon + MUA NGAY */}
-                      <div className="flex items-center gap-1.5 pt-2.5 mt-2 border-t border-slate-100 dark:border-slate-800">
+                      <div className="flex items-center gap-1.5 pt-2 mt-2 border-t border-slate-100 dark:border-slate-800">
                         <button
                           onClick={(e) => {
                             e.preventDefault();
@@ -375,7 +376,7 @@ export default function CategoryShowcaseBlock({
                             setAddedId(product.id);
                             setTimeout(() => setAddedId(null), 1500);
                           }}
-                          className="p-2 rounded-xl border border-rose-300 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-600 hover:text-white transition-all shadow-xs cursor-pointer shrink-0"
+                          className="p-2 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/80 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-600 hover:text-white transition-all shadow-2xs cursor-pointer shrink-0"
                           title="Thêm vào giỏ hàng"
                         >
                           {isJustAdded ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <ShoppingCart className="h-3.5 w-3.5" />}
@@ -383,9 +384,9 @@ export default function CategoryShowcaseBlock({
 
                         <button
                           onClick={(e) => handleBuyNow(product, e)}
-                          className={`flex-1 flex items-center justify-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-heading font-black transition-all active:scale-95 shadow-md shadow-rose-500/20 bg-gradient-to-r from-rose-600 via-rose-500 to-red-600 hover:from-rose-500 hover:to-red-500 text-white cursor-pointer`}
+                          className={`flex-1 flex items-center justify-center gap-1.5 rounded-xl px-2.5 py-2 text-xs font-heading font-black transition-all active:scale-95 shadow-sm shadow-rose-500/25 bg-gradient-to-r from-rose-600 via-rose-500 to-red-600 hover:from-rose-500 hover:to-red-500 text-white cursor-pointer`}
                         >
-                          <Zap className="h-3 w-3 fill-amber-300 text-amber-300" />
+                          <Zap className="h-3.5 w-3.5 fill-amber-300 text-amber-300" />
                           <span>MUA NGAY</span>
                         </button>
                       </div>
