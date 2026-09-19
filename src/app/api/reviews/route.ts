@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { validateReviewContent } from '@/lib/content-filter';
 
 export const dynamic = 'force-dynamic';
 
@@ -78,6 +79,16 @@ export async function POST(request: Request) {
 
     if (!comment || !comment.trim()) {
       return NextResponse.json({ error: 'Nội dung đánh giá không được để trống' }, { status: 400 });
+    }
+
+    // Kiểm duyệt từ ngữ thô tục, chửi thề, spam, phát ngôn sai mục đích
+    const filterCheck = validateReviewContent(comment);
+    if (!filterCheck.isValid) {
+      return NextResponse.json({ 
+        error: filterCheck.reason || 'Nội dung nhận xét vi phạm chuẩn mực cộng đồng DRX. Vui lòng chỉnh sửa lại!',
+        violation: true,
+        matchedWords: filterCheck.matchedWords || []
+      }, { status: 400 });
     }
 
     // Determine valid userId from Supabase

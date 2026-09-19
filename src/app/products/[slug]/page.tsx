@@ -10,10 +10,11 @@ import {
   ShoppingCart, Heart, ShieldCheck, ChevronLeft, ChevronRight, 
   Star, Maximize2, X, ArrowLeft, CheckCircle2, Play, Truck,
   MessageSquare, User, Send, Cpu, HardDrive, Laptop, Award, Gamepad2, Monitor, Tag, Clock, Check, Wrench, Zap,
-  ThumbsUp, Sparkles, Ban
+  ThumbsUp, Sparkles, Ban, AlertTriangle, ShieldAlert
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { INITIAL_PRODUCTS } from '@/lib/hardware-data';
+import { validateReviewContent } from '@/lib/content-filter';
 
 interface MediaItem {
   id: string;
@@ -62,6 +63,12 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
     const total = userReviews.reduce((sum, r) => sum + (Number(r.rating) || 5), 0);
     return (total / userReviews.length).toFixed(1);
   }, [userReviews]);
+
+  // Real-time Content Moderation Check (Profanity, Abusive Language, Spam filter)
+  const contentCheck = useMemo(() => {
+    if (!newComment.trim()) return { isValid: true };
+    return validateReviewContent(newComment);
+  }, [newComment]);
 
   // Load Current Logged In User from session
   useEffect(() => {
@@ -156,6 +163,13 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
     }
     if (!product?.id) {
       showToast('Không tìm thấy thông tin sản phẩm!', 'error');
+      return;
+    }
+
+    // Kiểm tra từ ngữ thô tục, chửi thề, spam
+    const check = validateReviewContent(newComment);
+    if (!check.isValid) {
+      showToast(check.reason || 'Nội dung nhận xét vi phạm chuẩn mực cộng đồng DRX!', 'error');
       return;
     }
 
@@ -805,30 +819,67 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
               </div>
 
               {/* Comment Input */}
-              <div className="space-y-1">
-                <label className="text-[11px] font-bold text-slate-600 dark:text-slate-300">Nội dung đánh giá:</label>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] font-bold text-slate-600 dark:text-slate-300">Nội dung đánh giá:</label>
+                  {!contentCheck.isValid && (
+                    <span className="text-[10.5px] font-bold text-rose-600 dark:text-rose-400 inline-flex items-center gap-1 animate-pulse">
+                      <ShieldAlert className="h-3.5 w-3.5" /> Vi phạm chuẩn mực đánh giá
+                    </span>
+                  )}
+                </div>
                 <textarea
                   rows={3}
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
                   placeholder="Chia sẻ trải nghiệm thực tế của bạn về sản phẩm, hiệu năng, nhiệt độ, đóng gói..."
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3.5 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0284c7]/40 focus:border-[#0284c7]"
+                  className={`w-full rounded-xl border p-3.5 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none transition-all ${
+                    !contentCheck.isValid 
+                      ? 'border-rose-500 bg-rose-50/20 dark:bg-rose-950/20 focus:ring-2 focus:ring-rose-500/30'
+                      : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-[#0284c7]/40 focus:border-[#0284c7]'
+                  }`}
                 />
+
+                <AnimatePresence>
+                  {!contentCheck.isValid && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -6, height: 0 }}
+                      animate={{ opacity: 1, y: 0, height: 'auto' }}
+                      exit={{ opacity: 0, y: -6, height: 0 }}
+                      className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 text-rose-700 dark:text-rose-300 text-xs flex items-start gap-2.5 shadow-xs"
+                    >
+                      <AlertTriangle className="h-4 w-4 shrink-0 text-rose-500 mt-0.5" />
+                      <div className="space-y-1">
+                        <p className="font-extrabold text-xs text-rose-800 dark:text-rose-200">
+                          Cảnh Báo: Phát ngôn không đúng mục đích hoặc chứa từ ngữ không phù hợp
+                        </p>
+                        <p className="text-[11px] leading-relaxed text-rose-700/90 dark:text-rose-300/90">
+                          {contentCheck.reason}
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               <div className="flex items-center justify-between pt-1 flex-wrap gap-3">
                 <p className="text-[11px] text-slate-400">
-                  Mẹo: Nhận xét kèm chi tiết hiệu năng giúp cộng đồng game thủ & khách hàng có lựa chọn tốt nhất!
+                  Mẹo: Nhận xét văn minh, lịch sự kèm chi tiết hiệu năng giúp cộng đồng game thủ có lựa chọn tốt nhất!
                 </p>
                 <button
                   type="submit"
-                  disabled={isSubmittingReview}
-                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#0284c7] to-[#38bdf8] hover:from-[#0369a1] hover:to-[#0284c7] text-white font-extrabold text-xs uppercase tracking-wider shadow-md shadow-sky-500/20 transition-all active:scale-95 cursor-pointer disabled:opacity-50 flex items-center gap-2"
+                  disabled={isSubmittingReview || !contentCheck.isValid}
+                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#0284c7] to-[#38bdf8] hover:from-[#0369a1] hover:to-[#0284c7] text-white font-extrabold text-xs uppercase tracking-wider shadow-md shadow-sky-500/20 transition-all active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   {isSubmittingReview ? (
                     <>
                       <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                       <span>Đang Gửi...</span>
+                    </>
+                  ) : !contentCheck.isValid ? (
+                    <>
+                      <Ban className="w-3.5 h-3.5" />
+                      <span>Vi Phạm Tiêu Chuẩn</span>
                     </>
                   ) : (
                     <>
