@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { INITIAL_PRODUCTS, HardwareProduct } from '@/lib/hardware-data';
+import { supabase } from '@/lib/supabase';
 import { useCart } from '@/context/CartContext';
 import { showToast, showConfirm } from '@/components/Toast';
 import { 
@@ -225,31 +226,82 @@ function PCBuilderContent() {
 
   // Fetch live products from backend to ensure all latest items are present
   useEffect(() => {
-    fetch('/api/products')
-      .then(res => res.json())
-      .then(data => {
-        if (data.products && Array.isArray(data.products) && data.products.length > 0) {
-          const normalized = data.products.map((p: any) => ({
-            ...p,
-            category: Array.isArray(p.category) ? p.category[0] : p.category,
-          }));
-          setAllProducts(normalized);
+    const fetchPCProducts = () => {
+      fetch(`/api/products?t=${Date.now()}`, { cache: 'no-store' })
+        .then(res => res.json())
+        .then(data => {
+          if (data.products && Array.isArray(data.products) && data.products.length > 0) {
+            const normalized = data.products.map((p: any) => ({
+              ...p,
+              category: Array.isArray(p.category) ? p.category[0] : p.category,
+            }));
+            setAllProducts(normalized);
 
-          // Auto-load preset if no saved build requested
-          const loadId = searchParams.get('loadBuildId');
-          const presetParam = searchParams.get('preset');
-          if (!loadId) {
-            if (presetParam === 'amd') {
-              applyPreset('amd', normalized);
-            } else if (presetParam === 'empty') {
-              applyPreset('empty', normalized);
-            } else {
-              applyPreset('intel', normalized);
+            // Auto-load preset if no saved build requested
+            const loadId = searchParams.get('loadBuildId');
+            const presetParam = searchParams.get('preset');
+            if (!loadId) {
+              if (presetParam === 'amd') {
+                applyPreset('amd', normalized);
+              } else if (presetParam === 'empty') {
+                applyPreset('empty', normalized);
+              } else {
+                applyPreset('intel', normalized);
+              }
             }
           }
+        })
+        .catch(() => {});
+    };
+
+    fetchPCProducts();
+
+    // Supabase Realtime channel for PC Builder
+    const channel = supabase
+      .channel('pc_builder_products_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'Product' }, (payload: any) => {
+        if (payload.eventType === 'DELETE') {
+          const deletedId = payload.old?.id;
+          if (deletedId) {
+            setAllProducts(prev => prev.filter(p => p.id !== deletedId));
+            setSelectedBuild(prev => {
+              const updated = { ...prev };
+              Object.keys(updated).forEach(k => {
+                if (updated[k]?.id === deletedId) {
+                  updated[k] = null;
+                }
+              });
+              return updated;
+            });
+          }
+        } else if (payload.eventType === 'UPDATE') {
+          const updated = payload.new;
+          if (updated && updated.id) {
+            setAllProducts(prev => prev.map(p => {
+              if (p.id === updated.id) {
+                return {
+                  ...p,
+                  ...updated,
+                  category: Array.isArray(updated.category) ? updated.category[0] : updated.category,
+                };
+              }
+              return p;
+            }));
+          }
+        } else if (payload.eventType === 'INSERT') {
+          fetchPCProducts();
         }
       })
-      .catch(() => {});
+      .subscribe();
+
+    window.addEventListener('storage', fetchPCProducts);
+    window.addEventListener('ods_products_updated', fetchPCProducts);
+
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener('storage', fetchPCProducts);
+      window.removeEventListener('ods_products_updated', fetchPCProducts);
+    };
   }, []);
 
   // Restore saved build if loadBuildId is in URL query

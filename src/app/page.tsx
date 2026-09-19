@@ -17,6 +17,7 @@ import {
 } from '@/components/icons/HardwareIcons';
 import { motion, AnimatePresence } from 'framer-motion';
 import { INITIAL_PRODUCTS } from '@/lib/hardware-data';
+import { supabase } from '@/lib/supabase';
 
 const INITIAL_HOME_PRODUCTS: ProductProps[] = INITIAL_PRODUCTS.map(p => ({
   id: p.id,
@@ -72,7 +73,47 @@ export default function Home() {
 
     fetchHomeProducts();
 
+    // Supabase Realtime channel for Home page
+    const channel = supabase
+      .channel('home_products_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'Product' }, (payload: any) => {
+        if (payload.eventType === 'DELETE') {
+          const deletedId = payload.old?.id;
+          if (deletedId) {
+            setLiveProducts(prev => prev.filter(p => p.id !== deletedId));
+          }
+        } else if (payload.eventType === 'UPDATE') {
+          const updated = payload.new;
+          if (updated && updated.id) {
+            setLiveProducts(prev => prev.map(p => {
+              if (p.id === updated.id) {
+                return {
+                  ...p,
+                  name: updated.name,
+                  price: updated.price,
+                  discountPrice: updated.discountPrice || null,
+                  coverImage: updated.coverImage || p.coverImage,
+                  status: (updated.stockQuantity ?? 1) > 0,
+                  isFlashDeal: updated.isFlashDeal ?? p.isFlashDeal,
+                  isFeaturedDeal: updated.isFeatured ?? p.isFeaturedDeal,
+                  category: updated.category ? [updated.category] : p.category,
+                  brand: updated.brand || p.brand,
+                };
+              }
+              return p;
+            }));
+          }
+        } else if (payload.eventType === 'INSERT') {
+          fetchHomeProducts();
+        }
+      })
+      .subscribe();
+
+    window.addEventListener('storage', fetchHomeProducts);
+    window.addEventListener('ods_products_updated', fetchHomeProducts);
+
     return () => {
+      supabase.removeChannel(channel);
       window.removeEventListener('storage', fetchHomeProducts);
       window.removeEventListener('ods_products_updated', fetchHomeProducts);
     };
