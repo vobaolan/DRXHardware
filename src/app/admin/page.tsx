@@ -12,7 +12,7 @@ import {
   Edit2, Trash2, Phone, Mail, MapPin, Calendar, Clock, Check,
   UserCheck, ArrowDownRight, BarChart3, Hash, Layers, UserPlus,
   KeyRound, Shield, ShieldQuestion, PackageCheck, Ban, Tag,
-  ChevronDown, Activity, Database, Zap
+  ChevronDown, Activity, Database, Zap, ShoppingBag
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { showToast, showConfirm } from '@/components/Toast';
