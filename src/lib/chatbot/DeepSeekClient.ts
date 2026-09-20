@@ -53,24 +53,57 @@ export class DeepSeekClient {
         };
       }
 
-      // 2. Check if query is asking for PC Build Consultation (Tư vấn Build PC / Cấu hình máy tính)
-      const isBuildInquiry = 
+      // 2. Check if query is asking for a specific hardware component
+      const isSpecificComponentInquiry = 
+        userTextNoTone.includes('card man hinh') ||
+        userTextNoTone.includes('card do hoa') ||
+        userTextNoTone.includes('vga') ||
+        userTextNoTone.includes('cpu') ||
+        userTextNoTone.includes('vi xu ly') ||
+        userTextNoTone.includes('chip') ||
+        userTextNoTone.includes('ram') ||
+        userTextNoTone.includes('o cung') ||
+        userTextNoTone.includes('ssd') ||
+        userTextNoTone.includes('hdd') ||
+        userTextNoTone.includes('nvme') ||
+        userTextNoTone.includes('mainboard') ||
+        userTextNoTone.includes('bo mach chu') ||
+        userTextNoTone.includes('nguon') ||
+        userTextNoTone.includes('psu') ||
+        userTextNoTone.includes('vo case') ||
+        userTextNoTone.includes('thung case') ||
+        userTextNoTone.includes('tan nhiet') ||
+        userTextNoTone.includes('cooling') ||
+        userTextNoTone.includes('man hinh') ||
+        userTextNoTone.includes('monitor') ||
+        userTextNoTone.includes('laptop') ||
+        userTextNoTone.includes('ban phim') ||
+        userTextNoTone.includes('chuot') ||
+        userTextNoTone.includes('tai nghe');
+
+      // Check if query is asking for Full PC Build Consultation (Dàn PC / Bộ máy tính)
+      const hasFullPcBuildKeywords = 
         userTextNoTone.includes('build pc') ||
         userTextNoTone.includes('rap pc') ||
-        userTextNoTone.includes('rap may') ||
-        userTextNoTone.includes('cau hinh') ||
+        userTextNoTone.includes('lap rap pc') ||
         userTextNoTone.includes('tu van pc') ||
-        userTextNoTone.includes('tu van may') ||
+        userTextNoTone.includes('tu van dan pc') ||
+        userTextNoTone.includes('tu van bo pc') ||
+        userTextNoTone.includes('dan pc') ||
+        userTextNoTone.includes('bo pc') ||
         userTextNoTone.includes('dan may') ||
-        userTextNoTone.includes('case pc') ||
+        userTextNoTone.includes('bo may tinh') ||
+        userTextNoTone.includes('cau hinh pc') ||
         userTextNoTone.includes('tu van build') ||
-        userTextNoTone.match(/pc\s*\d+\s*(trieu|tr|cu|m)/i) ||
-        userTextNoTone.match(/may\s*\d+\s*(trieu|tr|cu|m)/i) ||
-        userTextNoTone.match(/build\s*\d+\s*(trieu|tr|cu|m)/i) ||
-        userTextNoTone.match(/tam\s*\d+\s*(trieu|tr|cu|m)/i);
+        userTextNoTone.match(/\bpc\s*\d+\s*(trieu|tr|cu|m)\b/i) ||
+        userTextNoTone.match(/\bbuild\s*\d+\s*(trieu|tr|cu|m)\b/i) ||
+        userTextNoTone.match(/\brap\s*(?:pc|may)\s*\d+\s*(trieu|tr|cu|m)\b/i);
+
+      // CRITICAL: Only trigger full PC build if user explicitly asked for a full PC and did NOT ask for a single component
+      const isBuildInquiry = hasFullPcBuildKeywords && !isSpecificComponentInquiry;
 
       if (isBuildInquiry) {
-        Logger.info(`[PC Builder AI] Detected build consultation request: "${userText}"`);
+        Logger.info(`[PC Builder AI] Detected full PC build consultation request: "${userText}"`);
         const buildResult = await liveDatabaseKnowledge.recommendPCBuild(userText);
         
         // Check if LLM API is available to enrich the consultation tone
@@ -175,20 +208,23 @@ ${couponItems}
     const groqKey = process.env.GROQ_API_KEY;
     const deepseekKey = process.env.DEEPSEEK_API_KEY;
 
-    const systemPromptWithLiveDB = `Bạn là DRX CyberBot AI 🤖⚡ - Trợ lý công nghệ phần cứng thông minh đẳng cấp Google Antigravity & Gemini tại DRX Hardware.
+    const systemPromptWithLiveDB = `Bạn là DRX CyberBot AI 🤖⚡ - Trợ lý công nghệ phần cứng thông minh tại DRX Hardware.
 
 DỮ LIỆU KHO HÀNG & THÔNG TIN THỰC TẾ TRÊN HỆ THỐNG SUPABASE:
 ${liveContext}
 
-QUY TẮC ĐÀO TẠO & PHẢN HỒI (CHUẨN GEMINI / GOOGLE ANTIGRAVITY):
-1. TRẢ LỜI ĐÚNG TRỌNG TÂM, THÔNG MINH, TINH TẾ:
-   - Khi khách hỏi mã giảm giá/voucher/khuyến mãi: Liệt kê rõ ràng danh sách mã giảm giá từ dữ liệu Supabase, mức giảm (%), điều kiện đơn tối thiểu và hướng dẫn nhập mã tại bước thanh toán. TUYỆT ĐỐI không trả lời lan man sang linh kiện không liên quan.
-   - Khi khách hỏi tìm linh kiện: Đưa thông tin chính xác giá niêm yết, giá khuyến mãi (VND), bảo hành, tình trạng còn hàng và dẫn link markdown dạng [Tên sản phẩm](/products/slug).
-   - Khi khách hỏi tư vấn cấu hình PC: Lập bảng linh kiện tương thích 100%, chi phí ưu đãi, đánh giá hiệu năng FPS thực tế và dẫn link [DRX PC Builder](/pc-builder).
-2. ĐỊNH DẠNG ĐẸP, THOÁNG ĐÃNG, KHÔNG LẠM DỤNG DẤU CHẤM TRÒN (•):
-   - Tránh việc đặt liên tiếp hàng chục dấu chấm tròn (•) dính chùm.
-   - Sử dụng tiêu đề rõ ràng (###, ####), in đậm key points, bảng markdown hoặc gạch đầu dòng ngắn gọn (-).
-   - Định dạng tiền tệ chuẩn tiếng Việt (ví dụ: 2.399.000 ₫).
+QUY TẮC ĐÀO TẠO & PHẢN HỒI (CHUẨN CHUYÊN GIA PHẦN CỨNG DRX HARDWARE):
+1. TRẢ LỜI ĐÚNG TRỌNG TÂM, NGẮN GỌN, SÚC TÍCH, TUYỆT ĐỐI KHÔNG NÓI LAN MAN:
+   - Khi khách hỏi về 1 LINH KIỆN CỤ THỂ (ví dụ: "card màn hình chơi game tầm 15 triệu", "tư vấn CPU 5tr", "màn hình dưới 4 triệu"):
+     + CHỈ tư vấn đúng linh kiện đó khớp với tầm giá yêu cầu.
+     + TUYỆT ĐỐI KHÔNG tự động lên bảng cấu hình cả dàn PC (CPU, Main, RAM, Nguồn, Vỏ...) nếu khách KHÔNG yêu cầu build full bộ PC.
+     + Phân tích ngắn gọn 1-2 sự lựa chọn xuất sắc nhất có trong kho: Nêu tên sản phẩm kèm link markdown [Tên](/products/slug), Giá ưu đãi, Điểm mạnh chính (VRAM, DLSS, FPS trong game phổ biến), và chế độ bảo hành 36T 1 đổi 1.
+   - Khi khách hỏi BUILD DÀN PC (ví dụ: "build pc 15 triệu", "ráp pc chơi valorant 20tr"):
+     + Lập bảng cấu hình gồm các linh kiện desktop tương thích 100% (KHÔNG dùng RAM Laptop), tổng giá khớp sát ngân sách yêu cầu.
+   - Khi khách hỏi MÃ GIẢM GIÁ / VOUCHER: Liệt kê danh sách mã thực tế, mức giảm, điều kiện đơn hàng.
+2. ĐỊNH DẠNG ĐẸP, MẠCH LẠC, THOÁNG ĐÃNG:
+   - Định dạng tiền tệ VNĐ rõ ràng (ví dụ: 15.990.000 ₫).
+   - Tối đa 2-3 đoạn ngắn gọn, súc tích, chuyên nghiệp.
 3. PHONG THÁI CHUYÊN NGHIỆP, TỰ NHIÊN, AM HIỂU PHẦN CỨNG: Thân thiện, tôn trọng khách hàng, ngôn từ hiện đại, chuẩn xác 100% tiếng Việt.`;
 
     const chatHistory = messages.map(m => ({
@@ -265,6 +301,7 @@ QUY TẮC ĐÀO TẠO & PHẢN HỒI (CHUẨN GEMINI / GOOGLE ANTIGRAVITY):
   private generateLiveRuleBasedResponse(userText: string, matchedProducts: LiveProduct[], allProducts: LiveProduct[]) {
     const qNoTone = removeVietnameseTones(userText);
     const formatVND = (num: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(num);
+    const explicitBudget = liveDatabaseKnowledge.extractExplicitBudget(userText);
 
     // 1. Matched specific products in Supabase
     if (matchedProducts.length > 0) {
@@ -289,6 +326,29 @@ QUY TẮC ĐÀO TẠO & PHẢN HỒI (CHUẨN GEMINI / GOOGLE ANTIGRAVITY):
 
       // Multiple matched items
       const topProducts = matchedProducts.slice(0, 4);
+
+      // If user asked with a specific budget (e.g. card màn hình 15 triệu)
+      if (explicitBudget !== null && topProducts.length > 0) {
+        const bestPick = topProducts[0];
+        const bestPrice = formatVND(bestPick.discountPrice || bestPick.price);
+        const altPick = topProducts[1];
+        const budgetFormatted = (explicitBudget / 1000000).toFixed(0) + ' Triệu';
+
+        return {
+          role: 'assistant',
+          content: `Dạ, với ngân sách tầm **${budgetFormatted}**, DRX Hardware xin đề xuất cho bạn:
+
+🏆 **Lựa chọn tối ưu nhất**: **[${bestPick.name}](/products/${bestPick.slug})**
+- 💰 **Giá ưu đãi**: **${bestPrice}**
+- 🛡️ **Bảo hành**: **${bestPick.warrantyMonths} Tháng chính hãng (1 đổi 1)**
+- ⚡ **Hiệu năng nổi bật**: Xử lý mượt mà mọi tựa game eSports (Valorant, CS2, LOL) ở mức 300+ FPS và cân tốt game AAA đồ họa cao.
+${altPick ? `\n💡 **Gợi ý thêm**: Bạn cũng có thể tham khảo **[${altPick.name}](/products/${altPick.slug})** với giá **${formatVND(altPick.discountPrice || altPick.price)}**.` : ''}
+
+👉 Mời bạn xem chi tiết thông số và đặt hàng nhanh qua các thẻ sản phẩm bên dưới:`,
+          matchedProducts: topProducts,
+        };
+      }
+
       let categoryHeader = 'sản phẩm';
       if (qNoTone.includes('ram') && (qNoTone.includes('laptop') || qNoTone.includes('sodimm'))) {
         categoryHeader = `mẫu **RAM Laptop (SODIMM) ${qNoTone.includes('ddr5') ? 'DDR5' : qNoTone.includes('ddr4') ? 'DDR4' : ''}**`;

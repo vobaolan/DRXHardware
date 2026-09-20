@@ -217,10 +217,11 @@ export class LiveDatabaseKnowledge {
       return [];
     }
 
-    // 3. Generation & Spec Specificity
+    // 3. Generation & Spec Specificity & Budget Parsing
     const wantDdr5 = noToneQ.includes('ddr5') || noToneQ.includes('d5');
     const wantDdr4 = noToneQ.includes('ddr4') || noToneQ.includes('d4');
     const wantDdr3 = noToneQ.includes('ddr3') || noToneQ.includes('d3');
+    const explicitBudget = this.extractExplicitBudget(cleanQ);
 
     // Vietnamese common stop words & non-product noise words
     const STOP_WORDS = new Set([
@@ -229,14 +230,15 @@ export class LiveDatabaseKnowledge {
       'shop', 'ad', 'a', 'oi', 'nha', 'nhe', 'tim', 'kiem', 'xem', 'hang', 'con', 'het',
       'tu', 'van', 'can', 'muon', 'giup', 'em', 'anh', 'chi', 'mau', 'loai', 'cai', 'the',
       'nhung', 'cac', 'ma', 'giam', 'voucher', 'coupon', 'code', 'uu', 'dai', 'sale',
-      'chiet', 'khau', 'chinh', 'sach', 'hotline', 'sdt', 'dia', 'chi', 'show', 'room'
+      'chiet', 'khau', 'chinh', 'sach', 'hotline', 'sdt', 'dia', 'chi', 'show', 'room',
+      'tam', 'khoang', 'duoi', 'tren', 'chuc'
     ]);
 
     const rawKeywords = noToneQ.split(/[\s,.\-_\/]+/).filter(w => w.length > 1);
     const keywords = rawKeywords.filter(w => !STOP_WORDS.has(w));
     
     // If all words are stop words and no specific hardware target was found, return empty to prevent false matches
-    if (keywords.length === 0 && !hasSpecificHardwareTarget) {
+    if (keywords.length === 0 && !hasSpecificHardwareTarget && explicitBudget === null) {
       return [];
     }
 
@@ -317,12 +319,30 @@ export class LiveDatabaseKnowledge {
         else score -= 100;
       }
 
+      // ─── BUDGET PROXIMITY SCORING (When user specifies a budget like 15 triệu) ───
+      if (explicitBudget !== null && hasSpecificHardwareTarget && score > 0) {
+        const pEffectivePrice = p.discountPrice || p.price;
+        const diff = Math.abs(pEffectivePrice - explicitBudget);
+        const ratio = diff / explicitBudget;
+
+        if (ratio <= 0.15) {
+          score += 250; // Extremely close to user's budget (e.g. 15.99M vs 15M)
+        } else if (ratio <= 0.35) {
+          score += 140; // Fairly close to budget
+        } else if (pEffectivePrice < explicitBudget && ratio <= 0.6) {
+          score += 60; // Value-saving option under budget
+        } else if (pEffectivePrice > explicitBudget * 1.35) {
+          score -= 300; // Penalize products too far above budget
+        }
+      }
+
       // ─── SPECIFIC MODEL CODE / NUMBERS / CAPACITY FILTERING (e.g. 4090 vs 4080 vs 4060, 24GB vs 16GB) ───
       const specificTokens = noToneQ.match(/\b(?:\d+[a-z]+|[a-z]+\d+|\d{3,5}(?:ti|super|xt|xtx|k|f|kf|x|x3d)?)\b/gi) || [];
-      const isSpecificModelSearch = specificTokens.length > 0;
-
       for (const token of specificTokens) {
         const tLower = token.toLowerCase();
+        // Ignore currency units like 15tr, 15m
+        if (/^\d+(?:tr|trieu|cu|m|k)$/i.test(tLower)) continue;
+
         const hasInName = nameNoTone.includes(tLower);
         const hasInSpecs = specsStr.includes(tLower);
         
@@ -378,11 +398,10 @@ export class LiveDatabaseKnowledge {
     const secondScore = validMatches[1]?.score || 0;
 
     // Strict single-product isolation:
-    // If the top product has a dominant score (or matched specific model tokens, or topScore is much higher than 2nd product), return ONLY that 1 product
     const isDominantMatch = (topScore >= 200 && topScore >= secondScore * 1.5) || (topScore >= 350);
     const isAskingPriceOrStock = noToneQ.includes('gia') || noToneQ.includes('bao nhieu') || noToneQ.includes('bao tien') || noToneQ.includes('con hang') || noToneQ.includes('thong so');
 
-    if ((isDominantMatch || isAskingPriceOrStock) && topScore >= 120) {
+    if ((isDominantMatch || isAskingPriceOrStock) && topScore >= 120 && explicitBudget === null) {
       return [validMatches[0].product];
     }
 
@@ -394,11 +413,11 @@ export class LiveDatabaseKnowledge {
   }
 
   /**
-   * Parse user budget from natural text (e.g., "15 triệu", "20tr", "30 củ", "12.5M", "45 tr")
+   * Extract explicit budget from text (returns number in VND or null if none found)
    */
-  parseBudget(text: string): number {
+  extractExplicitBudget(text: string): number | null {
+    if (!text) return null;
     const clean = removeVietnameseTones(text);
-    // Patterns like "15 trieu", "15tr", "15 cu", "15m", "15.5 trieu"
     const match = clean.match(/(\d+(?:[.,]\d+)?)\s*(trieu|tr|cu|m|k|nghin)/i);
     if (match) {
       const num = parseFloat(match[1].replace(',', '.'));
@@ -410,12 +429,19 @@ export class LiveDatabaseKnowledge {
         return num * 1000;
       }
     }
-    // Pure number like 15000000
     const pureNumMatch = clean.match(/\b(\d{7,9})\b/);
     if (pureNumMatch) {
       return parseInt(pureNumMatch[1], 10);
     }
-    return 20000000; // Default 20M if not specified
+    return null;
+  }
+
+  /**
+   * Parse user budget from natural text (e.g., "15 triệu", "20tr", "30 củ", "12.5M", "45 tr")
+   */
+  parseBudget(text: string, defaultVal = 20000000): number {
+    const extracted = this.extractExplicitBudget(text);
+    return extracted !== null ? extracted : defaultVal;
   }
 
   /**
@@ -431,7 +457,7 @@ export class LiveDatabaseKnowledge {
     matchedProducts: LiveProduct[];
   }> {
     const all = await this.getAllLiveProducts();
-    const budget = this.parseBudget(userQuery);
+    const budget = this.parseBudget(userQuery, 20000000);
     const qNoTone = removeVietnameseTones(userQuery);
 
     // Detect purpose
@@ -443,7 +469,12 @@ export class LiveDatabaseKnowledge {
     // Categorize live products
     const cpus = all.filter(p => p.category === 'CPU');
     const mainboards = all.filter(p => p.category === 'MAINBOARD');
-    const rams = all.filter(p => p.category === 'RAM');
+    // STRICT: Desktop PC Build must NEVER include Laptop SODIMM RAM!
+    const rams = all.filter(p => {
+      if (p.category !== 'RAM') return false;
+      const name = p.name.toLowerCase();
+      return !name.includes('laptop') && !name.includes('sodimm') && !name.includes('so-dimm');
+    });
     const vgas = all.filter(p => p.category === 'VGA');
     const storages = all.filter(p => p.category === 'STORAGE');
     const psus = all.filter(p => p.category === 'PSU');
