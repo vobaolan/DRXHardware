@@ -199,7 +199,7 @@ export function CheckoutBuildModal({
                       value={couponInput}
                       onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
                       onKeyDown={(e) => e.key === 'Enter' && handleApplyCoupon()}
-                      placeholder="Nhập mã giảm giá (VD: DRXNEW, VIP...)"
+                      placeholder="Nhập mã giảm giá..."
                       className="w-full pl-3 pr-8 py-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 font-mono text-xs font-bold uppercase placeholder:normal-case placeholder:font-normal placeholder:text-slate-400 focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 text-slate-900 dark:text-white shadow-2xs"
                     />
                     {couponInput && (
@@ -221,21 +221,6 @@ export function CheckoutBuildModal({
                   >
                     {isApplyingCoupon ? 'Đang kiểm tra...' : 'Áp Dụng'}
                   </button>
-                </div>
-
-                {/* Quick Suggestion Chips */}
-                <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
-                  <span className="text-[10px] text-slate-400 font-medium">Gợi ý mã hot:</span>
-                  {['DRXNEW', 'DRXBUILD', 'VIP100K'].map((sampleCode) => (
-                    <button
-                      key={sampleCode}
-                      type="button"
-                      onClick={() => handleApplyCoupon(sampleCode)}
-                      className="px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 hover:bg-sky-50 text-[#0284c7] text-[10px] font-mono font-bold border border-sky-200 dark:border-slate-700 transition-colors cursor-pointer"
-                    >
-                      {sampleCode}
-                    </button>
-                  ))}
                 </div>
               </div>
             )}

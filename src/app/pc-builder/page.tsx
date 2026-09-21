@@ -822,7 +822,7 @@ function PCBuilderContent() {
                       value={couponInput}
                       onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
                       onKeyDown={(e) => e.key === 'Enter' && handleApplyInlineCoupon()}
-                      placeholder="Mã voucher (DRXNEW...)"
+                      placeholder="Nhập mã giảm giá..."
                       className="w-full px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-mono text-xs font-bold uppercase placeholder:normal-case placeholder:font-normal placeholder:text-slate-400 focus:outline-none focus:border-sky-500 text-slate-900 dark:text-white"
                     />
                     <button
